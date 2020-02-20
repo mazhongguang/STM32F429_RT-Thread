@@ -1,0 +1,2882 @@
+ARM GAS  /tmp/ccYc7M3P.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.eabi_attribute 27, 1
+   3              		.eabi_attribute 28, 1
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.file	"finsh_token.c"
+  14              		.text
+  15              	.Ltext0:
+  16              		.cfi_sections	.debug_frame
+  17              		.section	.text.token_prev_char,"ax",%progbits
+  18              		.align	1
+  19              		.syntax unified
+  20              		.thumb
+  21              		.thumb_func
+  22              		.fpu fpv4-sp-d16
+  24              	token_prev_char:
+  25              	.LFB21:
+  26              		.file 1 "rt-thread/components/finsh/finsh_token.c"
+   1:rt-thread/components/finsh/finsh_token.c **** /*
+   2:rt-thread/components/finsh/finsh_token.c ****  * Copyright (c) 2006-2018, RT-Thread Development Team
+   3:rt-thread/components/finsh/finsh_token.c ****  *
+   4:rt-thread/components/finsh/finsh_token.c ****  * SPDX-License-Identifier: Apache-2.0
+   5:rt-thread/components/finsh/finsh_token.c ****  *
+   6:rt-thread/components/finsh/finsh_token.c ****  * Change Logs:
+   7:rt-thread/components/finsh/finsh_token.c ****  * Date           Author       Notes
+   8:rt-thread/components/finsh/finsh_token.c ****  * 2010-03-22     Bernard      first version
+   9:rt-thread/components/finsh/finsh_token.c ****  * 2013-04-03     Bernard      strip more characters.
+  10:rt-thread/components/finsh/finsh_token.c ****  */
+  11:rt-thread/components/finsh/finsh_token.c **** #include <finsh.h>
+  12:rt-thread/components/finsh/finsh_token.c **** #include <stdlib.h>
+  13:rt-thread/components/finsh/finsh_token.c **** 
+  14:rt-thread/components/finsh/finsh_token.c **** #include "finsh_token.h"
+  15:rt-thread/components/finsh/finsh_token.c **** #include "finsh_error.h"
+  16:rt-thread/components/finsh/finsh_token.c **** 
+  17:rt-thread/components/finsh/finsh_token.c **** #define is_alpha(ch)    ((ch | 0x20) - 'a') < 26u
+  18:rt-thread/components/finsh/finsh_token.c **** #define is_digit(ch)    ((ch) >= '0' && (ch) <= '9')
+  19:rt-thread/components/finsh/finsh_token.c **** #define is_xdigit(ch)   (((ch) >= '0' && (ch) <= '9') || (((ch | 0x20) - 'a') < 6u))
+  20:rt-thread/components/finsh/finsh_token.c **** #define is_separator(ch) !(((ch) >= 'a' && (ch) <= 'z') \
+  21:rt-thread/components/finsh/finsh_token.c ****      || ((ch) >= 'A' && (ch) <= 'Z') || ((ch) >= '0' && (ch) <= '9') || ((ch) == '_'))
+  22:rt-thread/components/finsh/finsh_token.c **** #define is_eof(self) (self)->eof
+  23:rt-thread/components/finsh/finsh_token.c **** 
+  24:rt-thread/components/finsh/finsh_token.c **** struct name_table
+  25:rt-thread/components/finsh/finsh_token.c **** {
+  26:rt-thread/components/finsh/finsh_token.c ****     char* name;
+  27:rt-thread/components/finsh/finsh_token.c ****     enum finsh_token_type type;
+  28:rt-thread/components/finsh/finsh_token.c **** };
+  29:rt-thread/components/finsh/finsh_token.c **** 
+  30:rt-thread/components/finsh/finsh_token.c **** /* keyword */
+  31:rt-thread/components/finsh/finsh_token.c **** static const struct name_table finsh_name_table[] =
+  32:rt-thread/components/finsh/finsh_token.c **** {
+ARM GAS  /tmp/ccYc7M3P.s 			page 2
+
+
+  33:rt-thread/components/finsh/finsh_token.c ****     {"void",        finsh_token_type_void},
+  34:rt-thread/components/finsh/finsh_token.c ****     {"char",        finsh_token_type_char},
+  35:rt-thread/components/finsh/finsh_token.c ****     {"short",       finsh_token_type_short},
+  36:rt-thread/components/finsh/finsh_token.c ****     {"int",         finsh_token_type_int},
+  37:rt-thread/components/finsh/finsh_token.c ****     {"long",        finsh_token_type_long},
+  38:rt-thread/components/finsh/finsh_token.c ****     {"unsigned",    finsh_token_type_unsigned},
+  39:rt-thread/components/finsh/finsh_token.c **** 
+  40:rt-thread/components/finsh/finsh_token.c ****     {"NULL",        finsh_token_type_value_null},
+  41:rt-thread/components/finsh/finsh_token.c ****     {"null",        finsh_token_type_value_null}
+  42:rt-thread/components/finsh/finsh_token.c **** };
+  43:rt-thread/components/finsh/finsh_token.c **** 
+  44:rt-thread/components/finsh/finsh_token.c **** static char token_next_char(struct finsh_token* self);
+  45:rt-thread/components/finsh/finsh_token.c **** static void token_prev_char(struct finsh_token* self);
+  46:rt-thread/components/finsh/finsh_token.c **** static long token_spec_number(char* string, int length, int b);
+  47:rt-thread/components/finsh/finsh_token.c **** static void token_run(struct finsh_token* self);
+  48:rt-thread/components/finsh/finsh_token.c **** static int  token_match_name(struct finsh_token* self, const char* str);
+  49:rt-thread/components/finsh/finsh_token.c **** static void token_proc_number(struct finsh_token* self);
+  50:rt-thread/components/finsh/finsh_token.c **** static uint8_t* token_proc_string(struct finsh_token* self);
+  51:rt-thread/components/finsh/finsh_token.c **** static void token_trim_space(struct finsh_token* self);
+  52:rt-thread/components/finsh/finsh_token.c **** static char token_proc_char(struct finsh_token* self);
+  53:rt-thread/components/finsh/finsh_token.c **** static int token_proc_escape(struct finsh_token* self);
+  54:rt-thread/components/finsh/finsh_token.c **** 
+  55:rt-thread/components/finsh/finsh_token.c **** void finsh_token_init(struct finsh_token* self, uint8_t* line)
+  56:rt-thread/components/finsh/finsh_token.c **** {
+  57:rt-thread/components/finsh/finsh_token.c ****     memset(self, 0, sizeof(struct finsh_token));
+  58:rt-thread/components/finsh/finsh_token.c **** 
+  59:rt-thread/components/finsh/finsh_token.c ****     self->line = line;
+  60:rt-thread/components/finsh/finsh_token.c **** }
+  61:rt-thread/components/finsh/finsh_token.c **** 
+  62:rt-thread/components/finsh/finsh_token.c **** enum finsh_token_type finsh_token_token(struct finsh_token* self)
+  63:rt-thread/components/finsh/finsh_token.c **** {
+  64:rt-thread/components/finsh/finsh_token.c ****     if ( self->replay ) self->replay = 0;
+  65:rt-thread/components/finsh/finsh_token.c ****     else token_run(self);
+  66:rt-thread/components/finsh/finsh_token.c **** 
+  67:rt-thread/components/finsh/finsh_token.c ****     return (enum finsh_token_type)self->current_token;
+  68:rt-thread/components/finsh/finsh_token.c **** }
+  69:rt-thread/components/finsh/finsh_token.c **** 
+  70:rt-thread/components/finsh/finsh_token.c **** void finsh_token_get_token(struct finsh_token* self, uint8_t* token)
+  71:rt-thread/components/finsh/finsh_token.c **** {
+  72:rt-thread/components/finsh/finsh_token.c ****     strncpy((char*)token, (char*)self->string, FINSH_NAME_MAX);
+  73:rt-thread/components/finsh/finsh_token.c **** }
+  74:rt-thread/components/finsh/finsh_token.c **** 
+  75:rt-thread/components/finsh/finsh_token.c **** int token_get_string(struct finsh_token* self, uint8_t* str)
+  76:rt-thread/components/finsh/finsh_token.c **** {
+  77:rt-thread/components/finsh/finsh_token.c ****     unsigned char *p=str;
+  78:rt-thread/components/finsh/finsh_token.c ****     char ch;
+  79:rt-thread/components/finsh/finsh_token.c **** 
+  80:rt-thread/components/finsh/finsh_token.c ****     ch = token_next_char(self);
+  81:rt-thread/components/finsh/finsh_token.c ****     if (is_eof(self)) return -1;
+  82:rt-thread/components/finsh/finsh_token.c **** 
+  83:rt-thread/components/finsh/finsh_token.c ****     str[0] = '\0';
+  84:rt-thread/components/finsh/finsh_token.c **** 
+  85:rt-thread/components/finsh/finsh_token.c ****     if ( is_digit(ch) )/*the first character of identifier is not a digit.*/
+  86:rt-thread/components/finsh/finsh_token.c ****     {
+  87:rt-thread/components/finsh/finsh_token.c ****         token_prev_char(self);
+  88:rt-thread/components/finsh/finsh_token.c ****         return -1;
+  89:rt-thread/components/finsh/finsh_token.c ****     }
+ARM GAS  /tmp/ccYc7M3P.s 			page 3
+
+
+  90:rt-thread/components/finsh/finsh_token.c **** 
+  91:rt-thread/components/finsh/finsh_token.c ****     while (!is_separator(ch) && !is_eof(self))
+  92:rt-thread/components/finsh/finsh_token.c ****     {
+  93:rt-thread/components/finsh/finsh_token.c ****         *p++ = ch;
+  94:rt-thread/components/finsh/finsh_token.c **** 
+  95:rt-thread/components/finsh/finsh_token.c ****         ch = token_next_char(self);
+  96:rt-thread/components/finsh/finsh_token.c ****     }
+  97:rt-thread/components/finsh/finsh_token.c ****     self->eof = 0;
+  98:rt-thread/components/finsh/finsh_token.c **** 
+  99:rt-thread/components/finsh/finsh_token.c ****     token_prev_char(self);
+ 100:rt-thread/components/finsh/finsh_token.c ****     *p = '\0';
+ 101:rt-thread/components/finsh/finsh_token.c **** 
+ 102:rt-thread/components/finsh/finsh_token.c ****     return 0;
+ 103:rt-thread/components/finsh/finsh_token.c **** }
+ 104:rt-thread/components/finsh/finsh_token.c **** 
+ 105:rt-thread/components/finsh/finsh_token.c **** /*
+ 106:rt-thread/components/finsh/finsh_token.c **** get next character.
+ 107:rt-thread/components/finsh/finsh_token.c **** */
+ 108:rt-thread/components/finsh/finsh_token.c **** static char token_next_char(struct finsh_token* self)
+ 109:rt-thread/components/finsh/finsh_token.c **** {
+ 110:rt-thread/components/finsh/finsh_token.c ****     if (self->eof) return '\0';
+ 111:rt-thread/components/finsh/finsh_token.c **** 
+ 112:rt-thread/components/finsh/finsh_token.c ****     if (self->position == (int)strlen((char*)self->line) || self->line[self->position] =='\n')
+ 113:rt-thread/components/finsh/finsh_token.c ****     {
+ 114:rt-thread/components/finsh/finsh_token.c ****             self->eof = 1;
+ 115:rt-thread/components/finsh/finsh_token.c ****             self->position = 0;
+ 116:rt-thread/components/finsh/finsh_token.c ****             return '\0';
+ 117:rt-thread/components/finsh/finsh_token.c ****     }
+ 118:rt-thread/components/finsh/finsh_token.c **** 
+ 119:rt-thread/components/finsh/finsh_token.c ****     return self->line[self->position++];
+ 120:rt-thread/components/finsh/finsh_token.c **** }
+ 121:rt-thread/components/finsh/finsh_token.c **** 
+ 122:rt-thread/components/finsh/finsh_token.c **** static void token_prev_char(struct finsh_token* self)
+ 123:rt-thread/components/finsh/finsh_token.c **** {
+  27              		.loc 1 123 0
+  28              		.cfi_startproc
+  29              		@ args = 0, pretend = 0, frame = 0
+  30              		@ frame_needed = 0, uses_anonymous_args = 0
+  31              		@ link register save eliminated.
+  32              	.LVL0:
+ 124:rt-thread/components/finsh/finsh_token.c ****     if ( self->eof ) return;
+  33              		.loc 1 124 0
+  34 0000 0378     		ldrb	r3, [r0]	@ zero_extendqisi2
+  35 0002 1BB9     		cbnz	r3, .L1
+ 125:rt-thread/components/finsh/finsh_token.c **** 
+ 126:rt-thread/components/finsh/finsh_token.c ****     if ( self->position == 0 ) return;
+  36              		.loc 1 126 0
+  37 0004 4368     		ldr	r3, [r0, #4]
+  38 0006 0BB1     		cbz	r3, .L1
+ 127:rt-thread/components/finsh/finsh_token.c ****     else self->position--;
+  39              		.loc 1 127 0
+  40 0008 013B     		subs	r3, r3, #1
+  41 000a 4360     		str	r3, [r0, #4]
+  42              	.L1:
+  43 000c 7047     		bx	lr
+  44              		.cfi_endproc
+  45              	.LFE21:
+ARM GAS  /tmp/ccYc7M3P.s 			page 4
+
+
+  47              		.section	.text.token_spec_number,"ax",%progbits
+  48              		.align	1
+  49              		.syntax unified
+  50              		.thumb
+  51              		.thumb_func
+  52              		.fpu fpv4-sp-d16
+  54              	token_spec_number:
+  55              	.LFB29:
+ 128:rt-thread/components/finsh/finsh_token.c **** }
+ 129:rt-thread/components/finsh/finsh_token.c **** 
+ 130:rt-thread/components/finsh/finsh_token.c **** static void token_run(struct finsh_token* self)
+ 131:rt-thread/components/finsh/finsh_token.c **** {
+ 132:rt-thread/components/finsh/finsh_token.c ****     char ch;
+ 133:rt-thread/components/finsh/finsh_token.c **** 
+ 134:rt-thread/components/finsh/finsh_token.c ****     token_trim_space(self); /* first trim space and tab. */
+ 135:rt-thread/components/finsh/finsh_token.c ****     token_get_string(self, &(self->string[0]));
+ 136:rt-thread/components/finsh/finsh_token.c **** 
+ 137:rt-thread/components/finsh/finsh_token.c ****     if ( is_eof(self) ) /*if it is eof, break;*/
+ 138:rt-thread/components/finsh/finsh_token.c ****     {
+ 139:rt-thread/components/finsh/finsh_token.c ****         self->current_token = finsh_token_type_eof;
+ 140:rt-thread/components/finsh/finsh_token.c ****         return ;
+ 141:rt-thread/components/finsh/finsh_token.c ****     }
+ 142:rt-thread/components/finsh/finsh_token.c **** 
+ 143:rt-thread/components/finsh/finsh_token.c ****     if (self->string[0] != '\0') /*It is a key word or a identifier.*/
+ 144:rt-thread/components/finsh/finsh_token.c ****     {
+ 145:rt-thread/components/finsh/finsh_token.c ****         if ( !token_match_name(self, (char*)self->string) )
+ 146:rt-thread/components/finsh/finsh_token.c ****         {
+ 147:rt-thread/components/finsh/finsh_token.c ****             self->current_token = finsh_token_type_identifier;
+ 148:rt-thread/components/finsh/finsh_token.c ****         }
+ 149:rt-thread/components/finsh/finsh_token.c ****     }
+ 150:rt-thread/components/finsh/finsh_token.c ****     else/*It is a operator character.*/
+ 151:rt-thread/components/finsh/finsh_token.c ****     {
+ 152:rt-thread/components/finsh/finsh_token.c ****         ch = token_next_char(self);
+ 153:rt-thread/components/finsh/finsh_token.c **** 
+ 154:rt-thread/components/finsh/finsh_token.c ****         switch ( ch )
+ 155:rt-thread/components/finsh/finsh_token.c ****         {
+ 156:rt-thread/components/finsh/finsh_token.c ****         case '(':
+ 157:rt-thread/components/finsh/finsh_token.c ****             self->current_token = finsh_token_type_left_paren;
+ 158:rt-thread/components/finsh/finsh_token.c ****             break;
+ 159:rt-thread/components/finsh/finsh_token.c **** 
+ 160:rt-thread/components/finsh/finsh_token.c ****         case ')':
+ 161:rt-thread/components/finsh/finsh_token.c ****             self->current_token = finsh_token_type_right_paren;
+ 162:rt-thread/components/finsh/finsh_token.c ****             break;
+ 163:rt-thread/components/finsh/finsh_token.c **** 
+ 164:rt-thread/components/finsh/finsh_token.c ****         case ',':
+ 165:rt-thread/components/finsh/finsh_token.c ****             self->current_token = finsh_token_type_comma;
+ 166:rt-thread/components/finsh/finsh_token.c ****             break;
+ 167:rt-thread/components/finsh/finsh_token.c **** 
+ 168:rt-thread/components/finsh/finsh_token.c ****         case ';':
+ 169:rt-thread/components/finsh/finsh_token.c ****             self->current_token = finsh_token_type_semicolon;
+ 170:rt-thread/components/finsh/finsh_token.c ****             break;
+ 171:rt-thread/components/finsh/finsh_token.c **** 
+ 172:rt-thread/components/finsh/finsh_token.c ****         case '&':
+ 173:rt-thread/components/finsh/finsh_token.c ****             self->current_token = finsh_token_type_and;
+ 174:rt-thread/components/finsh/finsh_token.c ****             break;
+ 175:rt-thread/components/finsh/finsh_token.c **** 
+ 176:rt-thread/components/finsh/finsh_token.c ****         case '*':
+ARM GAS  /tmp/ccYc7M3P.s 			page 5
+
+
+ 177:rt-thread/components/finsh/finsh_token.c ****             self->current_token = finsh_token_type_mul;
+ 178:rt-thread/components/finsh/finsh_token.c ****             break;
+ 179:rt-thread/components/finsh/finsh_token.c **** 
+ 180:rt-thread/components/finsh/finsh_token.c ****         case '+':
+ 181:rt-thread/components/finsh/finsh_token.c ****             ch = token_next_char(self);
+ 182:rt-thread/components/finsh/finsh_token.c **** 
+ 183:rt-thread/components/finsh/finsh_token.c ****             if ( ch == '+' )
+ 184:rt-thread/components/finsh/finsh_token.c ****             {
+ 185:rt-thread/components/finsh/finsh_token.c ****                 self->current_token = finsh_token_type_inc;
+ 186:rt-thread/components/finsh/finsh_token.c ****             }
+ 187:rt-thread/components/finsh/finsh_token.c ****             else
+ 188:rt-thread/components/finsh/finsh_token.c ****             {
+ 189:rt-thread/components/finsh/finsh_token.c ****                 token_prev_char(self);
+ 190:rt-thread/components/finsh/finsh_token.c ****                 self->current_token = finsh_token_type_add;
+ 191:rt-thread/components/finsh/finsh_token.c ****             }
+ 192:rt-thread/components/finsh/finsh_token.c ****             break;
+ 193:rt-thread/components/finsh/finsh_token.c **** 
+ 194:rt-thread/components/finsh/finsh_token.c ****         case '-':
+ 195:rt-thread/components/finsh/finsh_token.c ****             ch = token_next_char(self);
+ 196:rt-thread/components/finsh/finsh_token.c **** 
+ 197:rt-thread/components/finsh/finsh_token.c ****             if ( ch == '-' )
+ 198:rt-thread/components/finsh/finsh_token.c ****             {
+ 199:rt-thread/components/finsh/finsh_token.c ****                 self->current_token = finsh_token_type_dec;
+ 200:rt-thread/components/finsh/finsh_token.c ****             }
+ 201:rt-thread/components/finsh/finsh_token.c ****             else
+ 202:rt-thread/components/finsh/finsh_token.c ****             {
+ 203:rt-thread/components/finsh/finsh_token.c ****                 token_prev_char(self);
+ 204:rt-thread/components/finsh/finsh_token.c ****                 self->current_token = finsh_token_type_sub;
+ 205:rt-thread/components/finsh/finsh_token.c ****             }
+ 206:rt-thread/components/finsh/finsh_token.c ****             break;
+ 207:rt-thread/components/finsh/finsh_token.c **** 
+ 208:rt-thread/components/finsh/finsh_token.c ****         case '/':
+ 209:rt-thread/components/finsh/finsh_token.c ****             ch = token_next_char(self);
+ 210:rt-thread/components/finsh/finsh_token.c ****             if (ch == '/')
+ 211:rt-thread/components/finsh/finsh_token.c ****             {
+ 212:rt-thread/components/finsh/finsh_token.c ****                 /* line comments, set to end of file */
+ 213:rt-thread/components/finsh/finsh_token.c ****                 self->current_token = finsh_token_type_eof;
+ 214:rt-thread/components/finsh/finsh_token.c ****             }
+ 215:rt-thread/components/finsh/finsh_token.c ****             else
+ 216:rt-thread/components/finsh/finsh_token.c ****             {
+ 217:rt-thread/components/finsh/finsh_token.c ****                 token_prev_char(self);
+ 218:rt-thread/components/finsh/finsh_token.c ****                 self->current_token = finsh_token_type_div;
+ 219:rt-thread/components/finsh/finsh_token.c ****             }
+ 220:rt-thread/components/finsh/finsh_token.c ****             break;
+ 221:rt-thread/components/finsh/finsh_token.c **** 
+ 222:rt-thread/components/finsh/finsh_token.c ****         case '<':
+ 223:rt-thread/components/finsh/finsh_token.c ****             ch = token_next_char(self);
+ 224:rt-thread/components/finsh/finsh_token.c **** 
+ 225:rt-thread/components/finsh/finsh_token.c ****             if ( ch == '<' )
+ 226:rt-thread/components/finsh/finsh_token.c ****             {
+ 227:rt-thread/components/finsh/finsh_token.c ****                 self->current_token = finsh_token_type_shl;
+ 228:rt-thread/components/finsh/finsh_token.c ****             }
+ 229:rt-thread/components/finsh/finsh_token.c ****             else
+ 230:rt-thread/components/finsh/finsh_token.c ****             {
+ 231:rt-thread/components/finsh/finsh_token.c ****                 token_prev_char(self);
+ 232:rt-thread/components/finsh/finsh_token.c ****                 self->current_token = finsh_token_type_bad;
+ 233:rt-thread/components/finsh/finsh_token.c ****             }
+ARM GAS  /tmp/ccYc7M3P.s 			page 6
+
+
+ 234:rt-thread/components/finsh/finsh_token.c ****             break;
+ 235:rt-thread/components/finsh/finsh_token.c **** 
+ 236:rt-thread/components/finsh/finsh_token.c ****         case '>':
+ 237:rt-thread/components/finsh/finsh_token.c ****             ch = token_next_char(self);
+ 238:rt-thread/components/finsh/finsh_token.c **** 
+ 239:rt-thread/components/finsh/finsh_token.c ****             if ( ch == '>' )
+ 240:rt-thread/components/finsh/finsh_token.c ****             {
+ 241:rt-thread/components/finsh/finsh_token.c ****                 self->current_token = finsh_token_type_shr;
+ 242:rt-thread/components/finsh/finsh_token.c ****             }
+ 243:rt-thread/components/finsh/finsh_token.c ****             else
+ 244:rt-thread/components/finsh/finsh_token.c ****             {
+ 245:rt-thread/components/finsh/finsh_token.c ****                 token_prev_char(self);
+ 246:rt-thread/components/finsh/finsh_token.c ****                 self->current_token = finsh_token_type_bad;
+ 247:rt-thread/components/finsh/finsh_token.c ****             }
+ 248:rt-thread/components/finsh/finsh_token.c ****             break;
+ 249:rt-thread/components/finsh/finsh_token.c **** 
+ 250:rt-thread/components/finsh/finsh_token.c ****         case '|':
+ 251:rt-thread/components/finsh/finsh_token.c ****             self->current_token = finsh_token_type_or;
+ 252:rt-thread/components/finsh/finsh_token.c ****             break;
+ 253:rt-thread/components/finsh/finsh_token.c **** 
+ 254:rt-thread/components/finsh/finsh_token.c ****         case '%':
+ 255:rt-thread/components/finsh/finsh_token.c ****             self->current_token = finsh_token_type_mod;
+ 256:rt-thread/components/finsh/finsh_token.c ****             break;
+ 257:rt-thread/components/finsh/finsh_token.c **** 
+ 258:rt-thread/components/finsh/finsh_token.c ****         case '~':
+ 259:rt-thread/components/finsh/finsh_token.c ****             self->current_token = finsh_token_type_bitwise;
+ 260:rt-thread/components/finsh/finsh_token.c ****             break;
+ 261:rt-thread/components/finsh/finsh_token.c **** 
+ 262:rt-thread/components/finsh/finsh_token.c ****         case '^':
+ 263:rt-thread/components/finsh/finsh_token.c ****             self->current_token = finsh_token_type_xor;
+ 264:rt-thread/components/finsh/finsh_token.c ****             break;
+ 265:rt-thread/components/finsh/finsh_token.c **** 
+ 266:rt-thread/components/finsh/finsh_token.c ****         case '=':
+ 267:rt-thread/components/finsh/finsh_token.c ****             self->current_token = finsh_token_type_assign;
+ 268:rt-thread/components/finsh/finsh_token.c ****             break;
+ 269:rt-thread/components/finsh/finsh_token.c **** 
+ 270:rt-thread/components/finsh/finsh_token.c ****         case '\'':
+ 271:rt-thread/components/finsh/finsh_token.c ****             self->value.char_value = token_proc_char(self);
+ 272:rt-thread/components/finsh/finsh_token.c ****             self->current_token = finsh_token_type_value_char;
+ 273:rt-thread/components/finsh/finsh_token.c ****             break;
+ 274:rt-thread/components/finsh/finsh_token.c **** 
+ 275:rt-thread/components/finsh/finsh_token.c ****         case '"':
+ 276:rt-thread/components/finsh/finsh_token.c ****             token_proc_string(self);
+ 277:rt-thread/components/finsh/finsh_token.c ****             self->current_token = finsh_token_type_value_string;
+ 278:rt-thread/components/finsh/finsh_token.c ****             break;
+ 279:rt-thread/components/finsh/finsh_token.c **** 
+ 280:rt-thread/components/finsh/finsh_token.c ****         default:
+ 281:rt-thread/components/finsh/finsh_token.c ****             if ( is_digit(ch) )
+ 282:rt-thread/components/finsh/finsh_token.c ****             {
+ 283:rt-thread/components/finsh/finsh_token.c ****                 token_prev_char(self);
+ 284:rt-thread/components/finsh/finsh_token.c ****                 token_proc_number(self);
+ 285:rt-thread/components/finsh/finsh_token.c ****                 break;
+ 286:rt-thread/components/finsh/finsh_token.c ****             }
+ 287:rt-thread/components/finsh/finsh_token.c **** 
+ 288:rt-thread/components/finsh/finsh_token.c ****             finsh_error_set(FINSH_ERROR_UNKNOWN_TOKEN);
+ 289:rt-thread/components/finsh/finsh_token.c ****             self->current_token = finsh_token_type_bad;
+ 290:rt-thread/components/finsh/finsh_token.c **** 
+ARM GAS  /tmp/ccYc7M3P.s 			page 7
+
+
+ 291:rt-thread/components/finsh/finsh_token.c ****             break;
+ 292:rt-thread/components/finsh/finsh_token.c ****         }
+ 293:rt-thread/components/finsh/finsh_token.c ****     }
+ 294:rt-thread/components/finsh/finsh_token.c **** }
+ 295:rt-thread/components/finsh/finsh_token.c **** 
+ 296:rt-thread/components/finsh/finsh_token.c **** static int token_match_name(struct finsh_token* self, const char* str)
+ 297:rt-thread/components/finsh/finsh_token.c **** {
+ 298:rt-thread/components/finsh/finsh_token.c ****     int i;
+ 299:rt-thread/components/finsh/finsh_token.c **** 
+ 300:rt-thread/components/finsh/finsh_token.c ****     for (i = 0; i < sizeof(finsh_name_table)/sizeof(struct name_table); i++)
+ 301:rt-thread/components/finsh/finsh_token.c ****     {
+ 302:rt-thread/components/finsh/finsh_token.c ****         if ( strcmp(finsh_name_table[i].name, str)==0 )
+ 303:rt-thread/components/finsh/finsh_token.c ****         {
+ 304:rt-thread/components/finsh/finsh_token.c ****             self->current_token = finsh_name_table[i].type;
+ 305:rt-thread/components/finsh/finsh_token.c ****             return 1;
+ 306:rt-thread/components/finsh/finsh_token.c ****         }
+ 307:rt-thread/components/finsh/finsh_token.c ****     }
+ 308:rt-thread/components/finsh/finsh_token.c **** 
+ 309:rt-thread/components/finsh/finsh_token.c ****     return 0;
+ 310:rt-thread/components/finsh/finsh_token.c **** }
+ 311:rt-thread/components/finsh/finsh_token.c **** 
+ 312:rt-thread/components/finsh/finsh_token.c **** static void token_trim_space(struct finsh_token* self)
+ 313:rt-thread/components/finsh/finsh_token.c **** {
+ 314:rt-thread/components/finsh/finsh_token.c ****     char ch;
+ 315:rt-thread/components/finsh/finsh_token.c ****     while ( (ch = token_next_char(self)) ==' ' ||
+ 316:rt-thread/components/finsh/finsh_token.c ****         ch == '\t' ||
+ 317:rt-thread/components/finsh/finsh_token.c ****         ch == '\r');
+ 318:rt-thread/components/finsh/finsh_token.c **** 
+ 319:rt-thread/components/finsh/finsh_token.c ****     token_prev_char(self);
+ 320:rt-thread/components/finsh/finsh_token.c **** }
+ 321:rt-thread/components/finsh/finsh_token.c **** 
+ 322:rt-thread/components/finsh/finsh_token.c **** static char token_proc_char(struct finsh_token* self)
+ 323:rt-thread/components/finsh/finsh_token.c **** {
+ 324:rt-thread/components/finsh/finsh_token.c ****     char ch;
+ 325:rt-thread/components/finsh/finsh_token.c ****     char buf[4], *p;
+ 326:rt-thread/components/finsh/finsh_token.c **** 
+ 327:rt-thread/components/finsh/finsh_token.c ****     p = buf;
+ 328:rt-thread/components/finsh/finsh_token.c ****     ch = token_next_char(self);
+ 329:rt-thread/components/finsh/finsh_token.c **** 
+ 330:rt-thread/components/finsh/finsh_token.c ****     if ( ch == '\\' )
+ 331:rt-thread/components/finsh/finsh_token.c ****     {
+ 332:rt-thread/components/finsh/finsh_token.c ****         ch = token_next_char(self);
+ 333:rt-thread/components/finsh/finsh_token.c ****         switch ( ch )
+ 334:rt-thread/components/finsh/finsh_token.c ****         {
+ 335:rt-thread/components/finsh/finsh_token.c ****         case 'n': ch = '\n'; break;
+ 336:rt-thread/components/finsh/finsh_token.c ****         case 't': ch = '\t'; break;
+ 337:rt-thread/components/finsh/finsh_token.c ****         case 'v': ch = '\v'; break;
+ 338:rt-thread/components/finsh/finsh_token.c ****         case 'b': ch = '\b'; break;
+ 339:rt-thread/components/finsh/finsh_token.c ****         case 'r': ch = '\r'; break;
+ 340:rt-thread/components/finsh/finsh_token.c ****         case '\\': ch = '\\';  break;
+ 341:rt-thread/components/finsh/finsh_token.c ****         case '\'': ch = '\'';  break;
+ 342:rt-thread/components/finsh/finsh_token.c ****         default :
+ 343:rt-thread/components/finsh/finsh_token.c ****             while ( is_digit(ch) )/*for '\113' char*/
+ 344:rt-thread/components/finsh/finsh_token.c ****             {
+ 345:rt-thread/components/finsh/finsh_token.c ****                 ch = token_next_char(self);
+ 346:rt-thread/components/finsh/finsh_token.c ****                 *p++ = ch;
+ 347:rt-thread/components/finsh/finsh_token.c ****             }
+ARM GAS  /tmp/ccYc7M3P.s 			page 8
+
+
+ 348:rt-thread/components/finsh/finsh_token.c **** 
+ 349:rt-thread/components/finsh/finsh_token.c ****             token_prev_char(self);
+ 350:rt-thread/components/finsh/finsh_token.c ****             *p = '\0';
+ 351:rt-thread/components/finsh/finsh_token.c ****             ch = atoi(p);
+ 352:rt-thread/components/finsh/finsh_token.c ****             break;
+ 353:rt-thread/components/finsh/finsh_token.c ****         }
+ 354:rt-thread/components/finsh/finsh_token.c ****     }
+ 355:rt-thread/components/finsh/finsh_token.c **** 
+ 356:rt-thread/components/finsh/finsh_token.c ****     if ( token_next_char(self) != '\'' )
+ 357:rt-thread/components/finsh/finsh_token.c ****     {
+ 358:rt-thread/components/finsh/finsh_token.c ****         token_prev_char(self);
+ 359:rt-thread/components/finsh/finsh_token.c ****         finsh_error_set(FINSH_ERROR_EXPECT_CHAR);
+ 360:rt-thread/components/finsh/finsh_token.c ****         return ch;
+ 361:rt-thread/components/finsh/finsh_token.c ****     }
+ 362:rt-thread/components/finsh/finsh_token.c **** 
+ 363:rt-thread/components/finsh/finsh_token.c ****     return ch;
+ 364:rt-thread/components/finsh/finsh_token.c **** }
+ 365:rt-thread/components/finsh/finsh_token.c **** 
+ 366:rt-thread/components/finsh/finsh_token.c **** static uint8_t* token_proc_string(struct finsh_token* self)
+ 367:rt-thread/components/finsh/finsh_token.c **** {
+ 368:rt-thread/components/finsh/finsh_token.c ****     uint8_t* p;
+ 369:rt-thread/components/finsh/finsh_token.c **** 
+ 370:rt-thread/components/finsh/finsh_token.c ****     for ( p = &self->string[0]; p - &(self->string[0]) < FINSH_STRING_MAX; )
+ 371:rt-thread/components/finsh/finsh_token.c ****     {
+ 372:rt-thread/components/finsh/finsh_token.c ****         char ch = token_next_char(self);
+ 373:rt-thread/components/finsh/finsh_token.c **** 
+ 374:rt-thread/components/finsh/finsh_token.c ****         if ( is_eof(self) )
+ 375:rt-thread/components/finsh/finsh_token.c ****         {
+ 376:rt-thread/components/finsh/finsh_token.c ****             finsh_error_set(FINSH_ERROR_UNEXPECT_END);
+ 377:rt-thread/components/finsh/finsh_token.c ****             return NULL;;
+ 378:rt-thread/components/finsh/finsh_token.c ****         }
+ 379:rt-thread/components/finsh/finsh_token.c ****         if ( ch == '\\' )
+ 380:rt-thread/components/finsh/finsh_token.c ****         {
+ 381:rt-thread/components/finsh/finsh_token.c ****             ch = token_proc_escape(self);
+ 382:rt-thread/components/finsh/finsh_token.c ****         }
+ 383:rt-thread/components/finsh/finsh_token.c ****         else if ( ch == '"' )/*end of string.*/
+ 384:rt-thread/components/finsh/finsh_token.c ****         {
+ 385:rt-thread/components/finsh/finsh_token.c ****             *p = '\0';
+ 386:rt-thread/components/finsh/finsh_token.c ****             return self->string;
+ 387:rt-thread/components/finsh/finsh_token.c ****         }
+ 388:rt-thread/components/finsh/finsh_token.c **** 
+ 389:rt-thread/components/finsh/finsh_token.c ****         *p++ = ch;
+ 390:rt-thread/components/finsh/finsh_token.c ****     }
+ 391:rt-thread/components/finsh/finsh_token.c **** 
+ 392:rt-thread/components/finsh/finsh_token.c ****     return NULL;
+ 393:rt-thread/components/finsh/finsh_token.c **** }
+ 394:rt-thread/components/finsh/finsh_token.c **** 
+ 395:rt-thread/components/finsh/finsh_token.c **** static int token_proc_escape(struct finsh_token* self)
+ 396:rt-thread/components/finsh/finsh_token.c **** {
+ 397:rt-thread/components/finsh/finsh_token.c ****     char ch;
+ 398:rt-thread/components/finsh/finsh_token.c ****     int result=0;
+ 399:rt-thread/components/finsh/finsh_token.c **** 
+ 400:rt-thread/components/finsh/finsh_token.c ****     ch = token_next_char(self);
+ 401:rt-thread/components/finsh/finsh_token.c ****     switch (ch)
+ 402:rt-thread/components/finsh/finsh_token.c ****     {
+ 403:rt-thread/components/finsh/finsh_token.c ****     case 'n':
+ 404:rt-thread/components/finsh/finsh_token.c ****         result = '\n';
+ARM GAS  /tmp/ccYc7M3P.s 			page 9
+
+
+ 405:rt-thread/components/finsh/finsh_token.c ****         break;
+ 406:rt-thread/components/finsh/finsh_token.c ****     case 't':
+ 407:rt-thread/components/finsh/finsh_token.c ****         result = '\t';
+ 408:rt-thread/components/finsh/finsh_token.c ****         break;
+ 409:rt-thread/components/finsh/finsh_token.c ****     case 'v':
+ 410:rt-thread/components/finsh/finsh_token.c ****         result = '\v';
+ 411:rt-thread/components/finsh/finsh_token.c ****         break;
+ 412:rt-thread/components/finsh/finsh_token.c ****     case 'b':
+ 413:rt-thread/components/finsh/finsh_token.c ****         result = '\b';
+ 414:rt-thread/components/finsh/finsh_token.c ****         break;
+ 415:rt-thread/components/finsh/finsh_token.c ****     case 'r':
+ 416:rt-thread/components/finsh/finsh_token.c ****         result = '\r';
+ 417:rt-thread/components/finsh/finsh_token.c ****         break;
+ 418:rt-thread/components/finsh/finsh_token.c ****     case 'f':
+ 419:rt-thread/components/finsh/finsh_token.c ****         result = '\f';
+ 420:rt-thread/components/finsh/finsh_token.c ****         break;
+ 421:rt-thread/components/finsh/finsh_token.c ****     case 'a':
+ 422:rt-thread/components/finsh/finsh_token.c ****         result = '\007';
+ 423:rt-thread/components/finsh/finsh_token.c ****         break;
+ 424:rt-thread/components/finsh/finsh_token.c ****     case '"':
+ 425:rt-thread/components/finsh/finsh_token.c ****         result = '"';
+ 426:rt-thread/components/finsh/finsh_token.c ****         break;
+ 427:rt-thread/components/finsh/finsh_token.c ****     case 'x':
+ 428:rt-thread/components/finsh/finsh_token.c ****     case 'X':
+ 429:rt-thread/components/finsh/finsh_token.c ****         result = 0;
+ 430:rt-thread/components/finsh/finsh_token.c ****         ch  = token_next_char(self);
+ 431:rt-thread/components/finsh/finsh_token.c ****         while (is_xdigit(ch))
+ 432:rt-thread/components/finsh/finsh_token.c ****         {
+ 433:rt-thread/components/finsh/finsh_token.c ****             result = result * 16 + ((ch < 'A') ? (ch - '0') : (ch | 0x20) - 'a' + 10);
+ 434:rt-thread/components/finsh/finsh_token.c ****             ch = token_next_char(self);
+ 435:rt-thread/components/finsh/finsh_token.c ****         }
+ 436:rt-thread/components/finsh/finsh_token.c ****         token_prev_char(self);
+ 437:rt-thread/components/finsh/finsh_token.c ****         break;
+ 438:rt-thread/components/finsh/finsh_token.c ****     default:
+ 439:rt-thread/components/finsh/finsh_token.c ****         if ( (ch - '0') < 8u)
+ 440:rt-thread/components/finsh/finsh_token.c ****         {
+ 441:rt-thread/components/finsh/finsh_token.c ****             result = 0;
+ 442:rt-thread/components/finsh/finsh_token.c ****             while ( (ch - '0') < 8u )
+ 443:rt-thread/components/finsh/finsh_token.c ****             {
+ 444:rt-thread/components/finsh/finsh_token.c ****                 result = result*8 + ch - '0';
+ 445:rt-thread/components/finsh/finsh_token.c ****                 ch = token_next_char(self);
+ 446:rt-thread/components/finsh/finsh_token.c ****             }
+ 447:rt-thread/components/finsh/finsh_token.c **** 
+ 448:rt-thread/components/finsh/finsh_token.c ****             token_prev_char(self);
+ 449:rt-thread/components/finsh/finsh_token.c ****         }
+ 450:rt-thread/components/finsh/finsh_token.c ****         break;
+ 451:rt-thread/components/finsh/finsh_token.c ****     }
+ 452:rt-thread/components/finsh/finsh_token.c **** 
+ 453:rt-thread/components/finsh/finsh_token.c ****     return result;
+ 454:rt-thread/components/finsh/finsh_token.c **** }
+ 455:rt-thread/components/finsh/finsh_token.c **** 
+ 456:rt-thread/components/finsh/finsh_token.c **** /*
+ 457:rt-thread/components/finsh/finsh_token.c **** (0|0x|0X|0b|0B)number+(l|L)
+ 458:rt-thread/components/finsh/finsh_token.c **** */
+ 459:rt-thread/components/finsh/finsh_token.c **** static void token_proc_number(struct finsh_token* self)
+ 460:rt-thread/components/finsh/finsh_token.c **** {
+ 461:rt-thread/components/finsh/finsh_token.c ****     char ch;
+ARM GAS  /tmp/ccYc7M3P.s 			page 10
+
+
+ 462:rt-thread/components/finsh/finsh_token.c ****     char *p, buf[128];
+ 463:rt-thread/components/finsh/finsh_token.c ****     long value;
+ 464:rt-thread/components/finsh/finsh_token.c **** 
+ 465:rt-thread/components/finsh/finsh_token.c ****     value = 0;
+ 466:rt-thread/components/finsh/finsh_token.c ****     p = buf;
+ 467:rt-thread/components/finsh/finsh_token.c **** 
+ 468:rt-thread/components/finsh/finsh_token.c ****     ch  = token_next_char(self);
+ 469:rt-thread/components/finsh/finsh_token.c ****     if ( ch == '0' )
+ 470:rt-thread/components/finsh/finsh_token.c ****     {
+ 471:rt-thread/components/finsh/finsh_token.c ****         int b;
+ 472:rt-thread/components/finsh/finsh_token.c ****         ch = token_next_char(self);
+ 473:rt-thread/components/finsh/finsh_token.c ****         if ( ch == 'x' || ch == 'X' )/*it's a hex number*/
+ 474:rt-thread/components/finsh/finsh_token.c ****         {
+ 475:rt-thread/components/finsh/finsh_token.c ****             b = 16;
+ 476:rt-thread/components/finsh/finsh_token.c ****             ch = token_next_char(self);
+ 477:rt-thread/components/finsh/finsh_token.c ****             while ( is_digit(ch) || is_alpha(ch) )
+ 478:rt-thread/components/finsh/finsh_token.c ****             {
+ 479:rt-thread/components/finsh/finsh_token.c ****                 *p++ = ch;
+ 480:rt-thread/components/finsh/finsh_token.c ****                 ch = token_next_char(self);
+ 481:rt-thread/components/finsh/finsh_token.c ****             }
+ 482:rt-thread/components/finsh/finsh_token.c **** 
+ 483:rt-thread/components/finsh/finsh_token.c ****             *p = '\0';
+ 484:rt-thread/components/finsh/finsh_token.c ****         }
+ 485:rt-thread/components/finsh/finsh_token.c ****         else if ( ch == 'b' || ch == 'B' )
+ 486:rt-thread/components/finsh/finsh_token.c ****         {
+ 487:rt-thread/components/finsh/finsh_token.c ****             b = 2;
+ 488:rt-thread/components/finsh/finsh_token.c ****             ch = token_next_char(self);
+ 489:rt-thread/components/finsh/finsh_token.c ****             while ( (ch=='0')||(ch=='1') )
+ 490:rt-thread/components/finsh/finsh_token.c ****             {
+ 491:rt-thread/components/finsh/finsh_token.c ****                 *p++ = ch;
+ 492:rt-thread/components/finsh/finsh_token.c ****                 ch = token_next_char(self);
+ 493:rt-thread/components/finsh/finsh_token.c ****             }
+ 494:rt-thread/components/finsh/finsh_token.c **** 
+ 495:rt-thread/components/finsh/finsh_token.c ****             *p = '\0';
+ 496:rt-thread/components/finsh/finsh_token.c ****         }
+ 497:rt-thread/components/finsh/finsh_token.c ****         else if ( '0' <= ch && ch <= '7' )
+ 498:rt-thread/components/finsh/finsh_token.c ****         {
+ 499:rt-thread/components/finsh/finsh_token.c ****             b = 8;
+ 500:rt-thread/components/finsh/finsh_token.c ****             while ( '0' <= ch && ch <= '7' )
+ 501:rt-thread/components/finsh/finsh_token.c ****             {
+ 502:rt-thread/components/finsh/finsh_token.c ****                 *p++ = ch;
+ 503:rt-thread/components/finsh/finsh_token.c ****                 ch = token_next_char(self);
+ 504:rt-thread/components/finsh/finsh_token.c ****             }
+ 505:rt-thread/components/finsh/finsh_token.c **** 
+ 506:rt-thread/components/finsh/finsh_token.c ****             *p = '\0';
+ 507:rt-thread/components/finsh/finsh_token.c ****         }
+ 508:rt-thread/components/finsh/finsh_token.c ****         else
+ 509:rt-thread/components/finsh/finsh_token.c ****         {
+ 510:rt-thread/components/finsh/finsh_token.c ****             token_prev_char(self);
+ 511:rt-thread/components/finsh/finsh_token.c **** 
+ 512:rt-thread/components/finsh/finsh_token.c ****             /* made as 0 value */
+ 513:rt-thread/components/finsh/finsh_token.c ****             self->value.int_value = 0;
+ 514:rt-thread/components/finsh/finsh_token.c ****             self->current_token = finsh_token_type_value_int;
+ 515:rt-thread/components/finsh/finsh_token.c ****             return;
+ 516:rt-thread/components/finsh/finsh_token.c ****         }
+ 517:rt-thread/components/finsh/finsh_token.c **** 
+ 518:rt-thread/components/finsh/finsh_token.c ****         self->value.int_value = token_spec_number(buf, strlen(buf), b);
+ARM GAS  /tmp/ccYc7M3P.s 			page 11
+
+
+ 519:rt-thread/components/finsh/finsh_token.c ****         self->current_token = finsh_token_type_value_int;
+ 520:rt-thread/components/finsh/finsh_token.c ****     }
+ 521:rt-thread/components/finsh/finsh_token.c ****     else
+ 522:rt-thread/components/finsh/finsh_token.c ****     {
+ 523:rt-thread/components/finsh/finsh_token.c ****         while ( is_digit(ch) )
+ 524:rt-thread/components/finsh/finsh_token.c ****         {
+ 525:rt-thread/components/finsh/finsh_token.c ****             value = value*10 + ( ch - '0' );
+ 526:rt-thread/components/finsh/finsh_token.c ****             ch = token_next_char(self);
+ 527:rt-thread/components/finsh/finsh_token.c ****         }
+ 528:rt-thread/components/finsh/finsh_token.c **** 
+ 529:rt-thread/components/finsh/finsh_token.c ****         self->value.int_value = value;
+ 530:rt-thread/components/finsh/finsh_token.c ****         self->current_token = finsh_token_type_value_int;
+ 531:rt-thread/components/finsh/finsh_token.c ****     }
+ 532:rt-thread/components/finsh/finsh_token.c **** 
+ 533:rt-thread/components/finsh/finsh_token.c ****     switch ( ch )
+ 534:rt-thread/components/finsh/finsh_token.c ****     {
+ 535:rt-thread/components/finsh/finsh_token.c ****     case 'l':
+ 536:rt-thread/components/finsh/finsh_token.c ****     case 'L':
+ 537:rt-thread/components/finsh/finsh_token.c ****         self->current_token = finsh_token_type_value_long;
+ 538:rt-thread/components/finsh/finsh_token.c ****         break;
+ 539:rt-thread/components/finsh/finsh_token.c **** 
+ 540:rt-thread/components/finsh/finsh_token.c ****     default:
+ 541:rt-thread/components/finsh/finsh_token.c ****         token_prev_char(self);
+ 542:rt-thread/components/finsh/finsh_token.c ****         break;
+ 543:rt-thread/components/finsh/finsh_token.c ****     }
+ 544:rt-thread/components/finsh/finsh_token.c **** }
+ 545:rt-thread/components/finsh/finsh_token.c **** 
+ 546:rt-thread/components/finsh/finsh_token.c **** /*use 64 bit number*/
+ 547:rt-thread/components/finsh/finsh_token.c **** #define BN_SIZE 2
+ 548:rt-thread/components/finsh/finsh_token.c **** 
+ 549:rt-thread/components/finsh/finsh_token.c **** static long token_spec_number(char* string, int length, int b)
+ 550:rt-thread/components/finsh/finsh_token.c **** {
+  56              		.loc 1 550 0
+  57              		.cfi_startproc
+  58              		@ args = 0, pretend = 0, frame = 8
+  59              		@ frame_needed = 0, uses_anonymous_args = 0
+  60              	.LVL1:
+  61 0000 F0B5     		push	{r4, r5, r6, r7, lr}
+  62              	.LCFI0:
+  63              		.cfi_def_cfa_offset 20
+  64              		.cfi_offset 4, -20
+  65              		.cfi_offset 5, -16
+  66              		.cfi_offset 6, -12
+  67              		.cfi_offset 7, -8
+  68              		.cfi_offset 14, -4
+  69 0002 83B0     		sub	sp, sp, #12
+  70              	.LCFI1:
+  71              		.cfi_def_cfa_offset 32
+  72              	.LVL2:
+ 551:rt-thread/components/finsh/finsh_token.c ****     char* p;
+ 552:rt-thread/components/finsh/finsh_token.c ****     int t;
+ 553:rt-thread/components/finsh/finsh_token.c ****     int i, j, shift=1;
+ 554:rt-thread/components/finsh/finsh_token.c ****     unsigned int bn[BN_SIZE], v;
+ 555:rt-thread/components/finsh/finsh_token.c ****     long d;
+ 556:rt-thread/components/finsh/finsh_token.c **** 
+ 557:rt-thread/components/finsh/finsh_token.c ****     p = string;
+ 558:rt-thread/components/finsh/finsh_token.c ****     i = 0;
+ARM GAS  /tmp/ccYc7M3P.s 			page 12
+
+
+ 559:rt-thread/components/finsh/finsh_token.c **** 
+ 560:rt-thread/components/finsh/finsh_token.c ****     switch ( b )
+  73              		.loc 1 560 0
+  74 0004 082A     		cmp	r2, #8
+  75 0006 04D0     		beq	.L5
+  76 0008 102A     		cmp	r2, #16
+  77 000a 04D0     		beq	.L16
+ 553:rt-thread/components/finsh/finsh_token.c ****     unsigned int bn[BN_SIZE], v;
+  78              		.loc 1 553 0
+  79 000c 0125     		movs	r5, #1
+  80              	.LVL3:
+  81              	.L6:
+ 561:rt-thread/components/finsh/finsh_token.c ****     {
+ 562:rt-thread/components/finsh/finsh_token.c ****     case 16: shift = 4;
+ 563:rt-thread/components/finsh/finsh_token.c ****         break;
+ 564:rt-thread/components/finsh/finsh_token.c ****     case 8:  shift = 3;
+ 565:rt-thread/components/finsh/finsh_token.c ****         break;
+ 566:rt-thread/components/finsh/finsh_token.c ****     case 2:  shift = 1;
+ 567:rt-thread/components/finsh/finsh_token.c ****         break;
+ 568:rt-thread/components/finsh/finsh_token.c ****     default: break;
+ 569:rt-thread/components/finsh/finsh_token.c ****     }
+ 570:rt-thread/components/finsh/finsh_token.c **** 
+ 571:rt-thread/components/finsh/finsh_token.c ****     for ( j=0; j<BN_SIZE ; j++) bn[j] = 0;
+  82              		.loc 1 571 0
+  83 000e 0023     		movs	r3, #0
+  84 0010 0AE0     		b	.L7
+  85              	.LVL4:
+  86              	.L5:
+ 564:rt-thread/components/finsh/finsh_token.c ****         break;
+  87              		.loc 1 564 0
+  88 0012 0325     		movs	r5, #3
+ 565:rt-thread/components/finsh/finsh_token.c ****     case 2:  shift = 1;
+  89              		.loc 1 565 0
+  90 0014 FBE7     		b	.L6
+  91              	.LVL5:
+  92              	.L16:
+ 562:rt-thread/components/finsh/finsh_token.c ****         break;
+  93              		.loc 1 562 0
+  94 0016 0425     		movs	r5, #4
+  95 0018 F9E7     		b	.L6
+  96              	.LVL6:
+  97              	.L8:
+  98              		.loc 1 571 0 discriminator 3
+  99 001a 02AA     		add	r2, sp, #8
+ 100 001c 02EB8302 		add	r2, r2, r3, lsl #2
+ 101 0020 0024     		movs	r4, #0
+ 102 0022 42F8084C 		str	r4, [r2, #-8]
+ 103 0026 0133     		adds	r3, r3, #1
+ 104              	.LVL7:
+ 105              	.L7:
+ 106              		.loc 1 571 0 is_stmt 0 discriminator 1
+ 107 0028 012B     		cmp	r3, #1
+ 108 002a F6DD     		ble	.L8
+ 109 002c 0027     		movs	r7, #0
+ 110 002e 1AE0     		b	.L9
+ 111              	.LVL8:
+ 112              	.L10:
+ARM GAS  /tmp/ccYc7M3P.s 			page 13
+
+
+ 572:rt-thread/components/finsh/finsh_token.c **** 
+ 573:rt-thread/components/finsh/finsh_token.c ****     while ( i<length )
+ 574:rt-thread/components/finsh/finsh_token.c ****     {
+ 575:rt-thread/components/finsh/finsh_token.c ****         t = *p++;
+ 576:rt-thread/components/finsh/finsh_token.c ****         if ( t>='a' && t <='f' )
+ 577:rt-thread/components/finsh/finsh_token.c ****         {
+ 578:rt-thread/components/finsh/finsh_token.c ****             t = t - 'a' +10;
+ 579:rt-thread/components/finsh/finsh_token.c ****         }
+ 580:rt-thread/components/finsh/finsh_token.c ****         else if ( t >='A' && t <='F' )
+ 113              		.loc 1 580 0 is_stmt 1
+ 114 0030 A3F14102 		sub	r2, r3, #65
+ 115 0034 052A     		cmp	r2, #5
+ 116 0036 01D8     		bhi	.L12
+ 581:rt-thread/components/finsh/finsh_token.c ****         {
+ 582:rt-thread/components/finsh/finsh_token.c ****             t = t - 'A' +10;
+ 117              		.loc 1 582 0
+ 118 0038 373B     		subs	r3, r3, #55
+ 119              	.LVL9:
+ 120 003a 1EE0     		b	.L11
+ 121              	.L12:
+ 583:rt-thread/components/finsh/finsh_token.c ****         }
+ 584:rt-thread/components/finsh/finsh_token.c ****         else t = t - '0';
+ 122              		.loc 1 584 0
+ 123 003c 303B     		subs	r3, r3, #48
+ 124              	.LVL10:
+ 125 003e 1CE0     		b	.L11
+ 126              	.LVL11:
+ 127              	.L14:
+ 585:rt-thread/components/finsh/finsh_token.c **** 
+ 586:rt-thread/components/finsh/finsh_token.c ****         for ( j=0; j<BN_SIZE ; j++)
+ 587:rt-thread/components/finsh/finsh_token.c ****         {
+ 588:rt-thread/components/finsh/finsh_token.c ****             v = bn[j];
+ 128              		.loc 1 588 0 discriminator 3
+ 129 0040 02A8     		add	r0, sp, #8
+ 130 0042 00EB8204 		add	r4, r0, r2, lsl #2
+ 131 0046 54F8080C 		ldr	r0, [r4, #-8]
+ 132              	.LVL12:
+ 589:rt-thread/components/finsh/finsh_token.c ****             bn[j] = (v<<shift) | t;
+ 133              		.loc 1 589 0 discriminator 3
+ 134 004a 00FA05F6 		lsl	r6, r0, r5
+ 135 004e 3343     		orrs	r3, r3, r6
+ 136              	.LVL13:
+ 137 0050 44F8083C 		str	r3, [r4, #-8]
+ 590:rt-thread/components/finsh/finsh_token.c ****             t = v >> (32 - shift);
+ 138              		.loc 1 590 0 discriminator 3
+ 139 0054 C5F12003 		rsb	r3, r5, #32
+ 140 0058 20FA03F3 		lsr	r3, r0, r3
+ 141              	.LVL14:
+ 586:rt-thread/components/finsh/finsh_token.c ****         {
+ 142              		.loc 1 586 0 discriminator 3
+ 143 005c 0132     		adds	r2, r2, #1
+ 144              	.LVL15:
+ 145              	.L13:
+ 586:rt-thread/components/finsh/finsh_token.c ****         {
+ 146              		.loc 1 586 0 is_stmt 0 discriminator 1
+ 147 005e 012A     		cmp	r2, #1
+ 148 0060 EEDD     		ble	.L14
+ARM GAS  /tmp/ccYc7M3P.s 			page 14
+
+
+ 591:rt-thread/components/finsh/finsh_token.c ****         }
+ 592:rt-thread/components/finsh/finsh_token.c ****         i++;
+ 149              		.loc 1 592 0 is_stmt 1
+ 150 0062 0137     		adds	r7, r7, #1
+ 151              	.LVL16:
+ 575:rt-thread/components/finsh/finsh_token.c ****         if ( t>='a' && t <='f' )
+ 152              		.loc 1 575 0
+ 153 0064 7046     		mov	r0, lr
+ 154              	.LVL17:
+ 155              	.L9:
+ 573:rt-thread/components/finsh/finsh_token.c ****     {
+ 156              		.loc 1 573 0
+ 157 0066 8F42     		cmp	r7, r1
+ 158 0068 09DA     		bge	.L18
+ 575:rt-thread/components/finsh/finsh_token.c ****         if ( t>='a' && t <='f' )
+ 159              		.loc 1 575 0
+ 160 006a 00F1010E 		add	lr, r0, #1
+ 161              	.LVL18:
+ 162 006e 0378     		ldrb	r3, [r0]	@ zero_extendqisi2
+ 163              	.LVL19:
+ 576:rt-thread/components/finsh/finsh_token.c ****         {
+ 164              		.loc 1 576 0
+ 165 0070 A3F16102 		sub	r2, r3, #97
+ 166 0074 052A     		cmp	r2, #5
+ 167 0076 DBD8     		bhi	.L10
+ 578:rt-thread/components/finsh/finsh_token.c ****         }
+ 168              		.loc 1 578 0
+ 169 0078 573B     		subs	r3, r3, #87
+ 170              	.LVL20:
+ 171              	.L11:
+ 571:rt-thread/components/finsh/finsh_token.c **** 
+ 172              		.loc 1 571 0 discriminator 1
+ 173 007a 0022     		movs	r2, #0
+ 174 007c EFE7     		b	.L13
+ 175              	.LVL21:
+ 176              	.L18:
+ 593:rt-thread/components/finsh/finsh_token.c ****     }
+ 594:rt-thread/components/finsh/finsh_token.c **** 
+ 595:rt-thread/components/finsh/finsh_token.c ****     d = (long)bn[0];
+ 596:rt-thread/components/finsh/finsh_token.c **** 
+ 597:rt-thread/components/finsh/finsh_token.c ****     return d;
+ 598:rt-thread/components/finsh/finsh_token.c **** }
+ 177              		.loc 1 598 0
+ 178 007e 0098     		ldr	r0, [sp]
+ 179              	.LVL22:
+ 180 0080 03B0     		add	sp, sp, #12
+ 181              	.LCFI2:
+ 182              		.cfi_def_cfa_offset 20
+ 183              	.LVL23:
+ 184              		@ sp needed
+ 185 0082 F0BD     		pop	{r4, r5, r6, r7, pc}
+ 186              		.cfi_endproc
+ 187              	.LFE29:
+ 189              		.section	.text.token_match_name,"ax",%progbits
+ 190              		.align	1
+ 191              		.syntax unified
+ 192              		.thumb
+ARM GAS  /tmp/ccYc7M3P.s 			page 15
+
+
+ 193              		.thumb_func
+ 194              		.fpu fpv4-sp-d16
+ 196              	token_match_name:
+ 197              	.LFB23:
+ 297:rt-thread/components/finsh/finsh_token.c ****     int i;
+ 198              		.loc 1 297 0
+ 199              		.cfi_startproc
+ 200              		@ args = 0, pretend = 0, frame = 0
+ 201              		@ frame_needed = 0, uses_anonymous_args = 0
+ 202              	.LVL24:
+ 203 0000 70B5     		push	{r4, r5, r6, lr}
+ 204              	.LCFI3:
+ 205              		.cfi_def_cfa_offset 16
+ 206              		.cfi_offset 4, -16
+ 207              		.cfi_offset 5, -12
+ 208              		.cfi_offset 6, -8
+ 209              		.cfi_offset 14, -4
+ 210 0002 0646     		mov	r6, r0
+ 211 0004 0D46     		mov	r5, r1
+ 212              	.LVL25:
+ 300:rt-thread/components/finsh/finsh_token.c ****     {
+ 213              		.loc 1 300 0
+ 214 0006 0024     		movs	r4, #0
+ 215              	.LVL26:
+ 216              	.L20:
+ 300:rt-thread/components/finsh/finsh_token.c ****     {
+ 217              		.loc 1 300 0 is_stmt 0 discriminator 1
+ 218 0008 072C     		cmp	r4, #7
+ 219 000a 0FD8     		bhi	.L25
+ 302:rt-thread/components/finsh/finsh_token.c ****         {
+ 220              		.loc 1 302 0 is_stmt 1
+ 221 000c 2946     		mov	r1, r5
+ 222 000e 084B     		ldr	r3, .L27
+ 223 0010 53F83400 		ldr	r0, [r3, r4, lsl #3]
+ 224 0014 FFF7FEFF 		bl	strcmp
+ 225              	.LVL27:
+ 226 0018 08B1     		cbz	r0, .L26
+ 300:rt-thread/components/finsh/finsh_token.c ****     {
+ 227              		.loc 1 300 0 discriminator 2
+ 228 001a 0134     		adds	r4, r4, #1
+ 229              	.LVL28:
+ 230 001c F4E7     		b	.L20
+ 231              	.L26:
+ 304:rt-thread/components/finsh/finsh_token.c ****             return 1;
+ 232              		.loc 1 304 0
+ 233 001e 044B     		ldr	r3, .L27
+ 234 0020 03EBC404 		add	r4, r3, r4, lsl #3
+ 235              	.LVL29:
+ 236 0024 2379     		ldrb	r3, [r4, #4]	@ zero_extendqisi2
+ 237 0026 3372     		strb	r3, [r6, #8]
+ 305:rt-thread/components/finsh/finsh_token.c ****         }
+ 238              		.loc 1 305 0
+ 239 0028 0120     		movs	r0, #1
+ 240 002a 70BD     		pop	{r4, r5, r6, pc}
+ 241              	.LVL30:
+ 242              	.L25:
+ 309:rt-thread/components/finsh/finsh_token.c **** }
+ARM GAS  /tmp/ccYc7M3P.s 			page 16
+
+
+ 243              		.loc 1 309 0
+ 244 002c 0020     		movs	r0, #0
+ 310:rt-thread/components/finsh/finsh_token.c **** 
+ 245              		.loc 1 310 0
+ 246 002e 70BD     		pop	{r4, r5, r6, pc}
+ 247              	.LVL31:
+ 248              	.L28:
+ 249              		.align	2
+ 250              	.L27:
+ 251 0030 00000000 		.word	.LANCHOR0
+ 252              		.cfi_endproc
+ 253              	.LFE23:
+ 255              		.section	.text.token_next_char,"ax",%progbits
+ 256              		.align	1
+ 257              		.syntax unified
+ 258              		.thumb
+ 259              		.thumb_func
+ 260              		.fpu fpv4-sp-d16
+ 262              	token_next_char:
+ 263              	.LFB20:
+ 109:rt-thread/components/finsh/finsh_token.c ****     if (self->eof) return '\0';
+ 264              		.loc 1 109 0
+ 265              		.cfi_startproc
+ 266              		@ args = 0, pretend = 0, frame = 0
+ 267              		@ frame_needed = 0, uses_anonymous_args = 0
+ 268              	.LVL32:
+ 269 0000 F8B5     		push	{r3, r4, r5, r6, r7, lr}
+ 270              	.LCFI4:
+ 271              		.cfi_def_cfa_offset 24
+ 272              		.cfi_offset 3, -24
+ 273              		.cfi_offset 4, -20
+ 274              		.cfi_offset 5, -16
+ 275              		.cfi_offset 6, -12
+ 276              		.cfi_offset 7, -8
+ 277              		.cfi_offset 14, -4
+ 110:rt-thread/components/finsh/finsh_token.c **** 
+ 278              		.loc 1 110 0
+ 279 0002 0578     		ldrb	r5, [r0]	@ zero_extendqisi2
+ 280 0004 ADB9     		cbnz	r5, .L33
+ 281 0006 0446     		mov	r4, r0
+ 112:rt-thread/components/finsh/finsh_token.c ****     {
+ 282              		.loc 1 112 0
+ 283 0008 4668     		ldr	r6, [r0, #4]
+ 284 000a D0F89070 		ldr	r7, [r0, #144]
+ 285 000e 3846     		mov	r0, r7
+ 286              	.LVL33:
+ 287 0010 FFF7FEFF 		bl	strlen
+ 288              	.LVL34:
+ 289 0014 8642     		cmp	r6, r0
+ 290 0016 07D0     		beq	.L31
+ 112:rt-thread/components/finsh/finsh_token.c ****     {
+ 291              		.loc 1 112 0 is_stmt 0 discriminator 1
+ 292 0018 BB5D     		ldrb	r3, [r7, r6]	@ zero_extendqisi2
+ 293 001a 0A2B     		cmp	r3, #10
+ 294 001c 04D0     		beq	.L31
+ 119:rt-thread/components/finsh/finsh_token.c **** }
+ 295              		.loc 1 119 0 is_stmt 1
+ARM GAS  /tmp/ccYc7M3P.s 			page 17
+
+
+ 296 001e 731C     		adds	r3, r6, #1
+ 297 0020 6360     		str	r3, [r4, #4]
+ 298 0022 BD5D     		ldrb	r5, [r7, r6]	@ zero_extendqisi2
+ 299              	.LVL35:
+ 300              	.L30:
+ 120:rt-thread/components/finsh/finsh_token.c **** 
+ 301              		.loc 1 120 0
+ 302 0024 2846     		mov	r0, r5
+ 303 0026 F8BD     		pop	{r3, r4, r5, r6, r7, pc}
+ 304              	.LVL36:
+ 305              	.L31:
+ 114:rt-thread/components/finsh/finsh_token.c ****             self->position = 0;
+ 306              		.loc 1 114 0
+ 307 0028 0123     		movs	r3, #1
+ 308 002a 2370     		strb	r3, [r4]
+ 115:rt-thread/components/finsh/finsh_token.c ****             return '\0';
+ 309              		.loc 1 115 0
+ 310 002c 0023     		movs	r3, #0
+ 311 002e 6360     		str	r3, [r4, #4]
+ 116:rt-thread/components/finsh/finsh_token.c ****     }
+ 312              		.loc 1 116 0
+ 313 0030 F8E7     		b	.L30
+ 314              	.LVL37:
+ 315              	.L33:
+ 110:rt-thread/components/finsh/finsh_token.c **** 
+ 316              		.loc 1 110 0
+ 317 0032 0025     		movs	r5, #0
+ 318 0034 F6E7     		b	.L30
+ 319              		.cfi_endproc
+ 320              	.LFE20:
+ 322              		.section	.text.token_trim_space,"ax",%progbits
+ 323              		.align	1
+ 324              		.syntax unified
+ 325              		.thumb
+ 326              		.thumb_func
+ 327              		.fpu fpv4-sp-d16
+ 329              	token_trim_space:
+ 330              	.LFB24:
+ 313:rt-thread/components/finsh/finsh_token.c ****     char ch;
+ 331              		.loc 1 313 0
+ 332              		.cfi_startproc
+ 333              		@ args = 0, pretend = 0, frame = 0
+ 334              		@ frame_needed = 0, uses_anonymous_args = 0
+ 335              	.LVL38:
+ 336 0000 10B5     		push	{r4, lr}
+ 337              	.LCFI5:
+ 338              		.cfi_def_cfa_offset 8
+ 339              		.cfi_offset 4, -8
+ 340              		.cfi_offset 14, -4
+ 341 0002 0446     		mov	r4, r0
+ 342              	.LVL39:
+ 343              	.L36:
+ 315:rt-thread/components/finsh/finsh_token.c ****         ch == '\t' ||
+ 344              		.loc 1 315 0 discriminator 3
+ 345 0004 2046     		mov	r0, r4
+ 346 0006 FFF7FEFF 		bl	token_next_char
+ 347              	.LVL40:
+ARM GAS  /tmp/ccYc7M3P.s 			page 18
+
+
+ 348 000a 2028     		cmp	r0, #32
+ 349 000c FAD0     		beq	.L36
+ 315:rt-thread/components/finsh/finsh_token.c ****         ch == '\t' ||
+ 350              		.loc 1 315 0 is_stmt 0 discriminator 2
+ 351 000e 0928     		cmp	r0, #9
+ 352 0010 F8D0     		beq	.L36
+ 316:rt-thread/components/finsh/finsh_token.c ****         ch == '\r');
+ 353              		.loc 1 316 0 is_stmt 1
+ 354 0012 0D28     		cmp	r0, #13
+ 355 0014 F6D0     		beq	.L36
+ 319:rt-thread/components/finsh/finsh_token.c **** }
+ 356              		.loc 1 319 0
+ 357 0016 2046     		mov	r0, r4
+ 358              	.LVL41:
+ 359 0018 FFF7FEFF 		bl	token_prev_char
+ 360              	.LVL42:
+ 361 001c 10BD     		pop	{r4, pc}
+ 362              		.cfi_endproc
+ 363              	.LFE24:
+ 365              		.section	.text.token_proc_escape,"ax",%progbits
+ 366              		.align	1
+ 367              		.syntax unified
+ 368              		.thumb
+ 369              		.thumb_func
+ 370              		.fpu fpv4-sp-d16
+ 372              	token_proc_escape:
+ 373              	.LFB27:
+ 396:rt-thread/components/finsh/finsh_token.c ****     char ch;
+ 374              		.loc 1 396 0
+ 375              		.cfi_startproc
+ 376              		@ args = 0, pretend = 0, frame = 0
+ 377              		@ frame_needed = 0, uses_anonymous_args = 0
+ 378              	.LVL43:
+ 379 0000 38B5     		push	{r3, r4, r5, lr}
+ 380              	.LCFI6:
+ 381              		.cfi_def_cfa_offset 16
+ 382              		.cfi_offset 3, -16
+ 383              		.cfi_offset 4, -12
+ 384              		.cfi_offset 5, -8
+ 385              		.cfi_offset 14, -4
+ 386 0002 0546     		mov	r5, r0
+ 387              	.LVL44:
+ 400:rt-thread/components/finsh/finsh_token.c ****     switch (ch)
+ 388              		.loc 1 400 0
+ 389 0004 FFF7FEFF 		bl	token_next_char
+ 390              	.LVL45:
+ 401:rt-thread/components/finsh/finsh_token.c ****     {
+ 391              		.loc 1 401 0
+ 392 0008 A0F12203 		sub	r3, r0, #34
+ 393 000c 562B     		cmp	r3, #86
+ 394 000e 5CD8     		bhi	.L39
+ 395 0010 DFE803F0 		tbb	[pc, r3]
+ 396              	.L41:
+ 397 0014 38       		.byte	(.L40-.L41)/2
+ 398 0015 5B       		.byte	(.L39-.L41)/2
+ 399 0016 5B       		.byte	(.L39-.L41)/2
+ 400 0017 5B       		.byte	(.L39-.L41)/2
+ARM GAS  /tmp/ccYc7M3P.s 			page 19
+
+
+ 401 0018 5B       		.byte	(.L39-.L41)/2
+ 402 0019 5B       		.byte	(.L39-.L41)/2
+ 403 001a 5B       		.byte	(.L39-.L41)/2
+ 404 001b 5B       		.byte	(.L39-.L41)/2
+ 405 001c 5B       		.byte	(.L39-.L41)/2
+ 406 001d 5B       		.byte	(.L39-.L41)/2
+ 407 001e 5B       		.byte	(.L39-.L41)/2
+ 408 001f 5B       		.byte	(.L39-.L41)/2
+ 409 0020 5B       		.byte	(.L39-.L41)/2
+ 410 0021 5B       		.byte	(.L39-.L41)/2
+ 411 0022 5B       		.byte	(.L39-.L41)/2
+ 412 0023 5B       		.byte	(.L39-.L41)/2
+ 413 0024 5B       		.byte	(.L39-.L41)/2
+ 414 0025 5B       		.byte	(.L39-.L41)/2
+ 415 0026 5B       		.byte	(.L39-.L41)/2
+ 416 0027 5B       		.byte	(.L39-.L41)/2
+ 417 0028 5B       		.byte	(.L39-.L41)/2
+ 418 0029 5B       		.byte	(.L39-.L41)/2
+ 419 002a 5B       		.byte	(.L39-.L41)/2
+ 420 002b 5B       		.byte	(.L39-.L41)/2
+ 421 002c 5B       		.byte	(.L39-.L41)/2
+ 422 002d 5B       		.byte	(.L39-.L41)/2
+ 423 002e 5B       		.byte	(.L39-.L41)/2
+ 424 002f 5B       		.byte	(.L39-.L41)/2
+ 425 0030 5B       		.byte	(.L39-.L41)/2
+ 426 0031 5B       		.byte	(.L39-.L41)/2
+ 427 0032 5B       		.byte	(.L39-.L41)/2
+ 428 0033 5B       		.byte	(.L39-.L41)/2
+ 429 0034 5B       		.byte	(.L39-.L41)/2
+ 430 0035 5B       		.byte	(.L39-.L41)/2
+ 431 0036 5B       		.byte	(.L39-.L41)/2
+ 432 0037 5B       		.byte	(.L39-.L41)/2
+ 433 0038 5B       		.byte	(.L39-.L41)/2
+ 434 0039 5B       		.byte	(.L39-.L41)/2
+ 435 003a 5B       		.byte	(.L39-.L41)/2
+ 436 003b 5B       		.byte	(.L39-.L41)/2
+ 437 003c 5B       		.byte	(.L39-.L41)/2
+ 438 003d 5B       		.byte	(.L39-.L41)/2
+ 439 003e 5B       		.byte	(.L39-.L41)/2
+ 440 003f 5B       		.byte	(.L39-.L41)/2
+ 441 0040 5B       		.byte	(.L39-.L41)/2
+ 442 0041 5B       		.byte	(.L39-.L41)/2
+ 443 0042 5B       		.byte	(.L39-.L41)/2
+ 444 0043 5B       		.byte	(.L39-.L41)/2
+ 445 0044 5B       		.byte	(.L39-.L41)/2
+ 446 0045 5B       		.byte	(.L39-.L41)/2
+ 447 0046 5B       		.byte	(.L39-.L41)/2
+ 448 0047 5B       		.byte	(.L39-.L41)/2
+ 449 0048 5B       		.byte	(.L39-.L41)/2
+ 450 0049 5B       		.byte	(.L39-.L41)/2
+ 451 004a 3A       		.byte	(.L42-.L41)/2
+ 452 004b 5B       		.byte	(.L39-.L41)/2
+ 453 004c 5B       		.byte	(.L39-.L41)/2
+ 454 004d 5B       		.byte	(.L39-.L41)/2
+ 455 004e 5B       		.byte	(.L39-.L41)/2
+ 456 004f 5B       		.byte	(.L39-.L41)/2
+ 457 0050 5B       		.byte	(.L39-.L41)/2
+ARM GAS  /tmp/ccYc7M3P.s 			page 20
+
+
+ 458 0051 5B       		.byte	(.L39-.L41)/2
+ 459 0052 5B       		.byte	(.L39-.L41)/2
+ 460 0053 36       		.byte	(.L43-.L41)/2
+ 461 0054 30       		.byte	(.L44-.L41)/2
+ 462 0055 5B       		.byte	(.L39-.L41)/2
+ 463 0056 5B       		.byte	(.L39-.L41)/2
+ 464 0057 5B       		.byte	(.L39-.L41)/2
+ 465 0058 34       		.byte	(.L45-.L41)/2
+ 466 0059 5B       		.byte	(.L39-.L41)/2
+ 467 005a 5B       		.byte	(.L39-.L41)/2
+ 468 005b 5B       		.byte	(.L39-.L41)/2
+ 469 005c 5B       		.byte	(.L39-.L41)/2
+ 470 005d 5B       		.byte	(.L39-.L41)/2
+ 471 005e 5B       		.byte	(.L39-.L41)/2
+ 472 005f 5B       		.byte	(.L39-.L41)/2
+ 473 0060 2C       		.byte	(.L46-.L41)/2
+ 474 0061 5B       		.byte	(.L39-.L41)/2
+ 475 0062 5B       		.byte	(.L39-.L41)/2
+ 476 0063 5B       		.byte	(.L39-.L41)/2
+ 477 0064 32       		.byte	(.L47-.L41)/2
+ 478 0065 5B       		.byte	(.L39-.L41)/2
+ 479 0066 72       		.byte	(.L56-.L41)/2
+ 480 0067 5B       		.byte	(.L39-.L41)/2
+ 481 0068 2E       		.byte	(.L49-.L41)/2
+ 482 0069 5B       		.byte	(.L39-.L41)/2
+ 483 006a 3A       		.byte	(.L42-.L41)/2
+ 484 006b 00       		.p2align 1
+ 485              	.L46:
+ 404:rt-thread/components/finsh/finsh_token.c ****         break;
+ 486              		.loc 1 404 0
+ 487 006c 0A24     		movs	r4, #10
+ 488 006e 44E0     		b	.L38
+ 489              	.L49:
+ 490              	.LVL46:
+ 410:rt-thread/components/finsh/finsh_token.c ****         break;
+ 491              		.loc 1 410 0
+ 492 0070 0B24     		movs	r4, #11
+ 411:rt-thread/components/finsh/finsh_token.c ****     case 'b':
+ 493              		.loc 1 411 0
+ 494 0072 42E0     		b	.L38
+ 495              	.LVL47:
+ 496              	.L44:
+ 413:rt-thread/components/finsh/finsh_token.c ****         break;
+ 497              		.loc 1 413 0
+ 498 0074 0824     		movs	r4, #8
+ 414:rt-thread/components/finsh/finsh_token.c ****     case 'r':
+ 499              		.loc 1 414 0
+ 500 0076 40E0     		b	.L38
+ 501              	.LVL48:
+ 502              	.L47:
+ 416:rt-thread/components/finsh/finsh_token.c ****         break;
+ 503              		.loc 1 416 0
+ 504 0078 0D24     		movs	r4, #13
+ 417:rt-thread/components/finsh/finsh_token.c ****     case 'f':
+ 505              		.loc 1 417 0
+ 506 007a 3EE0     		b	.L38
+ 507              	.LVL49:
+ARM GAS  /tmp/ccYc7M3P.s 			page 21
+
+
+ 508              	.L45:
+ 419:rt-thread/components/finsh/finsh_token.c ****         break;
+ 509              		.loc 1 419 0
+ 510 007c 0C24     		movs	r4, #12
+ 420:rt-thread/components/finsh/finsh_token.c ****     case 'a':
+ 511              		.loc 1 420 0
+ 512 007e 3CE0     		b	.L38
+ 513              	.LVL50:
+ 514              	.L43:
+ 422:rt-thread/components/finsh/finsh_token.c ****         break;
+ 515              		.loc 1 422 0
+ 516 0080 0724     		movs	r4, #7
+ 423:rt-thread/components/finsh/finsh_token.c ****     case '"':
+ 517              		.loc 1 423 0
+ 518 0082 3AE0     		b	.L38
+ 519              	.LVL51:
+ 520              	.L40:
+ 425:rt-thread/components/finsh/finsh_token.c ****         break;
+ 521              		.loc 1 425 0
+ 522 0084 2224     		movs	r4, #34
+ 426:rt-thread/components/finsh/finsh_token.c ****     case 'x':
+ 523              		.loc 1 426 0
+ 524 0086 38E0     		b	.L38
+ 525              	.LVL52:
+ 526              	.L42:
+ 430:rt-thread/components/finsh/finsh_token.c ****         while (is_xdigit(ch))
+ 527              		.loc 1 430 0
+ 528 0088 2846     		mov	r0, r5
+ 529              	.LVL53:
+ 530 008a FFF7FEFF 		bl	token_next_char
+ 531              	.LVL54:
+ 429:rt-thread/components/finsh/finsh_token.c ****         ch  = token_next_char(self);
+ 532              		.loc 1 429 0
+ 533 008e 0024     		movs	r4, #0
+ 431:rt-thread/components/finsh/finsh_token.c ****         {
+ 534              		.loc 1 431 0
+ 535 0090 07E0     		b	.L50
+ 536              	.LVL55:
+ 537              	.L53:
+ 433:rt-thread/components/finsh/finsh_token.c ****             ch = token_next_char(self);
+ 538              		.loc 1 433 0
+ 539 0092 2401     		lsls	r4, r4, #4
+ 540              	.LVL56:
+ 541 0094 4028     		cmp	r0, #64
+ 542 0096 13D8     		bhi	.L51
+ 433:rt-thread/components/finsh/finsh_token.c ****             ch = token_next_char(self);
+ 543              		.loc 1 433 0 is_stmt 0 discriminator 1
+ 544 0098 3038     		subs	r0, r0, #48
+ 545              	.LVL57:
+ 546              	.L52:
+ 433:rt-thread/components/finsh/finsh_token.c ****             ch = token_next_char(self);
+ 547              		.loc 1 433 0 discriminator 4
+ 548 009a 0444     		add	r4, r4, r0
+ 549              	.LVL58:
+ 434:rt-thread/components/finsh/finsh_token.c ****         }
+ 550              		.loc 1 434 0 is_stmt 1 discriminator 4
+ 551 009c 2846     		mov	r0, r5
+ARM GAS  /tmp/ccYc7M3P.s 			page 22
+
+
+ 552 009e FFF7FEFF 		bl	token_next_char
+ 553              	.LVL59:
+ 554              	.L50:
+ 431:rt-thread/components/finsh/finsh_token.c ****         {
+ 555              		.loc 1 431 0
+ 556 00a2 A0F13003 		sub	r3, r0, #48
+ 557 00a6 DBB2     		uxtb	r3, r3
+ 558 00a8 092B     		cmp	r3, #9
+ 559 00aa F2D9     		bls	.L53
+ 431:rt-thread/components/finsh/finsh_token.c ****         {
+ 560              		.loc 1 431 0 is_stmt 0 discriminator 1
+ 561 00ac 40F02003 		orr	r3, r0, #32
+ 562 00b0 DBB2     		uxtb	r3, r3
+ 563 00b2 613B     		subs	r3, r3, #97
+ 564 00b4 052B     		cmp	r3, #5
+ 565 00b6 ECD9     		bls	.L53
+ 436:rt-thread/components/finsh/finsh_token.c ****         break;
+ 566              		.loc 1 436 0 is_stmt 1
+ 567 00b8 2846     		mov	r0, r5
+ 568              	.LVL60:
+ 569 00ba FFF7FEFF 		bl	token_prev_char
+ 570              	.LVL61:
+ 437:rt-thread/components/finsh/finsh_token.c ****     default:
+ 571              		.loc 1 437 0
+ 572 00be 1CE0     		b	.L38
+ 573              	.LVL62:
+ 574              	.L51:
+ 433:rt-thread/components/finsh/finsh_token.c ****             ch = token_next_char(self);
+ 575              		.loc 1 433 0 discriminator 2
+ 576 00c0 40F02000 		orr	r0, r0, #32
+ 577              	.LVL63:
+ 578 00c4 C0B2     		uxtb	r0, r0
+ 579 00c6 5738     		subs	r0, r0, #87
+ 580 00c8 E7E7     		b	.L52
+ 581              	.LVL64:
+ 582              	.L39:
+ 439:rt-thread/components/finsh/finsh_token.c ****         {
+ 583              		.loc 1 439 0
+ 584 00ca A0F13003 		sub	r3, r0, #48
+ 585 00ce 072B     		cmp	r3, #7
+ 586 00d0 01D8     		bhi	.L59
+ 587 00d2 0024     		movs	r4, #0
+ 588 00d4 08E0     		b	.L54
+ 589              	.L59:
+ 398:rt-thread/components/finsh/finsh_token.c **** 
+ 590              		.loc 1 398 0
+ 591 00d6 0024     		movs	r4, #0
+ 592 00d8 0FE0     		b	.L38
+ 593              	.LVL65:
+ 594              	.L55:
+ 444:rt-thread/components/finsh/finsh_token.c ****                 ch = token_next_char(self);
+ 595              		.loc 1 444 0
+ 596 00da 00EBC400 		add	r0, r0, r4, lsl #3
+ 597              	.LVL66:
+ 598 00de A0F13004 		sub	r4, r0, #48
+ 599              	.LVL67:
+ 445:rt-thread/components/finsh/finsh_token.c ****             }
+ARM GAS  /tmp/ccYc7M3P.s 			page 23
+
+
+ 600              		.loc 1 445 0
+ 601 00e2 2846     		mov	r0, r5
+ 602 00e4 FFF7FEFF 		bl	token_next_char
+ 603              	.LVL68:
+ 604              	.L54:
+ 442:rt-thread/components/finsh/finsh_token.c ****             {
+ 605              		.loc 1 442 0
+ 606 00e8 A0F13003 		sub	r3, r0, #48
+ 607 00ec 072B     		cmp	r3, #7
+ 608 00ee F4D9     		bls	.L55
+ 448:rt-thread/components/finsh/finsh_token.c ****         }
+ 609              		.loc 1 448 0
+ 610 00f0 2846     		mov	r0, r5
+ 611              	.LVL69:
+ 612 00f2 FFF7FEFF 		bl	token_prev_char
+ 613              	.LVL70:
+ 614 00f6 00E0     		b	.L38
+ 615              	.LVL71:
+ 616              	.L56:
+ 407:rt-thread/components/finsh/finsh_token.c ****         break;
+ 617              		.loc 1 407 0
+ 618 00f8 0924     		movs	r4, #9
+ 619              	.LVL72:
+ 620              	.L38:
+ 454:rt-thread/components/finsh/finsh_token.c **** 
+ 621              		.loc 1 454 0
+ 622 00fa 2046     		mov	r0, r4
+ 623 00fc 38BD     		pop	{r3, r4, r5, pc}
+ 624              		.cfi_endproc
+ 625              	.LFE27:
+ 627              		.section	.text.token_proc_string,"ax",%progbits
+ 628              		.align	1
+ 629              		.syntax unified
+ 630              		.thumb
+ 631              		.thumb_func
+ 632              		.fpu fpv4-sp-d16
+ 634              	token_proc_string:
+ 635              	.LFB26:
+ 367:rt-thread/components/finsh/finsh_token.c ****     uint8_t* p;
+ 636              		.loc 1 367 0
+ 637              		.cfi_startproc
+ 638              		@ args = 0, pretend = 0, frame = 0
+ 639              		@ frame_needed = 0, uses_anonymous_args = 0
+ 640              	.LVL73:
+ 641 0000 70B5     		push	{r4, r5, r6, lr}
+ 642              	.LCFI7:
+ 643              		.cfi_def_cfa_offset 16
+ 644              		.cfi_offset 4, -16
+ 645              		.cfi_offset 5, -12
+ 646              		.cfi_offset 6, -8
+ 647              		.cfi_offset 14, -4
+ 648 0002 0546     		mov	r5, r0
+ 370:rt-thread/components/finsh/finsh_token.c ****     {
+ 649              		.loc 1 370 0
+ 650 0004 00F11006 		add	r6, r0, #16
+ 651              	.LVL74:
+ 652 0008 3446     		mov	r4, r6
+ARM GAS  /tmp/ccYc7M3P.s 			page 24
+
+
+ 653 000a 0BE0     		b	.L61
+ 654              	.LVL75:
+ 655              	.L69:
+ 656              	.LBB2:
+ 376:rt-thread/components/finsh/finsh_token.c ****             return NULL;;
+ 657              		.loc 1 376 0
+ 658 000c 0A20     		movs	r0, #10
+ 659              	.LVL76:
+ 660 000e FFF7FEFF 		bl	finsh_error_set
+ 661              	.LVL77:
+ 377:rt-thread/components/finsh/finsh_token.c ****         }
+ 662              		.loc 1 377 0
+ 663 0012 0026     		movs	r6, #0
+ 664              	.L60:
+ 665              	.LBE2:
+ 393:rt-thread/components/finsh/finsh_token.c **** 
+ 666              		.loc 1 393 0
+ 667 0014 3046     		mov	r0, r6
+ 668 0016 70BD     		pop	{r4, r5, r6, pc}
+ 669              	.LVL78:
+ 670              	.L70:
+ 671              	.LBB3:
+ 381:rt-thread/components/finsh/finsh_token.c ****         }
+ 672              		.loc 1 381 0
+ 673 0018 2846     		mov	r0, r5
+ 674              	.LVL79:
+ 675 001a FFF7FEFF 		bl	token_proc_escape
+ 676              	.LVL80:
+ 677 001e C0B2     		uxtb	r0, r0
+ 678              	.LVL81:
+ 679              	.L65:
+ 389:rt-thread/components/finsh/finsh_token.c ****     }
+ 680              		.loc 1 389 0
+ 681 0020 2070     		strb	r0, [r4]
+ 682 0022 0134     		adds	r4, r4, #1
+ 683              	.LVL82:
+ 684              	.L61:
+ 685              	.LBE3:
+ 370:rt-thread/components/finsh/finsh_token.c ****     {
+ 686              		.loc 1 370 0 discriminator 1
+ 687 0024 A31B     		subs	r3, r4, r6
+ 688 0026 7F2B     		cmp	r3, #127
+ 689 0028 0CDC     		bgt	.L68
+ 690              	.LBB4:
+ 372:rt-thread/components/finsh/finsh_token.c **** 
+ 691              		.loc 1 372 0
+ 692 002a 2846     		mov	r0, r5
+ 693 002c FFF7FEFF 		bl	token_next_char
+ 694              	.LVL83:
+ 374:rt-thread/components/finsh/finsh_token.c ****         {
+ 695              		.loc 1 374 0
+ 696 0030 2B78     		ldrb	r3, [r5]	@ zero_extendqisi2
+ 697 0032 002B     		cmp	r3, #0
+ 698 0034 EAD1     		bne	.L69
+ 379:rt-thread/components/finsh/finsh_token.c ****         {
+ 699              		.loc 1 379 0
+ 700 0036 5C28     		cmp	r0, #92
+ARM GAS  /tmp/ccYc7M3P.s 			page 25
+
+
+ 701 0038 EED0     		beq	.L70
+ 383:rt-thread/components/finsh/finsh_token.c ****         {
+ 702              		.loc 1 383 0
+ 703 003a 2228     		cmp	r0, #34
+ 704 003c F0D1     		bne	.L65
+ 385:rt-thread/components/finsh/finsh_token.c ****             return self->string;
+ 705              		.loc 1 385 0
+ 706 003e 0023     		movs	r3, #0
+ 707 0040 2370     		strb	r3, [r4]
+ 386:rt-thread/components/finsh/finsh_token.c ****         }
+ 708              		.loc 1 386 0
+ 709 0042 E7E7     		b	.L60
+ 710              	.LVL84:
+ 711              	.L68:
+ 712              	.LBE4:
+ 392:rt-thread/components/finsh/finsh_token.c **** }
+ 713              		.loc 1 392 0
+ 714 0044 0026     		movs	r6, #0
+ 715 0046 E5E7     		b	.L60
+ 716              		.cfi_endproc
+ 717              	.LFE26:
+ 719              		.section	.text.token_proc_number,"ax",%progbits
+ 720              		.align	1
+ 721              		.syntax unified
+ 722              		.thumb
+ 723              		.thumb_func
+ 724              		.fpu fpv4-sp-d16
+ 726              	token_proc_number:
+ 727              	.LFB28:
+ 460:rt-thread/components/finsh/finsh_token.c ****     char ch;
+ 728              		.loc 1 460 0
+ 729              		.cfi_startproc
+ 730              		@ args = 0, pretend = 0, frame = 128
+ 731              		@ frame_needed = 0, uses_anonymous_args = 0
+ 732              	.LVL85:
+ 733 0000 70B5     		push	{r4, r5, r6, lr}
+ 734              	.LCFI8:
+ 735              		.cfi_def_cfa_offset 16
+ 736              		.cfi_offset 4, -16
+ 737              		.cfi_offset 5, -12
+ 738              		.cfi_offset 6, -8
+ 739              		.cfi_offset 14, -4
+ 740 0002 A0B0     		sub	sp, sp, #128
+ 741              	.LCFI9:
+ 742              		.cfi_def_cfa_offset 144
+ 743 0004 0646     		mov	r6, r0
+ 744              	.LVL86:
+ 468:rt-thread/components/finsh/finsh_token.c ****     if ( ch == '0' )
+ 745              		.loc 1 468 0
+ 746 0006 FFF7FEFF 		bl	token_next_char
+ 747              	.LVL87:
+ 469:rt-thread/components/finsh/finsh_token.c ****     {
+ 748              		.loc 1 469 0
+ 749 000a 3028     		cmp	r0, #48
+ 750 000c 02D0     		beq	.L96
+ 751 000e 0546     		mov	r5, r0
+ 752 0010 0024     		movs	r4, #0
+ARM GAS  /tmp/ccYc7M3P.s 			page 26
+
+
+ 753 0012 71E0     		b	.L72
+ 754              	.L96:
+ 755              	.LBB5:
+ 472:rt-thread/components/finsh/finsh_token.c ****         if ( ch == 'x' || ch == 'X' )/*it's a hex number*/
+ 756              		.loc 1 472 0
+ 757 0014 3046     		mov	r0, r6
+ 758              	.LVL88:
+ 759 0016 FFF7FEFF 		bl	token_next_char
+ 760              	.LVL89:
+ 761 001a 0546     		mov	r5, r0
+ 762              	.LVL90:
+ 473:rt-thread/components/finsh/finsh_token.c ****         {
+ 763              		.loc 1 473 0
+ 764 001c 7828     		cmp	r0, #120
+ 765 001e 0CD0     		beq	.L73
+ 473:rt-thread/components/finsh/finsh_token.c ****         {
+ 766              		.loc 1 473 0 is_stmt 0 discriminator 1
+ 767 0020 5828     		cmp	r0, #88
+ 768 0022 0AD0     		beq	.L73
+ 485:rt-thread/components/finsh/finsh_token.c ****         {
+ 769              		.loc 1 485 0 is_stmt 1
+ 770 0024 6228     		cmp	r0, #98
+ 771 0026 2FD0     		beq	.L78
+ 485:rt-thread/components/finsh/finsh_token.c ****         {
+ 772              		.loc 1 485 0 is_stmt 0 discriminator 1
+ 773 0028 4228     		cmp	r0, #66
+ 774 002a 2DD0     		beq	.L78
+ 497:rt-thread/components/finsh/finsh_token.c ****         {
+ 775              		.loc 1 497 0 is_stmt 1
+ 776 002c A0F13003 		sub	r3, r0, #48
+ 777 0030 DBB2     		uxtb	r3, r3
+ 778 0032 072B     		cmp	r3, #7
+ 779 0034 4ED8     		bhi	.L97
+ 780 0036 6A46     		mov	r2, sp
+ 781 0038 43E0     		b	.L82
+ 782              	.L73:
+ 783              	.LVL91:
+ 476:rt-thread/components/finsh/finsh_token.c ****             while ( is_digit(ch) || is_alpha(ch) )
+ 784              		.loc 1 476 0
+ 785 003a 3046     		mov	r0, r6
+ 786              	.LVL92:
+ 787 003c FFF7FEFF 		bl	token_next_char
+ 788              	.LVL93:
+ 789 0040 0546     		mov	r5, r0
+ 790              	.LVL94:
+ 791              	.LBE5:
+ 466:rt-thread/components/finsh/finsh_token.c **** 
+ 792              		.loc 1 466 0
+ 793 0042 6A46     		mov	r2, sp
+ 794              	.LBB6:
+ 477:rt-thread/components/finsh/finsh_token.c ****             {
+ 795              		.loc 1 477 0
+ 796 0044 06E0     		b	.L75
+ 797              	.LVL95:
+ 798              	.L76:
+ 479:rt-thread/components/finsh/finsh_token.c ****                 ch = token_next_char(self);
+ 799              		.loc 1 479 0
+ARM GAS  /tmp/ccYc7M3P.s 			page 27
+
+
+ 800 0046 541C     		adds	r4, r2, #1
+ 801              	.LVL96:
+ 802 0048 1570     		strb	r5, [r2]
+ 480:rt-thread/components/finsh/finsh_token.c ****             }
+ 803              		.loc 1 480 0
+ 804 004a 3046     		mov	r0, r6
+ 805 004c FFF7FEFF 		bl	token_next_char
+ 806              	.LVL97:
+ 807 0050 0546     		mov	r5, r0
+ 808              	.LVL98:
+ 479:rt-thread/components/finsh/finsh_token.c ****                 ch = token_next_char(self);
+ 809              		.loc 1 479 0
+ 810 0052 2246     		mov	r2, r4
+ 811              	.LVL99:
+ 812              	.L75:
+ 477:rt-thread/components/finsh/finsh_token.c ****             {
+ 813              		.loc 1 477 0
+ 814 0054 A5F13003 		sub	r3, r5, #48
+ 815 0058 DBB2     		uxtb	r3, r3
+ 816 005a 092B     		cmp	r3, #9
+ 817 005c F3D9     		bls	.L76
+ 477:rt-thread/components/finsh/finsh_token.c ****             {
+ 818              		.loc 1 477 0 is_stmt 0 discriminator 1
+ 819 005e 45F02003 		orr	r3, r5, #32
+ 820 0062 DBB2     		uxtb	r3, r3
+ 821 0064 613B     		subs	r3, r3, #97
+ 822 0066 192B     		cmp	r3, #25
+ 823 0068 EDD9     		bls	.L76
+ 483:rt-thread/components/finsh/finsh_token.c ****         }
+ 824              		.loc 1 483 0 is_stmt 1
+ 825 006a 0023     		movs	r3, #0
+ 826 006c 1370     		strb	r3, [r2]
+ 475:rt-thread/components/finsh/finsh_token.c ****             ch = token_next_char(self);
+ 827              		.loc 1 475 0
+ 828 006e 1024     		movs	r4, #16
+ 829              	.LVL100:
+ 830              	.L77:
+ 518:rt-thread/components/finsh/finsh_token.c ****         self->current_token = finsh_token_type_value_int;
+ 831              		.loc 1 518 0
+ 832 0070 6846     		mov	r0, sp
+ 833 0072 FFF7FEFF 		bl	strlen
+ 834              	.LVL101:
+ 835 0076 2246     		mov	r2, r4
+ 836 0078 0146     		mov	r1, r0
+ 837 007a 6846     		mov	r0, sp
+ 838 007c FFF7FEFF 		bl	token_spec_number
+ 839              	.LVL102:
+ 840 0080 F060     		str	r0, [r6, #12]
+ 519:rt-thread/components/finsh/finsh_token.c ****     }
+ 841              		.loc 1 519 0
+ 842 0082 1B23     		movs	r3, #27
+ 843 0084 3372     		strb	r3, [r6, #8]
+ 844              	.LBE6:
+ 845 0086 3FE0     		b	.L86
+ 846              	.LVL103:
+ 847              	.L78:
+ 848              	.LBB7:
+ARM GAS  /tmp/ccYc7M3P.s 			page 28
+
+
+ 488:rt-thread/components/finsh/finsh_token.c ****             while ( (ch=='0')||(ch=='1') )
+ 849              		.loc 1 488 0
+ 850 0088 3046     		mov	r0, r6
+ 851              	.LVL104:
+ 852 008a FFF7FEFF 		bl	token_next_char
+ 853              	.LVL105:
+ 854 008e 0546     		mov	r5, r0
+ 855              	.LVL106:
+ 856              	.LBE7:
+ 466:rt-thread/components/finsh/finsh_token.c **** 
+ 857              		.loc 1 466 0
+ 858 0090 6A46     		mov	r2, sp
+ 859              	.LBB8:
+ 489:rt-thread/components/finsh/finsh_token.c ****             {
+ 860              		.loc 1 489 0
+ 861 0092 06E0     		b	.L80
+ 862              	.LVL107:
+ 863              	.L81:
+ 491:rt-thread/components/finsh/finsh_token.c ****                 ch = token_next_char(self);
+ 864              		.loc 1 491 0
+ 865 0094 541C     		adds	r4, r2, #1
+ 866              	.LVL108:
+ 867 0096 1570     		strb	r5, [r2]
+ 492:rt-thread/components/finsh/finsh_token.c ****             }
+ 868              		.loc 1 492 0
+ 869 0098 3046     		mov	r0, r6
+ 870 009a FFF7FEFF 		bl	token_next_char
+ 871              	.LVL109:
+ 872 009e 0546     		mov	r5, r0
+ 873              	.LVL110:
+ 491:rt-thread/components/finsh/finsh_token.c ****                 ch = token_next_char(self);
+ 874              		.loc 1 491 0
+ 875 00a0 2246     		mov	r2, r4
+ 876              	.LVL111:
+ 877              	.L80:
+ 489:rt-thread/components/finsh/finsh_token.c ****             {
+ 878              		.loc 1 489 0
+ 879 00a2 A5F13003 		sub	r3, r5, #48
+ 880 00a6 DBB2     		uxtb	r3, r3
+ 881 00a8 012B     		cmp	r3, #1
+ 882 00aa F3D9     		bls	.L81
+ 495:rt-thread/components/finsh/finsh_token.c ****         }
+ 883              		.loc 1 495 0
+ 884 00ac 0023     		movs	r3, #0
+ 885 00ae 1370     		strb	r3, [r2]
+ 487:rt-thread/components/finsh/finsh_token.c ****             ch = token_next_char(self);
+ 886              		.loc 1 487 0
+ 887 00b0 0224     		movs	r4, #2
+ 495:rt-thread/components/finsh/finsh_token.c ****         }
+ 888              		.loc 1 495 0
+ 889 00b2 DDE7     		b	.L77
+ 890              	.LVL112:
+ 891              	.L84:
+ 502:rt-thread/components/finsh/finsh_token.c ****                 ch = token_next_char(self);
+ 892              		.loc 1 502 0
+ 893 00b4 541C     		adds	r4, r2, #1
+ 894              	.LVL113:
+ARM GAS  /tmp/ccYc7M3P.s 			page 29
+
+
+ 895 00b6 1570     		strb	r5, [r2]
+ 503:rt-thread/components/finsh/finsh_token.c ****             }
+ 896              		.loc 1 503 0
+ 897 00b8 3046     		mov	r0, r6
+ 898 00ba FFF7FEFF 		bl	token_next_char
+ 899              	.LVL114:
+ 900 00be 0546     		mov	r5, r0
+ 901              	.LVL115:
+ 502:rt-thread/components/finsh/finsh_token.c ****                 ch = token_next_char(self);
+ 902              		.loc 1 502 0
+ 903 00c0 2246     		mov	r2, r4
+ 904              	.LVL116:
+ 905              	.L82:
+ 500:rt-thread/components/finsh/finsh_token.c ****             {
+ 906              		.loc 1 500 0
+ 907 00c2 A5F13003 		sub	r3, r5, #48
+ 908 00c6 DBB2     		uxtb	r3, r3
+ 909 00c8 072B     		cmp	r3, #7
+ 910 00ca F3D9     		bls	.L84
+ 506:rt-thread/components/finsh/finsh_token.c ****         }
+ 911              		.loc 1 506 0
+ 912 00cc 0023     		movs	r3, #0
+ 913 00ce 1370     		strb	r3, [r2]
+ 499:rt-thread/components/finsh/finsh_token.c ****             while ( '0' <= ch && ch <= '7' )
+ 914              		.loc 1 499 0
+ 915 00d0 0824     		movs	r4, #8
+ 916 00d2 CDE7     		b	.L77
+ 917              	.LVL117:
+ 918              	.L97:
+ 510:rt-thread/components/finsh/finsh_token.c **** 
+ 919              		.loc 1 510 0
+ 920 00d4 3046     		mov	r0, r6
+ 921              	.LVL118:
+ 922 00d6 FFF7FEFF 		bl	token_prev_char
+ 923              	.LVL119:
+ 513:rt-thread/components/finsh/finsh_token.c ****             self->current_token = finsh_token_type_value_int;
+ 924              		.loc 1 513 0
+ 925 00da 0023     		movs	r3, #0
+ 926 00dc F360     		str	r3, [r6, #12]
+ 514:rt-thread/components/finsh/finsh_token.c ****             return;
+ 927              		.loc 1 514 0
+ 928 00de 1B23     		movs	r3, #27
+ 929 00e0 3372     		strb	r3, [r6, #8]
+ 930 00e2 17E0     		b	.L71
+ 931              	.LVL120:
+ 932              	.L87:
+ 933              	.LBE8:
+ 525:rt-thread/components/finsh/finsh_token.c ****             ch = token_next_char(self);
+ 934              		.loc 1 525 0
+ 935 00e4 04EB8404 		add	r4, r4, r4, lsl #2
+ 936              	.LVL121:
+ 937 00e8 6300     		lsls	r3, r4, #1
+ 938 00ea A5F13004 		sub	r4, r5, #48
+ 939 00ee 1C44     		add	r4, r4, r3
+ 940              	.LVL122:
+ 526:rt-thread/components/finsh/finsh_token.c ****         }
+ 941              		.loc 1 526 0
+ARM GAS  /tmp/ccYc7M3P.s 			page 30
+
+
+ 942 00f0 3046     		mov	r0, r6
+ 943 00f2 FFF7FEFF 		bl	token_next_char
+ 944              	.LVL123:
+ 945 00f6 0546     		mov	r5, r0
+ 946              	.LVL124:
+ 947              	.L72:
+ 523:rt-thread/components/finsh/finsh_token.c ****         {
+ 948              		.loc 1 523 0
+ 949 00f8 A5F13003 		sub	r3, r5, #48
+ 950 00fc DBB2     		uxtb	r3, r3
+ 951 00fe 092B     		cmp	r3, #9
+ 952 0100 F0D9     		bls	.L87
+ 529:rt-thread/components/finsh/finsh_token.c ****         self->current_token = finsh_token_type_value_int;
+ 953              		.loc 1 529 0
+ 954 0102 F460     		str	r4, [r6, #12]
+ 530:rt-thread/components/finsh/finsh_token.c ****     }
+ 955              		.loc 1 530 0
+ 956 0104 1B23     		movs	r3, #27
+ 957 0106 3372     		strb	r3, [r6, #8]
+ 958              	.LVL125:
+ 959              	.L86:
+ 533:rt-thread/components/finsh/finsh_token.c ****     {
+ 960              		.loc 1 533 0
+ 961 0108 4C2D     		cmp	r5, #76
+ 962 010a 01D0     		beq	.L89
+ 963 010c 6C2D     		cmp	r5, #108
+ 964 010e 03D1     		bne	.L94
+ 965              	.L89:
+ 537:rt-thread/components/finsh/finsh_token.c ****         break;
+ 966              		.loc 1 537 0
+ 967 0110 1C23     		movs	r3, #28
+ 968 0112 3372     		strb	r3, [r6, #8]
+ 969              	.LVL126:
+ 970              	.L71:
+ 544:rt-thread/components/finsh/finsh_token.c **** 
+ 971              		.loc 1 544 0
+ 972 0114 20B0     		add	sp, sp, #128
+ 973              	.LCFI10:
+ 974              		.cfi_remember_state
+ 975              		.cfi_def_cfa_offset 16
+ 976              		@ sp needed
+ 977 0116 70BD     		pop	{r4, r5, r6, pc}
+ 978              	.LVL127:
+ 979              	.L94:
+ 980              	.LCFI11:
+ 981              		.cfi_restore_state
+ 541:rt-thread/components/finsh/finsh_token.c ****         break;
+ 982              		.loc 1 541 0
+ 983 0118 3046     		mov	r0, r6
+ 984 011a FFF7FEFF 		bl	token_prev_char
+ 985              	.LVL128:
+ 542:rt-thread/components/finsh/finsh_token.c ****     }
+ 986              		.loc 1 542 0
+ 987 011e F9E7     		b	.L71
+ 988              		.cfi_endproc
+ 989              	.LFE28:
+ 991              		.section	.text.token_proc_char,"ax",%progbits
+ARM GAS  /tmp/ccYc7M3P.s 			page 31
+
+
+ 992              		.align	1
+ 993              		.syntax unified
+ 994              		.thumb
+ 995              		.thumb_func
+ 996              		.fpu fpv4-sp-d16
+ 998              	token_proc_char:
+ 999              	.LFB25:
+ 323:rt-thread/components/finsh/finsh_token.c ****     char ch;
+ 1000              		.loc 1 323 0
+ 1001              		.cfi_startproc
+ 1002              		@ args = 0, pretend = 0, frame = 8
+ 1003              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1004              	.LVL129:
+ 1005 0000 70B5     		push	{r4, r5, r6, lr}
+ 1006              	.LCFI12:
+ 1007              		.cfi_def_cfa_offset 16
+ 1008              		.cfi_offset 4, -16
+ 1009              		.cfi_offset 5, -12
+ 1010              		.cfi_offset 6, -8
+ 1011              		.cfi_offset 14, -4
+ 1012 0002 82B0     		sub	sp, sp, #8
+ 1013              	.LCFI13:
+ 1014              		.cfi_def_cfa_offset 24
+ 1015 0004 0546     		mov	r5, r0
+ 1016              	.LVL130:
+ 328:rt-thread/components/finsh/finsh_token.c **** 
+ 1017              		.loc 1 328 0
+ 1018 0006 FFF7FEFF 		bl	token_next_char
+ 1019              	.LVL131:
+ 1020 000a 0446     		mov	r4, r0
+ 1021              	.LVL132:
+ 330:rt-thread/components/finsh/finsh_token.c ****     {
+ 1022              		.loc 1 330 0
+ 1023 000c 5C28     		cmp	r0, #92
+ 1024 000e 0DD0     		beq	.L113
+ 1025              	.LVL133:
+ 1026              	.L99:
+ 356:rt-thread/components/finsh/finsh_token.c ****     {
+ 1027              		.loc 1 356 0
+ 1028 0010 2846     		mov	r0, r5
+ 1029 0012 FFF7FEFF 		bl	token_next_char
+ 1030              	.LVL134:
+ 1031 0016 2728     		cmp	r0, #39
+ 1032 0018 05D0     		beq	.L109
+ 358:rt-thread/components/finsh/finsh_token.c ****         finsh_error_set(FINSH_ERROR_EXPECT_CHAR);
+ 1033              		.loc 1 358 0
+ 1034 001a 2846     		mov	r0, r5
+ 1035 001c FFF7FEFF 		bl	token_prev_char
+ 1036              	.LVL135:
+ 359:rt-thread/components/finsh/finsh_token.c ****         return ch;
+ 1037              		.loc 1 359 0
+ 1038 0020 0920     		movs	r0, #9
+ 1039 0022 FFF7FEFF 		bl	finsh_error_set
+ 1040              	.LVL136:
+ 1041              	.L109:
+ 364:rt-thread/components/finsh/finsh_token.c **** 
+ 1042              		.loc 1 364 0
+ARM GAS  /tmp/ccYc7M3P.s 			page 32
+
+
+ 1043 0026 2046     		mov	r0, r4
+ 1044 0028 02B0     		add	sp, sp, #8
+ 1045              	.LCFI14:
+ 1046              		.cfi_remember_state
+ 1047              		.cfi_def_cfa_offset 16
+ 1048              		@ sp needed
+ 1049 002a 70BD     		pop	{r4, r5, r6, pc}
+ 1050              	.LVL137:
+ 1051              	.L113:
+ 1052              	.LCFI15:
+ 1053              		.cfi_restore_state
+ 332:rt-thread/components/finsh/finsh_token.c ****         switch ( ch )
+ 1054              		.loc 1 332 0
+ 1055 002c 2846     		mov	r0, r5
+ 1056              	.LVL138:
+ 1057 002e FFF7FEFF 		bl	token_next_char
+ 1058              	.LVL139:
+ 1059 0032 0446     		mov	r4, r0
+ 1060              	.LVL140:
+ 333:rt-thread/components/finsh/finsh_token.c ****         {
+ 1061              		.loc 1 333 0
+ 1062 0034 6E28     		cmp	r0, #110
+ 1063 0036 10D0     		beq	.L101
+ 1064 0038 07D8     		bhi	.L102
+ 1065 003a 5C28     		cmp	r0, #92
+ 1066 003c E8D0     		beq	.L99
+ 1067 003e 6228     		cmp	r0, #98
+ 1068 0040 0FD0     		beq	.L104
+ 1069 0042 2728     		cmp	r0, #39
+ 1070 0044 E4D0     		beq	.L99
+ 1071              	.L110:
+ 1072 0046 01AE     		add	r6, sp, #4
+ 1073              	.LVL141:
+ 1074 0048 13E0     		b	.L100
+ 1075              	.LVL142:
+ 1076              	.L102:
+ 1077 004a 7428     		cmp	r0, #116
+ 1078 004c 1FD0     		beq	.L111
+ 1079 004e 7628     		cmp	r0, #118
+ 1080 0050 05D0     		beq	.L106
+ 1081 0052 7228     		cmp	r0, #114
+ 1082 0054 F7D1     		bne	.L110
+ 1083              	.LVL143:
+ 339:rt-thread/components/finsh/finsh_token.c ****         case '\\': ch = '\\';  break;
+ 1084              		.loc 1 339 0
+ 1085 0056 0D24     		movs	r4, #13
+ 1086 0058 DAE7     		b	.L99
+ 1087              	.LVL144:
+ 1088              	.L101:
+ 335:rt-thread/components/finsh/finsh_token.c ****         case 't': ch = '\t'; break;
+ 1089              		.loc 1 335 0
+ 1090 005a 0A24     		movs	r4, #10
+ 1091 005c D8E7     		b	.L99
+ 1092              	.L106:
+ 1093              	.LVL145:
+ 337:rt-thread/components/finsh/finsh_token.c ****         case 'b': ch = '\b'; break;
+ 1094              		.loc 1 337 0
+ARM GAS  /tmp/ccYc7M3P.s 			page 33
+
+
+ 1095 005e 0B24     		movs	r4, #11
+ 1096 0060 D6E7     		b	.L99
+ 1097              	.LVL146:
+ 1098              	.L104:
+ 338:rt-thread/components/finsh/finsh_token.c ****         case 'r': ch = '\r'; break;
+ 1099              		.loc 1 338 0
+ 1100 0062 0824     		movs	r4, #8
+ 1101 0064 D4E7     		b	.L99
+ 1102              	.LVL147:
+ 1103              	.L108:
+ 345:rt-thread/components/finsh/finsh_token.c ****                 *p++ = ch;
+ 1104              		.loc 1 345 0
+ 1105 0066 2846     		mov	r0, r5
+ 1106 0068 FFF7FEFF 		bl	token_next_char
+ 1107              	.LVL148:
+ 1108 006c 0446     		mov	r4, r0
+ 1109              	.LVL149:
+ 346:rt-thread/components/finsh/finsh_token.c ****             }
+ 1110              		.loc 1 346 0
+ 1111 006e 3070     		strb	r0, [r6]
+ 1112 0070 0136     		adds	r6, r6, #1
+ 1113              	.LVL150:
+ 1114              	.L100:
+ 343:rt-thread/components/finsh/finsh_token.c ****             {
+ 1115              		.loc 1 343 0
+ 1116 0072 303C     		subs	r4, r4, #48
+ 1117              	.LVL151:
+ 1118 0074 E4B2     		uxtb	r4, r4
+ 1119 0076 092C     		cmp	r4, #9
+ 1120 0078 F5D9     		bls	.L108
+ 349:rt-thread/components/finsh/finsh_token.c ****             *p = '\0';
+ 1121              		.loc 1 349 0
+ 1122 007a 2846     		mov	r0, r5
+ 1123 007c FFF7FEFF 		bl	token_prev_char
+ 1124              	.LVL152:
+ 350:rt-thread/components/finsh/finsh_token.c ****             ch = atoi(p);
+ 1125              		.loc 1 350 0
+ 1126 0080 0023     		movs	r3, #0
+ 1127 0082 3370     		strb	r3, [r6]
+ 351:rt-thread/components/finsh/finsh_token.c ****             break;
+ 1128              		.loc 1 351 0
+ 1129 0084 3046     		mov	r0, r6
+ 1130 0086 FFF7FEFF 		bl	atoi
+ 1131              	.LVL153:
+ 1132 008a C4B2     		uxtb	r4, r0
+ 1133              	.LVL154:
+ 352:rt-thread/components/finsh/finsh_token.c ****         }
+ 1134              		.loc 1 352 0
+ 1135 008c C0E7     		b	.L99
+ 1136              	.LVL155:
+ 1137              	.L111:
+ 336:rt-thread/components/finsh/finsh_token.c ****         case 'v': ch = '\v'; break;
+ 1138              		.loc 1 336 0
+ 1139 008e 0924     		movs	r4, #9
+ 1140 0090 BEE7     		b	.L99
+ 1141              		.cfi_endproc
+ 1142              	.LFE25:
+ARM GAS  /tmp/ccYc7M3P.s 			page 34
+
+
+ 1144              		.section	.text.finsh_token_init,"ax",%progbits
+ 1145              		.align	1
+ 1146              		.global	finsh_token_init
+ 1147              		.syntax unified
+ 1148              		.thumb
+ 1149              		.thumb_func
+ 1150              		.fpu fpv4-sp-d16
+ 1152              	finsh_token_init:
+ 1153              	.LFB16:
+  56:rt-thread/components/finsh/finsh_token.c ****     memset(self, 0, sizeof(struct finsh_token));
+ 1154              		.loc 1 56 0
+ 1155              		.cfi_startproc
+ 1156              		@ args = 0, pretend = 0, frame = 0
+ 1157              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1158              	.LVL156:
+ 1159 0000 38B5     		push	{r3, r4, r5, lr}
+ 1160              	.LCFI16:
+ 1161              		.cfi_def_cfa_offset 16
+ 1162              		.cfi_offset 3, -16
+ 1163              		.cfi_offset 4, -12
+ 1164              		.cfi_offset 5, -8
+ 1165              		.cfi_offset 14, -4
+ 1166 0002 0446     		mov	r4, r0
+ 1167 0004 0D46     		mov	r5, r1
+  57:rt-thread/components/finsh/finsh_token.c **** 
+ 1168              		.loc 1 57 0
+ 1169 0006 9422     		movs	r2, #148
+ 1170 0008 0021     		movs	r1, #0
+ 1171              	.LVL157:
+ 1172 000a FFF7FEFF 		bl	memset
+ 1173              	.LVL158:
+  59:rt-thread/components/finsh/finsh_token.c **** }
+ 1174              		.loc 1 59 0
+ 1175 000e C4F89050 		str	r5, [r4, #144]
+ 1176 0012 38BD     		pop	{r3, r4, r5, pc}
+ 1177              		.cfi_endproc
+ 1178              	.LFE16:
+ 1180              		.section	.text.finsh_token_get_token,"ax",%progbits
+ 1181              		.align	1
+ 1182              		.global	finsh_token_get_token
+ 1183              		.syntax unified
+ 1184              		.thumb
+ 1185              		.thumb_func
+ 1186              		.fpu fpv4-sp-d16
+ 1188              	finsh_token_get_token:
+ 1189              	.LFB18:
+  71:rt-thread/components/finsh/finsh_token.c ****     strncpy((char*)token, (char*)self->string, FINSH_NAME_MAX);
+ 1190              		.loc 1 71 0
+ 1191              		.cfi_startproc
+ 1192              		@ args = 0, pretend = 0, frame = 0
+ 1193              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1194              	.LVL159:
+ 1195 0000 08B5     		push	{r3, lr}
+ 1196              	.LCFI17:
+ 1197              		.cfi_def_cfa_offset 8
+ 1198              		.cfi_offset 3, -8
+ 1199              		.cfi_offset 14, -4
+ARM GAS  /tmp/ccYc7M3P.s 			page 35
+
+
+ 1200 0002 0B46     		mov	r3, r1
+  72:rt-thread/components/finsh/finsh_token.c **** }
+ 1201              		.loc 1 72 0
+ 1202 0004 1022     		movs	r2, #16
+ 1203 0006 8118     		adds	r1, r0, r2
+ 1204              	.LVL160:
+ 1205 0008 1846     		mov	r0, r3
+ 1206              	.LVL161:
+ 1207 000a FFF7FEFF 		bl	strncpy
+ 1208              	.LVL162:
+ 1209 000e 08BD     		pop	{r3, pc}
+ 1210              		.cfi_endproc
+ 1211              	.LFE18:
+ 1213              		.section	.text.token_get_string,"ax",%progbits
+ 1214              		.align	1
+ 1215              		.global	token_get_string
+ 1216              		.syntax unified
+ 1217              		.thumb
+ 1218              		.thumb_func
+ 1219              		.fpu fpv4-sp-d16
+ 1221              	token_get_string:
+ 1222              	.LFB19:
+  76:rt-thread/components/finsh/finsh_token.c ****     unsigned char *p=str;
+ 1223              		.loc 1 76 0
+ 1224              		.cfi_startproc
+ 1225              		@ args = 0, pretend = 0, frame = 0
+ 1226              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1227              	.LVL163:
+ 1228 0000 70B5     		push	{r4, r5, r6, lr}
+ 1229              	.LCFI18:
+ 1230              		.cfi_def_cfa_offset 16
+ 1231              		.cfi_offset 4, -16
+ 1232              		.cfi_offset 5, -12
+ 1233              		.cfi_offset 6, -8
+ 1234              		.cfi_offset 14, -4
+ 1235 0002 0546     		mov	r5, r0
+ 1236 0004 0C46     		mov	r4, r1
+ 1237              	.LVL164:
+  80:rt-thread/components/finsh/finsh_token.c ****     if (is_eof(self)) return -1;
+ 1238              		.loc 1 80 0
+ 1239 0006 FFF7FEFF 		bl	token_next_char
+ 1240              	.LVL165:
+  81:rt-thread/components/finsh/finsh_token.c **** 
+ 1241              		.loc 1 81 0
+ 1242 000a 2B78     		ldrb	r3, [r5]	@ zero_extendqisi2
+ 1243 000c 63BB     		cbnz	r3, .L124
+  83:rt-thread/components/finsh/finsh_token.c **** 
+ 1244              		.loc 1 83 0
+ 1245 000e 2370     		strb	r3, [r4]
+  85:rt-thread/components/finsh/finsh_token.c ****     {
+ 1246              		.loc 1 85 0
+ 1247 0010 A0F13003 		sub	r3, r0, #48
+ 1248 0014 DBB2     		uxtb	r3, r3
+ 1249 0016 092B     		cmp	r3, #9
+ 1250 0018 0DD8     		bhi	.L120
+  87:rt-thread/components/finsh/finsh_token.c ****         return -1;
+ 1251              		.loc 1 87 0
+ARM GAS  /tmp/ccYc7M3P.s 			page 36
+
+
+ 1252 001a 2846     		mov	r0, r5
+ 1253              	.LVL166:
+ 1254 001c FFF7FEFF 		bl	token_prev_char
+ 1255              	.LVL167:
+  88:rt-thread/components/finsh/finsh_token.c ****     }
+ 1256              		.loc 1 88 0
+ 1257 0020 4FF0FF30 		mov	r0, #-1
+ 1258 0024 70BD     		pop	{r4, r5, r6, pc}
+ 1259              	.LVL168:
+ 1260              	.L121:
+  91:rt-thread/components/finsh/finsh_token.c ****     {
+ 1261              		.loc 1 91 0 discriminator 7
+ 1262 0026 2B78     		ldrb	r3, [r5]	@ zero_extendqisi2
+ 1263 0028 B3B9     		cbnz	r3, .L122
+  93:rt-thread/components/finsh/finsh_token.c **** 
+ 1264              		.loc 1 93 0
+ 1265 002a 661C     		adds	r6, r4, #1
+ 1266              	.LVL169:
+ 1267 002c 2070     		strb	r0, [r4]
+  95:rt-thread/components/finsh/finsh_token.c ****     }
+ 1268              		.loc 1 95 0
+ 1269 002e 2846     		mov	r0, r5
+ 1270              	.LVL170:
+ 1271 0030 FFF7FEFF 		bl	token_next_char
+ 1272              	.LVL171:
+  93:rt-thread/components/finsh/finsh_token.c **** 
+ 1273              		.loc 1 93 0
+ 1274 0034 3446     		mov	r4, r6
+ 1275              	.LVL172:
+ 1276              	.L120:
+  91:rt-thread/components/finsh/finsh_token.c ****     {
+ 1277              		.loc 1 91 0
+ 1278 0036 A0F16103 		sub	r3, r0, #97
+ 1279 003a DBB2     		uxtb	r3, r3
+ 1280 003c 192B     		cmp	r3, #25
+ 1281 003e F2D9     		bls	.L121
+  91:rt-thread/components/finsh/finsh_token.c ****     {
+ 1282              		.loc 1 91 0 is_stmt 0 discriminator 2
+ 1283 0040 A0F14103 		sub	r3, r0, #65
+ 1284 0044 DBB2     		uxtb	r3, r3
+ 1285 0046 192B     		cmp	r3, #25
+ 1286 0048 EDD9     		bls	.L121
+  91:rt-thread/components/finsh/finsh_token.c ****     {
+ 1287              		.loc 1 91 0 discriminator 4
+ 1288 004a A0F13003 		sub	r3, r0, #48
+ 1289 004e DBB2     		uxtb	r3, r3
+ 1290 0050 092B     		cmp	r3, #9
+ 1291 0052 E8D9     		bls	.L121
+  91:rt-thread/components/finsh/finsh_token.c ****     {
+ 1292              		.loc 1 91 0 discriminator 6
+ 1293 0054 5F28     		cmp	r0, #95
+ 1294 0056 E6D0     		beq	.L121
+ 1295              	.L122:
+  97:rt-thread/components/finsh/finsh_token.c **** 
+ 1296              		.loc 1 97 0 is_stmt 1
+ 1297 0058 0026     		movs	r6, #0
+ 1298 005a 2E70     		strb	r6, [r5]
+ARM GAS  /tmp/ccYc7M3P.s 			page 37
+
+
+  99:rt-thread/components/finsh/finsh_token.c ****     *p = '\0';
+ 1299              		.loc 1 99 0
+ 1300 005c 2846     		mov	r0, r5
+ 1301              	.LVL173:
+ 1302 005e FFF7FEFF 		bl	token_prev_char
+ 1303              	.LVL174:
+ 100:rt-thread/components/finsh/finsh_token.c **** 
+ 1304              		.loc 1 100 0
+ 1305 0062 2670     		strb	r6, [r4]
+ 102:rt-thread/components/finsh/finsh_token.c **** }
+ 1306              		.loc 1 102 0
+ 1307 0064 3046     		mov	r0, r6
+ 1308 0066 70BD     		pop	{r4, r5, r6, pc}
+ 1309              	.LVL175:
+ 1310              	.L124:
+  81:rt-thread/components/finsh/finsh_token.c **** 
+ 1311              		.loc 1 81 0
+ 1312 0068 4FF0FF30 		mov	r0, #-1
+ 1313              	.LVL176:
+ 103:rt-thread/components/finsh/finsh_token.c **** 
+ 1314              		.loc 1 103 0
+ 1315 006c 70BD     		pop	{r4, r5, r6, pc}
+ 1316              		.cfi_endproc
+ 1317              	.LFE19:
+ 1319              		.section	.text.token_run,"ax",%progbits
+ 1320              		.align	1
+ 1321              		.syntax unified
+ 1322              		.thumb
+ 1323              		.thumb_func
+ 1324              		.fpu fpv4-sp-d16
+ 1326              	token_run:
+ 1327              	.LFB22:
+ 131:rt-thread/components/finsh/finsh_token.c ****     char ch;
+ 1328              		.loc 1 131 0
+ 1329              		.cfi_startproc
+ 1330              		@ args = 0, pretend = 0, frame = 0
+ 1331              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1332              	.LVL177:
+ 1333 0000 38B5     		push	{r3, r4, r5, lr}
+ 1334              	.LCFI19:
+ 1335              		.cfi_def_cfa_offset 16
+ 1336              		.cfi_offset 3, -16
+ 1337              		.cfi_offset 4, -12
+ 1338              		.cfi_offset 5, -8
+ 1339              		.cfi_offset 14, -4
+ 1340 0002 0446     		mov	r4, r0
+ 134:rt-thread/components/finsh/finsh_token.c ****     token_get_string(self, &(self->string[0]));
+ 1341              		.loc 1 134 0
+ 1342 0004 FFF7FEFF 		bl	token_trim_space
+ 1343              	.LVL178:
+ 135:rt-thread/components/finsh/finsh_token.c **** 
+ 1344              		.loc 1 135 0
+ 1345 0008 04F11005 		add	r5, r4, #16
+ 1346 000c 2946     		mov	r1, r5
+ 1347 000e 2046     		mov	r0, r4
+ 1348 0010 FFF7FEFF 		bl	token_get_string
+ 1349              	.LVL179:
+ARM GAS  /tmp/ccYc7M3P.s 			page 38
+
+
+ 137:rt-thread/components/finsh/finsh_token.c ****     {
+ 1350              		.loc 1 137 0
+ 1351 0014 2378     		ldrb	r3, [r4]	@ zero_extendqisi2
+ 1352 0016 5BB9     		cbnz	r3, .L157
+ 143:rt-thread/components/finsh/finsh_token.c ****     {
+ 1353              		.loc 1 143 0
+ 1354 0018 237C     		ldrb	r3, [r4, #16]	@ zero_extendqisi2
+ 1355 001a 63B1     		cbz	r3, .L129
+ 145:rt-thread/components/finsh/finsh_token.c ****         {
+ 1356              		.loc 1 145 0
+ 1357 001c 2946     		mov	r1, r5
+ 1358 001e 2046     		mov	r0, r4
+ 1359 0020 FFF7FEFF 		bl	token_match_name
+ 1360              	.LVL180:
+ 1361 0024 0028     		cmp	r0, #0
+ 1362 0026 40F0BC80 		bne	.L126
+ 147:rt-thread/components/finsh/finsh_token.c ****         }
+ 1363              		.loc 1 147 0
+ 1364 002a 1F23     		movs	r3, #31
+ 1365 002c 2372     		strb	r3, [r4, #8]
+ 1366 002e 38BD     		pop	{r3, r4, r5, pc}
+ 1367              	.LVL181:
+ 1368              	.L157:
+ 139:rt-thread/components/finsh/finsh_token.c ****         return ;
+ 1369              		.loc 1 139 0
+ 1370 0030 2123     		movs	r3, #33
+ 1371 0032 2372     		strb	r3, [r4, #8]
+ 140:rt-thread/components/finsh/finsh_token.c ****     }
+ 1372              		.loc 1 140 0
+ 1373 0034 38BD     		pop	{r3, r4, r5, pc}
+ 1374              	.LVL182:
+ 1375              	.L129:
+ 152:rt-thread/components/finsh/finsh_token.c **** 
+ 1376              		.loc 1 152 0
+ 1377 0036 2046     		mov	r0, r4
+ 1378 0038 FFF7FEFF 		bl	token_next_char
+ 1379              	.LVL183:
+ 154:rt-thread/components/finsh/finsh_token.c ****         {
+ 1380              		.loc 1 154 0
+ 1381 003c A0F12203 		sub	r3, r0, #34
+ 1382 0040 5C2B     		cmp	r3, #92
+ 1383 0042 00F2A580 		bhi	.L130
+ 1384 0046 DFE803F0 		tbb	[pc, r3]
+ 1385              	.L132:
+ 1386 004a 9D       		.byte	(.L131-.L132)/2
+ 1387 004b A3       		.byte	(.L130-.L132)/2
+ 1388 004c A3       		.byte	(.L130-.L132)/2
+ 1389 004d 8A       		.byte	(.L133-.L132)/2
+ 1390 004e 3B       		.byte	(.L134-.L132)/2
+ 1391 004f 96       		.byte	(.L135-.L132)/2
+ 1392 0050 2F       		.byte	(.L136-.L132)/2
+ 1393 0051 32       		.byte	(.L137-.L132)/2
+ 1394 0052 3E       		.byte	(.L138-.L132)/2
+ 1395 0053 41       		.byte	(.L139-.L132)/2
+ 1396 0054 35       		.byte	(.L140-.L132)/2
+ 1397 0055 4F       		.byte	(.L141-.L132)/2
+ 1398 0056 A3       		.byte	(.L130-.L132)/2
+ARM GAS  /tmp/ccYc7M3P.s 			page 39
+
+
+ 1399 0057 5D       		.byte	(.L142-.L132)/2
+ 1400 0058 A3       		.byte	(.L130-.L132)/2
+ 1401 0059 A3       		.byte	(.L130-.L132)/2
+ 1402 005a A3       		.byte	(.L130-.L132)/2
+ 1403 005b A3       		.byte	(.L130-.L132)/2
+ 1404 005c A3       		.byte	(.L130-.L132)/2
+ 1405 005d A3       		.byte	(.L130-.L132)/2
+ 1406 005e A3       		.byte	(.L130-.L132)/2
+ 1407 005f A3       		.byte	(.L130-.L132)/2
+ 1408 0060 A3       		.byte	(.L130-.L132)/2
+ 1409 0061 A3       		.byte	(.L130-.L132)/2
+ 1410 0062 A3       		.byte	(.L130-.L132)/2
+ 1411 0063 38       		.byte	(.L143-.L132)/2
+ 1412 0064 6B       		.byte	(.L144-.L132)/2
+ 1413 0065 93       		.byte	(.L145-.L132)/2
+ 1414 0066 79       		.byte	(.L146-.L132)/2
+ 1415 0067 A3       		.byte	(.L130-.L132)/2
+ 1416 0068 A3       		.byte	(.L130-.L132)/2
+ 1417 0069 A3       		.byte	(.L130-.L132)/2
+ 1418 006a A3       		.byte	(.L130-.L132)/2
+ 1419 006b A3       		.byte	(.L130-.L132)/2
+ 1420 006c A3       		.byte	(.L130-.L132)/2
+ 1421 006d A3       		.byte	(.L130-.L132)/2
+ 1422 006e A3       		.byte	(.L130-.L132)/2
+ 1423 006f A3       		.byte	(.L130-.L132)/2
+ 1424 0070 A3       		.byte	(.L130-.L132)/2
+ 1425 0071 A3       		.byte	(.L130-.L132)/2
+ 1426 0072 A3       		.byte	(.L130-.L132)/2
+ 1427 0073 A3       		.byte	(.L130-.L132)/2
+ 1428 0074 A3       		.byte	(.L130-.L132)/2
+ 1429 0075 A3       		.byte	(.L130-.L132)/2
+ 1430 0076 A3       		.byte	(.L130-.L132)/2
+ 1431 0077 A3       		.byte	(.L130-.L132)/2
+ 1432 0078 A3       		.byte	(.L130-.L132)/2
+ 1433 0079 A3       		.byte	(.L130-.L132)/2
+ 1434 007a A3       		.byte	(.L130-.L132)/2
+ 1435 007b A3       		.byte	(.L130-.L132)/2
+ 1436 007c A3       		.byte	(.L130-.L132)/2
+ 1437 007d A3       		.byte	(.L130-.L132)/2
+ 1438 007e A3       		.byte	(.L130-.L132)/2
+ 1439 007f A3       		.byte	(.L130-.L132)/2
+ 1440 0080 A3       		.byte	(.L130-.L132)/2
+ 1441 0081 A3       		.byte	(.L130-.L132)/2
+ 1442 0082 A3       		.byte	(.L130-.L132)/2
+ 1443 0083 A3       		.byte	(.L130-.L132)/2
+ 1444 0084 A3       		.byte	(.L130-.L132)/2
+ 1445 0085 A3       		.byte	(.L130-.L132)/2
+ 1446 0086 90       		.byte	(.L147-.L132)/2
+ 1447 0087 A3       		.byte	(.L130-.L132)/2
+ 1448 0088 A3       		.byte	(.L130-.L132)/2
+ 1449 0089 A3       		.byte	(.L130-.L132)/2
+ 1450 008a A3       		.byte	(.L130-.L132)/2
+ 1451 008b A3       		.byte	(.L130-.L132)/2
+ 1452 008c A3       		.byte	(.L130-.L132)/2
+ 1453 008d A3       		.byte	(.L130-.L132)/2
+ 1454 008e A3       		.byte	(.L130-.L132)/2
+ 1455 008f A3       		.byte	(.L130-.L132)/2
+ARM GAS  /tmp/ccYc7M3P.s 			page 40
+
+
+ 1456 0090 A3       		.byte	(.L130-.L132)/2
+ 1457 0091 A3       		.byte	(.L130-.L132)/2
+ 1458 0092 A3       		.byte	(.L130-.L132)/2
+ 1459 0093 A3       		.byte	(.L130-.L132)/2
+ 1460 0094 A3       		.byte	(.L130-.L132)/2
+ 1461 0095 A3       		.byte	(.L130-.L132)/2
+ 1462 0096 A3       		.byte	(.L130-.L132)/2
+ 1463 0097 A3       		.byte	(.L130-.L132)/2
+ 1464 0098 A3       		.byte	(.L130-.L132)/2
+ 1465 0099 A3       		.byte	(.L130-.L132)/2
+ 1466 009a A3       		.byte	(.L130-.L132)/2
+ 1467 009b A3       		.byte	(.L130-.L132)/2
+ 1468 009c A3       		.byte	(.L130-.L132)/2
+ 1469 009d A3       		.byte	(.L130-.L132)/2
+ 1470 009e A3       		.byte	(.L130-.L132)/2
+ 1471 009f A3       		.byte	(.L130-.L132)/2
+ 1472 00a0 A3       		.byte	(.L130-.L132)/2
+ 1473 00a1 A3       		.byte	(.L130-.L132)/2
+ 1474 00a2 A3       		.byte	(.L130-.L132)/2
+ 1475 00a3 A3       		.byte	(.L130-.L132)/2
+ 1476 00a4 87       		.byte	(.L148-.L132)/2
+ 1477 00a5 A3       		.byte	(.L130-.L132)/2
+ 1478 00a6 8D       		.byte	(.L149-.L132)/2
+ 1479 00a7 00       		.p2align 1
+ 1480              	.L136:
+ 157:rt-thread/components/finsh/finsh_token.c ****             break;
+ 1481              		.loc 1 157 0
+ 1482 00a8 0123     		movs	r3, #1
+ 1483 00aa 2372     		strb	r3, [r4, #8]
+ 158:rt-thread/components/finsh/finsh_token.c **** 
+ 1484              		.loc 1 158 0
+ 1485 00ac 38BD     		pop	{r3, r4, r5, pc}
+ 1486              	.LVL184:
+ 1487              	.L137:
+ 161:rt-thread/components/finsh/finsh_token.c ****             break;
+ 1488              		.loc 1 161 0
+ 1489 00ae 0223     		movs	r3, #2
+ 1490 00b0 2372     		strb	r3, [r4, #8]
+ 162:rt-thread/components/finsh/finsh_token.c **** 
+ 1491              		.loc 1 162 0
+ 1492 00b2 38BD     		pop	{r3, r4, r5, pc}
+ 1493              	.LVL185:
+ 1494              	.L140:
+ 165:rt-thread/components/finsh/finsh_token.c ****             break;
+ 1495              		.loc 1 165 0
+ 1496 00b4 0323     		movs	r3, #3
+ 1497 00b6 2372     		strb	r3, [r4, #8]
+ 166:rt-thread/components/finsh/finsh_token.c **** 
+ 1498              		.loc 1 166 0
+ 1499 00b8 38BD     		pop	{r3, r4, r5, pc}
+ 1500              	.LVL186:
+ 1501              	.L143:
+ 169:rt-thread/components/finsh/finsh_token.c ****             break;
+ 1502              		.loc 1 169 0
+ 1503 00ba 0423     		movs	r3, #4
+ 1504 00bc 2372     		strb	r3, [r4, #8]
+ 170:rt-thread/components/finsh/finsh_token.c **** 
+ARM GAS  /tmp/ccYc7M3P.s 			page 41
+
+
+ 1505              		.loc 1 170 0
+ 1506 00be 38BD     		pop	{r3, r4, r5, pc}
+ 1507              	.LVL187:
+ 1508              	.L134:
+ 173:rt-thread/components/finsh/finsh_token.c ****             break;
+ 1509              		.loc 1 173 0
+ 1510 00c0 0D23     		movs	r3, #13
+ 1511 00c2 2372     		strb	r3, [r4, #8]
+ 174:rt-thread/components/finsh/finsh_token.c **** 
+ 1512              		.loc 1 174 0
+ 1513 00c4 38BD     		pop	{r3, r4, r5, pc}
+ 1514              	.LVL188:
+ 1515              	.L138:
+ 177:rt-thread/components/finsh/finsh_token.c ****             break;
+ 1516              		.loc 1 177 0
+ 1517 00c6 0523     		movs	r3, #5
+ 1518 00c8 2372     		strb	r3, [r4, #8]
+ 178:rt-thread/components/finsh/finsh_token.c **** 
+ 1519              		.loc 1 178 0
+ 1520 00ca 38BD     		pop	{r3, r4, r5, pc}
+ 1521              	.LVL189:
+ 1522              	.L139:
+ 181:rt-thread/components/finsh/finsh_token.c **** 
+ 1523              		.loc 1 181 0
+ 1524 00cc 2046     		mov	r0, r4
+ 1525              	.LVL190:
+ 1526 00ce FFF7FEFF 		bl	token_next_char
+ 1527              	.LVL191:
+ 183:rt-thread/components/finsh/finsh_token.c ****             {
+ 1528              		.loc 1 183 0
+ 1529 00d2 2B28     		cmp	r0, #43
+ 1530 00d4 05D0     		beq	.L158
+ 189:rt-thread/components/finsh/finsh_token.c ****                 self->current_token = finsh_token_type_add;
+ 1531              		.loc 1 189 0
+ 1532 00d6 2046     		mov	r0, r4
+ 1533              	.LVL192:
+ 1534 00d8 FFF7FEFF 		bl	token_prev_char
+ 1535              	.LVL193:
+ 190:rt-thread/components/finsh/finsh_token.c ****             }
+ 1536              		.loc 1 190 0
+ 1537 00dc 0623     		movs	r3, #6
+ 1538 00de 2372     		strb	r3, [r4, #8]
+ 1539 00e0 38BD     		pop	{r3, r4, r5, pc}
+ 1540              	.LVL194:
+ 1541              	.L158:
+ 185:rt-thread/components/finsh/finsh_token.c ****             }
+ 1542              		.loc 1 185 0
+ 1543 00e2 0723     		movs	r3, #7
+ 1544 00e4 2372     		strb	r3, [r4, #8]
+ 1545 00e6 38BD     		pop	{r3, r4, r5, pc}
+ 1546              	.LVL195:
+ 1547              	.L141:
+ 195:rt-thread/components/finsh/finsh_token.c **** 
+ 1548              		.loc 1 195 0
+ 1549 00e8 2046     		mov	r0, r4
+ 1550              	.LVL196:
+ 1551 00ea FFF7FEFF 		bl	token_next_char
+ARM GAS  /tmp/ccYc7M3P.s 			page 42
+
+
+ 1552              	.LVL197:
+ 197:rt-thread/components/finsh/finsh_token.c ****             {
+ 1553              		.loc 1 197 0
+ 1554 00ee 2D28     		cmp	r0, #45
+ 1555 00f0 05D0     		beq	.L159
+ 203:rt-thread/components/finsh/finsh_token.c ****                 self->current_token = finsh_token_type_sub;
+ 1556              		.loc 1 203 0
+ 1557 00f2 2046     		mov	r0, r4
+ 1558              	.LVL198:
+ 1559 00f4 FFF7FEFF 		bl	token_prev_char
+ 1560              	.LVL199:
+ 204:rt-thread/components/finsh/finsh_token.c ****             }
+ 1561              		.loc 1 204 0
+ 1562 00f8 0823     		movs	r3, #8
+ 1563 00fa 2372     		strb	r3, [r4, #8]
+ 1564 00fc 38BD     		pop	{r3, r4, r5, pc}
+ 1565              	.LVL200:
+ 1566              	.L159:
+ 199:rt-thread/components/finsh/finsh_token.c ****             }
+ 1567              		.loc 1 199 0
+ 1568 00fe 0923     		movs	r3, #9
+ 1569 0100 2372     		strb	r3, [r4, #8]
+ 1570 0102 38BD     		pop	{r3, r4, r5, pc}
+ 1571              	.LVL201:
+ 1572              	.L142:
+ 209:rt-thread/components/finsh/finsh_token.c ****             if (ch == '/')
+ 1573              		.loc 1 209 0
+ 1574 0104 2046     		mov	r0, r4
+ 1575              	.LVL202:
+ 1576 0106 FFF7FEFF 		bl	token_next_char
+ 1577              	.LVL203:
+ 210:rt-thread/components/finsh/finsh_token.c ****             {
+ 1578              		.loc 1 210 0
+ 1579 010a 2F28     		cmp	r0, #47
+ 1580 010c 05D0     		beq	.L160
+ 217:rt-thread/components/finsh/finsh_token.c ****                 self->current_token = finsh_token_type_div;
+ 1581              		.loc 1 217 0
+ 1582 010e 2046     		mov	r0, r4
+ 1583              	.LVL204:
+ 1584 0110 FFF7FEFF 		bl	token_prev_char
+ 1585              	.LVL205:
+ 218:rt-thread/components/finsh/finsh_token.c ****             }
+ 1586              		.loc 1 218 0
+ 1587 0114 0A23     		movs	r3, #10
+ 1588 0116 2372     		strb	r3, [r4, #8]
+ 1589 0118 38BD     		pop	{r3, r4, r5, pc}
+ 1590              	.LVL206:
+ 1591              	.L160:
+ 213:rt-thread/components/finsh/finsh_token.c ****             }
+ 1592              		.loc 1 213 0
+ 1593 011a 2123     		movs	r3, #33
+ 1594 011c 2372     		strb	r3, [r4, #8]
+ 1595 011e 38BD     		pop	{r3, r4, r5, pc}
+ 1596              	.LVL207:
+ 1597              	.L144:
+ 223:rt-thread/components/finsh/finsh_token.c **** 
+ 1598              		.loc 1 223 0
+ARM GAS  /tmp/ccYc7M3P.s 			page 43
+
+
+ 1599 0120 2046     		mov	r0, r4
+ 1600              	.LVL208:
+ 1601 0122 FFF7FEFF 		bl	token_next_char
+ 1602              	.LVL209:
+ 225:rt-thread/components/finsh/finsh_token.c ****             {
+ 1603              		.loc 1 225 0
+ 1604 0126 3C28     		cmp	r0, #60
+ 1605 0128 05D0     		beq	.L161
+ 231:rt-thread/components/finsh/finsh_token.c ****                 self->current_token = finsh_token_type_bad;
+ 1606              		.loc 1 231 0
+ 1607 012a 2046     		mov	r0, r4
+ 1608              	.LVL210:
+ 1609 012c FFF7FEFF 		bl	token_prev_char
+ 1610              	.LVL211:
+ 232:rt-thread/components/finsh/finsh_token.c ****             }
+ 1611              		.loc 1 232 0
+ 1612 0130 2023     		movs	r3, #32
+ 1613 0132 2372     		strb	r3, [r4, #8]
+ 1614 0134 38BD     		pop	{r3, r4, r5, pc}
+ 1615              	.LVL212:
+ 1616              	.L161:
+ 227:rt-thread/components/finsh/finsh_token.c ****             }
+ 1617              		.loc 1 227 0
+ 1618 0136 1123     		movs	r3, #17
+ 1619 0138 2372     		strb	r3, [r4, #8]
+ 1620 013a 38BD     		pop	{r3, r4, r5, pc}
+ 1621              	.LVL213:
+ 1622              	.L146:
+ 237:rt-thread/components/finsh/finsh_token.c **** 
+ 1623              		.loc 1 237 0
+ 1624 013c 2046     		mov	r0, r4
+ 1625              	.LVL214:
+ 1626 013e FFF7FEFF 		bl	token_next_char
+ 1627              	.LVL215:
+ 239:rt-thread/components/finsh/finsh_token.c ****             {
+ 1628              		.loc 1 239 0
+ 1629 0142 3E28     		cmp	r0, #62
+ 1630 0144 05D0     		beq	.L162
+ 245:rt-thread/components/finsh/finsh_token.c ****                 self->current_token = finsh_token_type_bad;
+ 1631              		.loc 1 245 0
+ 1632 0146 2046     		mov	r0, r4
+ 1633              	.LVL216:
+ 1634 0148 FFF7FEFF 		bl	token_prev_char
+ 1635              	.LVL217:
+ 246:rt-thread/components/finsh/finsh_token.c ****             }
+ 1636              		.loc 1 246 0
+ 1637 014c 2023     		movs	r3, #32
+ 1638 014e 2372     		strb	r3, [r4, #8]
+ 1639 0150 38BD     		pop	{r3, r4, r5, pc}
+ 1640              	.LVL218:
+ 1641              	.L162:
+ 241:rt-thread/components/finsh/finsh_token.c ****             }
+ 1642              		.loc 1 241 0
+ 1643 0152 1223     		movs	r3, #18
+ 1644 0154 2372     		strb	r3, [r4, #8]
+ 1645 0156 38BD     		pop	{r3, r4, r5, pc}
+ 1646              	.LVL219:
+ARM GAS  /tmp/ccYc7M3P.s 			page 44
+
+
+ 1647              	.L148:
+ 251:rt-thread/components/finsh/finsh_token.c ****             break;
+ 1648              		.loc 1 251 0
+ 1649 0158 0E23     		movs	r3, #14
+ 1650 015a 2372     		strb	r3, [r4, #8]
+ 252:rt-thread/components/finsh/finsh_token.c **** 
+ 1651              		.loc 1 252 0
+ 1652 015c 38BD     		pop	{r3, r4, r5, pc}
+ 1653              	.LVL220:
+ 1654              	.L133:
+ 255:rt-thread/components/finsh/finsh_token.c ****             break;
+ 1655              		.loc 1 255 0
+ 1656 015e 0B23     		movs	r3, #11
+ 1657 0160 2372     		strb	r3, [r4, #8]
+ 256:rt-thread/components/finsh/finsh_token.c **** 
+ 1658              		.loc 1 256 0
+ 1659 0162 38BD     		pop	{r3, r4, r5, pc}
+ 1660              	.LVL221:
+ 1661              	.L149:
+ 259:rt-thread/components/finsh/finsh_token.c ****             break;
+ 1662              		.loc 1 259 0
+ 1663 0164 1023     		movs	r3, #16
+ 1664 0166 2372     		strb	r3, [r4, #8]
+ 260:rt-thread/components/finsh/finsh_token.c **** 
+ 1665              		.loc 1 260 0
+ 1666 0168 38BD     		pop	{r3, r4, r5, pc}
+ 1667              	.LVL222:
+ 1668              	.L147:
+ 263:rt-thread/components/finsh/finsh_token.c ****             break;
+ 1669              		.loc 1 263 0
+ 1670 016a 0F23     		movs	r3, #15
+ 1671 016c 2372     		strb	r3, [r4, #8]
+ 264:rt-thread/components/finsh/finsh_token.c **** 
+ 1672              		.loc 1 264 0
+ 1673 016e 38BD     		pop	{r3, r4, r5, pc}
+ 1674              	.LVL223:
+ 1675              	.L145:
+ 267:rt-thread/components/finsh/finsh_token.c ****             break;
+ 1676              		.loc 1 267 0
+ 1677 0170 0C23     		movs	r3, #12
+ 1678 0172 2372     		strb	r3, [r4, #8]
+ 268:rt-thread/components/finsh/finsh_token.c **** 
+ 1679              		.loc 1 268 0
+ 1680 0174 38BD     		pop	{r3, r4, r5, pc}
+ 1681              	.LVL224:
+ 1682              	.L135:
+ 271:rt-thread/components/finsh/finsh_token.c ****             self->current_token = finsh_token_type_value_char;
+ 1683              		.loc 1 271 0
+ 1684 0176 2046     		mov	r0, r4
+ 1685              	.LVL225:
+ 1686 0178 FFF7FEFF 		bl	token_proc_char
+ 1687              	.LVL226:
+ 1688 017c 2073     		strb	r0, [r4, #12]
+ 272:rt-thread/components/finsh/finsh_token.c ****             break;
+ 1689              		.loc 1 272 0
+ 1690 017e 1A23     		movs	r3, #26
+ 1691 0180 2372     		strb	r3, [r4, #8]
+ARM GAS  /tmp/ccYc7M3P.s 			page 45
+
+
+ 273:rt-thread/components/finsh/finsh_token.c **** 
+ 1692              		.loc 1 273 0
+ 1693 0182 38BD     		pop	{r3, r4, r5, pc}
+ 1694              	.LVL227:
+ 1695              	.L131:
+ 276:rt-thread/components/finsh/finsh_token.c ****             self->current_token = finsh_token_type_value_string;
+ 1696              		.loc 1 276 0
+ 1697 0184 2046     		mov	r0, r4
+ 1698              	.LVL228:
+ 1699 0186 FFF7FEFF 		bl	token_proc_string
+ 1700              	.LVL229:
+ 277:rt-thread/components/finsh/finsh_token.c ****             break;
+ 1701              		.loc 1 277 0
+ 1702 018a 1D23     		movs	r3, #29
+ 1703 018c 2372     		strb	r3, [r4, #8]
+ 278:rt-thread/components/finsh/finsh_token.c **** 
+ 1704              		.loc 1 278 0
+ 1705 018e 38BD     		pop	{r3, r4, r5, pc}
+ 1706              	.LVL230:
+ 1707              	.L130:
+ 281:rt-thread/components/finsh/finsh_token.c ****             {
+ 1708              		.loc 1 281 0
+ 1709 0190 3038     		subs	r0, r0, #48
+ 1710              	.LVL231:
+ 1711 0192 C0B2     		uxtb	r0, r0
+ 1712 0194 0928     		cmp	r0, #9
+ 1713 0196 05D9     		bls	.L163
+ 288:rt-thread/components/finsh/finsh_token.c ****             self->current_token = finsh_token_type_bad;
+ 1714              		.loc 1 288 0
+ 1715 0198 0B20     		movs	r0, #11
+ 1716 019a FFF7FEFF 		bl	finsh_error_set
+ 1717              	.LVL232:
+ 289:rt-thread/components/finsh/finsh_token.c **** 
+ 1718              		.loc 1 289 0
+ 1719 019e 2023     		movs	r3, #32
+ 1720 01a0 2372     		strb	r3, [r4, #8]
+ 1721              	.L126:
+ 1722 01a2 38BD     		pop	{r3, r4, r5, pc}
+ 1723              	.LVL233:
+ 1724              	.L163:
+ 283:rt-thread/components/finsh/finsh_token.c ****                 token_proc_number(self);
+ 1725              		.loc 1 283 0
+ 1726 01a4 2046     		mov	r0, r4
+ 1727 01a6 FFF7FEFF 		bl	token_prev_char
+ 1728              	.LVL234:
+ 284:rt-thread/components/finsh/finsh_token.c ****                 break;
+ 1729              		.loc 1 284 0
+ 1730 01aa 2046     		mov	r0, r4
+ 1731 01ac FFF7FEFF 		bl	token_proc_number
+ 1732              	.LVL235:
+ 285:rt-thread/components/finsh/finsh_token.c ****             }
+ 1733              		.loc 1 285 0
+ 1734 01b0 38BD     		pop	{r3, r4, r5, pc}
+ 1735              		.cfi_endproc
+ 1736              	.LFE22:
+ 1738              		.section	.text.finsh_token_token,"ax",%progbits
+ 1739              		.align	1
+ARM GAS  /tmp/ccYc7M3P.s 			page 46
+
+
+ 1740              		.global	finsh_token_token
+ 1741              		.syntax unified
+ 1742              		.thumb
+ 1743              		.thumb_func
+ 1744              		.fpu fpv4-sp-d16
+ 1746              	finsh_token_token:
+ 1747              	.LFB17:
+  63:rt-thread/components/finsh/finsh_token.c ****     if ( self->replay ) self->replay = 0;
+ 1748              		.loc 1 63 0
+ 1749              		.cfi_startproc
+ 1750              		@ args = 0, pretend = 0, frame = 0
+ 1751              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1752              	.LVL236:
+ 1753 0000 10B5     		push	{r4, lr}
+ 1754              	.LCFI20:
+ 1755              		.cfi_def_cfa_offset 8
+ 1756              		.cfi_offset 4, -8
+ 1757              		.cfi_offset 14, -4
+ 1758 0002 0446     		mov	r4, r0
+  64:rt-thread/components/finsh/finsh_token.c ****     else token_run(self);
+ 1759              		.loc 1 64 0
+ 1760 0004 4378     		ldrb	r3, [r0, #1]	@ zero_extendqisi2
+ 1761 0006 1BB1     		cbz	r3, .L165
+  64:rt-thread/components/finsh/finsh_token.c ****     else token_run(self);
+ 1762              		.loc 1 64 0 is_stmt 0 discriminator 1
+ 1763 0008 0023     		movs	r3, #0
+ 1764 000a 4370     		strb	r3, [r0, #1]
+ 1765              	.LVL237:
+ 1766              	.L166:
+  68:rt-thread/components/finsh/finsh_token.c **** 
+ 1767              		.loc 1 68 0 is_stmt 1
+ 1768 000c 207A     		ldrb	r0, [r4, #8]	@ zero_extendqisi2
+ 1769 000e 10BD     		pop	{r4, pc}
+ 1770              	.LVL238:
+ 1771              	.L165:
+  65:rt-thread/components/finsh/finsh_token.c **** 
+ 1772              		.loc 1 65 0
+ 1773 0010 FFF7FEFF 		bl	token_run
+ 1774              	.LVL239:
+ 1775 0014 FAE7     		b	.L166
+ 1776              		.cfi_endproc
+ 1777              	.LFE17:
+ 1779              		.section	.rodata.finsh_name_table,"a",%progbits
+ 1780              		.align	2
+ 1781              		.set	.LANCHOR0,. + 0
+ 1784              	finsh_name_table:
+ 1785 0000 00000000 		.word	.LC0
+ 1786 0004 14       		.byte	20
+ 1787 0005 000000   		.space	3
+ 1788 0008 08000000 		.word	.LC1
+ 1789 000c 15       		.byte	21
+ 1790 000d 000000   		.space	3
+ 1791 0010 10000000 		.word	.LC2
+ 1792 0014 16       		.byte	22
+ 1793 0015 000000   		.space	3
+ 1794 0018 18000000 		.word	.LC3
+ 1795 001c 17       		.byte	23
+ARM GAS  /tmp/ccYc7M3P.s 			page 47
+
+
+ 1796 001d 000000   		.space	3
+ 1797 0020 1C000000 		.word	.LC4
+ 1798 0024 18       		.byte	24
+ 1799 0025 000000   		.space	3
+ 1800 0028 24000000 		.word	.LC5
+ 1801 002c 19       		.byte	25
+ 1802 002d 000000   		.space	3
+ 1803 0030 30000000 		.word	.LC6
+ 1804 0034 1E       		.byte	30
+ 1805 0035 000000   		.space	3
+ 1806 0038 38000000 		.word	.LC7
+ 1807 003c 1E       		.byte	30
+ 1808 003d 000000   		.space	3
+ 1809              		.section	.rodata.str1.4,"aMS",%progbits,1
+ 1810              		.align	2
+ 1811              	.LC0:
+ 1812 0000 766F6964 		.ascii	"void\000"
+ 1812      00
+ 1813 0005 000000   		.space	3
+ 1814              	.LC1:
+ 1815 0008 63686172 		.ascii	"char\000"
+ 1815      00
+ 1816 000d 000000   		.space	3
+ 1817              	.LC2:
+ 1818 0010 73686F72 		.ascii	"short\000"
+ 1818      7400
+ 1819 0016 0000     		.space	2
+ 1820              	.LC3:
+ 1821 0018 696E7400 		.ascii	"int\000"
+ 1822              	.LC4:
+ 1823 001c 6C6F6E67 		.ascii	"long\000"
+ 1823      00
+ 1824 0021 000000   		.space	3
+ 1825              	.LC5:
+ 1826 0024 756E7369 		.ascii	"unsigned\000"
+ 1826      676E6564 
+ 1826      00
+ 1827 002d 000000   		.space	3
+ 1828              	.LC6:
+ 1829 0030 4E554C4C 		.ascii	"NULL\000"
+ 1829      00
+ 1830 0035 000000   		.space	3
+ 1831              	.LC7:
+ 1832 0038 6E756C6C 		.ascii	"null\000"
+ 1832      00
+ 1833              		.text
+ 1834              	.Letext0:
+ 1835              		.file 2 "rt-thread/include/rtdef.h"
+ 1836              		.file 3 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/machine/_default_types.h"
+ 1837              		.file 4 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/lock.h"
+ 1838              		.file 5 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_types.h"
+ 1839              		.file 6 "/opt/gcc-arm-none-eabi-6-2017-q2-update/lib/gcc/arm-none-eabi/6.3.1/include/stddef.h"
+ 1840              		.file 7 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/reent.h"
+ 1841              		.file 8 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_stdint.h"
+ 1842              		.file 9 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/time.h"
+ 1843              		.file 10 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/errno.h"
+ 1844              		.file 11 "rt-thread/include/rtthread.h"
+ARM GAS  /tmp/ccYc7M3P.s 			page 48
+
+
+ 1845              		.file 12 "rt-thread/components/finsh/finsh_api.h"
+ 1846              		.file 13 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/ctype.h"
+ 1847              		.file 14 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/stdlib.h"
+ 1848              		.file 15 "rt-thread/components/finsh/finsh.h"
+ 1849              		.file 16 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/string.h"
+ 1850              		.file 17 "rt-thread/components/finsh/finsh_error.h"
+ 1851              		.file 18 "rt-thread/components/finsh/finsh_token.h"
+ARM GAS  /tmp/ccYc7M3P.s 			page 49
+
+
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 finsh_token.c
+     /tmp/ccYc7M3P.s:18     .text.token_prev_char:0000000000000000 $t
+     /tmp/ccYc7M3P.s:24     .text.token_prev_char:0000000000000000 token_prev_char
+     /tmp/ccYc7M3P.s:48     .text.token_spec_number:0000000000000000 $t
+     /tmp/ccYc7M3P.s:54     .text.token_spec_number:0000000000000000 token_spec_number
+     /tmp/ccYc7M3P.s:190    .text.token_match_name:0000000000000000 $t
+     /tmp/ccYc7M3P.s:196    .text.token_match_name:0000000000000000 token_match_name
+     /tmp/ccYc7M3P.s:251    .text.token_match_name:0000000000000030 $d
+     /tmp/ccYc7M3P.s:256    .text.token_next_char:0000000000000000 $t
+     /tmp/ccYc7M3P.s:262    .text.token_next_char:0000000000000000 token_next_char
+     /tmp/ccYc7M3P.s:323    .text.token_trim_space:0000000000000000 $t
+     /tmp/ccYc7M3P.s:329    .text.token_trim_space:0000000000000000 token_trim_space
+     /tmp/ccYc7M3P.s:366    .text.token_proc_escape:0000000000000000 $t
+     /tmp/ccYc7M3P.s:372    .text.token_proc_escape:0000000000000000 token_proc_escape
+     /tmp/ccYc7M3P.s:397    .text.token_proc_escape:0000000000000014 $d
+     /tmp/ccYc7M3P.s:628    .text.token_proc_string:0000000000000000 $t
+     /tmp/ccYc7M3P.s:634    .text.token_proc_string:0000000000000000 token_proc_string
+     /tmp/ccYc7M3P.s:720    .text.token_proc_number:0000000000000000 $t
+     /tmp/ccYc7M3P.s:726    .text.token_proc_number:0000000000000000 token_proc_number
+     /tmp/ccYc7M3P.s:992    .text.token_proc_char:0000000000000000 $t
+     /tmp/ccYc7M3P.s:998    .text.token_proc_char:0000000000000000 token_proc_char
+     /tmp/ccYc7M3P.s:1145   .text.finsh_token_init:0000000000000000 $t
+     /tmp/ccYc7M3P.s:1152   .text.finsh_token_init:0000000000000000 finsh_token_init
+     /tmp/ccYc7M3P.s:1181   .text.finsh_token_get_token:0000000000000000 $t
+     /tmp/ccYc7M3P.s:1188   .text.finsh_token_get_token:0000000000000000 finsh_token_get_token
+     /tmp/ccYc7M3P.s:1214   .text.token_get_string:0000000000000000 $t
+     /tmp/ccYc7M3P.s:1221   .text.token_get_string:0000000000000000 token_get_string
+     /tmp/ccYc7M3P.s:1320   .text.token_run:0000000000000000 $t
+     /tmp/ccYc7M3P.s:1326   .text.token_run:0000000000000000 token_run
+     /tmp/ccYc7M3P.s:1386   .text.token_run:000000000000004a $d
+     /tmp/ccYc7M3P.s:1739   .text.finsh_token_token:0000000000000000 $t
+     /tmp/ccYc7M3P.s:1746   .text.finsh_token_token:0000000000000000 finsh_token_token
+     /tmp/ccYc7M3P.s:1780   .rodata.finsh_name_table:0000000000000000 $d
+     /tmp/ccYc7M3P.s:1784   .rodata.finsh_name_table:0000000000000000 finsh_name_table
+     /tmp/ccYc7M3P.s:1810   .rodata.str1.4:0000000000000000 $d
+                     .debug_frame:0000000000000010 $d
+     /tmp/ccYc7M3P.s:484    .text.token_proc_escape:000000000000006b $d
+     /tmp/ccYc7M3P.s:484    .text.token_proc_escape:000000000000006c $t
+     /tmp/ccYc7M3P.s:1479   .text.token_run:00000000000000a7 $d
+     /tmp/ccYc7M3P.s:1479   .text.token_run:00000000000000a8 $t
+
+UNDEFINED SYMBOLS
+strcmp
+strlen
+finsh_error_set
+atoi
+memset
+strncpy

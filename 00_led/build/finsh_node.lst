@@ -1,0 +1,823 @@
+ARM GAS  /tmp/ccHZ82tU.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.eabi_attribute 27, 1
+   3              		.eabi_attribute 28, 1
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.file	"finsh_node.c"
+  14              		.text
+  15              	.Ltext0:
+  16              		.cfi_sections	.debug_frame
+  17              		.section	.text.finsh_node_init,"ax",%progbits
+  18              		.align	1
+  19              		.global	finsh_node_init
+  20              		.syntax unified
+  21              		.thumb
+  22              		.thumb_func
+  23              		.fpu fpv4-sp-d16
+  25              	finsh_node_init:
+  26              	.LFB16:
+  27              		.file 1 "rt-thread/components/finsh/finsh_node.c"
+   1:rt-thread/components/finsh/finsh_node.c **** /*
+   2:rt-thread/components/finsh/finsh_node.c ****  * Copyright (c) 2006-2018, RT-Thread Development Team
+   3:rt-thread/components/finsh/finsh_node.c ****  *
+   4:rt-thread/components/finsh/finsh_node.c ****  * SPDX-License-Identifier: Apache-2.0
+   5:rt-thread/components/finsh/finsh_node.c ****  *
+   6:rt-thread/components/finsh/finsh_node.c ****  * Change Logs:
+   7:rt-thread/components/finsh/finsh_node.c ****  * Date           Author       Notes
+   8:rt-thread/components/finsh/finsh_node.c ****  * 2010-03-22     Bernard      first version
+   9:rt-thread/components/finsh/finsh_node.c ****  */
+  10:rt-thread/components/finsh/finsh_node.c **** #include <finsh.h>
+  11:rt-thread/components/finsh/finsh_node.c **** 
+  12:rt-thread/components/finsh/finsh_node.c **** #include "finsh_node.h"
+  13:rt-thread/components/finsh/finsh_node.c **** #include "finsh_error.h"
+  14:rt-thread/components/finsh/finsh_node.c **** #include "finsh_var.h"
+  15:rt-thread/components/finsh/finsh_node.c **** #include "finsh_heap.h"
+  16:rt-thread/components/finsh/finsh_node.c **** 
+  17:rt-thread/components/finsh/finsh_node.c **** struct finsh_node global_node_table[FINSH_NODE_MAX];
+  18:rt-thread/components/finsh/finsh_node.c **** 
+  19:rt-thread/components/finsh/finsh_node.c **** int finsh_node_init()
+  20:rt-thread/components/finsh/finsh_node.c **** {
+  28              		.loc 1 20 0
+  29              		.cfi_startproc
+  30              		@ args = 0, pretend = 0, frame = 0
+  31              		@ frame_needed = 0, uses_anonymous_args = 0
+  32 0000 08B5     		push	{r3, lr}
+  33              	.LCFI0:
+  34              		.cfi_def_cfa_offset 8
+  35              		.cfi_offset 3, -8
+  36              		.cfi_offset 14, -4
+  21:rt-thread/components/finsh/finsh_node.c ****     memset(global_node_table, 0, sizeof(global_node_table));
+  37              		.loc 1 21 0
+ARM GAS  /tmp/ccHZ82tU.s 			page 2
+
+
+  38 0002 4FF4A072 		mov	r2, #320
+  39 0006 0021     		movs	r1, #0
+  40 0008 0248     		ldr	r0, .L3
+  41 000a FFF7FEFF 		bl	memset
+  42              	.LVL0:
+  22:rt-thread/components/finsh/finsh_node.c **** 
+  23:rt-thread/components/finsh/finsh_node.c ****     return 0;
+  24:rt-thread/components/finsh/finsh_node.c **** }
+  43              		.loc 1 24 0
+  44 000e 0020     		movs	r0, #0
+  45 0010 08BD     		pop	{r3, pc}
+  46              	.L4:
+  47 0012 00BF     		.align	2
+  48              	.L3:
+  49 0014 00000000 		.word	global_node_table
+  50              		.cfi_endproc
+  51              	.LFE16:
+  53              		.section	.text.finsh_node_allocate,"ax",%progbits
+  54              		.align	1
+  55              		.global	finsh_node_allocate
+  56              		.syntax unified
+  57              		.thumb
+  58              		.thumb_func
+  59              		.fpu fpv4-sp-d16
+  61              	finsh_node_allocate:
+  62              	.LFB17:
+  25:rt-thread/components/finsh/finsh_node.c **** 
+  26:rt-thread/components/finsh/finsh_node.c **** struct finsh_node* finsh_node_allocate(uint8_t type)
+  27:rt-thread/components/finsh/finsh_node.c **** {
+  63              		.loc 1 27 0
+  64              		.cfi_startproc
+  65              		@ args = 0, pretend = 0, frame = 0
+  66              		@ frame_needed = 0, uses_anonymous_args = 0
+  67              		@ link register save eliminated.
+  68              	.LVL1:
+  28:rt-thread/components/finsh/finsh_node.c ****     int i;
+  29:rt-thread/components/finsh/finsh_node.c **** 
+  30:rt-thread/components/finsh/finsh_node.c ****     /* find an empty entry */
+  31:rt-thread/components/finsh/finsh_node.c ****     for (i = 0; i < FINSH_NODE_MAX; i ++)
+  69              		.loc 1 31 0
+  70 0000 0023     		movs	r3, #0
+  71              	.LVL2:
+  72              	.L6:
+  73              		.loc 1 31 0 is_stmt 0 discriminator 1
+  74 0002 0F2B     		cmp	r3, #15
+  75 0004 07DC     		bgt	.L7
+  32:rt-thread/components/finsh/finsh_node.c ****     {
+  33:rt-thread/components/finsh/finsh_node.c ****         if (global_node_table[i].node_type == FINSH_NODE_UNKNOWN) break;
+  76              		.loc 1 33 0 is_stmt 1
+  77 0006 03EB8301 		add	r1, r3, r3, lsl #2
+  78 000a 8A00     		lsls	r2, r1, #2
+  79 000c 0949     		ldr	r1, .L15
+  80 000e 8A5C     		ldrb	r2, [r1, r2]	@ zero_extendqisi2
+  81 0010 0AB1     		cbz	r2, .L7
+  31:rt-thread/components/finsh/finsh_node.c ****     {
+  82              		.loc 1 31 0 discriminator 2
+  83 0012 0133     		adds	r3, r3, #1
+ARM GAS  /tmp/ccHZ82tU.s 			page 3
+
+
+  84              	.LVL3:
+  85 0014 F5E7     		b	.L6
+  86              	.L7:
+  34:rt-thread/components/finsh/finsh_node.c ****     }
+  35:rt-thread/components/finsh/finsh_node.c **** 
+  36:rt-thread/components/finsh/finsh_node.c ****     if (i == FINSH_NODE_MAX) return NULL;
+  87              		.loc 1 36 0
+  88 0016 102B     		cmp	r3, #16
+  89 0018 09D0     		beq	.L10
+  27:rt-thread/components/finsh/finsh_node.c ****     int i;
+  90              		.loc 1 27 0
+  91 001a 30B4     		push	{r4, r5}
+  92              	.LCFI1:
+  93              		.cfi_def_cfa_offset 8
+  94              		.cfi_offset 4, -8
+  95              		.cfi_offset 5, -4
+  37:rt-thread/components/finsh/finsh_node.c **** 
+  38:rt-thread/components/finsh/finsh_node.c ****     /* fill type field */
+  39:rt-thread/components/finsh/finsh_node.c ****     global_node_table[i].node_type = type;
+  96              		.loc 1 39 0
+  97 001c 0549     		ldr	r1, .L15
+  98 001e 9A00     		lsls	r2, r3, #2
+  99 0020 D518     		adds	r5, r2, r3
+ 100 0022 AC00     		lsls	r4, r5, #2
+ 101 0024 0855     		strb	r0, [r1, r4]
+  40:rt-thread/components/finsh/finsh_node.c **** 
+  41:rt-thread/components/finsh/finsh_node.c ****     /* return this allocated node */
+  42:rt-thread/components/finsh/finsh_node.c ****     return &global_node_table[i];
+ 102              		.loc 1 42 0
+ 103 0026 2046     		mov	r0, r4
+ 104              	.LVL4:
+ 105 0028 0844     		add	r0, r0, r1
+ 106              	.LVL5:
+  43:rt-thread/components/finsh/finsh_node.c **** }
+ 107              		.loc 1 43 0
+ 108 002a 30BC     		pop	{r4, r5}
+ 109              	.LCFI2:
+ 110              		.cfi_restore 5
+ 111              		.cfi_restore 4
+ 112              		.cfi_def_cfa_offset 0
+ 113 002c 7047     		bx	lr
+ 114              	.LVL6:
+ 115              	.L10:
+  36:rt-thread/components/finsh/finsh_node.c **** 
+ 116              		.loc 1 36 0
+ 117 002e 0020     		movs	r0, #0
+ 118              	.LVL7:
+ 119 0030 7047     		bx	lr
+ 120              	.L16:
+ 121 0032 00BF     		.align	2
+ 122              	.L15:
+ 123 0034 00000000 		.word	global_node_table
+ 124              		.cfi_endproc
+ 125              	.LFE17:
+ 127              		.section	.text.finsh_node_new_id,"ax",%progbits
+ 128              		.align	1
+ 129              		.global	finsh_node_new_id
+ARM GAS  /tmp/ccHZ82tU.s 			page 4
+
+
+ 130              		.syntax unified
+ 131              		.thumb
+ 132              		.thumb_func
+ 133              		.fpu fpv4-sp-d16
+ 135              	finsh_node_new_id:
+ 136              	.LFB18:
+  44:rt-thread/components/finsh/finsh_node.c **** 
+  45:rt-thread/components/finsh/finsh_node.c **** struct finsh_node* finsh_node_new_id(char* id)
+  46:rt-thread/components/finsh/finsh_node.c **** {
+ 137              		.loc 1 46 0
+ 138              		.cfi_startproc
+ 139              		@ args = 0, pretend = 0, frame = 0
+ 140              		@ frame_needed = 0, uses_anonymous_args = 0
+ 141              	.LVL8:
+ 142 0000 70B5     		push	{r4, r5, r6, lr}
+ 143              	.LCFI3:
+ 144              		.cfi_def_cfa_offset 16
+ 145              		.cfi_offset 4, -16
+ 146              		.cfi_offset 5, -12
+ 147              		.cfi_offset 6, -8
+ 148              		.cfi_offset 14, -4
+ 149 0002 0446     		mov	r4, r0
+ 150              	.LVL9:
+  47:rt-thread/components/finsh/finsh_node.c ****     struct finsh_node* node;
+  48:rt-thread/components/finsh/finsh_node.c ****     void*  symbol;
+  49:rt-thread/components/finsh/finsh_node.c ****     unsigned char type;
+  50:rt-thread/components/finsh/finsh_node.c **** 
+  51:rt-thread/components/finsh/finsh_node.c ****     symbol  = NULL;
+  52:rt-thread/components/finsh/finsh_node.c ****     type    = 0;
+  53:rt-thread/components/finsh/finsh_node.c ****     node    = NULL;
+  54:rt-thread/components/finsh/finsh_node.c **** 
+  55:rt-thread/components/finsh/finsh_node.c ****     /* lookup variable firstly */
+  56:rt-thread/components/finsh/finsh_node.c ****     symbol = (void*)finsh_var_lookup(id);
+ 151              		.loc 1 56 0
+ 152 0004 FFF7FEFF 		bl	finsh_var_lookup
+ 153              	.LVL10:
+  57:rt-thread/components/finsh/finsh_node.c ****     if (symbol == NULL)
+ 154              		.loc 1 57 0
+ 155 0008 80B1     		cbz	r0, .L30
+ 156 000a 0646     		mov	r6, r0
+  58:rt-thread/components/finsh/finsh_node.c ****     {
+  59:rt-thread/components/finsh/finsh_node.c ****         /* then lookup system variable */
+  60:rt-thread/components/finsh/finsh_node.c ****         symbol = (void*)finsh_sysvar_lookup(id);
+  61:rt-thread/components/finsh/finsh_node.c ****         if (symbol == NULL)
+  62:rt-thread/components/finsh/finsh_node.c ****         {
+  63:rt-thread/components/finsh/finsh_node.c ****             /* then lookup system call */
+  64:rt-thread/components/finsh/finsh_node.c ****             symbol = (void*)finsh_syscall_lookup(id);
+  65:rt-thread/components/finsh/finsh_node.c ****             if (symbol != NULL) type = FINSH_IDTYPE_SYSCALL;
+  66:rt-thread/components/finsh/finsh_node.c ****         }
+  67:rt-thread/components/finsh/finsh_node.c ****         else type = FINSH_IDTYPE_SYSVAR;
+  68:rt-thread/components/finsh/finsh_node.c ****     }
+  69:rt-thread/components/finsh/finsh_node.c ****     else type = FINSH_IDTYPE_VAR;
+ 157              		.loc 1 69 0
+ 158 000c 0124     		movs	r4, #1
+ 159              	.LVL11:
+ 160              	.L18:
+  70:rt-thread/components/finsh/finsh_node.c **** 
+ARM GAS  /tmp/ccHZ82tU.s 			page 5
+
+
+  71:rt-thread/components/finsh/finsh_node.c ****     if (symbol != NULL)
+ 161              		.loc 1 71 0
+ 162 000e 3EB3     		cbz	r6, .L19
+  72:rt-thread/components/finsh/finsh_node.c ****     {
+  73:rt-thread/components/finsh/finsh_node.c ****         /* allocate a new node */
+  74:rt-thread/components/finsh/finsh_node.c ****         node = finsh_node_allocate(FINSH_NODE_ID);
+ 163              		.loc 1 74 0
+ 164 0010 0120     		movs	r0, #1
+ 165              	.LVL12:
+ 166 0012 FFF7FEFF 		bl	finsh_node_allocate
+ 167              	.LVL13:
+  75:rt-thread/components/finsh/finsh_node.c **** 
+  76:rt-thread/components/finsh/finsh_node.c ****         /* allocate node error */
+  77:rt-thread/components/finsh/finsh_node.c ****         if (node == NULL)
+ 168              		.loc 1 77 0
+ 169 0016 0546     		mov	r5, r0
+ 170 0018 C0B1     		cbz	r0, .L31
+  78:rt-thread/components/finsh/finsh_node.c ****         {
+  79:rt-thread/components/finsh/finsh_node.c ****             finsh_error_set(FINSH_ERROR_MEMORY_FULL);
+  80:rt-thread/components/finsh/finsh_node.c ****             return NULL;
+  81:rt-thread/components/finsh/finsh_node.c ****         }
+  82:rt-thread/components/finsh/finsh_node.c **** 
+  83:rt-thread/components/finsh/finsh_node.c ****         /* fill node value according type */
+  84:rt-thread/components/finsh/finsh_node.c ****         switch (type)
+ 171              		.loc 1 84 0
+ 172 001a 022C     		cmp	r4, #2
+ 173 001c 1CD0     		beq	.L23
+ 174 001e 042C     		cmp	r4, #4
+ 175 0020 1CD0     		beq	.L24
+ 176 0022 012C     		cmp	r4, #1
+ 177 0024 16D0     		beq	.L32
+ 178              	.L22:
+  85:rt-thread/components/finsh/finsh_node.c ****         {
+  86:rt-thread/components/finsh/finsh_node.c ****         case FINSH_IDTYPE_VAR:
+  87:rt-thread/components/finsh/finsh_node.c ****             node->id.var = (struct finsh_var*)symbol;
+  88:rt-thread/components/finsh/finsh_node.c ****             break;
+  89:rt-thread/components/finsh/finsh_node.c **** 
+  90:rt-thread/components/finsh/finsh_node.c ****         case FINSH_IDTYPE_SYSVAR:
+  91:rt-thread/components/finsh/finsh_node.c ****             node->id.sysvar = (struct finsh_sysvar*)symbol;
+  92:rt-thread/components/finsh/finsh_node.c ****             break;
+  93:rt-thread/components/finsh/finsh_node.c **** 
+  94:rt-thread/components/finsh/finsh_node.c ****         case FINSH_IDTYPE_SYSCALL:
+  95:rt-thread/components/finsh/finsh_node.c ****             node->id.syscall = (struct finsh_syscall*)symbol;
+  96:rt-thread/components/finsh/finsh_node.c ****             break;
+  97:rt-thread/components/finsh/finsh_node.c ****         }
+  98:rt-thread/components/finsh/finsh_node.c ****         /* fill identifier type */
+  99:rt-thread/components/finsh/finsh_node.c ****         node->idtype = type;
+ 179              		.loc 1 99 0
+ 180 0026 AC70     		strb	r4, [r5, #2]
+ 181              	.LVL14:
+ 182              	.L17:
+ 100:rt-thread/components/finsh/finsh_node.c ****     }
+ 101:rt-thread/components/finsh/finsh_node.c ****     else finsh_error_set(FINSH_ERROR_UNKNOWN_SYMBOL);
+ 102:rt-thread/components/finsh/finsh_node.c **** 
+ 103:rt-thread/components/finsh/finsh_node.c ****     return node;
+ 104:rt-thread/components/finsh/finsh_node.c **** }
+ 183              		.loc 1 104 0
+ARM GAS  /tmp/ccHZ82tU.s 			page 6
+
+
+ 184 0028 2846     		mov	r0, r5
+ 185 002a 70BD     		pop	{r4, r5, r6, pc}
+ 186              	.LVL15:
+ 187              	.L30:
+  60:rt-thread/components/finsh/finsh_node.c ****         if (symbol == NULL)
+ 188              		.loc 1 60 0
+ 189 002c 2046     		mov	r0, r4
+ 190              	.LVL16:
+ 191 002e FFF7FEFF 		bl	finsh_sysvar_lookup
+ 192              	.LVL17:
+  61:rt-thread/components/finsh/finsh_node.c ****         {
+ 193              		.loc 1 61 0
+ 194 0032 0646     		mov	r6, r0
+ 195 0034 08B1     		cbz	r0, .L33
+  67:rt-thread/components/finsh/finsh_node.c ****     }
+ 196              		.loc 1 67 0
+ 197 0036 0224     		movs	r4, #2
+ 198              	.LVL18:
+ 199 0038 E9E7     		b	.L18
+ 200              	.LVL19:
+ 201              	.L33:
+  64:rt-thread/components/finsh/finsh_node.c ****             if (symbol != NULL) type = FINSH_IDTYPE_SYSCALL;
+ 202              		.loc 1 64 0
+ 203 003a 2046     		mov	r0, r4
+ 204              	.LVL20:
+ 205 003c FFF7FEFF 		bl	finsh_syscall_lookup
+ 206              	.LVL21:
+  65:rt-thread/components/finsh/finsh_node.c ****         }
+ 207              		.loc 1 65 0
+ 208 0040 0646     		mov	r6, r0
+ 209 0042 08B1     		cbz	r0, .L34
+ 210 0044 0424     		movs	r4, #4
+ 211              	.LVL22:
+ 212 0046 E2E7     		b	.L18
+ 213              	.LVL23:
+ 214              	.L34:
+  52:rt-thread/components/finsh/finsh_node.c ****     node    = NULL;
+ 215              		.loc 1 52 0
+ 216 0048 0024     		movs	r4, #0
+ 217              	.LVL24:
+ 218 004a E0E7     		b	.L18
+ 219              	.LVL25:
+ 220              	.L31:
+  79:rt-thread/components/finsh/finsh_node.c ****             return NULL;
+ 221              		.loc 1 79 0
+ 222 004c 0620     		movs	r0, #6
+ 223              	.LVL26:
+ 224 004e FFF7FEFF 		bl	finsh_error_set
+ 225              	.LVL27:
+  80:rt-thread/components/finsh/finsh_node.c ****         }
+ 226              		.loc 1 80 0
+ 227 0052 E9E7     		b	.L17
+ 228              	.LVL28:
+ 229              	.L32:
+  87:rt-thread/components/finsh/finsh_node.c ****             break;
+ 230              		.loc 1 87 0
+ 231 0054 8660     		str	r6, [r0, #8]
+ARM GAS  /tmp/ccHZ82tU.s 			page 7
+
+
+  88:rt-thread/components/finsh/finsh_node.c **** 
+ 232              		.loc 1 88 0
+ 233 0056 E6E7     		b	.L22
+ 234              	.L23:
+  91:rt-thread/components/finsh/finsh_node.c ****             break;
+ 235              		.loc 1 91 0
+ 236 0058 8660     		str	r6, [r0, #8]
+  92:rt-thread/components/finsh/finsh_node.c **** 
+ 237              		.loc 1 92 0
+ 238 005a E4E7     		b	.L22
+ 239              	.L24:
+  95:rt-thread/components/finsh/finsh_node.c ****             break;
+ 240              		.loc 1 95 0
+ 241 005c 8660     		str	r6, [r0, #8]
+  96:rt-thread/components/finsh/finsh_node.c ****         }
+ 242              		.loc 1 96 0
+ 243 005e E2E7     		b	.L22
+ 244              	.LVL29:
+ 245              	.L19:
+ 101:rt-thread/components/finsh/finsh_node.c **** 
+ 246              		.loc 1 101 0
+ 247 0060 0D20     		movs	r0, #13
+ 248              	.LVL30:
+ 249 0062 FFF7FEFF 		bl	finsh_error_set
+ 250              	.LVL31:
+  53:rt-thread/components/finsh/finsh_node.c **** 
+ 251              		.loc 1 53 0
+ 252 0066 0025     		movs	r5, #0
+ 253 0068 DEE7     		b	.L17
+ 254              		.cfi_endproc
+ 255              	.LFE18:
+ 257              		.section	.text.finsh_node_new_char,"ax",%progbits
+ 258              		.align	1
+ 259              		.global	finsh_node_new_char
+ 260              		.syntax unified
+ 261              		.thumb
+ 262              		.thumb_func
+ 263              		.fpu fpv4-sp-d16
+ 265              	finsh_node_new_char:
+ 266              	.LFB19:
+ 105:rt-thread/components/finsh/finsh_node.c **** 
+ 106:rt-thread/components/finsh/finsh_node.c **** struct finsh_node* finsh_node_new_char(char c)
+ 107:rt-thread/components/finsh/finsh_node.c **** {
+ 267              		.loc 1 107 0
+ 268              		.cfi_startproc
+ 269              		@ args = 0, pretend = 0, frame = 0
+ 270              		@ frame_needed = 0, uses_anonymous_args = 0
+ 271              	.LVL32:
+ 272 0000 38B5     		push	{r3, r4, r5, lr}
+ 273              	.LCFI4:
+ 274              		.cfi_def_cfa_offset 16
+ 275              		.cfi_offset 3, -16
+ 276              		.cfi_offset 4, -12
+ 277              		.cfi_offset 5, -8
+ 278              		.cfi_offset 14, -4
+ 279 0002 0546     		mov	r5, r0
+ 108:rt-thread/components/finsh/finsh_node.c ****     struct finsh_node* node;
+ARM GAS  /tmp/ccHZ82tU.s 			page 8
+
+
+ 109:rt-thread/components/finsh/finsh_node.c **** 
+ 110:rt-thread/components/finsh/finsh_node.c ****     node = finsh_node_allocate(FINSH_NODE_VALUE_CHAR);
+ 280              		.loc 1 110 0
+ 281 0004 0220     		movs	r0, #2
+ 282              	.LVL33:
+ 283 0006 FFF7FEFF 		bl	finsh_node_allocate
+ 284              	.LVL34:
+ 111:rt-thread/components/finsh/finsh_node.c ****     if (node == NULL)
+ 285              		.loc 1 111 0
+ 286 000a 0446     		mov	r4, r0
+ 287 000c 10B1     		cbz	r0, .L39
+ 112:rt-thread/components/finsh/finsh_node.c ****     {
+ 113:rt-thread/components/finsh/finsh_node.c ****         finsh_error_set(FINSH_ERROR_MEMORY_FULL);
+ 114:rt-thread/components/finsh/finsh_node.c ****         return NULL;
+ 115:rt-thread/components/finsh/finsh_node.c ****     }
+ 116:rt-thread/components/finsh/finsh_node.c **** 
+ 117:rt-thread/components/finsh/finsh_node.c ****     node->value.char_value = c;
+ 288              		.loc 1 117 0
+ 289 000e 0571     		strb	r5, [r0, #4]
+ 290              	.LVL35:
+ 291              	.L35:
+ 118:rt-thread/components/finsh/finsh_node.c ****     return node;
+ 119:rt-thread/components/finsh/finsh_node.c **** }
+ 292              		.loc 1 119 0
+ 293 0010 2046     		mov	r0, r4
+ 294 0012 38BD     		pop	{r3, r4, r5, pc}
+ 295              	.LVL36:
+ 296              	.L39:
+ 113:rt-thread/components/finsh/finsh_node.c ****         return NULL;
+ 297              		.loc 1 113 0
+ 298 0014 0620     		movs	r0, #6
+ 299              	.LVL37:
+ 300 0016 FFF7FEFF 		bl	finsh_error_set
+ 301              	.LVL38:
+ 114:rt-thread/components/finsh/finsh_node.c ****     }
+ 302              		.loc 1 114 0
+ 303 001a F9E7     		b	.L35
+ 304              		.cfi_endproc
+ 305              	.LFE19:
+ 307              		.section	.text.finsh_node_new_int,"ax",%progbits
+ 308              		.align	1
+ 309              		.global	finsh_node_new_int
+ 310              		.syntax unified
+ 311              		.thumb
+ 312              		.thumb_func
+ 313              		.fpu fpv4-sp-d16
+ 315              	finsh_node_new_int:
+ 316              	.LFB20:
+ 120:rt-thread/components/finsh/finsh_node.c **** 
+ 121:rt-thread/components/finsh/finsh_node.c **** struct finsh_node* finsh_node_new_int(int i)
+ 122:rt-thread/components/finsh/finsh_node.c **** {
+ 317              		.loc 1 122 0
+ 318              		.cfi_startproc
+ 319              		@ args = 0, pretend = 0, frame = 0
+ 320              		@ frame_needed = 0, uses_anonymous_args = 0
+ 321              	.LVL39:
+ 322 0000 38B5     		push	{r3, r4, r5, lr}
+ARM GAS  /tmp/ccHZ82tU.s 			page 9
+
+
+ 323              	.LCFI5:
+ 324              		.cfi_def_cfa_offset 16
+ 325              		.cfi_offset 3, -16
+ 326              		.cfi_offset 4, -12
+ 327              		.cfi_offset 5, -8
+ 328              		.cfi_offset 14, -4
+ 329 0002 0546     		mov	r5, r0
+ 123:rt-thread/components/finsh/finsh_node.c ****     struct finsh_node* node;
+ 124:rt-thread/components/finsh/finsh_node.c **** 
+ 125:rt-thread/components/finsh/finsh_node.c ****     node = finsh_node_allocate(FINSH_NODE_VALUE_INT);
+ 330              		.loc 1 125 0
+ 331 0004 0320     		movs	r0, #3
+ 332              	.LVL40:
+ 333 0006 FFF7FEFF 		bl	finsh_node_allocate
+ 334              	.LVL41:
+ 126:rt-thread/components/finsh/finsh_node.c ****     if (node == NULL)
+ 335              		.loc 1 126 0
+ 336 000a 0446     		mov	r4, r0
+ 337 000c 10B1     		cbz	r0, .L44
+ 127:rt-thread/components/finsh/finsh_node.c ****     {
+ 128:rt-thread/components/finsh/finsh_node.c ****         finsh_error_set(FINSH_ERROR_MEMORY_FULL);
+ 129:rt-thread/components/finsh/finsh_node.c ****         return NULL;
+ 130:rt-thread/components/finsh/finsh_node.c ****     }
+ 131:rt-thread/components/finsh/finsh_node.c **** 
+ 132:rt-thread/components/finsh/finsh_node.c ****     node->value.int_value = i;
+ 338              		.loc 1 132 0
+ 339 000e 4560     		str	r5, [r0, #4]
+ 340              	.LVL42:
+ 341              	.L40:
+ 133:rt-thread/components/finsh/finsh_node.c ****     return node;
+ 134:rt-thread/components/finsh/finsh_node.c **** }
+ 342              		.loc 1 134 0
+ 343 0010 2046     		mov	r0, r4
+ 344 0012 38BD     		pop	{r3, r4, r5, pc}
+ 345              	.LVL43:
+ 346              	.L44:
+ 128:rt-thread/components/finsh/finsh_node.c ****         return NULL;
+ 347              		.loc 1 128 0
+ 348 0014 0620     		movs	r0, #6
+ 349              	.LVL44:
+ 350 0016 FFF7FEFF 		bl	finsh_error_set
+ 351              	.LVL45:
+ 129:rt-thread/components/finsh/finsh_node.c ****     }
+ 352              		.loc 1 129 0
+ 353 001a F9E7     		b	.L40
+ 354              		.cfi_endproc
+ 355              	.LFE20:
+ 357              		.section	.text.finsh_node_new_long,"ax",%progbits
+ 358              		.align	1
+ 359              		.global	finsh_node_new_long
+ 360              		.syntax unified
+ 361              		.thumb
+ 362              		.thumb_func
+ 363              		.fpu fpv4-sp-d16
+ 365              	finsh_node_new_long:
+ 366              	.LFB21:
+ 135:rt-thread/components/finsh/finsh_node.c **** 
+ARM GAS  /tmp/ccHZ82tU.s 			page 10
+
+
+ 136:rt-thread/components/finsh/finsh_node.c **** struct finsh_node* finsh_node_new_long(long l)
+ 137:rt-thread/components/finsh/finsh_node.c **** {
+ 367              		.loc 1 137 0
+ 368              		.cfi_startproc
+ 369              		@ args = 0, pretend = 0, frame = 0
+ 370              		@ frame_needed = 0, uses_anonymous_args = 0
+ 371              	.LVL46:
+ 372 0000 38B5     		push	{r3, r4, r5, lr}
+ 373              	.LCFI6:
+ 374              		.cfi_def_cfa_offset 16
+ 375              		.cfi_offset 3, -16
+ 376              		.cfi_offset 4, -12
+ 377              		.cfi_offset 5, -8
+ 378              		.cfi_offset 14, -4
+ 379 0002 0546     		mov	r5, r0
+ 138:rt-thread/components/finsh/finsh_node.c ****     struct finsh_node* node;
+ 139:rt-thread/components/finsh/finsh_node.c **** 
+ 140:rt-thread/components/finsh/finsh_node.c ****     node = finsh_node_allocate(FINSH_NODE_VALUE_LONG);
+ 380              		.loc 1 140 0
+ 381 0004 0420     		movs	r0, #4
+ 382              	.LVL47:
+ 383 0006 FFF7FEFF 		bl	finsh_node_allocate
+ 384              	.LVL48:
+ 141:rt-thread/components/finsh/finsh_node.c ****     if (node == NULL)
+ 385              		.loc 1 141 0
+ 386 000a 0446     		mov	r4, r0
+ 387 000c 10B1     		cbz	r0, .L49
+ 142:rt-thread/components/finsh/finsh_node.c ****     {
+ 143:rt-thread/components/finsh/finsh_node.c ****         finsh_error_set(FINSH_ERROR_MEMORY_FULL);
+ 144:rt-thread/components/finsh/finsh_node.c ****         return NULL;
+ 145:rt-thread/components/finsh/finsh_node.c ****     }
+ 146:rt-thread/components/finsh/finsh_node.c **** 
+ 147:rt-thread/components/finsh/finsh_node.c ****     node->value.long_value = l;
+ 388              		.loc 1 147 0
+ 389 000e 4560     		str	r5, [r0, #4]
+ 390              	.LVL49:
+ 391              	.L45:
+ 148:rt-thread/components/finsh/finsh_node.c ****     return node;
+ 149:rt-thread/components/finsh/finsh_node.c **** }
+ 392              		.loc 1 149 0
+ 393 0010 2046     		mov	r0, r4
+ 394 0012 38BD     		pop	{r3, r4, r5, pc}
+ 395              	.LVL50:
+ 396              	.L49:
+ 143:rt-thread/components/finsh/finsh_node.c ****         return NULL;
+ 397              		.loc 1 143 0
+ 398 0014 0620     		movs	r0, #6
+ 399              	.LVL51:
+ 400 0016 FFF7FEFF 		bl	finsh_error_set
+ 401              	.LVL52:
+ 144:rt-thread/components/finsh/finsh_node.c ****     }
+ 402              		.loc 1 144 0
+ 403 001a F9E7     		b	.L45
+ 404              		.cfi_endproc
+ 405              	.LFE21:
+ 407              		.section	.text.finsh_node_new_string,"ax",%progbits
+ 408              		.align	1
+ARM GAS  /tmp/ccHZ82tU.s 			page 11
+
+
+ 409              		.global	finsh_node_new_string
+ 410              		.syntax unified
+ 411              		.thumb
+ 412              		.thumb_func
+ 413              		.fpu fpv4-sp-d16
+ 415              	finsh_node_new_string:
+ 416              	.LFB22:
+ 150:rt-thread/components/finsh/finsh_node.c **** 
+ 151:rt-thread/components/finsh/finsh_node.c **** struct finsh_node* finsh_node_new_string(char* s)
+ 152:rt-thread/components/finsh/finsh_node.c **** {
+ 417              		.loc 1 152 0
+ 418              		.cfi_startproc
+ 419              		@ args = 0, pretend = 0, frame = 0
+ 420              		@ frame_needed = 0, uses_anonymous_args = 0
+ 421              	.LVL53:
+ 422 0000 70B5     		push	{r4, r5, r6, lr}
+ 423              	.LCFI7:
+ 424              		.cfi_def_cfa_offset 16
+ 425              		.cfi_offset 4, -16
+ 426              		.cfi_offset 5, -12
+ 427              		.cfi_offset 6, -8
+ 428              		.cfi_offset 14, -4
+ 429 0002 0446     		mov	r4, r0
+ 153:rt-thread/components/finsh/finsh_node.c ****     struct finsh_node* node;
+ 154:rt-thread/components/finsh/finsh_node.c **** 
+ 155:rt-thread/components/finsh/finsh_node.c ****     node = finsh_node_allocate(FINSH_NODE_VALUE_STRING);
+ 430              		.loc 1 155 0
+ 431 0004 0520     		movs	r0, #5
+ 432              	.LVL54:
+ 433 0006 FFF7FEFF 		bl	finsh_node_allocate
+ 434              	.LVL55:
+ 156:rt-thread/components/finsh/finsh_node.c ****     if (node == NULL)
+ 435              		.loc 1 156 0
+ 436 000a 0546     		mov	r5, r0
+ 437 000c B8B1     		cbz	r0, .L54
+ 157:rt-thread/components/finsh/finsh_node.c ****     {
+ 158:rt-thread/components/finsh/finsh_node.c ****         finsh_error_set(FINSH_ERROR_MEMORY_FULL);
+ 159:rt-thread/components/finsh/finsh_node.c ****         return NULL;
+ 160:rt-thread/components/finsh/finsh_node.c ****     }
+ 161:rt-thread/components/finsh/finsh_node.c **** 
+ 162:rt-thread/components/finsh/finsh_node.c ****     /* make string */
+ 163:rt-thread/components/finsh/finsh_node.c ****     node->value.ptr = finsh_heap_allocate(strlen(s) + 1);
+ 438              		.loc 1 163 0
+ 439 000e 2046     		mov	r0, r4
+ 440              	.LVL56:
+ 441 0010 FFF7FEFF 		bl	strlen
+ 442              	.LVL57:
+ 443 0014 0130     		adds	r0, r0, #1
+ 444 0016 FFF7FEFF 		bl	finsh_heap_allocate
+ 445              	.LVL58:
+ 446 001a 0646     		mov	r6, r0
+ 447 001c 6860     		str	r0, [r5, #4]
+ 164:rt-thread/components/finsh/finsh_node.c ****     strncpy(node->value.ptr, s, strlen(s));
+ 448              		.loc 1 164 0
+ 449 001e 2046     		mov	r0, r4
+ 450 0020 FFF7FEFF 		bl	strlen
+ 451              	.LVL59:
+ARM GAS  /tmp/ccHZ82tU.s 			page 12
+
+
+ 452 0024 0246     		mov	r2, r0
+ 453 0026 2146     		mov	r1, r4
+ 454 0028 3046     		mov	r0, r6
+ 455 002a FFF7FEFF 		bl	strncpy
+ 456              	.LVL60:
+ 165:rt-thread/components/finsh/finsh_node.c ****     ((uint8_t*)node->value.ptr)[strlen(s)] = '\0';
+ 457              		.loc 1 165 0
+ 458 002e 6E68     		ldr	r6, [r5, #4]
+ 459 0030 2046     		mov	r0, r4
+ 460 0032 FFF7FEFF 		bl	strlen
+ 461              	.LVL61:
+ 462 0036 0023     		movs	r3, #0
+ 463 0038 3354     		strb	r3, [r6, r0]
+ 464              	.L50:
+ 166:rt-thread/components/finsh/finsh_node.c **** 
+ 167:rt-thread/components/finsh/finsh_node.c ****     return node;
+ 168:rt-thread/components/finsh/finsh_node.c **** }
+ 465              		.loc 1 168 0
+ 466 003a 2846     		mov	r0, r5
+ 467 003c 70BD     		pop	{r4, r5, r6, pc}
+ 468              	.LVL62:
+ 469              	.L54:
+ 158:rt-thread/components/finsh/finsh_node.c ****         return NULL;
+ 470              		.loc 1 158 0
+ 471 003e 0620     		movs	r0, #6
+ 472              	.LVL63:
+ 473 0040 FFF7FEFF 		bl	finsh_error_set
+ 474              	.LVL64:
+ 159:rt-thread/components/finsh/finsh_node.c ****     }
+ 475              		.loc 1 159 0
+ 476 0044 F9E7     		b	.L50
+ 477              		.cfi_endproc
+ 478              	.LFE22:
+ 480              		.section	.text.finsh_node_new_ptr,"ax",%progbits
+ 481              		.align	1
+ 482              		.global	finsh_node_new_ptr
+ 483              		.syntax unified
+ 484              		.thumb
+ 485              		.thumb_func
+ 486              		.fpu fpv4-sp-d16
+ 488              	finsh_node_new_ptr:
+ 489              	.LFB23:
+ 169:rt-thread/components/finsh/finsh_node.c **** 
+ 170:rt-thread/components/finsh/finsh_node.c **** struct finsh_node* finsh_node_new_ptr(void* ptr)
+ 171:rt-thread/components/finsh/finsh_node.c **** {
+ 490              		.loc 1 171 0
+ 491              		.cfi_startproc
+ 492              		@ args = 0, pretend = 0, frame = 0
+ 493              		@ frame_needed = 0, uses_anonymous_args = 0
+ 494              	.LVL65:
+ 495 0000 38B5     		push	{r3, r4, r5, lr}
+ 496              	.LCFI8:
+ 497              		.cfi_def_cfa_offset 16
+ 498              		.cfi_offset 3, -16
+ 499              		.cfi_offset 4, -12
+ 500              		.cfi_offset 5, -8
+ 501              		.cfi_offset 14, -4
+ARM GAS  /tmp/ccHZ82tU.s 			page 13
+
+
+ 502 0002 0546     		mov	r5, r0
+ 172:rt-thread/components/finsh/finsh_node.c ****     struct finsh_node* node;
+ 173:rt-thread/components/finsh/finsh_node.c **** 
+ 174:rt-thread/components/finsh/finsh_node.c ****     node = finsh_node_allocate(FINSH_NODE_VALUE_NULL);
+ 503              		.loc 1 174 0
+ 504 0004 0620     		movs	r0, #6
+ 505              	.LVL66:
+ 506 0006 FFF7FEFF 		bl	finsh_node_allocate
+ 507              	.LVL67:
+ 175:rt-thread/components/finsh/finsh_node.c ****     if (node == NULL)
+ 508              		.loc 1 175 0
+ 509 000a 0446     		mov	r4, r0
+ 510 000c 10B1     		cbz	r0, .L59
+ 176:rt-thread/components/finsh/finsh_node.c ****     {
+ 177:rt-thread/components/finsh/finsh_node.c ****         finsh_error_set(FINSH_ERROR_MEMORY_FULL);
+ 178:rt-thread/components/finsh/finsh_node.c ****         return NULL;
+ 179:rt-thread/components/finsh/finsh_node.c ****     }
+ 180:rt-thread/components/finsh/finsh_node.c **** 
+ 181:rt-thread/components/finsh/finsh_node.c ****     node->value.ptr = ptr;
+ 511              		.loc 1 181 0
+ 512 000e 4560     		str	r5, [r0, #4]
+ 513              	.LVL68:
+ 514              	.L55:
+ 182:rt-thread/components/finsh/finsh_node.c ****     return node;
+ 183:rt-thread/components/finsh/finsh_node.c **** }
+ 515              		.loc 1 183 0
+ 516 0010 2046     		mov	r0, r4
+ 517 0012 38BD     		pop	{r3, r4, r5, pc}
+ 518              	.LVL69:
+ 519              	.L59:
+ 177:rt-thread/components/finsh/finsh_node.c ****         return NULL;
+ 520              		.loc 1 177 0
+ 521 0014 0620     		movs	r0, #6
+ 522              	.LVL70:
+ 523 0016 FFF7FEFF 		bl	finsh_error_set
+ 524              	.LVL71:
+ 178:rt-thread/components/finsh/finsh_node.c ****     }
+ 525              		.loc 1 178 0
+ 526 001a F9E7     		b	.L55
+ 527              		.cfi_endproc
+ 528              	.LFE23:
+ 530              		.comm	global_node_table,320,4
+ 531              		.text
+ 532              	.Letext0:
+ 533              		.file 2 "rt-thread/include/rtdef.h"
+ 534              		.file 3 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/machine/_default_types.h"
+ 535              		.file 4 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/lock.h"
+ 536              		.file 5 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_types.h"
+ 537              		.file 6 "/opt/gcc-arm-none-eabi-6-2017-q2-update/lib/gcc/arm-none-eabi/6.3.1/include/stddef.h"
+ 538              		.file 7 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/reent.h"
+ 539              		.file 8 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_stdint.h"
+ 540              		.file 9 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/time.h"
+ 541              		.file 10 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/errno.h"
+ 542              		.file 11 "rt-thread/include/rtthread.h"
+ 543              		.file 12 "rt-thread/components/finsh/finsh_api.h"
+ 544              		.file 13 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/ctype.h"
+ 545              		.file 14 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/stdlib.h"
+ARM GAS  /tmp/ccHZ82tU.s 			page 14
+
+
+ 546              		.file 15 "rt-thread/components/finsh/finsh.h"
+ 547              		.file 16 "rt-thread/components/finsh/finsh_var.h"
+ 548              		.file 17 "rt-thread/components/finsh/finsh_error.h"
+ 549              		.file 18 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/string.h"
+ 550              		.file 19 "rt-thread/components/finsh/finsh_heap.h"
+ARM GAS  /tmp/ccHZ82tU.s 			page 15
+
+
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 finsh_node.c
+     /tmp/ccHZ82tU.s:18     .text.finsh_node_init:0000000000000000 $t
+     /tmp/ccHZ82tU.s:25     .text.finsh_node_init:0000000000000000 finsh_node_init
+     /tmp/ccHZ82tU.s:49     .text.finsh_node_init:0000000000000014 $d
+                            *COM*:0000000000000140 global_node_table
+     /tmp/ccHZ82tU.s:54     .text.finsh_node_allocate:0000000000000000 $t
+     /tmp/ccHZ82tU.s:61     .text.finsh_node_allocate:0000000000000000 finsh_node_allocate
+     /tmp/ccHZ82tU.s:123    .text.finsh_node_allocate:0000000000000034 $d
+     /tmp/ccHZ82tU.s:128    .text.finsh_node_new_id:0000000000000000 $t
+     /tmp/ccHZ82tU.s:135    .text.finsh_node_new_id:0000000000000000 finsh_node_new_id
+     /tmp/ccHZ82tU.s:258    .text.finsh_node_new_char:0000000000000000 $t
+     /tmp/ccHZ82tU.s:265    .text.finsh_node_new_char:0000000000000000 finsh_node_new_char
+     /tmp/ccHZ82tU.s:308    .text.finsh_node_new_int:0000000000000000 $t
+     /tmp/ccHZ82tU.s:315    .text.finsh_node_new_int:0000000000000000 finsh_node_new_int
+     /tmp/ccHZ82tU.s:358    .text.finsh_node_new_long:0000000000000000 $t
+     /tmp/ccHZ82tU.s:365    .text.finsh_node_new_long:0000000000000000 finsh_node_new_long
+     /tmp/ccHZ82tU.s:408    .text.finsh_node_new_string:0000000000000000 $t
+     /tmp/ccHZ82tU.s:415    .text.finsh_node_new_string:0000000000000000 finsh_node_new_string
+     /tmp/ccHZ82tU.s:481    .text.finsh_node_new_ptr:0000000000000000 $t
+     /tmp/ccHZ82tU.s:488    .text.finsh_node_new_ptr:0000000000000000 finsh_node_new_ptr
+                     .debug_frame:0000000000000010 $d
+
+UNDEFINED SYMBOLS
+memset
+finsh_var_lookup
+finsh_sysvar_lookup
+finsh_syscall_lookup
+finsh_error_set
+strlen
+finsh_heap_allocate
+strncpy

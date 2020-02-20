@@ -1,0 +1,597 @@
+ARM GAS  /tmp/ccNKFWc2.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.eabi_attribute 27, 1
+   3              		.eabi_attribute 28, 1
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.file	"usart.c"
+  14              		.text
+  15              	.Ltext0:
+  16              		.cfi_sections	.debug_frame
+  17              		.section	.text.uart_init,"ax",%progbits
+  18              		.align	1
+  19              		.global	uart_init
+  20              		.syntax unified
+  21              		.thumb
+  22              		.thumb_func
+  23              		.fpu fpv4-sp-d16
+  25              	uart_init:
+  26              	.LFB120:
+  27              		.file 1 "SYSTEM/usart/usart.c"
+   1:SYSTEM/usart/usart.c **** #include "usart.h"
+   2:SYSTEM/usart/usart.c **** //extern rt_sem_t test_sem;
+   3:SYSTEM/usart/usart.c **** ////////////////////////////////////////////////////////////////////////////////// 	 
+   4:SYSTEM/usart/usart.c **** //如果使用os,则包括下面的头文件即可.
+   5:SYSTEM/usart/usart.c **** #if SYSTEM_SUPPORT_OS
+   6:SYSTEM/usart/usart.c **** #include "rtthread.h"					//os 使用	  
+   7:SYSTEM/usart/usart.c **** #endif
+   8:SYSTEM/usart/usart.c **** //////////////////////////////////////////////////////////////////////////////////	 
+   9:SYSTEM/usart/usart.c **** //本程序只供学习使用，未经作者许可，不得用于其它任何用途
+  10:SYSTEM/usart/usart.c **** //ALIENTEK STM32F429开发板
+  11:SYSTEM/usart/usart.c **** //串口1初始化		   
+  12:SYSTEM/usart/usart.c **** //正点原子@ALIENTEK
+  13:SYSTEM/usart/usart.c **** //技术论坛:www.openedv.com
+  14:SYSTEM/usart/usart.c **** //修改日期:2015/9/7
+  15:SYSTEM/usart/usart.c **** //版本：V1.5
+  16:SYSTEM/usart/usart.c **** //版权所有，盗版必究。
+  17:SYSTEM/usart/usart.c **** //Copyright(C) 广州市星翼电子科技有限公司 2009-2019
+  18:SYSTEM/usart/usart.c **** //All rights reserved
+  19:SYSTEM/usart/usart.c **** //********************************************************************************
+  20:SYSTEM/usart/usart.c **** //V1.0修改说明 
+  21:SYSTEM/usart/usart.c **** ////////////////////////////////////////////////////////////////////////////////// 	  
+  22:SYSTEM/usart/usart.c **** //加入以下代码,支持printf函数,而不需要选择use MicroLIB	  
+  23:SYSTEM/usart/usart.c **** //#define PUTCHAR_PROTOTYPE int fputc(int ch, FILE *f)	
+  24:SYSTEM/usart/usart.c **** #if 0
+  25:SYSTEM/usart/usart.c **** #pragma import(__use_no_semihosting)             
+  26:SYSTEM/usart/usart.c **** //标准库需要的支持函数                 
+  27:SYSTEM/usart/usart.c **** struct __FILE 
+  28:SYSTEM/usart/usart.c **** { 
+  29:SYSTEM/usart/usart.c **** 	int handle; 
+  30:SYSTEM/usart/usart.c **** }; 
+  31:SYSTEM/usart/usart.c **** 
+ARM GAS  /tmp/ccNKFWc2.s 			page 2
+
+
+  32:SYSTEM/usart/usart.c **** FILE __stdout;       
+  33:SYSTEM/usart/usart.c **** //定义_sys_exit()以避免使用半主机模式    
+  34:SYSTEM/usart/usart.c **** void _sys_exit(int x) 
+  35:SYSTEM/usart/usart.c **** { 
+  36:SYSTEM/usart/usart.c **** 	x = x; 
+  37:SYSTEM/usart/usart.c **** } 
+  38:SYSTEM/usart/usart.c **** //重定义fputc函数 
+  39:SYSTEM/usart/usart.c **** int fputc(int ch, FILE *f)
+  40:SYSTEM/usart/usart.c **** { 	
+  41:SYSTEM/usart/usart.c **** 	while((USART1->SR&0X40)==0);//循环发送,直到发送完毕   
+  42:SYSTEM/usart/usart.c **** 	USART1->DR = (u8) ch;      
+  43:SYSTEM/usart/usart.c **** 	return ch;
+  44:SYSTEM/usart/usart.c **** }
+  45:SYSTEM/usart/usart.c **** #endif 
+  46:SYSTEM/usart/usart.c **** 
+  47:SYSTEM/usart/usart.c **** #if EN_USART1_RX   //如果使能了接收
+  48:SYSTEM/usart/usart.c **** //串口1中断服务程序
+  49:SYSTEM/usart/usart.c **** //注意,读取USARTx->SR能避免莫名其妙的错误   	
+  50:SYSTEM/usart/usart.c **** u8 USART_RX_BUF[USART_REC_LEN];     //接收缓冲,最大USART_REC_LEN个字节.
+  51:SYSTEM/usart/usart.c **** //接收状态
+  52:SYSTEM/usart/usart.c **** //bit15，	接收完成标志
+  53:SYSTEM/usart/usart.c **** //bit14，	接收到0x0d
+  54:SYSTEM/usart/usart.c **** //bit13~0，	接收到的有效字节数目
+  55:SYSTEM/usart/usart.c **** u16 USART_RX_STA=0;       //接收状态标记	
+  56:SYSTEM/usart/usart.c **** 
+  57:SYSTEM/usart/usart.c **** u8 aRxBuffer[RXBUFFERSIZE];//HAL库使用的串口接收缓冲
+  58:SYSTEM/usart/usart.c **** UART_HandleTypeDef UART1_Handler; //UART句柄
+  59:SYSTEM/usart/usart.c **** 
+  60:SYSTEM/usart/usart.c **** //初始化IO 串口1 
+  61:SYSTEM/usart/usart.c **** //bound:波特率
+  62:SYSTEM/usart/usart.c **** void uart_init(u32 bound)
+  63:SYSTEM/usart/usart.c **** {	
+  28              		.loc 1 63 0
+  29              		.cfi_startproc
+  30              		@ args = 0, pretend = 0, frame = 0
+  31              		@ frame_needed = 0, uses_anonymous_args = 0
+  32              	.LVL0:
+  33 0000 10B5     		push	{r4, lr}
+  34              	.LCFI0:
+  35              		.cfi_def_cfa_offset 8
+  36              		.cfi_offset 4, -8
+  37              		.cfi_offset 14, -4
+  64:SYSTEM/usart/usart.c **** 	//UART 初始化设置
+  65:SYSTEM/usart/usart.c **** 	UART1_Handler.Instance=USART1;					    //USART1
+  38              		.loc 1 65 0
+  39 0002 0A4C     		ldr	r4, .L3
+  40 0004 0A4B     		ldr	r3, .L3+4
+  41 0006 2360     		str	r3, [r4]
+  66:SYSTEM/usart/usart.c **** 	UART1_Handler.Init.BaudRate=bound;				    //波特率
+  42              		.loc 1 66 0
+  43 0008 6060     		str	r0, [r4, #4]
+  67:SYSTEM/usart/usart.c **** 	UART1_Handler.Init.WordLength=UART_WORDLENGTH_8B;   //字长为8位数据格式
+  44              		.loc 1 67 0
+  45 000a 0023     		movs	r3, #0
+  46 000c A360     		str	r3, [r4, #8]
+  68:SYSTEM/usart/usart.c **** 	UART1_Handler.Init.StopBits=UART_STOPBITS_1;	    //一个停止位
+  47              		.loc 1 68 0
+ARM GAS  /tmp/ccNKFWc2.s 			page 3
+
+
+  48 000e E360     		str	r3, [r4, #12]
+  69:SYSTEM/usart/usart.c **** 	UART1_Handler.Init.Parity=UART_PARITY_NONE;		    //无奇偶校验位
+  49              		.loc 1 69 0
+  50 0010 2361     		str	r3, [r4, #16]
+  70:SYSTEM/usart/usart.c **** 	UART1_Handler.Init.HwFlowCtl=UART_HWCONTROL_NONE;   //无硬件流控
+  51              		.loc 1 70 0
+  52 0012 A361     		str	r3, [r4, #24]
+  71:SYSTEM/usart/usart.c **** 	UART1_Handler.Init.Mode=UART_MODE_TX_RX;		    //收发模式
+  53              		.loc 1 71 0
+  54 0014 0C23     		movs	r3, #12
+  55 0016 6361     		str	r3, [r4, #20]
+  72:SYSTEM/usart/usart.c **** 	HAL_UART_Init(&UART1_Handler);					    //HAL_UART_Init()会使能UART1
+  56              		.loc 1 72 0
+  57 0018 2046     		mov	r0, r4
+  58              	.LVL1:
+  59 001a FFF7FEFF 		bl	HAL_UART_Init
+  60              	.LVL2:
+  73:SYSTEM/usart/usart.c **** 	
+  74:SYSTEM/usart/usart.c **** 	HAL_UART_Receive_IT(&UART1_Handler, (u8 *)aRxBuffer, RXBUFFERSIZE);//该函数会开启接收中�
+  61              		.loc 1 74 0
+  62 001e 0122     		movs	r2, #1
+  63 0020 0449     		ldr	r1, .L3+8
+  64 0022 2046     		mov	r0, r4
+  65 0024 FFF7FEFF 		bl	HAL_UART_Receive_IT
+  66              	.LVL3:
+  67 0028 10BD     		pop	{r4, pc}
+  68              	.L4:
+  69 002a 00BF     		.align	2
+  70              	.L3:
+  71 002c 00000000 		.word	UART1_Handler
+  72 0030 00100140 		.word	1073811456
+  73 0034 00000000 		.word	aRxBuffer
+  74              		.cfi_endproc
+  75              	.LFE120:
+  77              		.section	.text.HAL_UART_MspInit,"ax",%progbits
+  78              		.align	1
+  79              		.global	HAL_UART_MspInit
+  80              		.syntax unified
+  81              		.thumb
+  82              		.thumb_func
+  83              		.fpu fpv4-sp-d16
+  85              	HAL_UART_MspInit:
+  86              	.LFB121:
+  75:SYSTEM/usart/usart.c ****   
+  76:SYSTEM/usart/usart.c **** }
+  77:SYSTEM/usart/usart.c **** 
+  78:SYSTEM/usart/usart.c **** //UART底层初始化，时钟使能，引脚配置，中断配置
+  79:SYSTEM/usart/usart.c **** //此函数会被HAL_UART_Init()调用
+  80:SYSTEM/usart/usart.c **** //huart:串口句柄
+  81:SYSTEM/usart/usart.c **** 
+  82:SYSTEM/usart/usart.c **** void HAL_UART_MspInit(UART_HandleTypeDef *huart)
+  83:SYSTEM/usart/usart.c **** {
+  87              		.loc 1 83 0
+  88              		.cfi_startproc
+  89              		@ args = 0, pretend = 0, frame = 32
+  90              		@ frame_needed = 0, uses_anonymous_args = 0
+  91              	.LVL4:
+ARM GAS  /tmp/ccNKFWc2.s 			page 4
+
+
+  84:SYSTEM/usart/usart.c ****     //GPIO端口设置
+  85:SYSTEM/usart/usart.c **** 	GPIO_InitTypeDef GPIO_Initure;
+  86:SYSTEM/usart/usart.c **** 	
+  87:SYSTEM/usart/usart.c **** 	if(huart->Instance==USART1)//如果是串口1，进行串口1 MSP初始化
+  92              		.loc 1 87 0
+  93 0000 0268     		ldr	r2, [r0]
+  94 0002 1E4B     		ldr	r3, .L12
+  95 0004 9A42     		cmp	r2, r3
+  96 0006 00D0     		beq	.L11
+  97 0008 7047     		bx	lr
+  98              	.L11:
+  83:SYSTEM/usart/usart.c ****     //GPIO端口设置
+  99              		.loc 1 83 0
+ 100 000a 10B5     		push	{r4, lr}
+ 101              	.LCFI1:
+ 102              		.cfi_def_cfa_offset 8
+ 103              		.cfi_offset 4, -8
+ 104              		.cfi_offset 14, -4
+ 105 000c 88B0     		sub	sp, sp, #32
+ 106              	.LCFI2:
+ 107              		.cfi_def_cfa_offset 40
+ 108              	.LBB2:
+  88:SYSTEM/usart/usart.c **** 	{
+  89:SYSTEM/usart/usart.c **** 		__HAL_RCC_GPIOA_CLK_ENABLE();			//使能GPIOA时钟
+ 109              		.loc 1 89 0
+ 110 000e 0021     		movs	r1, #0
+ 111 0010 0191     		str	r1, [sp, #4]
+ 112 0012 03F59433 		add	r3, r3, #75776
+ 113 0016 1A6B     		ldr	r2, [r3, #48]
+ 114 0018 42F00102 		orr	r2, r2, #1
+ 115 001c 1A63     		str	r2, [r3, #48]
+ 116 001e 1A6B     		ldr	r2, [r3, #48]
+ 117 0020 02F00102 		and	r2, r2, #1
+ 118 0024 0192     		str	r2, [sp, #4]
+ 119 0026 019A     		ldr	r2, [sp, #4]
+ 120              	.LBE2:
+ 121              	.LBB3:
+  90:SYSTEM/usart/usart.c **** 		__HAL_RCC_USART1_CLK_ENABLE();			//使能USART1时钟
+ 122              		.loc 1 90 0
+ 123 0028 0291     		str	r1, [sp, #8]
+ 124 002a 5A6C     		ldr	r2, [r3, #68]
+ 125 002c 42F01002 		orr	r2, r2, #16
+ 126 0030 5A64     		str	r2, [r3, #68]
+ 127 0032 5B6C     		ldr	r3, [r3, #68]
+ 128 0034 03F01003 		and	r3, r3, #16
+ 129 0038 0293     		str	r3, [sp, #8]
+ 130 003a 029B     		ldr	r3, [sp, #8]
+ 131              	.LBE3:
+  91:SYSTEM/usart/usart.c **** 	
+  92:SYSTEM/usart/usart.c **** 		GPIO_Initure.Pin=GPIO_PIN_9;			//PA9
+ 132              		.loc 1 92 0
+ 133 003c 4FF40073 		mov	r3, #512
+ 134 0040 0393     		str	r3, [sp, #12]
+  93:SYSTEM/usart/usart.c **** 		GPIO_Initure.Mode=GPIO_MODE_AF_PP;		//复用推挽输出
+ 135              		.loc 1 93 0
+ 136 0042 0223     		movs	r3, #2
+ 137 0044 0493     		str	r3, [sp, #16]
+ARM GAS  /tmp/ccNKFWc2.s 			page 5
+
+
+  94:SYSTEM/usart/usart.c **** 		GPIO_Initure.Pull=GPIO_PULLUP;			//上拉
+ 138              		.loc 1 94 0
+ 139 0046 0122     		movs	r2, #1
+ 140 0048 0592     		str	r2, [sp, #20]
+  95:SYSTEM/usart/usart.c **** 		GPIO_Initure.Speed=GPIO_SPEED_FAST;		//高速
+ 141              		.loc 1 95 0
+ 142 004a 0693     		str	r3, [sp, #24]
+  96:SYSTEM/usart/usart.c **** 		GPIO_Initure.Alternate=GPIO_AF7_USART1;	//复用为USART1
+ 143              		.loc 1 96 0
+ 144 004c 0723     		movs	r3, #7
+ 145 004e 0793     		str	r3, [sp, #28]
+  97:SYSTEM/usart/usart.c **** 		HAL_GPIO_Init(GPIOA,&GPIO_Initure);	   	//初始化PA9
+ 146              		.loc 1 97 0
+ 147 0050 0B4C     		ldr	r4, .L12+4
+ 148 0052 03A9     		add	r1, sp, #12
+ 149 0054 2046     		mov	r0, r4
+ 150              	.LVL5:
+ 151 0056 FFF7FEFF 		bl	HAL_GPIO_Init
+ 152              	.LVL6:
+  98:SYSTEM/usart/usart.c **** 
+  99:SYSTEM/usart/usart.c **** 		GPIO_Initure.Pin=GPIO_PIN_10;			//PA10
+ 153              		.loc 1 99 0
+ 154 005a 4FF48063 		mov	r3, #1024
+ 155 005e 0393     		str	r3, [sp, #12]
+ 100:SYSTEM/usart/usart.c **** 		HAL_GPIO_Init(GPIOA,&GPIO_Initure);	   	//初始化PA10
+ 156              		.loc 1 100 0
+ 157 0060 03A9     		add	r1, sp, #12
+ 158 0062 2046     		mov	r0, r4
+ 159 0064 FFF7FEFF 		bl	HAL_GPIO_Init
+ 160              	.LVL7:
+ 101:SYSTEM/usart/usart.c **** 		
+ 102:SYSTEM/usart/usart.c **** #if EN_USART1_RX
+ 103:SYSTEM/usart/usart.c **** 		HAL_NVIC_EnableIRQ(USART1_IRQn);				//使能USART1中断通道
+ 161              		.loc 1 103 0
+ 162 0068 2520     		movs	r0, #37
+ 163 006a FFF7FEFF 		bl	HAL_NVIC_EnableIRQ
+ 164              	.LVL8:
+ 104:SYSTEM/usart/usart.c **** 		HAL_NVIC_SetPriority(USART1_IRQn,3,3);			//抢占优先级3，子优先级3
+ 165              		.loc 1 104 0
+ 166 006e 0322     		movs	r2, #3
+ 167 0070 1146     		mov	r1, r2
+ 168 0072 2520     		movs	r0, #37
+ 169 0074 FFF7FEFF 		bl	HAL_NVIC_SetPriority
+ 170              	.LVL9:
+ 105:SYSTEM/usart/usart.c **** #endif	
+ 106:SYSTEM/usart/usart.c **** 	}
+ 107:SYSTEM/usart/usart.c **** 
+ 108:SYSTEM/usart/usart.c **** }
+ 171              		.loc 1 108 0
+ 172 0078 08B0     		add	sp, sp, #32
+ 173              	.LCFI3:
+ 174              		.cfi_def_cfa_offset 8
+ 175              		@ sp needed
+ 176 007a 10BD     		pop	{r4, pc}
+ 177              	.L13:
+ 178              		.align	2
+ 179              	.L12:
+ARM GAS  /tmp/ccNKFWc2.s 			page 6
+
+
+ 180 007c 00100140 		.word	1073811456
+ 181 0080 00000240 		.word	1073872896
+ 182              		.cfi_endproc
+ 183              	.LFE121:
+ 185              		.section	.text.HAL_UART_RxCpltCallback,"ax",%progbits
+ 186              		.align	1
+ 187              		.global	HAL_UART_RxCpltCallback
+ 188              		.syntax unified
+ 189              		.thumb
+ 190              		.thumb_func
+ 191              		.fpu fpv4-sp-d16
+ 193              	HAL_UART_RxCpltCallback:
+ 194              	.LFB122:
+ 109:SYSTEM/usart/usart.c **** 
+ 110:SYSTEM/usart/usart.c **** void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+ 111:SYSTEM/usart/usart.c **** {
+ 195              		.loc 1 111 0
+ 196              		.cfi_startproc
+ 197              		@ args = 0, pretend = 0, frame = 0
+ 198              		@ frame_needed = 0, uses_anonymous_args = 0
+ 199              		@ link register save eliminated.
+ 200              	.LVL10:
+ 112:SYSTEM/usart/usart.c **** 	if(huart->Instance==USART1)//如果是串口1
+ 201              		.loc 1 112 0
+ 202 0000 0268     		ldr	r2, [r0]
+ 203 0002 194B     		ldr	r3, .L21
+ 204 0004 9A42     		cmp	r2, r3
+ 205 0006 00D0     		beq	.L19
+ 206              	.LVL11:
+ 207              	.L14:
+ 208 0008 7047     		bx	lr
+ 209              	.LVL12:
+ 210              	.L19:
+ 113:SYSTEM/usart/usart.c **** 	{
+ 114:SYSTEM/usart/usart.c **** 		if((USART_RX_STA&0x8000)==0)//接收未完成
+ 211              		.loc 1 114 0
+ 212 000a 184B     		ldr	r3, .L21+4
+ 213 000c 1B88     		ldrh	r3, [r3]
+ 214 000e 13F4004F 		tst	r3, #32768
+ 215 0012 F9D1     		bne	.L14
+ 115:SYSTEM/usart/usart.c **** 		{
+ 116:SYSTEM/usart/usart.c **** 			if(USART_RX_STA&0x4000)//接收到了0x0d
+ 216              		.loc 1 116 0
+ 217 0014 13F4804F 		tst	r3, #16384
+ 218 0018 0ED0     		beq	.L16
+ 117:SYSTEM/usart/usart.c **** 			{
+ 118:SYSTEM/usart/usart.c **** 				if(aRxBuffer[0]!=0x0a)
+ 219              		.loc 1 118 0
+ 220 001a 154A     		ldr	r2, .L21+8
+ 221 001c 1278     		ldrb	r2, [r2]	@ zero_extendqisi2
+ 222 001e 0A2A     		cmp	r2, #10
+ 223 0020 03D0     		beq	.L17
+ 119:SYSTEM/usart/usart.c **** 					USART_RX_STA=0;//接收错误,重新开始
+ 224              		.loc 1 119 0
+ 225 0022 0022     		movs	r2, #0
+ 226 0024 114B     		ldr	r3, .L21+4
+ 227 0026 1A80     		strh	r2, [r3]	@ movhi
+ARM GAS  /tmp/ccNKFWc2.s 			page 7
+
+
+ 228 0028 7047     		bx	lr
+ 229              	.L17:
+ 120:SYSTEM/usart/usart.c **** 				else 
+ 121:SYSTEM/usart/usart.c **** 					{
+ 122:SYSTEM/usart/usart.c **** 						USART_RX_STA|=0x8000;	//接收完成了 
+ 230              		.loc 1 122 0
+ 231 002a 6FEA4343 		mvn	r3, r3, lsl #17
+ 232 002e 6FEA5343 		mvn	r3, r3, lsr #17
+ 233 0032 0E4A     		ldr	r2, .L21+4
+ 234 0034 1380     		strh	r3, [r2]	@ movhi
+ 235 0036 7047     		bx	lr
+ 236              	.L16:
+ 123:SYSTEM/usart/usart.c **** //						rt_sem_release(test_sem);
+ 124:SYSTEM/usart/usart.c **** 					}
+ 125:SYSTEM/usart/usart.c **** 			}
+ 126:SYSTEM/usart/usart.c **** 			else //还没收到0X0D
+ 127:SYSTEM/usart/usart.c **** 			{	
+ 128:SYSTEM/usart/usart.c **** 				if(aRxBuffer[0]==0x0d)
+ 237              		.loc 1 128 0
+ 238 0038 0D4A     		ldr	r2, .L21+8
+ 239 003a 1278     		ldrb	r2, [r2]	@ zero_extendqisi2
+ 240 003c 0D2A     		cmp	r2, #13
+ 241 003e 0DD0     		beq	.L20
+ 129:SYSTEM/usart/usart.c **** 					USART_RX_STA|=0x4000;
+ 130:SYSTEM/usart/usart.c **** 				else
+ 131:SYSTEM/usart/usart.c **** 				{
+ 132:SYSTEM/usart/usart.c **** 					USART_RX_BUF[USART_RX_STA&0X3FFF]=aRxBuffer[0] ;
+ 242              		.loc 1 132 0
+ 243 0040 C3F30D01 		ubfx	r1, r3, #0, #14
+ 244 0044 0B48     		ldr	r0, .L21+12
+ 245              	.LVL13:
+ 246 0046 4254     		strb	r2, [r0, r1]
+ 133:SYSTEM/usart/usart.c **** 					USART_RX_STA++;
+ 247              		.loc 1 133 0
+ 248 0048 0133     		adds	r3, r3, #1
+ 249 004a 9BB2     		uxth	r3, r3
+ 250 004c 074A     		ldr	r2, .L21+4
+ 251 004e 1380     		strh	r3, [r2]	@ movhi
+ 134:SYSTEM/usart/usart.c **** 					if(USART_RX_STA>(USART_REC_LEN-1))
+ 252              		.loc 1 134 0
+ 253 0050 C72B     		cmp	r3, #199
+ 254 0052 D9D9     		bls	.L14
+ 135:SYSTEM/usart/usart.c **** 						USART_RX_STA=0;//接收数据错误,重新开始接收	  
+ 255              		.loc 1 135 0
+ 256 0054 0022     		movs	r2, #0
+ 257 0056 054B     		ldr	r3, .L21+4
+ 258 0058 1A80     		strh	r2, [r3]	@ movhi
+ 136:SYSTEM/usart/usart.c **** 				}		 
+ 137:SYSTEM/usart/usart.c **** 			}
+ 138:SYSTEM/usart/usart.c **** 		}
+ 139:SYSTEM/usart/usart.c **** 	}
+ 140:SYSTEM/usart/usart.c **** }
+ 259              		.loc 1 140 0
+ 260 005a D5E7     		b	.L14
+ 261              	.LVL14:
+ 262              	.L20:
+ 129:SYSTEM/usart/usart.c **** 				else
+ARM GAS  /tmp/ccNKFWc2.s 			page 8
+
+
+ 263              		.loc 1 129 0
+ 264 005c 43F48043 		orr	r3, r3, #16384
+ 265 0060 024A     		ldr	r2, .L21+4
+ 266 0062 1380     		strh	r3, [r2]	@ movhi
+ 267 0064 7047     		bx	lr
+ 268              	.L22:
+ 269 0066 00BF     		.align	2
+ 270              	.L21:
+ 271 0068 00100140 		.word	1073811456
+ 272 006c 00000000 		.word	.LANCHOR0
+ 273 0070 00000000 		.word	aRxBuffer
+ 274 0074 00000000 		.word	USART_RX_BUF
+ 275              		.cfi_endproc
+ 276              	.LFE122:
+ 278              		.section	.text.USART1_IRQHandler,"ax",%progbits
+ 279              		.align	1
+ 280              		.global	USART1_IRQHandler
+ 281              		.syntax unified
+ 282              		.thumb
+ 283              		.thumb_func
+ 284              		.fpu fpv4-sp-d16
+ 286              	USART1_IRQHandler:
+ 287              	.LFB123:
+ 141:SYSTEM/usart/usart.c ****  
+ 142:SYSTEM/usart/usart.c **** //串口1中断服务程序
+ 143:SYSTEM/usart/usart.c **** void USART1_IRQHandler(void)                	
+ 144:SYSTEM/usart/usart.c **** { 
+ 288              		.loc 1 144 0
+ 289              		.cfi_startproc
+ 290              		@ args = 0, pretend = 0, frame = 0
+ 291              		@ frame_needed = 0, uses_anonymous_args = 0
+ 292 0000 10B5     		push	{r4, lr}
+ 293              	.LCFI4:
+ 294              		.cfi_def_cfa_offset 8
+ 295              		.cfi_offset 4, -8
+ 296              		.cfi_offset 14, -4
+ 297              	.LVL15:
+ 145:SYSTEM/usart/usart.c **** 	u32 timeout=0;
+ 146:SYSTEM/usart/usart.c **** 	u32 maxDelay=0x1FFFF;
+ 147:SYSTEM/usart/usart.c **** #if SYSTEM_SUPPORT_OS	 	//使用OS
+ 148:SYSTEM/usart/usart.c **** 	rt_enter_critical();    
+ 149:SYSTEM/usart/usart.c **** #endif
+ 150:SYSTEM/usart/usart.c **** 	HAL_UART_IRQHandler(&UART1_Handler);	//调用HAL库中断处理公用函数
+ 298              		.loc 1 150 0
+ 299 0002 0E48     		ldr	r0, .L33
+ 300 0004 FFF7FEFF 		bl	HAL_UART_IRQHandler
+ 301              	.LVL16:
+ 151:SYSTEM/usart/usart.c **** 	timeout=0;
+ 302              		.loc 1 151 0
+ 303 0008 0024     		movs	r4, #0
+ 304              	.LVL17:
+ 305              	.L24:
+ 152:SYSTEM/usart/usart.c ****     while (HAL_UART_GetState(&UART1_Handler) != HAL_UART_STATE_READY)//等待就绪
+ 306              		.loc 1 152 0
+ 307 000a 0C48     		ldr	r0, .L33
+ 308 000c FFF7FEFF 		bl	HAL_UART_GetState
+ 309              	.LVL18:
+ARM GAS  /tmp/ccNKFWc2.s 			page 9
+
+
+ 310 0010 2028     		cmp	r0, #32
+ 311 0012 05D0     		beq	.L31
+ 153:SYSTEM/usart/usart.c **** 	{
+ 154:SYSTEM/usart/usart.c **** 	 timeout++;////超时处理
+ 312              		.loc 1 154 0
+ 313 0014 0134     		adds	r4, r4, #1
+ 314              	.LVL19:
+ 155:SYSTEM/usart/usart.c ****     if(timeout>maxDelay) 
+ 315              		.loc 1 155 0
+ 316 0016 B4F5003F 		cmp	r4, #131072
+ 317 001a F6D3     		bcc	.L24
+ 318 001c 0024     		movs	r4, #0
+ 319              	.LVL20:
+ 320 001e 00E0     		b	.L25
+ 321              	.LVL21:
+ 322              	.L31:
+ 323 0020 0024     		movs	r4, #0
+ 324              	.LVL22:
+ 325              	.L25:
+ 156:SYSTEM/usart/usart.c **** 	 	break;		
+ 157:SYSTEM/usart/usart.c **** 	}
+ 158:SYSTEM/usart/usart.c **** 	timeout=0;
+ 159:SYSTEM/usart/usart.c **** 	while(HAL_UART_Receive_IT(&UART1_Handler, (u8 *)aRxBuffer, RXBUFFERSIZE) != HAL_OK)//一次处理�
+ 326              		.loc 1 159 0
+ 327 0022 0122     		movs	r2, #1
+ 328 0024 0649     		ldr	r1, .L33+4
+ 329 0026 0548     		ldr	r0, .L33
+ 330 0028 FFF7FEFF 		bl	HAL_UART_Receive_IT
+ 331              	.LVL23:
+ 332 002c 20B1     		cbz	r0, .L32
+ 160:SYSTEM/usart/usart.c **** 	{
+ 161:SYSTEM/usart/usart.c **** 	 timeout++; //超时处理
+ 333              		.loc 1 161 0
+ 334 002e 0134     		adds	r4, r4, #1
+ 335              	.LVL24:
+ 162:SYSTEM/usart/usart.c **** 	 if(timeout>maxDelay) 
+ 336              		.loc 1 162 0
+ 337 0030 B4F5003F 		cmp	r4, #131072
+ 338 0034 F5D3     		bcc	.L25
+ 339 0036 10BD     		pop	{r4, pc}
+ 340              	.LVL25:
+ 341              	.L32:
+ 342 0038 10BD     		pop	{r4, pc}
+ 343              	.LVL26:
+ 344              	.L34:
+ 345 003a 00BF     		.align	2
+ 346              	.L33:
+ 347 003c 00000000 		.word	UART1_Handler
+ 348 0040 00000000 		.word	aRxBuffer
+ 349              		.cfi_endproc
+ 350              	.LFE123:
+ 352              		.comm	UART1_Handler,64,4
+ 353              		.comm	aRxBuffer,1,4
+ 354              		.global	USART_RX_STA
+ 355              		.comm	USART_RX_BUF,200,4
+ 356              		.section	.bss.USART_RX_STA,"aw",%nobits
+ 357              		.align	1
+ARM GAS  /tmp/ccNKFWc2.s 			page 10
+
+
+ 358              		.set	.LANCHOR0,. + 0
+ 361              	USART_RX_STA:
+ 362 0000 0000     		.space	2
+ 363              		.text
+ 364              	.Letext0:
+ 365              		.file 2 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/machine/_default_types.h"
+ 366              		.file 3 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_stdint.h"
+ 367              		.file 4 "CORE/core_cm4.h"
+ 368              		.file 5 "USER/system_stm32f4xx.h"
+ 369              		.file 6 "USER/stm32f429xx.h"
+ 370              		.file 7 "HALLIB/Inc/stm32f4xx_hal_def.h"
+ 371              		.file 8 "HALLIB/Inc/stm32f4xx_hal_gpio.h"
+ 372              		.file 9 "HALLIB/Inc/stm32f4xx_hal_dma.h"
+ 373              		.file 10 "HALLIB/Inc/stm32f4xx_hal_uart.h"
+ 374              		.file 11 "HALLIB/Inc/stm32f4xx_hal.h"
+ 375              		.file 12 "SYSTEM/sys/sys.h"
+ 376              		.file 13 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/lock.h"
+ 377              		.file 14 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_types.h"
+ 378              		.file 15 "/opt/gcc-arm-none-eabi-6-2017-q2-update/lib/gcc/arm-none-eabi/6.3.1/include/stddef.h"
+ 379              		.file 16 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/reent.h"
+ 380              		.file 17 "SYSTEM/usart/usart.h"
+ 381              		.file 18 "HALLIB/Inc/stm32f4xx_hal_cortex.h"
+ARM GAS  /tmp/ccNKFWc2.s 			page 11
+
+
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 usart.c
+     /tmp/ccNKFWc2.s:18     .text.uart_init:0000000000000000 $t
+     /tmp/ccNKFWc2.s:25     .text.uart_init:0000000000000000 uart_init
+     /tmp/ccNKFWc2.s:71     .text.uart_init:000000000000002c $d
+                            *COM*:0000000000000040 UART1_Handler
+                            *COM*:0000000000000001 aRxBuffer
+     /tmp/ccNKFWc2.s:78     .text.HAL_UART_MspInit:0000000000000000 $t
+     /tmp/ccNKFWc2.s:85     .text.HAL_UART_MspInit:0000000000000000 HAL_UART_MspInit
+     /tmp/ccNKFWc2.s:180    .text.HAL_UART_MspInit:000000000000007c $d
+     /tmp/ccNKFWc2.s:186    .text.HAL_UART_RxCpltCallback:0000000000000000 $t
+     /tmp/ccNKFWc2.s:193    .text.HAL_UART_RxCpltCallback:0000000000000000 HAL_UART_RxCpltCallback
+     /tmp/ccNKFWc2.s:271    .text.HAL_UART_RxCpltCallback:0000000000000068 $d
+                            *COM*:00000000000000c8 USART_RX_BUF
+     /tmp/ccNKFWc2.s:279    .text.USART1_IRQHandler:0000000000000000 $t
+     /tmp/ccNKFWc2.s:286    .text.USART1_IRQHandler:0000000000000000 USART1_IRQHandler
+     /tmp/ccNKFWc2.s:347    .text.USART1_IRQHandler:000000000000003c $d
+     /tmp/ccNKFWc2.s:361    .bss.USART_RX_STA:0000000000000000 USART_RX_STA
+     /tmp/ccNKFWc2.s:357    .bss.USART_RX_STA:0000000000000000 $d
+                     .debug_frame:0000000000000010 $d
+
+UNDEFINED SYMBOLS
+HAL_UART_Init
+HAL_UART_Receive_IT
+HAL_GPIO_Init
+HAL_NVIC_EnableIRQ
+HAL_NVIC_SetPriority
+HAL_UART_IRQHandler
+HAL_UART_GetState

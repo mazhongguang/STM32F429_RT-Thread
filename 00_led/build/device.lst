@@ -1,0 +1,2060 @@
+ARM GAS  /tmp/cc672709.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.eabi_attribute 27, 1
+   3              		.eabi_attribute 28, 1
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.file	"device.c"
+  14              		.text
+  15              	.Ltext0:
+  16              		.cfi_sections	.debug_frame
+  17              		.section	.text.rt_device_unregister,"ax",%progbits
+  18              		.align	1
+  19              		.global	rt_device_unregister
+  20              		.syntax unified
+  21              		.thumb
+  22              		.thumb_func
+  23              		.fpu fpv4-sp-d16
+  25              	rt_device_unregister:
+  26              	.LFB16:
+  27              		.file 1 "rt-thread/src/device.c"
+   1:rt-thread/src/device.c **** /*
+   2:rt-thread/src/device.c ****  * Copyright (c) 2006-2018, RT-Thread Development Team
+   3:rt-thread/src/device.c ****  *
+   4:rt-thread/src/device.c ****  * SPDX-License-Identifier: Apache-2.0
+   5:rt-thread/src/device.c ****  *
+   6:rt-thread/src/device.c ****  * Change Logs:
+   7:rt-thread/src/device.c ****  * Date           Author       Notes
+   8:rt-thread/src/device.c ****  * 2007-01-21     Bernard      the first version
+   9:rt-thread/src/device.c ****  * 2010-05-04     Bernard      add rt_device_init implementation
+  10:rt-thread/src/device.c ****  * 2012-10-20     Bernard      add device check in register function,
+  11:rt-thread/src/device.c ****  *                             provided by Rob <rdent@iinet.net.au>
+  12:rt-thread/src/device.c ****  * 2012-12-25     Bernard      return RT_EOK if the device interface not exist.
+  13:rt-thread/src/device.c ****  * 2013-07-09     Grissiom     add ref_count support
+  14:rt-thread/src/device.c ****  * 2016-04-02     Bernard      fix the open_flag initialization issue.
+  15:rt-thread/src/device.c ****  */
+  16:rt-thread/src/device.c **** 
+  17:rt-thread/src/device.c **** #include <rtthread.h>
+  18:rt-thread/src/device.c **** #if defined(RT_USING_POSIX)
+  19:rt-thread/src/device.c **** #include <rtdevice.h> /* for wqueue_init */
+  20:rt-thread/src/device.c **** #endif
+  21:rt-thread/src/device.c **** 
+  22:rt-thread/src/device.c **** #ifdef RT_USING_DEVICE
+  23:rt-thread/src/device.c **** 
+  24:rt-thread/src/device.c **** #ifdef RT_USING_DEVICE_OPS
+  25:rt-thread/src/device.c **** #define device_init     (dev->ops->init)
+  26:rt-thread/src/device.c **** #define device_open     (dev->ops->open)
+  27:rt-thread/src/device.c **** #define device_close    (dev->ops->close)
+  28:rt-thread/src/device.c **** #define device_read     (dev->ops->read)
+  29:rt-thread/src/device.c **** #define device_write    (dev->ops->write)
+  30:rt-thread/src/device.c **** #define device_control  (dev->ops->control)
+  31:rt-thread/src/device.c **** #else
+ARM GAS  /tmp/cc672709.s 			page 2
+
+
+  32:rt-thread/src/device.c **** #define device_init     (dev->init)
+  33:rt-thread/src/device.c **** #define device_open     (dev->open)
+  34:rt-thread/src/device.c **** #define device_close    (dev->close)
+  35:rt-thread/src/device.c **** #define device_read     (dev->read)
+  36:rt-thread/src/device.c **** #define device_write    (dev->write)
+  37:rt-thread/src/device.c **** #define device_control  (dev->control)
+  38:rt-thread/src/device.c **** #endif
+  39:rt-thread/src/device.c **** 
+  40:rt-thread/src/device.c **** /**
+  41:rt-thread/src/device.c ****  * This function registers a device driver with specified name.
+  42:rt-thread/src/device.c ****  *
+  43:rt-thread/src/device.c ****  * @param dev the pointer of device driver structure
+  44:rt-thread/src/device.c ****  * @param name the device driver's name
+  45:rt-thread/src/device.c ****  * @param flags the capabilities flag of device
+  46:rt-thread/src/device.c ****  *
+  47:rt-thread/src/device.c ****  * @return the error code, RT_EOK on initialization successfully.
+  48:rt-thread/src/device.c ****  */
+  49:rt-thread/src/device.c **** rt_err_t rt_device_register(rt_device_t dev,
+  50:rt-thread/src/device.c ****                             const char *name,
+  51:rt-thread/src/device.c ****                             rt_uint16_t flags)
+  52:rt-thread/src/device.c **** {
+  53:rt-thread/src/device.c ****     if (dev == RT_NULL)
+  54:rt-thread/src/device.c ****         return -RT_ERROR;
+  55:rt-thread/src/device.c **** 
+  56:rt-thread/src/device.c ****     if (rt_device_find(name) != RT_NULL)
+  57:rt-thread/src/device.c ****         return -RT_ERROR;
+  58:rt-thread/src/device.c **** 
+  59:rt-thread/src/device.c ****     rt_object_init(&(dev->parent), RT_Object_Class_Device, name);
+  60:rt-thread/src/device.c ****     dev->flag = flags;
+  61:rt-thread/src/device.c ****     dev->ref_count = 0;
+  62:rt-thread/src/device.c ****     dev->open_flag = 0;
+  63:rt-thread/src/device.c **** 
+  64:rt-thread/src/device.c **** #if defined(RT_USING_POSIX)
+  65:rt-thread/src/device.c ****     dev->fops = RT_NULL;
+  66:rt-thread/src/device.c ****     rt_wqueue_init(&(dev->wait_queue));
+  67:rt-thread/src/device.c **** #endif
+  68:rt-thread/src/device.c **** 
+  69:rt-thread/src/device.c ****     return RT_EOK;
+  70:rt-thread/src/device.c **** }
+  71:rt-thread/src/device.c **** RTM_EXPORT(rt_device_register);
+  72:rt-thread/src/device.c **** 
+  73:rt-thread/src/device.c **** /**
+  74:rt-thread/src/device.c ****  * This function removes a previously registered device driver
+  75:rt-thread/src/device.c ****  *
+  76:rt-thread/src/device.c ****  * @param dev the pointer of device driver structure
+  77:rt-thread/src/device.c ****  *
+  78:rt-thread/src/device.c ****  * @return the error code, RT_EOK on successfully.
+  79:rt-thread/src/device.c ****  */
+  80:rt-thread/src/device.c **** rt_err_t rt_device_unregister(rt_device_t dev)
+  81:rt-thread/src/device.c **** {
+  28              		.loc 1 81 0
+  29              		.cfi_startproc
+  30              		@ args = 0, pretend = 0, frame = 0
+  31              		@ frame_needed = 0, uses_anonymous_args = 0
+  32              	.LVL0:
+  33 0000 10B5     		push	{r4, lr}
+  34              	.LCFI0:
+ARM GAS  /tmp/cc672709.s 			page 3
+
+
+  35              		.cfi_def_cfa_offset 8
+  36              		.cfi_offset 4, -8
+  37              		.cfi_offset 14, -4
+  82:rt-thread/src/device.c ****     RT_ASSERT(dev != RT_NULL);
+  38              		.loc 1 82 0
+  39 0002 0446     		mov	r4, r0
+  40 0004 90B1     		cbz	r0, .L6
+  41              	.LVL1:
+  42              	.L2:
+  83:rt-thread/src/device.c ****     RT_ASSERT(rt_object_get_type(&dev->parent) == RT_Object_Class_Device);
+  43              		.loc 1 83 0
+  44 0006 2046     		mov	r0, r4
+  45 0008 FFF7FEFF 		bl	rt_object_get_type
+  46              	.LVL2:
+  47 000c 0928     		cmp	r0, #9
+  48 000e 04D0     		beq	.L3
+  49              		.loc 1 83 0 is_stmt 0 discriminator 1
+  50 0010 5322     		movs	r2, #83
+  51 0012 0C49     		ldr	r1, .L8
+  52 0014 0C48     		ldr	r0, .L8+4
+  53 0016 FFF7FEFF 		bl	rt_assert_handler
+  54              	.LVL3:
+  55              	.L3:
+  84:rt-thread/src/device.c ****     RT_ASSERT(rt_object_is_systemobject(&dev->parent));
+  56              		.loc 1 84 0 is_stmt 1
+  57 001a 2046     		mov	r0, r4
+  58 001c FFF7FEFF 		bl	rt_object_is_systemobject
+  59              	.LVL4:
+  60 0020 50B1     		cbz	r0, .L7
+  61              	.L4:
+  85:rt-thread/src/device.c **** 
+  86:rt-thread/src/device.c ****     rt_object_detach(&(dev->parent));
+  62              		.loc 1 86 0
+  63 0022 2046     		mov	r0, r4
+  64 0024 FFF7FEFF 		bl	rt_object_detach
+  65              	.LVL5:
+  87:rt-thread/src/device.c **** 
+  88:rt-thread/src/device.c ****     return RT_EOK;
+  89:rt-thread/src/device.c **** }
+  66              		.loc 1 89 0
+  67 0028 0020     		movs	r0, #0
+  68 002a 10BD     		pop	{r4, pc}
+  69              	.LVL6:
+  70              	.L6:
+  82:rt-thread/src/device.c ****     RT_ASSERT(rt_object_get_type(&dev->parent) == RT_Object_Class_Device);
+  71              		.loc 1 82 0 discriminator 1
+  72 002c 5222     		movs	r2, #82
+  73 002e 0549     		ldr	r1, .L8
+  74 0030 0648     		ldr	r0, .L8+8
+  75              	.LVL7:
+  76 0032 FFF7FEFF 		bl	rt_assert_handler
+  77              	.LVL8:
+  78 0036 E6E7     		b	.L2
+  79              	.L7:
+  84:rt-thread/src/device.c **** 
+  80              		.loc 1 84 0 discriminator 1
+  81 0038 5422     		movs	r2, #84
+ARM GAS  /tmp/cc672709.s 			page 4
+
+
+  82 003a 0249     		ldr	r1, .L8
+  83 003c 0448     		ldr	r0, .L8+12
+  84 003e FFF7FEFF 		bl	rt_assert_handler
+  85              	.LVL9:
+  86 0042 EEE7     		b	.L4
+  87              	.L9:
+  88              		.align	2
+  89              	.L8:
+  90 0044 00000000 		.word	.LANCHOR0
+  91 0048 10000000 		.word	.LC1
+  92 004c 00000000 		.word	.LC0
+  93 0050 4C000000 		.word	.LC2
+  94              		.cfi_endproc
+  95              	.LFE16:
+  97              		.section	.text.rt_device_init_all,"ax",%progbits
+  98              		.align	1
+  99              		.global	rt_device_init_all
+ 100              		.syntax unified
+ 101              		.thumb
+ 102              		.thumb_func
+ 103              		.fpu fpv4-sp-d16
+ 105              	rt_device_init_all:
+ 106              	.LFB17:
+  90:rt-thread/src/device.c **** RTM_EXPORT(rt_device_unregister);
+  91:rt-thread/src/device.c **** 
+  92:rt-thread/src/device.c **** /**
+  93:rt-thread/src/device.c ****  * This function initializes all registered device driver
+  94:rt-thread/src/device.c ****  *
+  95:rt-thread/src/device.c ****  * @return the error code, RT_EOK on successfully.
+  96:rt-thread/src/device.c ****  *
+  97:rt-thread/src/device.c ****  * @deprecated since 1.2.x, this function is not needed because the initialization
+  98:rt-thread/src/device.c ****  *             of a device is performed when application opens it.
+  99:rt-thread/src/device.c ****  */
+ 100:rt-thread/src/device.c **** rt_err_t rt_device_init_all(void)
+ 101:rt-thread/src/device.c **** {
+ 107              		.loc 1 101 0
+ 108              		.cfi_startproc
+ 109              		@ args = 0, pretend = 0, frame = 0
+ 110              		@ frame_needed = 0, uses_anonymous_args = 0
+ 111              		@ link register save eliminated.
+ 102:rt-thread/src/device.c ****     return RT_EOK;
+ 103:rt-thread/src/device.c **** }
+ 112              		.loc 1 103 0
+ 113 0000 0020     		movs	r0, #0
+ 114 0002 7047     		bx	lr
+ 115              		.cfi_endproc
+ 116              	.LFE17:
+ 118              		.section	.text.rt_device_find,"ax",%progbits
+ 119              		.align	1
+ 120              		.global	rt_device_find
+ 121              		.syntax unified
+ 122              		.thumb
+ 123              		.thumb_func
+ 124              		.fpu fpv4-sp-d16
+ 126              	rt_device_find:
+ 127              	.LFB18:
+ 104:rt-thread/src/device.c **** 
+ARM GAS  /tmp/cc672709.s 			page 5
+
+
+ 105:rt-thread/src/device.c **** /**
+ 106:rt-thread/src/device.c ****  * This function finds a device driver by specified name.
+ 107:rt-thread/src/device.c ****  *
+ 108:rt-thread/src/device.c ****  * @param name the device driver's name
+ 109:rt-thread/src/device.c ****  *
+ 110:rt-thread/src/device.c ****  * @return the registered device driver on successful, or RT_NULL on failure.
+ 111:rt-thread/src/device.c ****  */
+ 112:rt-thread/src/device.c **** rt_device_t rt_device_find(const char *name)
+ 113:rt-thread/src/device.c **** {
+ 128              		.loc 1 113 0
+ 129              		.cfi_startproc
+ 130              		@ args = 0, pretend = 0, frame = 0
+ 131              		@ frame_needed = 0, uses_anonymous_args = 0
+ 132              	.LVL10:
+ 133 0000 F8B5     		push	{r3, r4, r5, r6, r7, lr}
+ 134              	.LCFI1:
+ 135              		.cfi_def_cfa_offset 24
+ 136              		.cfi_offset 3, -24
+ 137              		.cfi_offset 4, -20
+ 138              		.cfi_offset 5, -16
+ 139              		.cfi_offset 6, -12
+ 140              		.cfi_offset 7, -8
+ 141              		.cfi_offset 14, -4
+ 142 0002 0746     		mov	r7, r0
+ 114:rt-thread/src/device.c ****     struct rt_object *object;
+ 115:rt-thread/src/device.c ****     struct rt_list_node *node;
+ 116:rt-thread/src/device.c ****     struct rt_object_information *information;
+ 117:rt-thread/src/device.c **** 
+ 118:rt-thread/src/device.c ****     /* enter critical */
+ 119:rt-thread/src/device.c ****     if (rt_thread_self() != RT_NULL)
+ 143              		.loc 1 119 0
+ 144 0004 FFF7FEFF 		bl	rt_thread_self
+ 145              	.LVL11:
+ 146 0008 08B1     		cbz	r0, .L12
+ 120:rt-thread/src/device.c ****         rt_enter_critical();
+ 147              		.loc 1 120 0
+ 148 000a FFF7FEFF 		bl	rt_enter_critical
+ 149              	.LVL12:
+ 150              	.L12:
+ 121:rt-thread/src/device.c **** 
+ 122:rt-thread/src/device.c ****     /* try to find device object */
+ 123:rt-thread/src/device.c ****     information = rt_object_get_information(RT_Object_Class_Device);
+ 151              		.loc 1 123 0
+ 152 000e 0920     		movs	r0, #9
+ 153 0010 FFF7FEFF 		bl	rt_object_get_information
+ 154              	.LVL13:
+ 124:rt-thread/src/device.c ****     RT_ASSERT(information != RT_NULL);
+ 155              		.loc 1 124 0
+ 156 0014 0646     		mov	r6, r0
+ 157 0016 68B1     		cbz	r0, .L21
+ 158              	.LVL14:
+ 159              	.L13:
+ 125:rt-thread/src/device.c ****     for (node  = information->object_list.next;
+ 160              		.loc 1 125 0
+ 161 0018 7468     		ldr	r4, [r6, #4]
+ 162              	.LVL15:
+ 163              	.L14:
+ARM GAS  /tmp/cc672709.s 			page 6
+
+
+ 126:rt-thread/src/device.c ****          node != &(information->object_list);
+ 164              		.loc 1 126 0 discriminator 1
+ 165 001a 331D     		adds	r3, r6, #4
+ 125:rt-thread/src/device.c ****     for (node  = information->object_list.next;
+ 166              		.loc 1 125 0 discriminator 1
+ 167 001c 9C42     		cmp	r4, r3
+ 168 001e 16D0     		beq	.L22
+ 127:rt-thread/src/device.c ****          node  = node->next)
+ 128:rt-thread/src/device.c ****     {
+ 129:rt-thread/src/device.c ****         object = rt_list_entry(node, struct rt_object, list);
+ 169              		.loc 1 129 0
+ 170 0020 A4F10C05 		sub	r5, r4, #12
+ 171              	.LVL16:
+ 130:rt-thread/src/device.c ****         if (rt_strncmp(object->name, name, RT_NAME_MAX) == 0)
+ 172              		.loc 1 130 0
+ 173 0024 0822     		movs	r2, #8
+ 174 0026 3946     		mov	r1, r7
+ 175 0028 2846     		mov	r0, r5
+ 176 002a FFF7FEFF 		bl	rt_strncmp
+ 177              	.LVL17:
+ 178 002e 38B1     		cbz	r0, .L23
+ 127:rt-thread/src/device.c ****          node  = node->next)
+ 179              		.loc 1 127 0
+ 180 0030 2468     		ldr	r4, [r4]
+ 181              	.LVL18:
+ 182 0032 F2E7     		b	.L14
+ 183              	.LVL19:
+ 184              	.L21:
+ 124:rt-thread/src/device.c ****     for (node  = information->object_list.next;
+ 185              		.loc 1 124 0 discriminator 1
+ 186 0034 7C22     		movs	r2, #124
+ 187 0036 0B49     		ldr	r1, .L24
+ 188 0038 0B48     		ldr	r0, .L24+4
+ 189              	.LVL20:
+ 190 003a FFF7FEFF 		bl	rt_assert_handler
+ 191              	.LVL21:
+ 192 003e EBE7     		b	.L13
+ 193              	.LVL22:
+ 194              	.L23:
+ 131:rt-thread/src/device.c ****         {
+ 132:rt-thread/src/device.c ****             /* leave critical */
+ 133:rt-thread/src/device.c ****             if (rt_thread_self() != RT_NULL)
+ 195              		.loc 1 133 0
+ 196 0040 FFF7FEFF 		bl	rt_thread_self
+ 197              	.LVL23:
+ 198 0044 50B1     		cbz	r0, .L18
+ 134:rt-thread/src/device.c ****                 rt_exit_critical();
+ 199              		.loc 1 134 0
+ 200 0046 FFF7FEFF 		bl	rt_exit_critical
+ 201              	.LVL24:
+ 135:rt-thread/src/device.c **** 
+ 136:rt-thread/src/device.c ****             return (rt_device_t)object;
+ 202              		.loc 1 136 0
+ 203 004a 2846     		mov	r0, r5
+ 204 004c F8BD     		pop	{r3, r4, r5, r6, r7, pc}
+ 205              	.LVL25:
+ 206              	.L22:
+ARM GAS  /tmp/cc672709.s 			page 7
+
+
+ 137:rt-thread/src/device.c ****         }
+ 138:rt-thread/src/device.c ****     }
+ 139:rt-thread/src/device.c **** 
+ 140:rt-thread/src/device.c ****     /* leave critical */
+ 141:rt-thread/src/device.c ****     if (rt_thread_self() != RT_NULL)
+ 207              		.loc 1 141 0
+ 208 004e FFF7FEFF 		bl	rt_thread_self
+ 209              	.LVL26:
+ 210 0052 28B1     		cbz	r0, .L19
+ 142:rt-thread/src/device.c ****         rt_exit_critical();
+ 211              		.loc 1 142 0
+ 212 0054 FFF7FEFF 		bl	rt_exit_critical
+ 213              	.LVL27:
+ 143:rt-thread/src/device.c **** 
+ 144:rt-thread/src/device.c ****     /* not found */
+ 145:rt-thread/src/device.c ****     return RT_NULL;
+ 214              		.loc 1 145 0
+ 215 0058 0020     		movs	r0, #0
+ 216 005a F8BD     		pop	{r3, r4, r5, r6, r7, pc}
+ 217              	.LVL28:
+ 218              	.L18:
+ 136:rt-thread/src/device.c ****         }
+ 219              		.loc 1 136 0
+ 220 005c 2846     		mov	r0, r5
+ 221 005e F8BD     		pop	{r3, r4, r5, r6, r7, pc}
+ 222              	.LVL29:
+ 223              	.L19:
+ 224              		.loc 1 145 0
+ 225 0060 0020     		movs	r0, #0
+ 146:rt-thread/src/device.c **** }
+ 226              		.loc 1 146 0
+ 227 0062 F8BD     		pop	{r3, r4, r5, r6, r7, pc}
+ 228              	.LVL30:
+ 229              	.L25:
+ 230              		.align	2
+ 231              	.L24:
+ 232 0064 00000000 		.word	.LANCHOR1
+ 233 0068 00000000 		.word	.LC3
+ 234              		.cfi_endproc
+ 235              	.LFE18:
+ 237              		.section	.text.rt_device_register,"ax",%progbits
+ 238              		.align	1
+ 239              		.global	rt_device_register
+ 240              		.syntax unified
+ 241              		.thumb
+ 242              		.thumb_func
+ 243              		.fpu fpv4-sp-d16
+ 245              	rt_device_register:
+ 246              	.LFB15:
+  52:rt-thread/src/device.c ****     if (dev == RT_NULL)
+ 247              		.loc 1 52 0
+ 248              		.cfi_startproc
+ 249              		@ args = 0, pretend = 0, frame = 0
+ 250              		@ frame_needed = 0, uses_anonymous_args = 0
+ 251              	.LVL31:
+  53:rt-thread/src/device.c ****         return -RT_ERROR;
+ 252              		.loc 1 53 0
+ARM GAS  /tmp/cc672709.s 			page 8
+
+
+ 253 0000 88B1     		cbz	r0, .L28
+  52:rt-thread/src/device.c ****     if (dev == RT_NULL)
+ 254              		.loc 1 52 0
+ 255 0002 70B5     		push	{r4, r5, r6, lr}
+ 256              	.LCFI2:
+ 257              		.cfi_def_cfa_offset 16
+ 258              		.cfi_offset 4, -16
+ 259              		.cfi_offset 5, -12
+ 260              		.cfi_offset 6, -8
+ 261              		.cfi_offset 14, -4
+ 262 0004 0446     		mov	r4, r0
+ 263 0006 1646     		mov	r6, r2
+ 264 0008 0D46     		mov	r5, r1
+  56:rt-thread/src/device.c ****         return -RT_ERROR;
+ 265              		.loc 1 56 0
+ 266 000a 0846     		mov	r0, r1
+ 267              	.LVL32:
+ 268 000c FFF7FEFF 		bl	rt_device_find
+ 269              	.LVL33:
+ 270 0010 60B9     		cbnz	r0, .L29
+  59:rt-thread/src/device.c ****     dev->flag = flags;
+ 271              		.loc 1 59 0
+ 272 0012 2A46     		mov	r2, r5
+ 273 0014 0921     		movs	r1, #9
+ 274 0016 2046     		mov	r0, r4
+ 275 0018 FFF7FEFF 		bl	rt_object_init
+ 276              	.LVL34:
+  60:rt-thread/src/device.c ****     dev->ref_count = 0;
+ 277              		.loc 1 60 0
+ 278 001c E682     		strh	r6, [r4, #22]	@ movhi
+  61:rt-thread/src/device.c ****     dev->open_flag = 0;
+ 279              		.loc 1 61 0
+ 280 001e 0020     		movs	r0, #0
+ 281 0020 A076     		strb	r0, [r4, #26]
+  62:rt-thread/src/device.c **** 
+ 282              		.loc 1 62 0
+ 283 0022 2083     		strh	r0, [r4, #24]	@ movhi
+  69:rt-thread/src/device.c **** }
+ 284              		.loc 1 69 0
+ 285 0024 70BD     		pop	{r4, r5, r6, pc}
+ 286              	.LVL35:
+ 287              	.L28:
+ 288              	.LCFI3:
+ 289              		.cfi_def_cfa_offset 0
+ 290              		.cfi_restore 4
+ 291              		.cfi_restore 5
+ 292              		.cfi_restore 6
+ 293              		.cfi_restore 14
+  54:rt-thread/src/device.c **** 
+ 294              		.loc 1 54 0
+ 295 0026 4FF0FF30 		mov	r0, #-1
+ 296              	.LVL36:
+ 297 002a 7047     		bx	lr
+ 298              	.LVL37:
+ 299              	.L29:
+ 300              	.LCFI4:
+ 301              		.cfi_def_cfa_offset 16
+ARM GAS  /tmp/cc672709.s 			page 9
+
+
+ 302              		.cfi_offset 4, -16
+ 303              		.cfi_offset 5, -12
+ 304              		.cfi_offset 6, -8
+ 305              		.cfi_offset 14, -4
+  57:rt-thread/src/device.c **** 
+ 306              		.loc 1 57 0
+ 307 002c 4FF0FF30 		mov	r0, #-1
+  70:rt-thread/src/device.c **** RTM_EXPORT(rt_device_register);
+ 308              		.loc 1 70 0
+ 309 0030 70BD     		pop	{r4, r5, r6, pc}
+ 310              		.cfi_endproc
+ 311              	.LFE15:
+ 313              		.section	.text.rt_device_create,"ax",%progbits
+ 314              		.align	1
+ 315              		.global	rt_device_create
+ 316              		.syntax unified
+ 317              		.thumb
+ 318              		.thumb_func
+ 319              		.fpu fpv4-sp-d16
+ 321              	rt_device_create:
+ 322              	.LFB19:
+ 147:rt-thread/src/device.c **** RTM_EXPORT(rt_device_find);
+ 148:rt-thread/src/device.c **** 
+ 149:rt-thread/src/device.c **** #ifdef RT_USING_HEAP
+ 150:rt-thread/src/device.c **** /**
+ 151:rt-thread/src/device.c ****  * This function creates a device object with user data size.
+ 152:rt-thread/src/device.c ****  *
+ 153:rt-thread/src/device.c ****  * @param type, the kind type of this device object.
+ 154:rt-thread/src/device.c ****  * @param attach_size, the size of user data.
+ 155:rt-thread/src/device.c ****  *
+ 156:rt-thread/src/device.c ****  * @return the allocated device object, or RT_NULL when failed.
+ 157:rt-thread/src/device.c ****  */
+ 158:rt-thread/src/device.c **** rt_device_t rt_device_create(int type, int attach_size)
+ 159:rt-thread/src/device.c **** {
+ 323              		.loc 1 159 0
+ 324              		.cfi_startproc
+ 325              		@ args = 0, pretend = 0, frame = 0
+ 326              		@ frame_needed = 0, uses_anonymous_args = 0
+ 327              	.LVL38:
+ 328 0000 38B5     		push	{r3, r4, r5, lr}
+ 329              	.LCFI5:
+ 330              		.cfi_def_cfa_offset 16
+ 331              		.cfi_offset 3, -16
+ 332              		.cfi_offset 4, -12
+ 333              		.cfi_offset 5, -8
+ 334              		.cfi_offset 14, -4
+ 335 0002 0546     		mov	r5, r0
+ 336              	.LVL39:
+ 160:rt-thread/src/device.c ****     int size;
+ 161:rt-thread/src/device.c ****     rt_device_t device;
+ 162:rt-thread/src/device.c **** 
+ 163:rt-thread/src/device.c ****     size = RT_ALIGN(sizeof(struct rt_device), RT_ALIGN_SIZE);
+ 164:rt-thread/src/device.c ****     attach_size = RT_ALIGN(attach_size, RT_ALIGN_SIZE);
+ 337              		.loc 1 164 0
+ 338 0004 0331     		adds	r1, r1, #3
+ 339              	.LVL40:
+ 340 0006 21F00300 		bic	r0, r1, #3
+ARM GAS  /tmp/cc672709.s 			page 10
+
+
+ 341              	.LVL41:
+ 165:rt-thread/src/device.c ****     /* use the total size */
+ 166:rt-thread/src/device.c ****     size += attach_size;
+ 167:rt-thread/src/device.c **** 
+ 168:rt-thread/src/device.c ****     device = (rt_device_t)rt_malloc(size);
+ 342              		.loc 1 168 0
+ 343 000a 4030     		adds	r0, r0, #64
+ 344              	.LVL42:
+ 345 000c FFF7FEFF 		bl	rt_malloc
+ 346              	.LVL43:
+ 169:rt-thread/src/device.c ****     if (device)
+ 347              		.loc 1 169 0
+ 348 0010 0446     		mov	r4, r0
+ 349 0012 20B1     		cbz	r0, .L34
+ 170:rt-thread/src/device.c ****     {
+ 171:rt-thread/src/device.c ****         rt_memset(device, 0x0, sizeof(struct rt_device));
+ 350              		.loc 1 171 0
+ 351 0014 4022     		movs	r2, #64
+ 352 0016 0021     		movs	r1, #0
+ 353 0018 FFF7FEFF 		bl	rt_memset
+ 354              	.LVL44:
+ 172:rt-thread/src/device.c ****         device->type = (enum rt_device_class_type)type;
+ 355              		.loc 1 172 0
+ 356 001c 2575     		strb	r5, [r4, #20]
+ 357              	.L34:
+ 173:rt-thread/src/device.c ****     }
+ 174:rt-thread/src/device.c **** 
+ 175:rt-thread/src/device.c ****     return device;
+ 176:rt-thread/src/device.c **** }
+ 358              		.loc 1 176 0
+ 359 001e 2046     		mov	r0, r4
+ 360 0020 38BD     		pop	{r3, r4, r5, pc}
+ 361              		.cfi_endproc
+ 362              	.LFE19:
+ 364              		.section	.text.rt_device_destroy,"ax",%progbits
+ 365              		.align	1
+ 366              		.global	rt_device_destroy
+ 367              		.syntax unified
+ 368              		.thumb
+ 369              		.thumb_func
+ 370              		.fpu fpv4-sp-d16
+ 372              	rt_device_destroy:
+ 373              	.LFB20:
+ 177:rt-thread/src/device.c **** RTM_EXPORT(rt_device_create);
+ 178:rt-thread/src/device.c **** 
+ 179:rt-thread/src/device.c **** /**
+ 180:rt-thread/src/device.c ****  * This function destroy the specific device object.
+ 181:rt-thread/src/device.c ****  *
+ 182:rt-thread/src/device.c ****  * @param dev, the specific device object.
+ 183:rt-thread/src/device.c ****  */
+ 184:rt-thread/src/device.c **** void rt_device_destroy(rt_device_t dev)
+ 185:rt-thread/src/device.c **** {
+ 374              		.loc 1 185 0
+ 375              		.cfi_startproc
+ 376              		@ args = 0, pretend = 0, frame = 0
+ 377              		@ frame_needed = 0, uses_anonymous_args = 0
+ 378              	.LVL45:
+ARM GAS  /tmp/cc672709.s 			page 11
+
+
+ 379 0000 10B5     		push	{r4, lr}
+ 380              	.LCFI6:
+ 381              		.cfi_def_cfa_offset 8
+ 382              		.cfi_offset 4, -8
+ 383              		.cfi_offset 14, -4
+ 186:rt-thread/src/device.c ****     RT_ASSERT(dev != RT_NULL);
+ 384              		.loc 1 186 0
+ 385 0002 0446     		mov	r4, r0
+ 386 0004 A0B1     		cbz	r0, .L42
+ 387              	.LVL46:
+ 388              	.L38:
+ 187:rt-thread/src/device.c ****     RT_ASSERT(rt_object_get_type(&dev->parent) == RT_Object_Class_Device);
+ 389              		.loc 1 187 0
+ 390 0006 2046     		mov	r0, r4
+ 391 0008 FFF7FEFF 		bl	rt_object_get_type
+ 392              	.LVL47:
+ 393 000c 0928     		cmp	r0, #9
+ 394 000e 04D0     		beq	.L39
+ 395              		.loc 1 187 0 is_stmt 0 discriminator 1
+ 396 0010 BB22     		movs	r2, #187
+ 397 0012 0D49     		ldr	r1, .L44
+ 398 0014 0D48     		ldr	r0, .L44+4
+ 399 0016 FFF7FEFF 		bl	rt_assert_handler
+ 400              	.LVL48:
+ 401              	.L39:
+ 188:rt-thread/src/device.c ****     RT_ASSERT(rt_object_is_systemobject(&dev->parent) == RT_FALSE);
+ 402              		.loc 1 188 0 is_stmt 1
+ 403 001a 2046     		mov	r0, r4
+ 404 001c FFF7FEFF 		bl	rt_object_is_systemobject
+ 405              	.LVL49:
+ 406 0020 60B9     		cbnz	r0, .L43
+ 407              	.L40:
+ 189:rt-thread/src/device.c **** 
+ 190:rt-thread/src/device.c ****     rt_object_detach(&(dev->parent));
+ 408              		.loc 1 190 0
+ 409 0022 2046     		mov	r0, r4
+ 410 0024 FFF7FEFF 		bl	rt_object_detach
+ 411              	.LVL50:
+ 191:rt-thread/src/device.c **** 
+ 192:rt-thread/src/device.c ****     /* release this device object */
+ 193:rt-thread/src/device.c ****     rt_free(dev);
+ 412              		.loc 1 193 0
+ 413 0028 2046     		mov	r0, r4
+ 414 002a FFF7FEFF 		bl	rt_free
+ 415              	.LVL51:
+ 416 002e 10BD     		pop	{r4, pc}
+ 417              	.LVL52:
+ 418              	.L42:
+ 186:rt-thread/src/device.c ****     RT_ASSERT(rt_object_get_type(&dev->parent) == RT_Object_Class_Device);
+ 419              		.loc 1 186 0 discriminator 1
+ 420 0030 BA22     		movs	r2, #186
+ 421 0032 0549     		ldr	r1, .L44
+ 422 0034 0648     		ldr	r0, .L44+8
+ 423              	.LVL53:
+ 424 0036 FFF7FEFF 		bl	rt_assert_handler
+ 425              	.LVL54:
+ 426 003a E4E7     		b	.L38
+ARM GAS  /tmp/cc672709.s 			page 12
+
+
+ 427              	.L43:
+ 188:rt-thread/src/device.c **** 
+ 428              		.loc 1 188 0 discriminator 1
+ 429 003c BC22     		movs	r2, #188
+ 430 003e 0249     		ldr	r1, .L44
+ 431 0040 0448     		ldr	r0, .L44+12
+ 432 0042 FFF7FEFF 		bl	rt_assert_handler
+ 433              	.LVL55:
+ 434 0046 ECE7     		b	.L40
+ 435              	.L45:
+ 436              		.align	2
+ 437              	.L44:
+ 438 0048 00000000 		.word	.LANCHOR2
+ 439 004c 10000000 		.word	.LC1
+ 440 0050 00000000 		.word	.LC0
+ 441 0054 00000000 		.word	.LC4
+ 442              		.cfi_endproc
+ 443              	.LFE20:
+ 445              		.section	.text.rt_device_init,"ax",%progbits
+ 446              		.align	1
+ 447              		.global	rt_device_init
+ 448              		.syntax unified
+ 449              		.thumb
+ 450              		.thumb_func
+ 451              		.fpu fpv4-sp-d16
+ 453              	rt_device_init:
+ 454              	.LFB21:
+ 194:rt-thread/src/device.c **** }
+ 195:rt-thread/src/device.c **** RTM_EXPORT(rt_device_destroy);
+ 196:rt-thread/src/device.c **** #endif
+ 197:rt-thread/src/device.c **** 
+ 198:rt-thread/src/device.c **** /**
+ 199:rt-thread/src/device.c ****  * This function will initialize the specified device
+ 200:rt-thread/src/device.c ****  *
+ 201:rt-thread/src/device.c ****  * @param dev the pointer of device driver structure
+ 202:rt-thread/src/device.c ****  *
+ 203:rt-thread/src/device.c ****  * @return the result
+ 204:rt-thread/src/device.c ****  */
+ 205:rt-thread/src/device.c **** rt_err_t rt_device_init(rt_device_t dev)
+ 206:rt-thread/src/device.c **** {
+ 455              		.loc 1 206 0
+ 456              		.cfi_startproc
+ 457              		@ args = 0, pretend = 0, frame = 0
+ 458              		@ frame_needed = 0, uses_anonymous_args = 0
+ 459              	.LVL56:
+ 460 0000 38B5     		push	{r3, r4, r5, lr}
+ 461              	.LCFI7:
+ 462              		.cfi_def_cfa_offset 16
+ 463              		.cfi_offset 3, -16
+ 464              		.cfi_offset 4, -12
+ 465              		.cfi_offset 5, -8
+ 466              		.cfi_offset 14, -4
+ 467              	.LVL57:
+ 207:rt-thread/src/device.c ****     rt_err_t result = RT_EOK;
+ 208:rt-thread/src/device.c **** 
+ 209:rt-thread/src/device.c ****     RT_ASSERT(dev != RT_NULL);
+ 468              		.loc 1 209 0
+ARM GAS  /tmp/cc672709.s 			page 13
+
+
+ 469 0002 0446     		mov	r4, r0
+ 470 0004 40B1     		cbz	r0, .L53
+ 471              	.LVL58:
+ 472              	.L47:
+ 210:rt-thread/src/device.c **** 
+ 211:rt-thread/src/device.c ****     /* get device_init handler */
+ 212:rt-thread/src/device.c ****     if (device_init != RT_NULL)
+ 473              		.loc 1 212 0
+ 474 0006 636A     		ldr	r3, [r4, #36]
+ 475 0008 DBB1     		cbz	r3, .L50
+ 213:rt-thread/src/device.c ****     {
+ 214:rt-thread/src/device.c ****         if (!(dev->flag & RT_DEVICE_FLAG_ACTIVATED))
+ 476              		.loc 1 214 0
+ 477 000a E28A     		ldrh	r2, [r4, #22]
+ 478 000c 12F0100F 		tst	r2, #16
+ 479 0010 08D0     		beq	.L54
+ 207:rt-thread/src/device.c **** 
+ 480              		.loc 1 207 0
+ 481 0012 0025     		movs	r5, #0
+ 482              	.LVL59:
+ 483              	.L46:
+ 215:rt-thread/src/device.c ****         {
+ 216:rt-thread/src/device.c ****             result = device_init(dev);
+ 217:rt-thread/src/device.c ****             if (result != RT_EOK)
+ 218:rt-thread/src/device.c ****             {
+ 219:rt-thread/src/device.c ****                 rt_kprintf("To initialize device:%s failed. The error code is %d\n",
+ 220:rt-thread/src/device.c ****                            dev->parent.name, result);
+ 221:rt-thread/src/device.c ****             }
+ 222:rt-thread/src/device.c ****             else
+ 223:rt-thread/src/device.c ****             {
+ 224:rt-thread/src/device.c ****                 dev->flag |= RT_DEVICE_FLAG_ACTIVATED;
+ 225:rt-thread/src/device.c ****             }
+ 226:rt-thread/src/device.c ****         }
+ 227:rt-thread/src/device.c ****     }
+ 228:rt-thread/src/device.c **** 
+ 229:rt-thread/src/device.c ****     return result;
+ 230:rt-thread/src/device.c **** }
+ 484              		.loc 1 230 0
+ 485 0014 2846     		mov	r0, r5
+ 486 0016 38BD     		pop	{r3, r4, r5, pc}
+ 487              	.LVL60:
+ 488              	.L53:
+ 209:rt-thread/src/device.c **** 
+ 489              		.loc 1 209 0 discriminator 1
+ 490 0018 D122     		movs	r2, #209
+ 491 001a 0B49     		ldr	r1, .L56
+ 492 001c 0B48     		ldr	r0, .L56+4
+ 493              	.LVL61:
+ 494 001e FFF7FEFF 		bl	rt_assert_handler
+ 495              	.LVL62:
+ 496 0022 F0E7     		b	.L47
+ 497              	.L54:
+ 216:rt-thread/src/device.c ****             if (result != RT_EOK)
+ 498              		.loc 1 216 0
+ 499 0024 2046     		mov	r0, r4
+ 500 0026 9847     		blx	r3
+ 501              	.LVL63:
+ARM GAS  /tmp/cc672709.s 			page 14
+
+
+ 217:rt-thread/src/device.c ****             {
+ 502              		.loc 1 217 0
+ 503 0028 0546     		mov	r5, r0
+ 504 002a 20B9     		cbnz	r0, .L55
+ 224:rt-thread/src/device.c ****             }
+ 505              		.loc 1 224 0
+ 506 002c E38A     		ldrh	r3, [r4, #22]
+ 507 002e 43F01003 		orr	r3, r3, #16
+ 508 0032 E382     		strh	r3, [r4, #22]	@ movhi
+ 509 0034 EEE7     		b	.L46
+ 510              	.L55:
+ 219:rt-thread/src/device.c ****                            dev->parent.name, result);
+ 511              		.loc 1 219 0
+ 512 0036 0246     		mov	r2, r0
+ 513 0038 2146     		mov	r1, r4
+ 514 003a 0548     		ldr	r0, .L56+8
+ 515              	.LVL64:
+ 516 003c FFF7FEFF 		bl	rt_kprintf
+ 517              	.LVL65:
+ 518 0040 E8E7     		b	.L46
+ 519              	.LVL66:
+ 520              	.L50:
+ 207:rt-thread/src/device.c **** 
+ 521              		.loc 1 207 0
+ 522 0042 0025     		movs	r5, #0
+ 523 0044 E6E7     		b	.L46
+ 524              	.L57:
+ 525 0046 00BF     		.align	2
+ 526              	.L56:
+ 527 0048 00000000 		.word	.LANCHOR3
+ 528 004c 00000000 		.word	.LC0
+ 529 0050 00000000 		.word	.LC5
+ 530              		.cfi_endproc
+ 531              	.LFE21:
+ 533              		.section	.text.rt_device_open,"ax",%progbits
+ 534              		.align	1
+ 535              		.global	rt_device_open
+ 536              		.syntax unified
+ 537              		.thumb
+ 538              		.thumb_func
+ 539              		.fpu fpv4-sp-d16
+ 541              	rt_device_open:
+ 542              	.LFB22:
+ 231:rt-thread/src/device.c **** 
+ 232:rt-thread/src/device.c **** /**
+ 233:rt-thread/src/device.c ****  * This function will open a device
+ 234:rt-thread/src/device.c ****  *
+ 235:rt-thread/src/device.c ****  * @param dev the pointer of device driver structure
+ 236:rt-thread/src/device.c ****  * @param oflag the flags for device open
+ 237:rt-thread/src/device.c ****  *
+ 238:rt-thread/src/device.c ****  * @return the result
+ 239:rt-thread/src/device.c ****  */
+ 240:rt-thread/src/device.c **** rt_err_t rt_device_open(rt_device_t dev, rt_uint16_t oflag)
+ 241:rt-thread/src/device.c **** {
+ 543              		.loc 1 241 0
+ 544              		.cfi_startproc
+ 545              		@ args = 0, pretend = 0, frame = 0
+ARM GAS  /tmp/cc672709.s 			page 15
+
+
+ 546              		@ frame_needed = 0, uses_anonymous_args = 0
+ 547              	.LVL67:
+ 548 0000 70B5     		push	{r4, r5, r6, lr}
+ 549              	.LCFI8:
+ 550              		.cfi_def_cfa_offset 16
+ 551              		.cfi_offset 4, -16
+ 552              		.cfi_offset 5, -12
+ 553              		.cfi_offset 6, -8
+ 554              		.cfi_offset 14, -4
+ 555 0002 0E46     		mov	r6, r1
+ 556              	.LVL68:
+ 242:rt-thread/src/device.c ****     rt_err_t result = RT_EOK;
+ 243:rt-thread/src/device.c **** 
+ 244:rt-thread/src/device.c ****     RT_ASSERT(dev != RT_NULL);
+ 557              		.loc 1 244 0
+ 558 0004 0446     		mov	r4, r0
+ 559 0006 C0B1     		cbz	r0, .L72
+ 560              	.LVL69:
+ 561              	.L59:
+ 245:rt-thread/src/device.c ****     RT_ASSERT(rt_object_get_type(&dev->parent) == RT_Object_Class_Device);
+ 562              		.loc 1 245 0
+ 563 0008 2046     		mov	r0, r4
+ 564 000a FFF7FEFF 		bl	rt_object_get_type
+ 565              	.LVL70:
+ 566 000e 0928     		cmp	r0, #9
+ 567 0010 04D0     		beq	.L60
+ 568              		.loc 1 245 0 is_stmt 0 discriminator 1
+ 569 0012 F522     		movs	r2, #245
+ 570 0014 2749     		ldr	r1, .L75
+ 571 0016 2848     		ldr	r0, .L75+4
+ 572 0018 FFF7FEFF 		bl	rt_assert_handler
+ 573              	.LVL71:
+ 574              	.L60:
+ 246:rt-thread/src/device.c **** 
+ 247:rt-thread/src/device.c ****     /* if device is not initialized, initialize it. */
+ 248:rt-thread/src/device.c ****     if (!(dev->flag & RT_DEVICE_FLAG_ACTIVATED))
+ 575              		.loc 1 248 0 is_stmt 1
+ 576 001c E38A     		ldrh	r3, [r4, #22]
+ 577 001e 13F0100F 		tst	r3, #16
+ 578 0022 18D1     		bne	.L68
+ 249:rt-thread/src/device.c ****     {
+ 250:rt-thread/src/device.c ****         if (device_init != RT_NULL)
+ 579              		.loc 1 250 0
+ 580 0024 636A     		ldr	r3, [r4, #36]
+ 581 0026 A3B1     		cbz	r3, .L69
+ 251:rt-thread/src/device.c ****         {
+ 252:rt-thread/src/device.c ****             result = device_init(dev);
+ 582              		.loc 1 252 0
+ 583 0028 2046     		mov	r0, r4
+ 584 002a 9847     		blx	r3
+ 585              	.LVL72:
+ 253:rt-thread/src/device.c ****             if (result != RT_EOK)
+ 586              		.loc 1 253 0
+ 587 002c 0546     		mov	r5, r0
+ 588 002e 50B9     		cbnz	r0, .L73
+ 589              	.LVL73:
+ 590              	.L62:
+ARM GAS  /tmp/cc672709.s 			page 16
+
+
+ 254:rt-thread/src/device.c ****             {
+ 255:rt-thread/src/device.c ****                 rt_kprintf("To initialize device:%s failed. The error code is %d\n",
+ 256:rt-thread/src/device.c ****                            dev->parent.name, result);
+ 257:rt-thread/src/device.c **** 
+ 258:rt-thread/src/device.c ****                 return result;
+ 259:rt-thread/src/device.c ****             }
+ 260:rt-thread/src/device.c ****         }
+ 261:rt-thread/src/device.c **** 
+ 262:rt-thread/src/device.c ****         dev->flag |= RT_DEVICE_FLAG_ACTIVATED;
+ 591              		.loc 1 262 0
+ 592 0030 E38A     		ldrh	r3, [r4, #22]
+ 593 0032 43F01003 		orr	r3, r3, #16
+ 594 0036 E382     		strh	r3, [r4, #22]	@ movhi
+ 595 0038 0EE0     		b	.L61
+ 596              	.LVL74:
+ 597              	.L72:
+ 244:rt-thread/src/device.c ****     RT_ASSERT(rt_object_get_type(&dev->parent) == RT_Object_Class_Device);
+ 598              		.loc 1 244 0 discriminator 1
+ 599 003a F422     		movs	r2, #244
+ 600 003c 1D49     		ldr	r1, .L75
+ 601              	.LVL75:
+ 602 003e 1F48     		ldr	r0, .L75+8
+ 603              	.LVL76:
+ 604 0040 FFF7FEFF 		bl	rt_assert_handler
+ 605              	.LVL77:
+ 606 0044 E0E7     		b	.L59
+ 607              	.LVL78:
+ 608              	.L73:
+ 255:rt-thread/src/device.c ****                            dev->parent.name, result);
+ 609              		.loc 1 255 0
+ 610 0046 0246     		mov	r2, r0
+ 611 0048 2146     		mov	r1, r4
+ 612 004a 1D48     		ldr	r0, .L75+12
+ 613              	.LVL79:
+ 614 004c FFF7FEFF 		bl	rt_kprintf
+ 615              	.LVL80:
+ 258:rt-thread/src/device.c ****             }
+ 616              		.loc 1 258 0
+ 617 0050 1DE0     		b	.L58
+ 618              	.LVL81:
+ 619              	.L69:
+ 242:rt-thread/src/device.c **** 
+ 620              		.loc 1 242 0
+ 621 0052 0025     		movs	r5, #0
+ 622 0054 ECE7     		b	.L62
+ 623              	.L68:
+ 624 0056 0025     		movs	r5, #0
+ 625              	.LVL82:
+ 626              	.L61:
+ 263:rt-thread/src/device.c ****     }
+ 264:rt-thread/src/device.c **** 
+ 265:rt-thread/src/device.c ****     /* device is a stand alone device and opened */
+ 266:rt-thread/src/device.c ****     if ((dev->flag & RT_DEVICE_FLAG_STANDALONE) &&
+ 627              		.loc 1 266 0
+ 628 0058 E38A     		ldrh	r3, [r4, #22]
+ 629 005a 13F0080F 		tst	r3, #8
+ 630 005e 03D0     		beq	.L64
+ARM GAS  /tmp/cc672709.s 			page 17
+
+
+ 267:rt-thread/src/device.c ****         (dev->open_flag & RT_DEVICE_OFLAG_OPEN))
+ 631              		.loc 1 267 0 discriminator 1
+ 632 0060 238B     		ldrh	r3, [r4, #24]
+ 266:rt-thread/src/device.c ****         (dev->open_flag & RT_DEVICE_OFLAG_OPEN))
+ 633              		.loc 1 266 0 discriminator 1
+ 634 0062 13F0080F 		tst	r3, #8
+ 635 0066 21D1     		bne	.L70
+ 636              	.L64:
+ 268:rt-thread/src/device.c ****     {
+ 269:rt-thread/src/device.c ****         return -RT_EBUSY;
+ 270:rt-thread/src/device.c ****     }
+ 271:rt-thread/src/device.c **** 
+ 272:rt-thread/src/device.c ****     /* call device_open interface */
+ 273:rt-thread/src/device.c ****     if (device_open != RT_NULL)
+ 637              		.loc 1 273 0
+ 638 0068 A36A     		ldr	r3, [r4, #40]
+ 639 006a 93B1     		cbz	r3, .L65
+ 274:rt-thread/src/device.c ****     {
+ 275:rt-thread/src/device.c ****         result = device_open(dev, oflag);
+ 640              		.loc 1 275 0
+ 641 006c 3146     		mov	r1, r6
+ 642 006e 2046     		mov	r0, r4
+ 643 0070 9847     		blx	r3
+ 644              	.LVL83:
+ 645 0072 0546     		mov	r5, r0
+ 646              	.LVL84:
+ 647              	.L66:
+ 276:rt-thread/src/device.c ****     }
+ 277:rt-thread/src/device.c ****     else
+ 278:rt-thread/src/device.c ****     {
+ 279:rt-thread/src/device.c ****         /* set open flag */
+ 280:rt-thread/src/device.c ****         dev->open_flag = (oflag & RT_DEVICE_OFLAG_MASK);
+ 281:rt-thread/src/device.c ****     }
+ 282:rt-thread/src/device.c **** 
+ 283:rt-thread/src/device.c ****     /* set open flag */
+ 284:rt-thread/src/device.c ****     if (result == RT_EOK || result == -RT_ENOSYS)
+ 648              		.loc 1 284 0
+ 649 0074 15B1     		cbz	r5, .L67
+ 650              		.loc 1 284 0 is_stmt 0 discriminator 1
+ 651 0076 15F1060F 		cmn	r5, #6
+ 652 007a 08D1     		bne	.L58
+ 653              	.L67:
+ 285:rt-thread/src/device.c ****     {
+ 286:rt-thread/src/device.c ****         dev->open_flag |= RT_DEVICE_OFLAG_OPEN;
+ 654              		.loc 1 286 0 is_stmt 1
+ 655 007c 238B     		ldrh	r3, [r4, #24]
+ 656 007e 43F00803 		orr	r3, r3, #8
+ 657 0082 2383     		strh	r3, [r4, #24]	@ movhi
+ 287:rt-thread/src/device.c **** 
+ 288:rt-thread/src/device.c ****         dev->ref_count++;
+ 658              		.loc 1 288 0
+ 659 0084 A37E     		ldrb	r3, [r4, #26]	@ zero_extendqisi2
+ 660 0086 0133     		adds	r3, r3, #1
+ 661 0088 DBB2     		uxtb	r3, r3
+ 662 008a A376     		strb	r3, [r4, #26]
+ 289:rt-thread/src/device.c ****         /* don't let bad things happen silently. If you are bitten by this assert,
+ 290:rt-thread/src/device.c ****          * please set the ref_count to a bigger type. */
+ARM GAS  /tmp/cc672709.s 			page 18
+
+
+ 291:rt-thread/src/device.c ****         RT_ASSERT(dev->ref_count != 0);
+ 663              		.loc 1 291 0
+ 664 008c 3BB1     		cbz	r3, .L74
+ 665              	.LVL85:
+ 666              	.L58:
+ 292:rt-thread/src/device.c ****     }
+ 293:rt-thread/src/device.c **** 
+ 294:rt-thread/src/device.c ****     return result;
+ 295:rt-thread/src/device.c **** }
+ 667              		.loc 1 295 0
+ 668 008e 2846     		mov	r0, r5
+ 669 0090 70BD     		pop	{r4, r5, r6, pc}
+ 670              	.LVL86:
+ 671              	.L65:
+ 280:rt-thread/src/device.c ****     }
+ 672              		.loc 1 280 0
+ 673 0092 26F0F006 		bic	r6, r6, #240
+ 674 0096 3605     		lsls	r6, r6, #20
+ 675 0098 360D     		lsrs	r6, r6, #20
+ 676 009a 2683     		strh	r6, [r4, #24]	@ movhi
+ 677 009c EAE7     		b	.L66
+ 678              	.L74:
+ 291:rt-thread/src/device.c ****     }
+ 679              		.loc 1 291 0 discriminator 1
+ 680 009e 40F22312 		movw	r2, #291
+ 681 00a2 0449     		ldr	r1, .L75
+ 682 00a4 0748     		ldr	r0, .L75+16
+ 683 00a6 FFF7FEFF 		bl	rt_assert_handler
+ 684              	.LVL87:
+ 685 00aa F0E7     		b	.L58
+ 686              	.L70:
+ 269:rt-thread/src/device.c ****     }
+ 687              		.loc 1 269 0
+ 688 00ac 6FF00605 		mvn	r5, #6
+ 689              	.LVL88:
+ 690 00b0 EDE7     		b	.L58
+ 691              	.L76:
+ 692 00b2 00BF     		.align	2
+ 693              	.L75:
+ 694 00b4 00000000 		.word	.LANCHOR4
+ 695 00b8 10000000 		.word	.LC1
+ 696 00bc 00000000 		.word	.LC0
+ 697 00c0 00000000 		.word	.LC5
+ 698 00c4 00000000 		.word	.LC6
+ 699              		.cfi_endproc
+ 700              	.LFE22:
+ 702              		.section	.text.rt_device_close,"ax",%progbits
+ 703              		.align	1
+ 704              		.global	rt_device_close
+ 705              		.syntax unified
+ 706              		.thumb
+ 707              		.thumb_func
+ 708              		.fpu fpv4-sp-d16
+ 710              	rt_device_close:
+ 711              	.LFB23:
+ 296:rt-thread/src/device.c **** RTM_EXPORT(rt_device_open);
+ 297:rt-thread/src/device.c **** 
+ARM GAS  /tmp/cc672709.s 			page 19
+
+
+ 298:rt-thread/src/device.c **** /**
+ 299:rt-thread/src/device.c ****  * This function will close a device
+ 300:rt-thread/src/device.c ****  *
+ 301:rt-thread/src/device.c ****  * @param dev the pointer of device driver structure
+ 302:rt-thread/src/device.c ****  *
+ 303:rt-thread/src/device.c ****  * @return the result
+ 304:rt-thread/src/device.c ****  */
+ 305:rt-thread/src/device.c **** rt_err_t rt_device_close(rt_device_t dev)
+ 306:rt-thread/src/device.c **** {
+ 712              		.loc 1 306 0
+ 713              		.cfi_startproc
+ 714              		@ args = 0, pretend = 0, frame = 0
+ 715              		@ frame_needed = 0, uses_anonymous_args = 0
+ 716              	.LVL89:
+ 717 0000 10B5     		push	{r4, lr}
+ 718              	.LCFI9:
+ 719              		.cfi_def_cfa_offset 8
+ 720              		.cfi_offset 4, -8
+ 721              		.cfi_offset 14, -4
+ 722              	.LVL90:
+ 307:rt-thread/src/device.c ****     rt_err_t result = RT_EOK;
+ 308:rt-thread/src/device.c **** 
+ 309:rt-thread/src/device.c ****     RT_ASSERT(dev != RT_NULL);
+ 723              		.loc 1 309 0
+ 724 0002 0446     		mov	r4, r0
+ 725 0004 D8B1     		cbz	r0, .L87
+ 726              	.LVL91:
+ 727              	.L78:
+ 310:rt-thread/src/device.c ****     RT_ASSERT(rt_object_get_type(&dev->parent) == RT_Object_Class_Device);
+ 728              		.loc 1 310 0
+ 729 0006 2046     		mov	r0, r4
+ 730 0008 FFF7FEFF 		bl	rt_object_get_type
+ 731              	.LVL92:
+ 732 000c 0928     		cmp	r0, #9
+ 733 000e 05D0     		beq	.L79
+ 734              		.loc 1 310 0 is_stmt 0 discriminator 1
+ 735 0010 4FF49B72 		mov	r2, #310
+ 736 0014 1149     		ldr	r1, .L88
+ 737 0016 1248     		ldr	r0, .L88+4
+ 738 0018 FFF7FEFF 		bl	rt_assert_handler
+ 739              	.LVL93:
+ 740              	.L79:
+ 311:rt-thread/src/device.c **** 
+ 312:rt-thread/src/device.c ****     if (dev->ref_count == 0)
+ 741              		.loc 1 312 0 is_stmt 1
+ 742 001c A37E     		ldrb	r3, [r4, #26]	@ zero_extendqisi2
+ 743 001e BBB1     		cbz	r3, .L83
+ 313:rt-thread/src/device.c ****         return -RT_ERROR;
+ 314:rt-thread/src/device.c **** 
+ 315:rt-thread/src/device.c ****     dev->ref_count--;
+ 744              		.loc 1 315 0
+ 745 0020 013B     		subs	r3, r3, #1
+ 746 0022 DBB2     		uxtb	r3, r3
+ 747 0024 A376     		strb	r3, [r4, #26]
+ 316:rt-thread/src/device.c **** 
+ 317:rt-thread/src/device.c ****     if (dev->ref_count != 0)
+ 748              		.loc 1 317 0
+ARM GAS  /tmp/cc672709.s 			page 20
+
+
+ 749 0026 B3B9     		cbnz	r3, .L84
+ 318:rt-thread/src/device.c ****         return RT_EOK;
+ 319:rt-thread/src/device.c **** 
+ 320:rt-thread/src/device.c ****     /* call device_close interface */
+ 321:rt-thread/src/device.c ****     if (device_close != RT_NULL)
+ 750              		.loc 1 321 0
+ 751 0028 E36A     		ldr	r3, [r4, #44]
+ 752 002a 7BB1     		cbz	r3, .L85
+ 322:rt-thread/src/device.c ****     {
+ 323:rt-thread/src/device.c ****         result = device_close(dev);
+ 753              		.loc 1 323 0
+ 754 002c 2046     		mov	r0, r4
+ 755 002e 9847     		blx	r3
+ 756              	.LVL94:
+ 757              	.L81:
+ 324:rt-thread/src/device.c ****     }
+ 325:rt-thread/src/device.c **** 
+ 326:rt-thread/src/device.c ****     /* set open flag */
+ 327:rt-thread/src/device.c ****     if (result == RT_EOK || result == -RT_ENOSYS)
+ 758              		.loc 1 327 0
+ 759 0030 10B1     		cbz	r0, .L82
+ 760              		.loc 1 327 0 is_stmt 0 discriminator 1
+ 761 0032 10F1060F 		cmn	r0, #6
+ 762 0036 0FD1     		bne	.L77
+ 763              	.L82:
+ 328:rt-thread/src/device.c ****         dev->open_flag = RT_DEVICE_OFLAG_CLOSE;
+ 764              		.loc 1 328 0 is_stmt 1
+ 765 0038 0023     		movs	r3, #0
+ 766 003a 2383     		strh	r3, [r4, #24]	@ movhi
+ 767 003c 10BD     		pop	{r4, pc}
+ 768              	.LVL95:
+ 769              	.L87:
+ 309:rt-thread/src/device.c ****     RT_ASSERT(rt_object_get_type(&dev->parent) == RT_Object_Class_Device);
+ 770              		.loc 1 309 0 discriminator 1
+ 771 003e 40F23512 		movw	r2, #309
+ 772 0042 0649     		ldr	r1, .L88
+ 773 0044 0748     		ldr	r0, .L88+8
+ 774              	.LVL96:
+ 775 0046 FFF7FEFF 		bl	rt_assert_handler
+ 776              	.LVL97:
+ 777 004a DCE7     		b	.L78
+ 778              	.L85:
+ 307:rt-thread/src/device.c **** 
+ 779              		.loc 1 307 0
+ 780 004c 0020     		movs	r0, #0
+ 781 004e EFE7     		b	.L81
+ 782              	.L83:
+ 313:rt-thread/src/device.c **** 
+ 783              		.loc 1 313 0
+ 784 0050 4FF0FF30 		mov	r0, #-1
+ 785 0054 10BD     		pop	{r4, pc}
+ 786              	.LVL98:
+ 787              	.L84:
+ 318:rt-thread/src/device.c **** 
+ 788              		.loc 1 318 0
+ 789 0056 0020     		movs	r0, #0
+ 790              	.LVL99:
+ARM GAS  /tmp/cc672709.s 			page 21
+
+
+ 791              	.L77:
+ 329:rt-thread/src/device.c **** 
+ 330:rt-thread/src/device.c ****     return result;
+ 331:rt-thread/src/device.c **** }
+ 792              		.loc 1 331 0
+ 793 0058 10BD     		pop	{r4, pc}
+ 794              	.LVL100:
+ 795              	.L89:
+ 796 005a 00BF     		.align	2
+ 797              	.L88:
+ 798 005c 00000000 		.word	.LANCHOR5
+ 799 0060 10000000 		.word	.LC1
+ 800 0064 00000000 		.word	.LC0
+ 801              		.cfi_endproc
+ 802              	.LFE23:
+ 804              		.section	.text.rt_device_read,"ax",%progbits
+ 805              		.align	1
+ 806              		.global	rt_device_read
+ 807              		.syntax unified
+ 808              		.thumb
+ 809              		.thumb_func
+ 810              		.fpu fpv4-sp-d16
+ 812              	rt_device_read:
+ 813              	.LFB24:
+ 332:rt-thread/src/device.c **** RTM_EXPORT(rt_device_close);
+ 333:rt-thread/src/device.c **** 
+ 334:rt-thread/src/device.c **** /**
+ 335:rt-thread/src/device.c ****  * This function will read some data from a device.
+ 336:rt-thread/src/device.c ****  *
+ 337:rt-thread/src/device.c ****  * @param dev the pointer of device driver structure
+ 338:rt-thread/src/device.c ****  * @param pos the position of reading
+ 339:rt-thread/src/device.c ****  * @param buffer the data buffer to save read data
+ 340:rt-thread/src/device.c ****  * @param size the size of buffer
+ 341:rt-thread/src/device.c ****  *
+ 342:rt-thread/src/device.c ****  * @return the actually read size on successful, otherwise negative returned.
+ 343:rt-thread/src/device.c ****  *
+ 344:rt-thread/src/device.c ****  * @note since 0.4.0, the unit of size/pos is a block for block device.
+ 345:rt-thread/src/device.c ****  */
+ 346:rt-thread/src/device.c **** rt_size_t rt_device_read(rt_device_t dev,
+ 347:rt-thread/src/device.c ****                          rt_off_t    pos,
+ 348:rt-thread/src/device.c ****                          void       *buffer,
+ 349:rt-thread/src/device.c ****                          rt_size_t   size)
+ 350:rt-thread/src/device.c **** {
+ 814              		.loc 1 350 0
+ 815              		.cfi_startproc
+ 816              		@ args = 0, pretend = 0, frame = 0
+ 817              		@ frame_needed = 0, uses_anonymous_args = 0
+ 818              	.LVL101:
+ 819 0000 2DE9F041 		push	{r4, r5, r6, r7, r8, lr}
+ 820              	.LCFI10:
+ 821              		.cfi_def_cfa_offset 24
+ 822              		.cfi_offset 4, -24
+ 823              		.cfi_offset 5, -20
+ 824              		.cfi_offset 6, -16
+ 825              		.cfi_offset 7, -12
+ 826              		.cfi_offset 8, -8
+ 827              		.cfi_offset 14, -4
+ARM GAS  /tmp/cc672709.s 			page 22
+
+
+ 828 0004 0E46     		mov	r6, r1
+ 829 0006 1746     		mov	r7, r2
+ 830 0008 9846     		mov	r8, r3
+ 351:rt-thread/src/device.c ****     RT_ASSERT(dev != RT_NULL);
+ 831              		.loc 1 351 0
+ 832 000a 0446     		mov	r4, r0
+ 833 000c A8B1     		cbz	r0, .L97
+ 834              	.LVL102:
+ 835              	.L91:
+ 352:rt-thread/src/device.c ****     RT_ASSERT(rt_object_get_type(&dev->parent) == RT_Object_Class_Device);
+ 836              		.loc 1 352 0
+ 837 000e 2046     		mov	r0, r4
+ 838 0010 FFF7FEFF 		bl	rt_object_get_type
+ 839              	.LVL103:
+ 840 0014 0928     		cmp	r0, #9
+ 841 0016 05D0     		beq	.L92
+ 842              		.loc 1 352 0 is_stmt 0 discriminator 1
+ 843 0018 4FF4B072 		mov	r2, #352
+ 844 001c 1149     		ldr	r1, .L99
+ 845 001e 1248     		ldr	r0, .L99+4
+ 846 0020 FFF7FEFF 		bl	rt_assert_handler
+ 847              	.LVL104:
+ 848              	.L92:
+ 353:rt-thread/src/device.c **** 
+ 354:rt-thread/src/device.c ****     if (dev->ref_count == 0)
+ 849              		.loc 1 354 0 is_stmt 1
+ 850 0024 A37E     		ldrb	r3, [r4, #26]	@ zero_extendqisi2
+ 851 0026 7BB1     		cbz	r3, .L98
+ 355:rt-thread/src/device.c ****     {
+ 356:rt-thread/src/device.c ****         rt_set_errno(-RT_ERROR);
+ 357:rt-thread/src/device.c ****         return 0;
+ 358:rt-thread/src/device.c ****     }
+ 359:rt-thread/src/device.c **** 
+ 360:rt-thread/src/device.c ****     /* call device_read interface */
+ 361:rt-thread/src/device.c ****     if (device_read != RT_NULL)
+ 852              		.loc 1 361 0
+ 853 0028 256B     		ldr	r5, [r4, #48]
+ 854 002a A5B1     		cbz	r5, .L95
+ 362:rt-thread/src/device.c ****     {
+ 363:rt-thread/src/device.c ****         return device_read(dev, pos, buffer, size);
+ 855              		.loc 1 363 0
+ 856 002c 4346     		mov	r3, r8
+ 857 002e 3A46     		mov	r2, r7
+ 858 0030 3146     		mov	r1, r6
+ 859 0032 2046     		mov	r0, r4
+ 860 0034 A847     		blx	r5
+ 861              	.LVL105:
+ 862 0036 BDE8F081 		pop	{r4, r5, r6, r7, r8, pc}
+ 863              	.LVL106:
+ 864              	.L97:
+ 351:rt-thread/src/device.c ****     RT_ASSERT(rt_object_get_type(&dev->parent) == RT_Object_Class_Device);
+ 865              		.loc 1 351 0 discriminator 1
+ 866 003a 40F25F12 		movw	r2, #351
+ 867              	.LVL107:
+ 868 003e 0949     		ldr	r1, .L99
+ 869              	.LVL108:
+ 870 0040 0A48     		ldr	r0, .L99+8
+ARM GAS  /tmp/cc672709.s 			page 23
+
+
+ 871              	.LVL109:
+ 872 0042 FFF7FEFF 		bl	rt_assert_handler
+ 873              	.LVL110:
+ 874 0046 E2E7     		b	.L91
+ 875              	.L98:
+ 356:rt-thread/src/device.c ****         return 0;
+ 876              		.loc 1 356 0
+ 877 0048 4FF0FF30 		mov	r0, #-1
+ 878 004c FFF7FEFF 		bl	rt_set_errno
+ 879              	.LVL111:
+ 357:rt-thread/src/device.c ****     }
+ 880              		.loc 1 357 0
+ 881 0050 0020     		movs	r0, #0
+ 882 0052 BDE8F081 		pop	{r4, r5, r6, r7, r8, pc}
+ 883              	.LVL112:
+ 884              	.L95:
+ 364:rt-thread/src/device.c ****     }
+ 365:rt-thread/src/device.c **** 
+ 366:rt-thread/src/device.c ****     /* set error code */
+ 367:rt-thread/src/device.c ****     rt_set_errno(-RT_ENOSYS);
+ 885              		.loc 1 367 0
+ 886 0056 6FF00500 		mvn	r0, #5
+ 887 005a FFF7FEFF 		bl	rt_set_errno
+ 888              	.LVL113:
+ 368:rt-thread/src/device.c **** 
+ 369:rt-thread/src/device.c ****     return 0;
+ 889              		.loc 1 369 0
+ 890 005e 0020     		movs	r0, #0
+ 370:rt-thread/src/device.c **** }
+ 891              		.loc 1 370 0
+ 892 0060 BDE8F081 		pop	{r4, r5, r6, r7, r8, pc}
+ 893              	.LVL114:
+ 894              	.L100:
+ 895              		.align	2
+ 896              	.L99:
+ 897 0064 00000000 		.word	.LANCHOR6
+ 898 0068 10000000 		.word	.LC1
+ 899 006c 00000000 		.word	.LC0
+ 900              		.cfi_endproc
+ 901              	.LFE24:
+ 903              		.section	.text.rt_device_write,"ax",%progbits
+ 904              		.align	1
+ 905              		.global	rt_device_write
+ 906              		.syntax unified
+ 907              		.thumb
+ 908              		.thumb_func
+ 909              		.fpu fpv4-sp-d16
+ 911              	rt_device_write:
+ 912              	.LFB25:
+ 371:rt-thread/src/device.c **** RTM_EXPORT(rt_device_read);
+ 372:rt-thread/src/device.c **** 
+ 373:rt-thread/src/device.c **** /**
+ 374:rt-thread/src/device.c ****  * This function will write some data to a device.
+ 375:rt-thread/src/device.c ****  *
+ 376:rt-thread/src/device.c ****  * @param dev the pointer of device driver structure
+ 377:rt-thread/src/device.c ****  * @param pos the position of written
+ 378:rt-thread/src/device.c ****  * @param buffer the data buffer to be written to device
+ARM GAS  /tmp/cc672709.s 			page 24
+
+
+ 379:rt-thread/src/device.c ****  * @param size the size of buffer
+ 380:rt-thread/src/device.c ****  *
+ 381:rt-thread/src/device.c ****  * @return the actually written size on successful, otherwise negative returned.
+ 382:rt-thread/src/device.c ****  *
+ 383:rt-thread/src/device.c ****  * @note since 0.4.0, the unit of size/pos is a block for block device.
+ 384:rt-thread/src/device.c ****  */
+ 385:rt-thread/src/device.c **** rt_size_t rt_device_write(rt_device_t dev,
+ 386:rt-thread/src/device.c ****                           rt_off_t    pos,
+ 387:rt-thread/src/device.c ****                           const void *buffer,
+ 388:rt-thread/src/device.c ****                           rt_size_t   size)
+ 389:rt-thread/src/device.c **** {
+ 913              		.loc 1 389 0
+ 914              		.cfi_startproc
+ 915              		@ args = 0, pretend = 0, frame = 0
+ 916              		@ frame_needed = 0, uses_anonymous_args = 0
+ 917              	.LVL115:
+ 918 0000 2DE9F041 		push	{r4, r5, r6, r7, r8, lr}
+ 919              	.LCFI11:
+ 920              		.cfi_def_cfa_offset 24
+ 921              		.cfi_offset 4, -24
+ 922              		.cfi_offset 5, -20
+ 923              		.cfi_offset 6, -16
+ 924              		.cfi_offset 7, -12
+ 925              		.cfi_offset 8, -8
+ 926              		.cfi_offset 14, -4
+ 927 0004 0E46     		mov	r6, r1
+ 928 0006 1746     		mov	r7, r2
+ 929 0008 9846     		mov	r8, r3
+ 390:rt-thread/src/device.c ****     RT_ASSERT(dev != RT_NULL);
+ 930              		.loc 1 390 0
+ 931 000a 0446     		mov	r4, r0
+ 932 000c A8B1     		cbz	r0, .L108
+ 933              	.LVL116:
+ 934              	.L102:
+ 391:rt-thread/src/device.c ****     RT_ASSERT(rt_object_get_type(&dev->parent) == RT_Object_Class_Device);
+ 935              		.loc 1 391 0
+ 936 000e 2046     		mov	r0, r4
+ 937 0010 FFF7FEFF 		bl	rt_object_get_type
+ 938              	.LVL117:
+ 939 0014 0928     		cmp	r0, #9
+ 940 0016 05D0     		beq	.L103
+ 941              		.loc 1 391 0 is_stmt 0 discriminator 1
+ 942 0018 40F28712 		movw	r2, #391
+ 943 001c 1149     		ldr	r1, .L110
+ 944 001e 1248     		ldr	r0, .L110+4
+ 945 0020 FFF7FEFF 		bl	rt_assert_handler
+ 946              	.LVL118:
+ 947              	.L103:
+ 392:rt-thread/src/device.c **** 
+ 393:rt-thread/src/device.c ****     if (dev->ref_count == 0)
+ 948              		.loc 1 393 0 is_stmt 1
+ 949 0024 A37E     		ldrb	r3, [r4, #26]	@ zero_extendqisi2
+ 950 0026 7BB1     		cbz	r3, .L109
+ 394:rt-thread/src/device.c ****     {
+ 395:rt-thread/src/device.c ****         rt_set_errno(-RT_ERROR);
+ 396:rt-thread/src/device.c ****         return 0;
+ 397:rt-thread/src/device.c ****     }
+ARM GAS  /tmp/cc672709.s 			page 25
+
+
+ 398:rt-thread/src/device.c **** 
+ 399:rt-thread/src/device.c ****     /* call device_write interface */
+ 400:rt-thread/src/device.c ****     if (device_write != RT_NULL)
+ 951              		.loc 1 400 0
+ 952 0028 656B     		ldr	r5, [r4, #52]
+ 953 002a A5B1     		cbz	r5, .L106
+ 401:rt-thread/src/device.c ****     {
+ 402:rt-thread/src/device.c ****         return device_write(dev, pos, buffer, size);
+ 954              		.loc 1 402 0
+ 955 002c 4346     		mov	r3, r8
+ 956 002e 3A46     		mov	r2, r7
+ 957 0030 3146     		mov	r1, r6
+ 958 0032 2046     		mov	r0, r4
+ 959 0034 A847     		blx	r5
+ 960              	.LVL119:
+ 961 0036 BDE8F081 		pop	{r4, r5, r6, r7, r8, pc}
+ 962              	.LVL120:
+ 963              	.L108:
+ 390:rt-thread/src/device.c ****     RT_ASSERT(rt_object_get_type(&dev->parent) == RT_Object_Class_Device);
+ 964              		.loc 1 390 0 discriminator 1
+ 965 003a 4FF4C372 		mov	r2, #390
+ 966              	.LVL121:
+ 967 003e 0949     		ldr	r1, .L110
+ 968              	.LVL122:
+ 969 0040 0A48     		ldr	r0, .L110+8
+ 970              	.LVL123:
+ 971 0042 FFF7FEFF 		bl	rt_assert_handler
+ 972              	.LVL124:
+ 973 0046 E2E7     		b	.L102
+ 974              	.L109:
+ 395:rt-thread/src/device.c ****         return 0;
+ 975              		.loc 1 395 0
+ 976 0048 4FF0FF30 		mov	r0, #-1
+ 977 004c FFF7FEFF 		bl	rt_set_errno
+ 978              	.LVL125:
+ 396:rt-thread/src/device.c ****     }
+ 979              		.loc 1 396 0
+ 980 0050 0020     		movs	r0, #0
+ 981 0052 BDE8F081 		pop	{r4, r5, r6, r7, r8, pc}
+ 982              	.LVL126:
+ 983              	.L106:
+ 403:rt-thread/src/device.c ****     }
+ 404:rt-thread/src/device.c **** 
+ 405:rt-thread/src/device.c ****     /* set error code */
+ 406:rt-thread/src/device.c ****     rt_set_errno(-RT_ENOSYS);
+ 984              		.loc 1 406 0
+ 985 0056 6FF00500 		mvn	r0, #5
+ 986 005a FFF7FEFF 		bl	rt_set_errno
+ 987              	.LVL127:
+ 407:rt-thread/src/device.c **** 
+ 408:rt-thread/src/device.c ****     return 0;
+ 988              		.loc 1 408 0
+ 989 005e 0020     		movs	r0, #0
+ 409:rt-thread/src/device.c **** }
+ 990              		.loc 1 409 0
+ 991 0060 BDE8F081 		pop	{r4, r5, r6, r7, r8, pc}
+ 992              	.LVL128:
+ARM GAS  /tmp/cc672709.s 			page 26
+
+
+ 993              	.L111:
+ 994              		.align	2
+ 995              	.L110:
+ 996 0064 00000000 		.word	.LANCHOR7
+ 997 0068 10000000 		.word	.LC1
+ 998 006c 00000000 		.word	.LC0
+ 999              		.cfi_endproc
+ 1000              	.LFE25:
+ 1002              		.section	.text.rt_device_control,"ax",%progbits
+ 1003              		.align	1
+ 1004              		.global	rt_device_control
+ 1005              		.syntax unified
+ 1006              		.thumb
+ 1007              		.thumb_func
+ 1008              		.fpu fpv4-sp-d16
+ 1010              	rt_device_control:
+ 1011              	.LFB26:
+ 410:rt-thread/src/device.c **** RTM_EXPORT(rt_device_write);
+ 411:rt-thread/src/device.c **** 
+ 412:rt-thread/src/device.c **** /**
+ 413:rt-thread/src/device.c ****  * This function will perform a variety of control functions on devices.
+ 414:rt-thread/src/device.c ****  *
+ 415:rt-thread/src/device.c ****  * @param dev the pointer of device driver structure
+ 416:rt-thread/src/device.c ****  * @param cmd the command sent to device
+ 417:rt-thread/src/device.c ****  * @param arg the argument of command
+ 418:rt-thread/src/device.c ****  *
+ 419:rt-thread/src/device.c ****  * @return the result
+ 420:rt-thread/src/device.c ****  */
+ 421:rt-thread/src/device.c **** rt_err_t rt_device_control(rt_device_t dev, int cmd, void *arg)
+ 422:rt-thread/src/device.c **** {
+ 1012              		.loc 1 422 0
+ 1013              		.cfi_startproc
+ 1014              		@ args = 0, pretend = 0, frame = 0
+ 1015              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1016              	.LVL129:
+ 1017 0000 70B5     		push	{r4, r5, r6, lr}
+ 1018              	.LCFI12:
+ 1019              		.cfi_def_cfa_offset 16
+ 1020              		.cfi_offset 4, -16
+ 1021              		.cfi_offset 5, -12
+ 1022              		.cfi_offset 6, -8
+ 1023              		.cfi_offset 14, -4
+ 1024 0002 0D46     		mov	r5, r1
+ 1025 0004 1646     		mov	r6, r2
+ 423:rt-thread/src/device.c ****     RT_ASSERT(dev != RT_NULL);
+ 1026              		.loc 1 423 0
+ 1027 0006 0446     		mov	r4, r0
+ 1028 0008 88B1     		cbz	r0, .L118
+ 1029              	.LVL130:
+ 1030              	.L113:
+ 424:rt-thread/src/device.c ****     RT_ASSERT(rt_object_get_type(&dev->parent) == RT_Object_Class_Device);
+ 1031              		.loc 1 424 0
+ 1032 000a 2046     		mov	r0, r4
+ 1033 000c FFF7FEFF 		bl	rt_object_get_type
+ 1034              	.LVL131:
+ 1035 0010 0928     		cmp	r0, #9
+ 1036 0012 05D0     		beq	.L114
+ARM GAS  /tmp/cc672709.s 			page 27
+
+
+ 1037              		.loc 1 424 0 is_stmt 0 discriminator 1
+ 1038 0014 4FF4D472 		mov	r2, #424
+ 1039 0018 0A49     		ldr	r1, .L119
+ 1040 001a 0B48     		ldr	r0, .L119+4
+ 1041 001c FFF7FEFF 		bl	rt_assert_handler
+ 1042              	.LVL132:
+ 1043              	.L114:
+ 425:rt-thread/src/device.c **** 
+ 426:rt-thread/src/device.c ****     /* call device_write interface */
+ 427:rt-thread/src/device.c ****     if (device_control != RT_NULL)
+ 1044              		.loc 1 427 0 is_stmt 1
+ 1045 0020 A36B     		ldr	r3, [r4, #56]
+ 1046 0022 5BB1     		cbz	r3, .L116
+ 428:rt-thread/src/device.c ****     {
+ 429:rt-thread/src/device.c ****         return device_control(dev, cmd, arg);
+ 1047              		.loc 1 429 0
+ 1048 0024 3246     		mov	r2, r6
+ 1049 0026 2946     		mov	r1, r5
+ 1050 0028 2046     		mov	r0, r4
+ 1051 002a 9847     		blx	r3
+ 1052              	.LVL133:
+ 1053 002c 70BD     		pop	{r4, r5, r6, pc}
+ 1054              	.LVL134:
+ 1055              	.L118:
+ 423:rt-thread/src/device.c ****     RT_ASSERT(rt_object_get_type(&dev->parent) == RT_Object_Class_Device);
+ 1056              		.loc 1 423 0 discriminator 1
+ 1057 002e 40F2A712 		movw	r2, #423
+ 1058              	.LVL135:
+ 1059 0032 0449     		ldr	r1, .L119
+ 1060              	.LVL136:
+ 1061 0034 0548     		ldr	r0, .L119+8
+ 1062              	.LVL137:
+ 1063 0036 FFF7FEFF 		bl	rt_assert_handler
+ 1064              	.LVL138:
+ 1065 003a E6E7     		b	.L113
+ 1066              	.L116:
+ 430:rt-thread/src/device.c ****     }
+ 431:rt-thread/src/device.c **** 
+ 432:rt-thread/src/device.c ****     return -RT_ENOSYS;
+ 1067              		.loc 1 432 0
+ 1068 003c 6FF00500 		mvn	r0, #5
+ 433:rt-thread/src/device.c **** }
+ 1069              		.loc 1 433 0
+ 1070 0040 70BD     		pop	{r4, r5, r6, pc}
+ 1071              	.LVL139:
+ 1072              	.L120:
+ 1073 0042 00BF     		.align	2
+ 1074              	.L119:
+ 1075 0044 00000000 		.word	.LANCHOR8
+ 1076 0048 10000000 		.word	.LC1
+ 1077 004c 00000000 		.word	.LC0
+ 1078              		.cfi_endproc
+ 1079              	.LFE26:
+ 1081              		.section	.text.rt_device_set_rx_indicate,"ax",%progbits
+ 1082              		.align	1
+ 1083              		.global	rt_device_set_rx_indicate
+ 1084              		.syntax unified
+ARM GAS  /tmp/cc672709.s 			page 28
+
+
+ 1085              		.thumb
+ 1086              		.thumb_func
+ 1087              		.fpu fpv4-sp-d16
+ 1089              	rt_device_set_rx_indicate:
+ 1090              	.LFB27:
+ 434:rt-thread/src/device.c **** RTM_EXPORT(rt_device_control);
+ 435:rt-thread/src/device.c **** 
+ 436:rt-thread/src/device.c **** /**
+ 437:rt-thread/src/device.c ****  * This function will set the reception indication callback function. This callback function
+ 438:rt-thread/src/device.c ****  * is invoked when this device receives data.
+ 439:rt-thread/src/device.c ****  *
+ 440:rt-thread/src/device.c ****  * @param dev the pointer of device driver structure
+ 441:rt-thread/src/device.c ****  * @param rx_ind the indication callback function
+ 442:rt-thread/src/device.c ****  *
+ 443:rt-thread/src/device.c ****  * @return RT_EOK
+ 444:rt-thread/src/device.c ****  */
+ 445:rt-thread/src/device.c **** rt_err_t
+ 446:rt-thread/src/device.c **** rt_device_set_rx_indicate(rt_device_t dev,
+ 447:rt-thread/src/device.c ****                           rt_err_t (*rx_ind)(rt_device_t dev, rt_size_t size))
+ 448:rt-thread/src/device.c **** {
+ 1091              		.loc 1 448 0
+ 1092              		.cfi_startproc
+ 1093              		@ args = 0, pretend = 0, frame = 0
+ 1094              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1095              	.LVL140:
+ 1096 0000 38B5     		push	{r3, r4, r5, lr}
+ 1097              	.LCFI13:
+ 1098              		.cfi_def_cfa_offset 16
+ 1099              		.cfi_offset 3, -16
+ 1100              		.cfi_offset 4, -12
+ 1101              		.cfi_offset 5, -8
+ 1102              		.cfi_offset 14, -4
+ 1103 0002 0D46     		mov	r5, r1
+ 449:rt-thread/src/device.c ****     RT_ASSERT(dev != RT_NULL);
+ 1104              		.loc 1 449 0
+ 1105 0004 0446     		mov	r4, r0
+ 1106 0006 68B1     		cbz	r0, .L125
+ 1107              	.LVL141:
+ 1108              	.L122:
+ 450:rt-thread/src/device.c ****     RT_ASSERT(rt_object_get_type(&dev->parent) == RT_Object_Class_Device);
+ 1109              		.loc 1 450 0
+ 1110 0008 2046     		mov	r0, r4
+ 1111 000a FFF7FEFF 		bl	rt_object_get_type
+ 1112              	.LVL142:
+ 1113 000e 0928     		cmp	r0, #9
+ 1114 0010 05D0     		beq	.L123
+ 1115              		.loc 1 450 0 is_stmt 0 discriminator 1
+ 1116 0012 4FF4E172 		mov	r2, #450
+ 1117 0016 0749     		ldr	r1, .L126
+ 1118 0018 0748     		ldr	r0, .L126+4
+ 1119 001a FFF7FEFF 		bl	rt_assert_handler
+ 1120              	.LVL143:
+ 1121              	.L123:
+ 451:rt-thread/src/device.c **** 
+ 452:rt-thread/src/device.c ****     dev->rx_indicate = rx_ind;
+ 1122              		.loc 1 452 0 is_stmt 1
+ 1123 001e E561     		str	r5, [r4, #28]
+ARM GAS  /tmp/cc672709.s 			page 29
+
+
+ 453:rt-thread/src/device.c **** 
+ 454:rt-thread/src/device.c ****     return RT_EOK;
+ 455:rt-thread/src/device.c **** }
+ 1124              		.loc 1 455 0
+ 1125 0020 0020     		movs	r0, #0
+ 1126 0022 38BD     		pop	{r3, r4, r5, pc}
+ 1127              	.LVL144:
+ 1128              	.L125:
+ 449:rt-thread/src/device.c ****     RT_ASSERT(rt_object_get_type(&dev->parent) == RT_Object_Class_Device);
+ 1129              		.loc 1 449 0 discriminator 1
+ 1130 0024 40F2C112 		movw	r2, #449
+ 1131 0028 0249     		ldr	r1, .L126
+ 1132              	.LVL145:
+ 1133 002a 0448     		ldr	r0, .L126+8
+ 1134              	.LVL146:
+ 1135 002c FFF7FEFF 		bl	rt_assert_handler
+ 1136              	.LVL147:
+ 1137 0030 EAE7     		b	.L122
+ 1138              	.L127:
+ 1139 0032 00BF     		.align	2
+ 1140              	.L126:
+ 1141 0034 00000000 		.word	.LANCHOR9
+ 1142 0038 10000000 		.word	.LC1
+ 1143 003c 00000000 		.word	.LC0
+ 1144              		.cfi_endproc
+ 1145              	.LFE27:
+ 1147              		.section	.text.rt_device_set_tx_complete,"ax",%progbits
+ 1148              		.align	1
+ 1149              		.global	rt_device_set_tx_complete
+ 1150              		.syntax unified
+ 1151              		.thumb
+ 1152              		.thumb_func
+ 1153              		.fpu fpv4-sp-d16
+ 1155              	rt_device_set_tx_complete:
+ 1156              	.LFB28:
+ 456:rt-thread/src/device.c **** RTM_EXPORT(rt_device_set_rx_indicate);
+ 457:rt-thread/src/device.c **** 
+ 458:rt-thread/src/device.c **** /**
+ 459:rt-thread/src/device.c ****  * This function will set the indication callback function when device has
+ 460:rt-thread/src/device.c ****  * written data to physical hardware.
+ 461:rt-thread/src/device.c ****  *
+ 462:rt-thread/src/device.c ****  * @param dev the pointer of device driver structure
+ 463:rt-thread/src/device.c ****  * @param tx_done the indication callback function
+ 464:rt-thread/src/device.c ****  *
+ 465:rt-thread/src/device.c ****  * @return RT_EOK
+ 466:rt-thread/src/device.c ****  */
+ 467:rt-thread/src/device.c **** rt_err_t
+ 468:rt-thread/src/device.c **** rt_device_set_tx_complete(rt_device_t dev,
+ 469:rt-thread/src/device.c ****                           rt_err_t (*tx_done)(rt_device_t dev, void *buffer))
+ 470:rt-thread/src/device.c **** {
+ 1157              		.loc 1 470 0
+ 1158              		.cfi_startproc
+ 1159              		@ args = 0, pretend = 0, frame = 0
+ 1160              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1161              	.LVL148:
+ 1162 0000 38B5     		push	{r3, r4, r5, lr}
+ 1163              	.LCFI14:
+ARM GAS  /tmp/cc672709.s 			page 30
+
+
+ 1164              		.cfi_def_cfa_offset 16
+ 1165              		.cfi_offset 3, -16
+ 1166              		.cfi_offset 4, -12
+ 1167              		.cfi_offset 5, -8
+ 1168              		.cfi_offset 14, -4
+ 1169 0002 0D46     		mov	r5, r1
+ 471:rt-thread/src/device.c ****     RT_ASSERT(dev != RT_NULL);
+ 1170              		.loc 1 471 0
+ 1171 0004 0446     		mov	r4, r0
+ 1172 0006 68B1     		cbz	r0, .L132
+ 1173              	.LVL149:
+ 1174              	.L129:
+ 472:rt-thread/src/device.c ****     RT_ASSERT(rt_object_get_type(&dev->parent) == RT_Object_Class_Device);
+ 1175              		.loc 1 472 0
+ 1176 0008 2046     		mov	r0, r4
+ 1177 000a FFF7FEFF 		bl	rt_object_get_type
+ 1178              	.LVL150:
+ 1179 000e 0928     		cmp	r0, #9
+ 1180 0010 05D0     		beq	.L130
+ 1181              		.loc 1 472 0 is_stmt 0 discriminator 1
+ 1182 0012 4FF4EC72 		mov	r2, #472
+ 1183 0016 0749     		ldr	r1, .L133
+ 1184 0018 0748     		ldr	r0, .L133+4
+ 1185 001a FFF7FEFF 		bl	rt_assert_handler
+ 1186              	.LVL151:
+ 1187              	.L130:
+ 473:rt-thread/src/device.c **** 
+ 474:rt-thread/src/device.c ****     dev->tx_complete = tx_done;
+ 1188              		.loc 1 474 0 is_stmt 1
+ 1189 001e 2562     		str	r5, [r4, #32]
+ 475:rt-thread/src/device.c **** 
+ 476:rt-thread/src/device.c ****     return RT_EOK;
+ 477:rt-thread/src/device.c **** }
+ 1190              		.loc 1 477 0
+ 1191 0020 0020     		movs	r0, #0
+ 1192 0022 38BD     		pop	{r3, r4, r5, pc}
+ 1193              	.LVL152:
+ 1194              	.L132:
+ 471:rt-thread/src/device.c ****     RT_ASSERT(rt_object_get_type(&dev->parent) == RT_Object_Class_Device);
+ 1195              		.loc 1 471 0 discriminator 1
+ 1196 0024 40F2D712 		movw	r2, #471
+ 1197 0028 0249     		ldr	r1, .L133
+ 1198              	.LVL153:
+ 1199 002a 0448     		ldr	r0, .L133+8
+ 1200              	.LVL154:
+ 1201 002c FFF7FEFF 		bl	rt_assert_handler
+ 1202              	.LVL155:
+ 1203 0030 EAE7     		b	.L129
+ 1204              	.L134:
+ 1205 0032 00BF     		.align	2
+ 1206              	.L133:
+ 1207 0034 00000000 		.word	.LANCHOR10
+ 1208 0038 10000000 		.word	.LC1
+ 1209 003c 00000000 		.word	.LC0
+ 1210              		.cfi_endproc
+ 1211              	.LFE28:
+ 1213              		.section	.rodata.__FUNCTION__.6447,"a",%progbits
+ARM GAS  /tmp/cc672709.s 			page 31
+
+
+ 1214              		.align	2
+ 1215              		.set	.LANCHOR0,. + 0
+ 1218              	__FUNCTION__.6447:
+ 1219 0000 72745F64 		.ascii	"rt_device_unregister\000"
+ 1219      65766963 
+ 1219      655F756E 
+ 1219      72656769 
+ 1219      73746572 
+ 1220              		.section	.rodata.__FUNCTION__.6457,"a",%progbits
+ 1221              		.align	2
+ 1222              		.set	.LANCHOR1,. + 0
+ 1225              	__FUNCTION__.6457:
+ 1226 0000 72745F64 		.ascii	"rt_device_find\000"
+ 1226      65766963 
+ 1226      655F6669 
+ 1226      6E6400
+ 1227              		.section	.rodata.__FUNCTION__.6470,"a",%progbits
+ 1228              		.align	2
+ 1229              		.set	.LANCHOR2,. + 0
+ 1232              	__FUNCTION__.6470:
+ 1233 0000 72745F64 		.ascii	"rt_device_destroy\000"
+ 1233      65766963 
+ 1233      655F6465 
+ 1233      7374726F 
+ 1233      7900
+ 1234              		.section	.rodata.__FUNCTION__.6475,"a",%progbits
+ 1235              		.align	2
+ 1236              		.set	.LANCHOR3,. + 0
+ 1239              	__FUNCTION__.6475:
+ 1240 0000 72745F64 		.ascii	"rt_device_init\000"
+ 1240      65766963 
+ 1240      655F696E 
+ 1240      697400
+ 1241              		.section	.rodata.__FUNCTION__.6481,"a",%progbits
+ 1242              		.align	2
+ 1243              		.set	.LANCHOR4,. + 0
+ 1246              	__FUNCTION__.6481:
+ 1247 0000 72745F64 		.ascii	"rt_device_open\000"
+ 1247      65766963 
+ 1247      655F6F70 
+ 1247      656E00
+ 1248              		.section	.rodata.__FUNCTION__.6486,"a",%progbits
+ 1249              		.align	2
+ 1250              		.set	.LANCHOR5,. + 0
+ 1253              	__FUNCTION__.6486:
+ 1254 0000 72745F64 		.ascii	"rt_device_close\000"
+ 1254      65766963 
+ 1254      655F636C 
+ 1254      6F736500 
+ 1255              		.section	.rodata.__FUNCTION__.6493,"a",%progbits
+ 1256              		.align	2
+ 1257              		.set	.LANCHOR6,. + 0
+ 1260              	__FUNCTION__.6493:
+ 1261 0000 72745F64 		.ascii	"rt_device_read\000"
+ 1261      65766963 
+ 1261      655F7265 
+ 1261      616400
+ARM GAS  /tmp/cc672709.s 			page 32
+
+
+ 1262              		.section	.rodata.__FUNCTION__.6500,"a",%progbits
+ 1263              		.align	2
+ 1264              		.set	.LANCHOR7,. + 0
+ 1267              	__FUNCTION__.6500:
+ 1268 0000 72745F64 		.ascii	"rt_device_write\000"
+ 1268      65766963 
+ 1268      655F7772 
+ 1268      69746500 
+ 1269              		.section	.rodata.__FUNCTION__.6506,"a",%progbits
+ 1270              		.align	2
+ 1271              		.set	.LANCHOR8,. + 0
+ 1274              	__FUNCTION__.6506:
+ 1275 0000 72745F64 		.ascii	"rt_device_control\000"
+ 1275      65766963 
+ 1275      655F636F 
+ 1275      6E74726F 
+ 1275      6C00
+ 1276              		.section	.rodata.__FUNCTION__.6513,"a",%progbits
+ 1277              		.align	2
+ 1278              		.set	.LANCHOR9,. + 0
+ 1281              	__FUNCTION__.6513:
+ 1282 0000 72745F64 		.ascii	"rt_device_set_rx_indicate\000"
+ 1282      65766963 
+ 1282      655F7365 
+ 1282      745F7278 
+ 1282      5F696E64 
+ 1283              		.section	.rodata.__FUNCTION__.6520,"a",%progbits
+ 1284              		.align	2
+ 1285              		.set	.LANCHOR10,. + 0
+ 1288              	__FUNCTION__.6520:
+ 1289 0000 72745F64 		.ascii	"rt_device_set_tx_complete\000"
+ 1289      65766963 
+ 1289      655F7365 
+ 1289      745F7478 
+ 1289      5F636F6D 
+ 1290              		.section	.rodata.rt_device_destroy.str1.4,"aMS",%progbits,1
+ 1291              		.align	2
+ 1292              	.LC4:
+ 1293 0000 72745F6F 		.ascii	"rt_object_is_systemobject(&dev->parent) == RT_FALSE"
+ 1293      626A6563 
+ 1293      745F6973 
+ 1293      5F737973 
+ 1293      74656D6F 
+ 1294 0033 00       		.ascii	"\000"
+ 1295              		.section	.rodata.rt_device_find.str1.4,"aMS",%progbits,1
+ 1296              		.align	2
+ 1297              	.LC3:
+ 1298 0000 696E666F 		.ascii	"information != RT_NULL\000"
+ 1298      726D6174 
+ 1298      696F6E20 
+ 1298      213D2052 
+ 1298      545F4E55 
+ 1299              		.section	.rodata.rt_device_init.str1.4,"aMS",%progbits,1
+ 1300              		.align	2
+ 1301              	.LC5:
+ 1302 0000 546F2069 		.ascii	"To initialize device:%s failed. The error code is %"
+ 1302      6E697469 
+ARM GAS  /tmp/cc672709.s 			page 33
+
+
+ 1302      616C697A 
+ 1302      65206465 
+ 1302      76696365 
+ 1303 0033 640A00   		.ascii	"d\012\000"
+ 1304              		.section	.rodata.rt_device_open.str1.4,"aMS",%progbits,1
+ 1305              		.align	2
+ 1306              	.LC6:
+ 1307 0000 6465762D 		.ascii	"dev->ref_count != 0\000"
+ 1307      3E726566 
+ 1307      5F636F75 
+ 1307      6E742021 
+ 1307      3D203000 
+ 1308              		.section	.rodata.rt_device_unregister.str1.4,"aMS",%progbits,1
+ 1309              		.align	2
+ 1310              	.LC0:
+ 1311 0000 64657620 		.ascii	"dev != RT_NULL\000"
+ 1311      213D2052 
+ 1311      545F4E55 
+ 1311      4C4C00
+ 1312 000f 00       		.space	1
+ 1313              	.LC1:
+ 1314 0010 72745F6F 		.ascii	"rt_object_get_type(&dev->parent) == RT_Object_Class"
+ 1314      626A6563 
+ 1314      745F6765 
+ 1314      745F7479 
+ 1314      70652826 
+ 1315 0043 5F446576 		.ascii	"_Device\000"
+ 1315      69636500 
+ 1316 004b 00       		.space	1
+ 1317              	.LC2:
+ 1318 004c 72745F6F 		.ascii	"rt_object_is_systemobject(&dev->parent)\000"
+ 1318      626A6563 
+ 1318      745F6973 
+ 1318      5F737973 
+ 1318      74656D6F 
+ 1319              		.text
+ 1320              	.Letext0:
+ 1321              		.file 2 "rt-thread/include/rtdef.h"
+ 1322              		.file 3 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/lock.h"
+ 1323              		.file 4 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_types.h"
+ 1324              		.file 5 "/opt/gcc-arm-none-eabi-6-2017-q2-update/lib/gcc/arm-none-eabi/6.3.1/include/stddef.h"
+ 1325              		.file 6 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/reent.h"
+ 1326              		.file 7 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/time.h"
+ 1327              		.file 8 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/errno.h"
+ 1328              		.file 9 "rt-thread/include/rtthread.h"
+ARM GAS  /tmp/cc672709.s 			page 34
+
+
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 device.c
+     /tmp/cc672709.s:18     .text.rt_device_unregister:0000000000000000 $t
+     /tmp/cc672709.s:25     .text.rt_device_unregister:0000000000000000 rt_device_unregister
+     /tmp/cc672709.s:90     .text.rt_device_unregister:0000000000000044 $d
+     /tmp/cc672709.s:98     .text.rt_device_init_all:0000000000000000 $t
+     /tmp/cc672709.s:105    .text.rt_device_init_all:0000000000000000 rt_device_init_all
+     /tmp/cc672709.s:119    .text.rt_device_find:0000000000000000 $t
+     /tmp/cc672709.s:126    .text.rt_device_find:0000000000000000 rt_device_find
+     /tmp/cc672709.s:232    .text.rt_device_find:0000000000000064 $d
+     /tmp/cc672709.s:238    .text.rt_device_register:0000000000000000 $t
+     /tmp/cc672709.s:245    .text.rt_device_register:0000000000000000 rt_device_register
+     /tmp/cc672709.s:314    .text.rt_device_create:0000000000000000 $t
+     /tmp/cc672709.s:321    .text.rt_device_create:0000000000000000 rt_device_create
+     /tmp/cc672709.s:365    .text.rt_device_destroy:0000000000000000 $t
+     /tmp/cc672709.s:372    .text.rt_device_destroy:0000000000000000 rt_device_destroy
+     /tmp/cc672709.s:438    .text.rt_device_destroy:0000000000000048 $d
+     /tmp/cc672709.s:446    .text.rt_device_init:0000000000000000 $t
+     /tmp/cc672709.s:453    .text.rt_device_init:0000000000000000 rt_device_init
+     /tmp/cc672709.s:527    .text.rt_device_init:0000000000000048 $d
+     /tmp/cc672709.s:534    .text.rt_device_open:0000000000000000 $t
+     /tmp/cc672709.s:541    .text.rt_device_open:0000000000000000 rt_device_open
+     /tmp/cc672709.s:694    .text.rt_device_open:00000000000000b4 $d
+     /tmp/cc672709.s:703    .text.rt_device_close:0000000000000000 $t
+     /tmp/cc672709.s:710    .text.rt_device_close:0000000000000000 rt_device_close
+     /tmp/cc672709.s:798    .text.rt_device_close:000000000000005c $d
+     /tmp/cc672709.s:805    .text.rt_device_read:0000000000000000 $t
+     /tmp/cc672709.s:812    .text.rt_device_read:0000000000000000 rt_device_read
+     /tmp/cc672709.s:897    .text.rt_device_read:0000000000000064 $d
+     /tmp/cc672709.s:904    .text.rt_device_write:0000000000000000 $t
+     /tmp/cc672709.s:911    .text.rt_device_write:0000000000000000 rt_device_write
+     /tmp/cc672709.s:996    .text.rt_device_write:0000000000000064 $d
+     /tmp/cc672709.s:1003   .text.rt_device_control:0000000000000000 $t
+     /tmp/cc672709.s:1010   .text.rt_device_control:0000000000000000 rt_device_control
+     /tmp/cc672709.s:1075   .text.rt_device_control:0000000000000044 $d
+     /tmp/cc672709.s:1082   .text.rt_device_set_rx_indicate:0000000000000000 $t
+     /tmp/cc672709.s:1089   .text.rt_device_set_rx_indicate:0000000000000000 rt_device_set_rx_indicate
+     /tmp/cc672709.s:1141   .text.rt_device_set_rx_indicate:0000000000000034 $d
+     /tmp/cc672709.s:1148   .text.rt_device_set_tx_complete:0000000000000000 $t
+     /tmp/cc672709.s:1155   .text.rt_device_set_tx_complete:0000000000000000 rt_device_set_tx_complete
+     /tmp/cc672709.s:1207   .text.rt_device_set_tx_complete:0000000000000034 $d
+     /tmp/cc672709.s:1214   .rodata.__FUNCTION__.6447:0000000000000000 $d
+     /tmp/cc672709.s:1218   .rodata.__FUNCTION__.6447:0000000000000000 __FUNCTION__.6447
+     /tmp/cc672709.s:1221   .rodata.__FUNCTION__.6457:0000000000000000 $d
+     /tmp/cc672709.s:1225   .rodata.__FUNCTION__.6457:0000000000000000 __FUNCTION__.6457
+     /tmp/cc672709.s:1228   .rodata.__FUNCTION__.6470:0000000000000000 $d
+     /tmp/cc672709.s:1232   .rodata.__FUNCTION__.6470:0000000000000000 __FUNCTION__.6470
+     /tmp/cc672709.s:1235   .rodata.__FUNCTION__.6475:0000000000000000 $d
+     /tmp/cc672709.s:1239   .rodata.__FUNCTION__.6475:0000000000000000 __FUNCTION__.6475
+     /tmp/cc672709.s:1242   .rodata.__FUNCTION__.6481:0000000000000000 $d
+     /tmp/cc672709.s:1246   .rodata.__FUNCTION__.6481:0000000000000000 __FUNCTION__.6481
+     /tmp/cc672709.s:1249   .rodata.__FUNCTION__.6486:0000000000000000 $d
+     /tmp/cc672709.s:1253   .rodata.__FUNCTION__.6486:0000000000000000 __FUNCTION__.6486
+     /tmp/cc672709.s:1256   .rodata.__FUNCTION__.6493:0000000000000000 $d
+     /tmp/cc672709.s:1260   .rodata.__FUNCTION__.6493:0000000000000000 __FUNCTION__.6493
+     /tmp/cc672709.s:1263   .rodata.__FUNCTION__.6500:0000000000000000 $d
+     /tmp/cc672709.s:1267   .rodata.__FUNCTION__.6500:0000000000000000 __FUNCTION__.6500
+ARM GAS  /tmp/cc672709.s 			page 35
+
+
+     /tmp/cc672709.s:1270   .rodata.__FUNCTION__.6506:0000000000000000 $d
+     /tmp/cc672709.s:1274   .rodata.__FUNCTION__.6506:0000000000000000 __FUNCTION__.6506
+     /tmp/cc672709.s:1277   .rodata.__FUNCTION__.6513:0000000000000000 $d
+     /tmp/cc672709.s:1281   .rodata.__FUNCTION__.6513:0000000000000000 __FUNCTION__.6513
+     /tmp/cc672709.s:1284   .rodata.__FUNCTION__.6520:0000000000000000 $d
+     /tmp/cc672709.s:1288   .rodata.__FUNCTION__.6520:0000000000000000 __FUNCTION__.6520
+     /tmp/cc672709.s:1291   .rodata.rt_device_destroy.str1.4:0000000000000000 $d
+     /tmp/cc672709.s:1296   .rodata.rt_device_find.str1.4:0000000000000000 $d
+     /tmp/cc672709.s:1300   .rodata.rt_device_init.str1.4:0000000000000000 $d
+     /tmp/cc672709.s:1305   .rodata.rt_device_open.str1.4:0000000000000000 $d
+     /tmp/cc672709.s:1309   .rodata.rt_device_unregister.str1.4:0000000000000000 $d
+                     .debug_frame:0000000000000010 $d
+
+UNDEFINED SYMBOLS
+rt_object_get_type
+rt_assert_handler
+rt_object_is_systemobject
+rt_object_detach
+rt_thread_self
+rt_enter_critical
+rt_object_get_information
+rt_strncmp
+rt_exit_critical
+rt_object_init
+rt_malloc
+rt_memset
+rt_free
+rt_kprintf
+rt_set_errno

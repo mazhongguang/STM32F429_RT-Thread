@@ -1,0 +1,787 @@
+ARM GAS  /tmp/ccRUiU57.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.eabi_attribute 27, 1
+   3              		.eabi_attribute 28, 1
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.file	"sdram.c"
+  14              		.text
+  15              	.Ltext0:
+  16              		.cfi_sections	.debug_frame
+  17              		.section	.text.HAL_SDRAM_MspInit,"ax",%progbits
+  18              		.align	1
+  19              		.global	HAL_SDRAM_MspInit
+  20              		.syntax unified
+  21              		.thumb
+  22              		.thumb_func
+  23              		.fpu fpv4-sp-d16
+  25              	HAL_SDRAM_MspInit:
+  26              	.LFB121:
+  27              		.file 1 "hardware/SDRAM/sdram.c"
+   1:hardware/SDRAM/sdram.c **** #include "sdram.h"
+   2:hardware/SDRAM/sdram.c **** #include "delay.h"
+   3:hardware/SDRAM/sdram.c **** 
+   4:hardware/SDRAM/sdram.c **** SDRAM_HandleTypeDef SDRAM_Handler;			//SDRAM句柄
+   5:hardware/SDRAM/sdram.c **** 
+   6:hardware/SDRAM/sdram.c **** /******************** SDRAM初始化 *************************************/
+   7:hardware/SDRAM/sdram.c **** void SDRAM_Init(void)
+   8:hardware/SDRAM/sdram.c **** {
+   9:hardware/SDRAM/sdram.c **** 	FMC_SDRAM_TimingTypeDef SDRAM_Timing;
+  10:hardware/SDRAM/sdram.c **** 
+  11:hardware/SDRAM/sdram.c **** 	SDRAM_Handler.Instance=FMC_SDRAM_DEVICE;							//SDRAM在BANK5，6
+  12:hardware/SDRAM/sdram.c **** 	SDRAM_Handler.Init.SDBank=FMC_SDRAM_BANK1;							//第一个SDRAM BANK(片选信号FMC_SDNE0决定
+  13:hardware/SDRAM/sdram.c **** 	SDRAM_Handler.Init.ColumnBitsNumber=FMC_SDRAM_COLUMN_BITS_NUM_9;	//列数量
+  14:hardware/SDRAM/sdram.c **** 	SDRAM_Handler.Init.RowBitsNumber=FMC_SDRAM_ROW_BITS_NUM_13;			//行数量
+  15:hardware/SDRAM/sdram.c **** 	SDRAM_Handler.Init.MemoryDataWidth=FMC_SDRAM_MEM_BUS_WIDTH_16;		//数据宽度
+  16:hardware/SDRAM/sdram.c **** 	SDRAM_Handler.Init.InternalBankNumber=FMC_SDRAM_INTERN_BANKS_NUM_4;	//一共4个BANK
+  17:hardware/SDRAM/sdram.c **** 	SDRAM_Handler.Init.CASLatency=FMC_SDRAM_CAS_LATENCY_3;					//CAS为3
+  18:hardware/SDRAM/sdram.c **** 	SDRAM_Handler.Init.WriteProtection=FMC_SDRAM_WRITE_PROTECTION_DISABLE;		//禁用写保护（可以
+  19:hardware/SDRAM/sdram.c **** 	SDRAM_Handler.Init.SDClockPeriod=FMC_SDRAM_CLOCK_PERIOD_2;					//SDRAM时钟为HCLK/2=180M/2=90M=1
+  20:hardware/SDRAM/sdram.c **** 	SDRAM_Handler.Init.ReadBurst=FMC_SDRAM_RBURST_ENABLE;						//使能突发模式
+  21:hardware/SDRAM/sdram.c **** 	SDRAM_Handler.Init.ReadPipeDelay=FMC_SDRAM_RPIPE_DELAY_1;					//读通道延时
+  22:hardware/SDRAM/sdram.c **** 
+  23:hardware/SDRAM/sdram.c **** 	SDRAM_Timing.ExitSelfRefreshDelay=8;								//退出自刷新延迟为8个时钟周期
+  24:hardware/SDRAM/sdram.c **** 	SDRAM_Timing.LoadToActiveDelay=2;									//加载模式寄存器到激活时间的延迟为2个�
+  25:hardware/SDRAM/sdram.c **** 	SDRAM_Timing.RCDDelay=2;								//行到列延迟为2个时钟周期
+  26:hardware/SDRAM/sdram.c **** 	SDRAM_Timing.RowCycleDelay=6;							//行循环延迟为6个时钟周期
+  27:hardware/SDRAM/sdram.c **** 	SDRAM_Timing.RPDelay=2;									//行预充电延迟周期为2个时钟周期
+  28:hardware/SDRAM/sdram.c **** 	SDRAM_Timing.SelfRefreshTime=6;							//自刷新时间为6个时钟周期
+  29:hardware/SDRAM/sdram.c **** 	SDRAM_Timing.WriteRecoveryTime=2;						//恢复延迟为2个时钟周期
+  30:hardware/SDRAM/sdram.c **** 	HAL_SDRAM_Init(&SDRAM_Handler,&SDRAM_Timing);
+  31:hardware/SDRAM/sdram.c **** 
+ARM GAS  /tmp/ccRUiU57.s 			page 2
+
+
+  32:hardware/SDRAM/sdram.c **** 	SDRAM_Initialization_Sequence(&SDRAM_Handler);			//发送SDRAM初始化序列
+  33:hardware/SDRAM/sdram.c **** 
+  34:hardware/SDRAM/sdram.c **** 		/*******************************************************
+  35:hardware/SDRAM/sdram.c **** 		刷新频率计数器（以SDCLK频率计数），计算方法：
+  36:hardware/SDRAM/sdram.c **** 		COUNT=SDRAM刷新周期/行数-20=SDRAM刷新周期（us）*SDCLK频率（MHZ）/行数
+  37:hardware/SDRAM/sdram.c **** 		所使用的SDRAM刷新周期为64ms,SDCLK=180/2=90Mhz,行数为8192（2^13）
+  38:hardware/SDRAM/sdram.c **** 		所以COUNT=64*1000*90/8192-20=683
+  39:hardware/SDRAM/sdram.c **** 		*******************************************************/
+  40:hardware/SDRAM/sdram.c **** 	HAL_SDRAM_ProgramRefreshRate(&SDRAM_Handler,683);					//设置刷新频率		
+  41:hardware/SDRAM/sdram.c **** }
+  42:hardware/SDRAM/sdram.c **** /***************  发送SDRAM初始化序列       	**************************************/
+  43:hardware/SDRAM/sdram.c **** void SDRAM_Initialization_Sequence(SDRAM_HandleTypeDef * hsdram)
+  44:hardware/SDRAM/sdram.c **** {
+  45:hardware/SDRAM/sdram.c **** 	u32 temp=0;
+  46:hardware/SDRAM/sdram.c **** 
+  47:hardware/SDRAM/sdram.c **** 	/***************  SDRAM控制器初始化完成以后还需要按照如下顺序初始化SDRAM	***
+  48:hardware/SDRAM/sdram.c **** 	SDRAM_Send_Cmd(0,FMC_SDRAM_CMD_CLK_ENABLE,1,0);				//时钟配置使能
+  49:hardware/SDRAM/sdram.c **** 	delay_us(500);												//至少延迟200us
+  50:hardware/SDRAM/sdram.c **** 	SDRAM_Send_Cmd(0,FMC_SDRAM_CMD_PALL,1,0);					//对所有存储区预充电
+  51:hardware/SDRAM/sdram.c **** 	SDRAM_Send_Cmd(0,FMC_SDRAM_CMD_AUTOREFRESH_MODE,8,0);		//设置自刷新次数
+  52:hardware/SDRAM/sdram.c **** 
+  53:hardware/SDRAM/sdram.c **** 	/***************************************************************************************
+  54:hardware/SDRAM/sdram.c **** 	配置模式寄存器
+  55:hardware/SDRAM/sdram.c **** 	SDRAM的BIT0-BIT2为指定突发访问的长度
+  56:hardware/SDRAM/sdram.c **** 	BIT3为指定突发访问的类型
+  57:hardware/SDRAM/sdram.c **** 	BIT4-BIT6为CAS值
+  58:hardware/SDRAM/sdram.c **** 	BIT7-BIT8为运行模式
+  59:hardware/SDRAM/sdram.c **** 	BIT9为指定的写突发模式
+  60:hardware/SDRAM/sdram.c **** 	BIT10-BIT11保留
+  61:hardware/SDRAM/sdram.c **** 	***************************************************************************************/
+  62:hardware/SDRAM/sdram.c **** 	temp=(u32)SDRAM_MODEREG_BURST_LENGTH_1				|		//设置突发长度：1（可以是：1/2/4/8）
+  63:hardware/SDRAM/sdram.c **** 			  SDRAM_MODEREG_BURST_TYPE_SEQUENTIAL		|		//设置突发类型：连续（可以是连续/交错
+  64:hardware/SDRAM/sdram.c **** 			  SDRAM_MODEREG_CAS_LATENCY_3				|		//设置CAS值：3（可以是2/3）
+  65:hardware/SDRAM/sdram.c **** 			  SDRAM_MODEREG_OPERATING_MODE_STANDARD		|		//设置操作模式0，标准模式
+  66:hardware/SDRAM/sdram.c **** 			  SDRAM_MODEREG_WRITEBURST_MODE_SINGLE;				//设置突发写模式1，单点访问
+  67:hardware/SDRAM/sdram.c **** 
+  68:hardware/SDRAM/sdram.c **** 	SDRAM_Send_Cmd(0,FMC_SDRAM_CMD_LOAD_MODE,1,temp);			//设置SDRAM模式寄存器
+  69:hardware/SDRAM/sdram.c **** }
+  70:hardware/SDRAM/sdram.c **** /********************************************************************************
+  71:hardware/SDRAM/sdram.c **** SDRAM底层驱动，引脚配置，时钟使能
+  72:hardware/SDRAM/sdram.c **** 此函数会被HAL_SDRAM_Init()调用
+  73:hardware/SDRAM/sdram.c **** hsdram:SDRAM句柄
+  74:hardware/SDRAM/sdram.c **** ********************************************************************************/
+  75:hardware/SDRAM/sdram.c **** void HAL_SDRAM_MspInit(SDRAM_HandleTypeDef * hsdram)
+  76:hardware/SDRAM/sdram.c **** {
+  28              		.loc 1 76 0
+  29              		.cfi_startproc
+  30              		@ args = 0, pretend = 0, frame = 48
+  31              		@ frame_needed = 0, uses_anonymous_args = 0
+  32              	.LVL0:
+  33 0000 00B5     		push	{lr}
+  34              	.LCFI0:
+  35              		.cfi_def_cfa_offset 4
+  36              		.cfi_offset 14, -4
+  37 0002 8DB0     		sub	sp, sp, #52
+  38              	.LCFI1:
+  39              		.cfi_def_cfa_offset 56
+ARM GAS  /tmp/ccRUiU57.s 			page 3
+
+
+  40              	.LBB2:
+  77:hardware/SDRAM/sdram.c **** 	GPIO_InitTypeDef GPIO_Initure;
+  78:hardware/SDRAM/sdram.c **** 
+  79:hardware/SDRAM/sdram.c **** 	__HAL_RCC_FMC_CLK_ENABLE();								//使能FMC时钟
+  41              		.loc 1 79 0
+  42 0004 0022     		movs	r2, #0
+  43 0006 0192     		str	r2, [sp, #4]
+  44 0008 344B     		ldr	r3, .L3
+  45 000a 996B     		ldr	r1, [r3, #56]
+  46 000c 41F00101 		orr	r1, r1, #1
+  47 0010 9963     		str	r1, [r3, #56]
+  48 0012 996B     		ldr	r1, [r3, #56]
+  49 0014 01F00101 		and	r1, r1, #1
+  50 0018 0191     		str	r1, [sp, #4]
+  51 001a 0199     		ldr	r1, [sp, #4]
+  52              	.LBE2:
+  53              	.LBB3:
+  80:hardware/SDRAM/sdram.c **** 	__HAL_RCC_GPIOC_CLK_ENABLE();							//使能GPIOC时钟
+  54              		.loc 1 80 0
+  55 001c 0292     		str	r2, [sp, #8]
+  56 001e 196B     		ldr	r1, [r3, #48]
+  57 0020 41F00401 		orr	r1, r1, #4
+  58 0024 1963     		str	r1, [r3, #48]
+  59 0026 196B     		ldr	r1, [r3, #48]
+  60 0028 01F00401 		and	r1, r1, #4
+  61 002c 0291     		str	r1, [sp, #8]
+  62 002e 0299     		ldr	r1, [sp, #8]
+  63              	.LBE3:
+  64              	.LBB4:
+  81:hardware/SDRAM/sdram.c **** 	__HAL_RCC_GPIOD_CLK_ENABLE();							//使能GPIOD时钟
+  65              		.loc 1 81 0
+  66 0030 0392     		str	r2, [sp, #12]
+  67 0032 196B     		ldr	r1, [r3, #48]
+  68 0034 41F00801 		orr	r1, r1, #8
+  69 0038 1963     		str	r1, [r3, #48]
+  70 003a 196B     		ldr	r1, [r3, #48]
+  71 003c 01F00801 		and	r1, r1, #8
+  72 0040 0391     		str	r1, [sp, #12]
+  73 0042 0399     		ldr	r1, [sp, #12]
+  74              	.LBE4:
+  75              	.LBB5:
+  82:hardware/SDRAM/sdram.c **** 	__HAL_RCC_GPIOE_CLK_ENABLE();							//使能GPIOE时钟
+  76              		.loc 1 82 0
+  77 0044 0492     		str	r2, [sp, #16]
+  78 0046 196B     		ldr	r1, [r3, #48]
+  79 0048 41F01001 		orr	r1, r1, #16
+  80 004c 1963     		str	r1, [r3, #48]
+  81 004e 196B     		ldr	r1, [r3, #48]
+  82 0050 01F01001 		and	r1, r1, #16
+  83 0054 0491     		str	r1, [sp, #16]
+  84 0056 0499     		ldr	r1, [sp, #16]
+  85              	.LBE5:
+  86              	.LBB6:
+  83:hardware/SDRAM/sdram.c **** 	__HAL_RCC_GPIOF_CLK_ENABLE();							//使能GPIOF时钟
+  87              		.loc 1 83 0
+  88 0058 0592     		str	r2, [sp, #20]
+  89 005a 196B     		ldr	r1, [r3, #48]
+ARM GAS  /tmp/ccRUiU57.s 			page 4
+
+
+  90 005c 41F02001 		orr	r1, r1, #32
+  91 0060 1963     		str	r1, [r3, #48]
+  92 0062 196B     		ldr	r1, [r3, #48]
+  93 0064 01F02001 		and	r1, r1, #32
+  94 0068 0591     		str	r1, [sp, #20]
+  95 006a 0599     		ldr	r1, [sp, #20]
+  96              	.LBE6:
+  97              	.LBB7:
+  84:hardware/SDRAM/sdram.c **** 	__HAL_RCC_GPIOG_CLK_ENABLE();							//使能GPIOG时钟
+  98              		.loc 1 84 0
+  99 006c 0692     		str	r2, [sp, #24]
+ 100 006e 1A6B     		ldr	r2, [r3, #48]
+ 101 0070 42F04002 		orr	r2, r2, #64
+ 102 0074 1A63     		str	r2, [r3, #48]
+ 103 0076 1B6B     		ldr	r3, [r3, #48]
+ 104 0078 03F04003 		and	r3, r3, #64
+ 105 007c 0693     		str	r3, [sp, #24]
+ 106 007e 069B     		ldr	r3, [sp, #24]
+ 107              	.LBE7:
+  85:hardware/SDRAM/sdram.c **** 
+  86:hardware/SDRAM/sdram.c **** 	GPIO_Initure.Pin=GPIO_PIN_0|GPIO_PIN_2|GPIO_PIN_3;		//PC0,PC2,PC3
+ 108              		.loc 1 86 0
+ 109 0080 0D23     		movs	r3, #13
+ 110 0082 0793     		str	r3, [sp, #28]
+  87:hardware/SDRAM/sdram.c **** 	GPIO_Initure.Mode=GPIO_MODE_AF_PP;						//复用推挽
+ 111              		.loc 1 87 0
+ 112 0084 0223     		movs	r3, #2
+ 113 0086 0893     		str	r3, [sp, #32]
+  88:hardware/SDRAM/sdram.c **** 	GPIO_Initure.Alternate=GPIO_AF12_FMC;					//复用为FMC
+ 114              		.loc 1 88 0
+ 115 0088 0C23     		movs	r3, #12
+ 116 008a 0B93     		str	r3, [sp, #44]
+  89:hardware/SDRAM/sdram.c **** 	GPIO_Initure.Pull=GPIO_PULLUP;							//上拉
+ 117              		.loc 1 89 0
+ 118 008c 0123     		movs	r3, #1
+ 119 008e 0993     		str	r3, [sp, #36]
+  90:hardware/SDRAM/sdram.c **** 	GPIO_Initure.Speed=GPIO_SPEED_HIGH;						//高速
+ 120              		.loc 1 90 0
+ 121 0090 0323     		movs	r3, #3
+ 122 0092 0A93     		str	r3, [sp, #40]
+  91:hardware/SDRAM/sdram.c **** 	HAL_GPIO_Init(GPIOC,&GPIO_Initure);						//初始化PC0,PC2,PC3
+ 123              		.loc 1 91 0
+ 124 0094 07A9     		add	r1, sp, #28
+ 125 0096 1248     		ldr	r0, .L3+4
+ 126              	.LVL1:
+ 127 0098 FFF7FEFF 		bl	HAL_GPIO_Init
+ 128              	.LVL2:
+  92:hardware/SDRAM/sdram.c **** 
+  93:hardware/SDRAM/sdram.c **** 	GPIO_Initure.Pin=GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_8|GPIO_PIN_9|	
+ 129              		.loc 1 93 0
+ 130 009c 4CF20373 		movw	r3, #50947
+ 131 00a0 0793     		str	r3, [sp, #28]
+  94:hardware/SDRAM/sdram.c **** 					 GPIO_PIN_10|GPIO_PIN_14|GPIO_PIN_15;					
+  95:hardware/SDRAM/sdram.c **** 	HAL_GPIO_Init(GPIOD,&GPIO_Initure);						//初始化PD0,PD1,PD8,PD9,PD10,PD14,PD15
+ 132              		.loc 1 95 0
+ 133 00a2 07A9     		add	r1, sp, #28
+ 134 00a4 0F48     		ldr	r0, .L3+8
+ARM GAS  /tmp/ccRUiU57.s 			page 5
+
+
+ 135 00a6 FFF7FEFF 		bl	HAL_GPIO_Init
+ 136              	.LVL3:
+  96:hardware/SDRAM/sdram.c **** 
+  97:hardware/SDRAM/sdram.c **** 	GPIO_Initure.Pin=GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_7|GPIO_PIN_8|GPIO_PIN_9|GPIO_PIN_10|			
+ 137              		.loc 1 97 0
+ 138 00aa 4FF68373 		movw	r3, #65411
+ 139 00ae 0793     		str	r3, [sp, #28]
+  98:hardware/SDRAM/sdram.c **** 					 GPIO_PIN_11|GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15;	
+  99:hardware/SDRAM/sdram.c **** 	HAL_GPIO_Init(GPIOE,&GPIO_Initure);						//初始化PE0,1,7,8,9,10,11,12,13,14,15
+ 140              		.loc 1 99 0
+ 141 00b0 07A9     		add	r1, sp, #28
+ 142 00b2 0D48     		ldr	r0, .L3+12
+ 143 00b4 FFF7FEFF 		bl	HAL_GPIO_Init
+ 144              	.LVL4:
+ 100:hardware/SDRAM/sdram.c **** 
+ 101:hardware/SDRAM/sdram.c **** 	GPIO_Initure.Pin=GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5|			
+ 145              		.loc 1 101 0
+ 146 00b8 4FF63F03 		movw	r3, #63551
+ 147 00bc 0793     		str	r3, [sp, #28]
+ 102:hardware/SDRAM/sdram.c **** 					 GPIO_PIN_11|GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15;
+ 103:hardware/SDRAM/sdram.c **** 	HAL_GPIO_Init(GPIOF,&GPIO_Initure);						//初始化PF0,1,2,3,4,5,11,12,13,14,15
+ 148              		.loc 1 103 0
+ 149 00be 07A9     		add	r1, sp, #28
+ 150 00c0 0A48     		ldr	r0, .L3+16
+ 151 00c2 FFF7FEFF 		bl	HAL_GPIO_Init
+ 152              	.LVL5:
+ 104:hardware/SDRAM/sdram.c **** 
+ 105:hardware/SDRAM/sdram.c **** 	GPIO_Initure.Pin=GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_4|GPIO_PIN_5|						
+ 153              		.loc 1 105 0
+ 154 00c6 48F23713 		movw	r3, #33079
+ 155 00ca 0793     		str	r3, [sp, #28]
+ 106:hardware/SDRAM/sdram.c **** 					 GPIO_PIN_8|GPIO_PIN_15;
+ 107:hardware/SDRAM/sdram.c **** 	HAL_GPIO_Init(GPIOG,&GPIO_Initure);						//初始化PG0,1,2,4,5,8,15
+ 156              		.loc 1 107 0
+ 157 00cc 07A9     		add	r1, sp, #28
+ 158 00ce 0848     		ldr	r0, .L3+20
+ 159 00d0 FFF7FEFF 		bl	HAL_GPIO_Init
+ 160              	.LVL6:
+ 108:hardware/SDRAM/sdram.c **** }
+ 161              		.loc 1 108 0
+ 162 00d4 0DB0     		add	sp, sp, #52
+ 163              	.LCFI2:
+ 164              		.cfi_def_cfa_offset 4
+ 165              		@ sp needed
+ 166 00d6 5DF804FB 		ldr	pc, [sp], #4
+ 167              	.L4:
+ 168 00da 00BF     		.align	2
+ 169              	.L3:
+ 170 00dc 00380240 		.word	1073887232
+ 171 00e0 00080240 		.word	1073874944
+ 172 00e4 000C0240 		.word	1073875968
+ 173 00e8 00100240 		.word	1073876992
+ 174 00ec 00140240 		.word	1073878016
+ 175 00f0 00180240 		.word	1073879040
+ 176              		.cfi_endproc
+ 177              	.LFE121:
+ 179              		.section	.text.SDRAM_Send_Cmd,"ax",%progbits
+ARM GAS  /tmp/ccRUiU57.s 			page 6
+
+
+ 180              		.align	1
+ 181              		.global	SDRAM_Send_Cmd
+ 182              		.syntax unified
+ 183              		.thumb
+ 184              		.thumb_func
+ 185              		.fpu fpv4-sp-d16
+ 187              	SDRAM_Send_Cmd:
+ 188              	.LFB122:
+ 109:hardware/SDRAM/sdram.c **** /*********************************************************************************************
+ 110:hardware/SDRAM/sdram.c **** 向SDRAM发送命令
+ 111:hardware/SDRAM/sdram.c **** Bankx: 	0，向Bank5上的SDRAM发送指令
+ 112:hardware/SDRAM/sdram.c **** 		1，向Bank6上的SDRAM发送指令
+ 113:hardware/SDRAM/sdram.c **** CMD:指令  （0，正常模式			1，时钟配置使能			2，预充电所有存储区				3，自�
+ 114:hardware/SDRAM/sdram.c **** 		  4，加载模式寄存器				5，自刷新			6，掉电）
+ 115:hardware/SDRAM/sdram.c **** refresh:自刷新次数
+ 116:hardware/SDRAM/sdram.c **** regval:模式寄存器的定义
+ 117:hardware/SDRAM/sdram.c **** 返回值：0，正常
+ 118:hardware/SDRAM/sdram.c **** 		1，失败
+ 119:hardware/SDRAM/sdram.c **** *********************************************************************************************/
+ 120:hardware/SDRAM/sdram.c **** u8 SDRAM_Send_Cmd(u8 bankx, u8 cmd, u8 refresh, u16 regval)
+ 121:hardware/SDRAM/sdram.c **** {
+ 189              		.loc 1 121 0
+ 190              		.cfi_startproc
+ 191              		@ args = 0, pretend = 0, frame = 16
+ 192              		@ frame_needed = 0, uses_anonymous_args = 0
+ 193              	.LVL7:
+ 194 0000 10B5     		push	{r4, lr}
+ 195              	.LCFI3:
+ 196              		.cfi_def_cfa_offset 8
+ 197              		.cfi_offset 4, -8
+ 198              		.cfi_offset 14, -4
+ 199 0002 84B0     		sub	sp, sp, #16
+ 200              	.LCFI4:
+ 201              		.cfi_def_cfa_offset 24
+ 202              	.LVL8:
+ 122:hardware/SDRAM/sdram.c **** 	u32 target_bank=0;
+ 123:hardware/SDRAM/sdram.c **** 	FMC_SDRAM_CommandTypeDef		Command;
+ 124:hardware/SDRAM/sdram.c **** 
+ 125:hardware/SDRAM/sdram.c **** 	if(bankx==0)
+ 203              		.loc 1 125 0
+ 204 0004 18B1     		cbz	r0, .L8
+ 126:hardware/SDRAM/sdram.c **** 		target_bank=FMC_SDRAM_CMD_TARGET_BANK1;
+ 127:hardware/SDRAM/sdram.c **** 	else if(bankx==1)
+ 205              		.loc 1 127 0
+ 206 0006 0128     		cmp	r0, #1
+ 207 0008 10D0     		beq	.L9
+ 122:hardware/SDRAM/sdram.c **** 	u32 target_bank=0;
+ 208              		.loc 1 122 0
+ 209 000a 0020     		movs	r0, #0
+ 210              	.LVL9:
+ 211 000c 00E0     		b	.L6
+ 212              	.LVL10:
+ 213              	.L8:
+ 126:hardware/SDRAM/sdram.c **** 		target_bank=FMC_SDRAM_CMD_TARGET_BANK1;
+ 214              		.loc 1 126 0
+ 215 000e 1020     		movs	r0, #16
+ 216              	.LVL11:
+ARM GAS  /tmp/ccRUiU57.s 			page 7
+
+
+ 217              	.L6:
+ 128:hardware/SDRAM/sdram.c **** 		target_bank=FMC_SDRAM_CMD_TARGET_BANK2;
+ 129:hardware/SDRAM/sdram.c **** 
+ 130:hardware/SDRAM/sdram.c **** 	Command.CommandMode=cmd;						//命令
+ 218              		.loc 1 130 0
+ 219 0010 0091     		str	r1, [sp]
+ 131:hardware/SDRAM/sdram.c **** 	Command.CommandTarget=target_bank;				//目标SDRAM存储区域
+ 220              		.loc 1 131 0
+ 221 0012 0190     		str	r0, [sp, #4]
+ 132:hardware/SDRAM/sdram.c **** 	Command.AutoRefreshNumber=refresh;				//自刷新次数
+ 222              		.loc 1 132 0
+ 223 0014 0292     		str	r2, [sp, #8]
+ 133:hardware/SDRAM/sdram.c **** 	Command.ModeRegisterDefinition=regval;			//要写入模式寄存器的值
+ 224              		.loc 1 133 0
+ 225 0016 0393     		str	r3, [sp, #12]
+ 134:hardware/SDRAM/sdram.c **** 
+ 135:hardware/SDRAM/sdram.c **** 	if(HAL_SDRAM_SendCommand(&SDRAM_Handler,&Command,0X1000)==HAL_OK)			//向SDRAM发送命令
+ 226              		.loc 1 135 0
+ 227 0018 4FF48052 		mov	r2, #4096
+ 228              	.LVL12:
+ 229 001c 6946     		mov	r1, sp
+ 230              	.LVL13:
+ 231 001e 0448     		ldr	r0, .L12
+ 232              	.LVL14:
+ 233 0020 FFF7FEFF 		bl	HAL_SDRAM_SendCommand
+ 234              	.LVL15:
+ 235 0024 00B1     		cbz	r0, .L7
+ 136:hardware/SDRAM/sdram.c **** 		{
+ 137:hardware/SDRAM/sdram.c **** 			return 0;
+ 138:hardware/SDRAM/sdram.c **** 		}
+ 139:hardware/SDRAM/sdram.c **** 	else
+ 140:hardware/SDRAM/sdram.c **** 		return 1;
+ 236              		.loc 1 140 0
+ 237 0026 0120     		movs	r0, #1
+ 238              	.L7:
+ 141:hardware/SDRAM/sdram.c **** }
+ 239              		.loc 1 141 0
+ 240 0028 04B0     		add	sp, sp, #16
+ 241              	.LCFI5:
+ 242              		.cfi_remember_state
+ 243              		.cfi_def_cfa_offset 8
+ 244              		@ sp needed
+ 245 002a 10BD     		pop	{r4, pc}
+ 246              	.LVL16:
+ 247              	.L9:
+ 248              	.LCFI6:
+ 249              		.cfi_restore_state
+ 128:hardware/SDRAM/sdram.c **** 
+ 250              		.loc 1 128 0
+ 251 002c 0820     		movs	r0, #8
+ 252              	.LVL17:
+ 253 002e EFE7     		b	.L6
+ 254              	.L13:
+ 255              		.align	2
+ 256              	.L12:
+ 257 0030 00000000 		.word	SDRAM_Handler
+ 258              		.cfi_endproc
+ARM GAS  /tmp/ccRUiU57.s 			page 8
+
+
+ 259              	.LFE122:
+ 261              		.section	.text.SDRAM_Initialization_Sequence,"ax",%progbits
+ 262              		.align	1
+ 263              		.global	SDRAM_Initialization_Sequence
+ 264              		.syntax unified
+ 265              		.thumb
+ 266              		.thumb_func
+ 267              		.fpu fpv4-sp-d16
+ 269              	SDRAM_Initialization_Sequence:
+ 270              	.LFB120:
+  44:hardware/SDRAM/sdram.c **** 	u32 temp=0;
+ 271              		.loc 1 44 0
+ 272              		.cfi_startproc
+ 273              		@ args = 0, pretend = 0, frame = 0
+ 274              		@ frame_needed = 0, uses_anonymous_args = 0
+ 275              	.LVL18:
+ 276 0000 08B5     		push	{r3, lr}
+ 277              	.LCFI7:
+ 278              		.cfi_def_cfa_offset 8
+ 279              		.cfi_offset 3, -8
+ 280              		.cfi_offset 14, -4
+ 281              	.LVL19:
+  48:hardware/SDRAM/sdram.c **** 	delay_us(500);												//至少延迟200us
+ 282              		.loc 1 48 0
+ 283 0002 0023     		movs	r3, #0
+ 284 0004 0122     		movs	r2, #1
+ 285 0006 1146     		mov	r1, r2
+ 286 0008 1846     		mov	r0, r3
+ 287              	.LVL20:
+ 288 000a FFF7FEFF 		bl	SDRAM_Send_Cmd
+ 289              	.LVL21:
+  49:hardware/SDRAM/sdram.c **** 	SDRAM_Send_Cmd(0,FMC_SDRAM_CMD_PALL,1,0);					//对所有存储区预充电
+ 290              		.loc 1 49 0
+ 291 000e 4FF4FA70 		mov	r0, #500
+ 292 0012 FFF7FEFF 		bl	delay_us
+ 293              	.LVL22:
+  50:hardware/SDRAM/sdram.c **** 	SDRAM_Send_Cmd(0,FMC_SDRAM_CMD_AUTOREFRESH_MODE,8,0);		//设置自刷新次数
+ 294              		.loc 1 50 0
+ 295 0016 0023     		movs	r3, #0
+ 296 0018 0122     		movs	r2, #1
+ 297 001a 0221     		movs	r1, #2
+ 298 001c 1846     		mov	r0, r3
+ 299 001e FFF7FEFF 		bl	SDRAM_Send_Cmd
+ 300              	.LVL23:
+  51:hardware/SDRAM/sdram.c **** 
+ 301              		.loc 1 51 0
+ 302 0022 0023     		movs	r3, #0
+ 303 0024 0822     		movs	r2, #8
+ 304 0026 0321     		movs	r1, #3
+ 305 0028 1846     		mov	r0, r3
+ 306 002a FFF7FEFF 		bl	SDRAM_Send_Cmd
+ 307              	.LVL24:
+  68:hardware/SDRAM/sdram.c **** }
+ 308              		.loc 1 68 0
+ 309 002e 4FF40C73 		mov	r3, #560
+ 310 0032 0122     		movs	r2, #1
+ 311 0034 0421     		movs	r1, #4
+ARM GAS  /tmp/ccRUiU57.s 			page 9
+
+
+ 312 0036 0020     		movs	r0, #0
+ 313 0038 FFF7FEFF 		bl	SDRAM_Send_Cmd
+ 314              	.LVL25:
+ 315 003c 08BD     		pop	{r3, pc}
+ 316              		.cfi_endproc
+ 317              	.LFE120:
+ 319              		.section	.text.SDRAM_Init,"ax",%progbits
+ 320              		.align	1
+ 321              		.global	SDRAM_Init
+ 322              		.syntax unified
+ 323              		.thumb
+ 324              		.thumb_func
+ 325              		.fpu fpv4-sp-d16
+ 327              	SDRAM_Init:
+ 328              	.LFB119:
+   8:hardware/SDRAM/sdram.c **** 	FMC_SDRAM_TimingTypeDef SDRAM_Timing;
+ 329              		.loc 1 8 0
+ 330              		.cfi_startproc
+ 331              		@ args = 0, pretend = 0, frame = 32
+ 332              		@ frame_needed = 0, uses_anonymous_args = 0
+ 333 0000 10B5     		push	{r4, lr}
+ 334              	.LCFI8:
+ 335              		.cfi_def_cfa_offset 8
+ 336              		.cfi_offset 4, -8
+ 337              		.cfi_offset 14, -4
+ 338 0002 88B0     		sub	sp, sp, #32
+ 339              	.LCFI9:
+ 340              		.cfi_def_cfa_offset 40
+  11:hardware/SDRAM/sdram.c **** 	SDRAM_Handler.Init.SDBank=FMC_SDRAM_BANK1;							//第一个SDRAM BANK(片选信号FMC_SDNE0决定
+ 341              		.loc 1 11 0
+ 342 0004 184C     		ldr	r4, .L18
+ 343 0006 194B     		ldr	r3, .L18+4
+ 344 0008 2360     		str	r3, [r4]
+  12:hardware/SDRAM/sdram.c **** 	SDRAM_Handler.Init.ColumnBitsNumber=FMC_SDRAM_COLUMN_BITS_NUM_9;	//列数量
+ 345              		.loc 1 12 0
+ 346 000a 0022     		movs	r2, #0
+ 347 000c 6260     		str	r2, [r4, #4]
+  13:hardware/SDRAM/sdram.c **** 	SDRAM_Handler.Init.RowBitsNumber=FMC_SDRAM_ROW_BITS_NUM_13;			//行数量
+ 348              		.loc 1 13 0
+ 349 000e 0123     		movs	r3, #1
+ 350 0010 A360     		str	r3, [r4, #8]
+  14:hardware/SDRAM/sdram.c **** 	SDRAM_Handler.Init.MemoryDataWidth=FMC_SDRAM_MEM_BUS_WIDTH_16;		//数据宽度
+ 351              		.loc 1 14 0
+ 352 0012 0823     		movs	r3, #8
+ 353 0014 E360     		str	r3, [r4, #12]
+  15:hardware/SDRAM/sdram.c **** 	SDRAM_Handler.Init.InternalBankNumber=FMC_SDRAM_INTERN_BANKS_NUM_4;	//一共4个BANK
+ 354              		.loc 1 15 0
+ 355 0016 1021     		movs	r1, #16
+ 356 0018 2161     		str	r1, [r4, #16]
+  16:hardware/SDRAM/sdram.c **** 	SDRAM_Handler.Init.CASLatency=FMC_SDRAM_CAS_LATENCY_3;					//CAS为3
+ 357              		.loc 1 16 0
+ 358 001a 4021     		movs	r1, #64
+ 359 001c 6161     		str	r1, [r4, #20]
+  17:hardware/SDRAM/sdram.c **** 	SDRAM_Handler.Init.WriteProtection=FMC_SDRAM_WRITE_PROTECTION_DISABLE;		//禁用写保护（可以
+ 360              		.loc 1 17 0
+ 361 001e 4FF4C071 		mov	r1, #384
+ 362 0022 A161     		str	r1, [r4, #24]
+ARM GAS  /tmp/ccRUiU57.s 			page 10
+
+
+  18:hardware/SDRAM/sdram.c **** 	SDRAM_Handler.Init.SDClockPeriod=FMC_SDRAM_CLOCK_PERIOD_2;					//SDRAM时钟为HCLK/2=180M/2=90M=1
+ 363              		.loc 1 18 0
+ 364 0024 E261     		str	r2, [r4, #28]
+  19:hardware/SDRAM/sdram.c **** 	SDRAM_Handler.Init.ReadBurst=FMC_SDRAM_RBURST_ENABLE;						//使能突发模式
+ 365              		.loc 1 19 0
+ 366 0026 4FF40062 		mov	r2, #2048
+ 367 002a 2262     		str	r2, [r4, #32]
+  20:hardware/SDRAM/sdram.c **** 	SDRAM_Handler.Init.ReadPipeDelay=FMC_SDRAM_RPIPE_DELAY_1;					//读通道延时
+ 368              		.loc 1 20 0
+ 369 002c 4FF48052 		mov	r2, #4096
+ 370 0030 6262     		str	r2, [r4, #36]
+  21:hardware/SDRAM/sdram.c **** 
+ 371              		.loc 1 21 0
+ 372 0032 4FF40052 		mov	r2, #8192
+ 373 0036 A262     		str	r2, [r4, #40]
+  23:hardware/SDRAM/sdram.c **** 	SDRAM_Timing.LoadToActiveDelay=2;									//加载模式寄存器到激活时间的延迟为2个�
+ 374              		.loc 1 23 0
+ 375 0038 0293     		str	r3, [sp, #8]
+  24:hardware/SDRAM/sdram.c **** 	SDRAM_Timing.RCDDelay=2;								//行到列延迟为2个时钟周期
+ 376              		.loc 1 24 0
+ 377 003a 0223     		movs	r3, #2
+ 378 003c 0193     		str	r3, [sp, #4]
+  25:hardware/SDRAM/sdram.c **** 	SDRAM_Timing.RowCycleDelay=6;							//行循环延迟为6个时钟周期
+ 379              		.loc 1 25 0
+ 380 003e 0793     		str	r3, [sp, #28]
+  26:hardware/SDRAM/sdram.c **** 	SDRAM_Timing.RPDelay=2;									//行预充电延迟周期为2个时钟周期
+ 381              		.loc 1 26 0
+ 382 0040 0622     		movs	r2, #6
+ 383 0042 0492     		str	r2, [sp, #16]
+  27:hardware/SDRAM/sdram.c **** 	SDRAM_Timing.SelfRefreshTime=6;							//自刷新时间为6个时钟周期
+ 384              		.loc 1 27 0
+ 385 0044 0693     		str	r3, [sp, #24]
+  28:hardware/SDRAM/sdram.c **** 	SDRAM_Timing.WriteRecoveryTime=2;						//恢复延迟为2个时钟周期
+ 386              		.loc 1 28 0
+ 387 0046 0392     		str	r2, [sp, #12]
+  29:hardware/SDRAM/sdram.c **** 	HAL_SDRAM_Init(&SDRAM_Handler,&SDRAM_Timing);
+ 388              		.loc 1 29 0
+ 389 0048 0593     		str	r3, [sp, #20]
+  30:hardware/SDRAM/sdram.c **** 
+ 390              		.loc 1 30 0
+ 391 004a 01A9     		add	r1, sp, #4
+ 392 004c 2046     		mov	r0, r4
+ 393 004e FFF7FEFF 		bl	HAL_SDRAM_Init
+ 394              	.LVL26:
+  32:hardware/SDRAM/sdram.c **** 
+ 395              		.loc 1 32 0
+ 396 0052 2046     		mov	r0, r4
+ 397 0054 FFF7FEFF 		bl	SDRAM_Initialization_Sequence
+ 398              	.LVL27:
+  40:hardware/SDRAM/sdram.c **** }
+ 399              		.loc 1 40 0
+ 400 0058 40F2AB21 		movw	r1, #683
+ 401 005c 2046     		mov	r0, r4
+ 402 005e FFF7FEFF 		bl	HAL_SDRAM_ProgramRefreshRate
+ 403              	.LVL28:
+  41:hardware/SDRAM/sdram.c **** /***************  发送SDRAM初始化序列       	**************************************/
+ 404              		.loc 1 41 0
+ARM GAS  /tmp/ccRUiU57.s 			page 11
+
+
+ 405 0062 08B0     		add	sp, sp, #32
+ 406              	.LCFI10:
+ 407              		.cfi_def_cfa_offset 8
+ 408              		@ sp needed
+ 409 0064 10BD     		pop	{r4, pc}
+ 410              	.L19:
+ 411 0066 00BF     		.align	2
+ 412              	.L18:
+ 413 0068 00000000 		.word	SDRAM_Handler
+ 414 006c 400100A0 		.word	-1610612416
+ 415              		.cfi_endproc
+ 416              	.LFE119:
+ 418              		.section	.text.FMC_SDRAM_WriteBuffer,"ax",%progbits
+ 419              		.align	1
+ 420              		.global	FMC_SDRAM_WriteBuffer
+ 421              		.syntax unified
+ 422              		.thumb
+ 423              		.thumb_func
+ 424              		.fpu fpv4-sp-d16
+ 426              	FMC_SDRAM_WriteBuffer:
+ 427              	.LFB123:
+ 142:hardware/SDRAM/sdram.c **** /****************************************************************************************
+ 143:hardware/SDRAM/sdram.c **** 在指定地址（WriteAddr+Bank5_SDRAM_ADDR）开始，连续写入N个字节
+ 144:hardware/SDRAM/sdram.c **** pBuffer:字节指针
+ 145:hardware/SDRAM/sdram.c **** WriteAddr:要写入的地址
+ 146:hardware/SDRAM/sdram.c **** n:要写入的字节数
+ 147:hardware/SDRAM/sdram.c **** ****************************************************************************************/
+ 148:hardware/SDRAM/sdram.c **** void FMC_SDRAM_WriteBuffer(u8 * pBuffer, u32 WriteAddr, u32 n)
+ 149:hardware/SDRAM/sdram.c **** {
+ 428              		.loc 1 149 0
+ 429              		.cfi_startproc
+ 430              		@ args = 0, pretend = 0, frame = 0
+ 431              		@ frame_needed = 0, uses_anonymous_args = 0
+ 432              		@ link register save eliminated.
+ 433              	.LVL29:
+ 150:hardware/SDRAM/sdram.c **** 	for(;n!=0;n--)
+ 434              		.loc 1 150 0
+ 435 0000 62B1     		cbz	r2, .L26
+ 149:hardware/SDRAM/sdram.c **** 	for(;n!=0;n--)
+ 436              		.loc 1 149 0
+ 437 0002 10B4     		push	{r4}
+ 438              	.LCFI11:
+ 439              		.cfi_def_cfa_offset 4
+ 440              		.cfi_offset 4, -4
+ 441              	.L22:
+ 151:hardware/SDRAM/sdram.c **** 		{
+ 152:hardware/SDRAM/sdram.c **** 			*(vu8*)(Bank5_SDRAM_ADDR+WriteAddr)=*pBuffer;
+ 442              		.loc 1 152 0 discriminator 2
+ 443 0004 01F14043 		add	r3, r1, #-1073741824
+ 444 0008 10F8014B 		ldrb	r4, [r0], #1	@ zero_extendqisi2
+ 445              	.LVL30:
+ 446 000c 1C70     		strb	r4, [r3]
+ 153:hardware/SDRAM/sdram.c **** 			WriteAddr++;
+ 447              		.loc 1 153 0 discriminator 2
+ 448 000e 0131     		adds	r1, r1, #1
+ 449              	.LVL31:
+ 150:hardware/SDRAM/sdram.c **** 		{
+ARM GAS  /tmp/ccRUiU57.s 			page 12
+
+
+ 450              		.loc 1 150 0 discriminator 2
+ 451 0010 013A     		subs	r2, r2, #1
+ 452              	.LVL32:
+ 453 0012 002A     		cmp	r2, #0
+ 454 0014 F6D1     		bne	.L22
+ 154:hardware/SDRAM/sdram.c **** 			pBuffer++;
+ 155:hardware/SDRAM/sdram.c **** 		}
+ 156:hardware/SDRAM/sdram.c **** }
+ 455              		.loc 1 156 0
+ 456 0016 5DF8044B 		ldr	r4, [sp], #4
+ 457              	.LCFI12:
+ 458              		.cfi_restore 4
+ 459              		.cfi_def_cfa_offset 0
+ 460 001a 7047     		bx	lr
+ 461              	.L26:
+ 462 001c 7047     		bx	lr
+ 463              		.cfi_endproc
+ 464              	.LFE123:
+ 466              		.section	.text.FMC_SDRAM_ReadBuffer,"ax",%progbits
+ 467              		.align	1
+ 468              		.global	FMC_SDRAM_ReadBuffer
+ 469              		.syntax unified
+ 470              		.thumb
+ 471              		.thumb_func
+ 472              		.fpu fpv4-sp-d16
+ 474              	FMC_SDRAM_ReadBuffer:
+ 475              	.LFB124:
+ 157:hardware/SDRAM/sdram.c **** /******************************************************************************************
+ 158:hardware/SDRAM/sdram.c **** 在指定地址（WriteAddr+Bank5_SDRAM_ADDR）开始，连续读出N个字节
+ 159:hardware/SDRAM/sdram.c **** pBuffer:字节指针
+ 160:hardware/SDRAM/sdram.c **** WriteAddr:要读出的地址
+ 161:hardware/SDRAM/sdram.c **** n:要读出的字节数
+ 162:hardware/SDRAM/sdram.c **** ******************************************************************************************/
+ 163:hardware/SDRAM/sdram.c **** void FMC_SDRAM_ReadBuffer(u8 * pBuffer, u32 ReadAddr, u32 n)
+ 164:hardware/SDRAM/sdram.c **** {
+ 476              		.loc 1 164 0
+ 477              		.cfi_startproc
+ 478              		@ args = 0, pretend = 0, frame = 0
+ 479              		@ frame_needed = 0, uses_anonymous_args = 0
+ 480              		@ link register save eliminated.
+ 481              	.LVL33:
+ 165:hardware/SDRAM/sdram.c **** 	for (;n!=0;n--)
+ 482              		.loc 1 165 0
+ 483 0000 06E0     		b	.L28
+ 484              	.L29:
+ 485              	.LVL34:
+ 166:hardware/SDRAM/sdram.c **** 		{
+ 167:hardware/SDRAM/sdram.c **** 			*pBuffer++=*(vu8*)(Bank5_SDRAM_ADDR+ReadAddr);
+ 486              		.loc 1 167 0 discriminator 2
+ 487 0002 01F14043 		add	r3, r1, #-1073741824
+ 488 0006 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 489 0008 0370     		strb	r3, [r0]
+ 168:hardware/SDRAM/sdram.c **** 			ReadAddr++;
+ 490              		.loc 1 168 0 discriminator 2
+ 491 000a 0131     		adds	r1, r1, #1
+ 492              	.LVL35:
+ 165:hardware/SDRAM/sdram.c **** 	for (;n!=0;n--)
+ARM GAS  /tmp/ccRUiU57.s 			page 13
+
+
+ 493              		.loc 1 165 0 discriminator 2
+ 494 000c 013A     		subs	r2, r2, #1
+ 495              	.LVL36:
+ 167:hardware/SDRAM/sdram.c **** 			ReadAddr++;
+ 496              		.loc 1 167 0 discriminator 2
+ 497 000e 0130     		adds	r0, r0, #1
+ 498              	.LVL37:
+ 499              	.L28:
+ 165:hardware/SDRAM/sdram.c **** 		{
+ 500              		.loc 1 165 0 discriminator 1
+ 501 0010 002A     		cmp	r2, #0
+ 502 0012 F6D1     		bne	.L29
+ 169:hardware/SDRAM/sdram.c **** 		}
+ 170:hardware/SDRAM/sdram.c **** }
+ 503              		.loc 1 170 0
+ 504 0014 7047     		bx	lr
+ 505              		.cfi_endproc
+ 506              	.LFE124:
+ 508              		.comm	SDRAM_Handler,52,4
+ 509              		.text
+ 510              	.Letext0:
+ 511              		.file 2 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/machine/_default_types.h"
+ 512              		.file 3 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_stdint.h"
+ 513              		.file 4 "CORE/core_cm4.h"
+ 514              		.file 5 "USER/system_stm32f4xx.h"
+ 515              		.file 6 "USER/stm32f429xx.h"
+ 516              		.file 7 "HALLIB/Inc/stm32f4xx_hal_def.h"
+ 517              		.file 8 "HALLIB/Inc/stm32f4xx_hal_gpio.h"
+ 518              		.file 9 "HALLIB/Inc/stm32f4xx_hal_dma.h"
+ 519              		.file 10 "HALLIB/Inc/stm32f4xx_ll_fmc.h"
+ 520              		.file 11 "HALLIB/Inc/stm32f4xx_hal_sdram.h"
+ 521              		.file 12 "HALLIB/Inc/stm32f4xx_hal.h"
+ 522              		.file 13 "SYSTEM/sys/sys.h"
+ 523              		.file 14 "hardware/SDRAM/sdram.h"
+ 524              		.file 15 "SYSTEM/delay/delay.h"
+ARM GAS  /tmp/ccRUiU57.s 			page 14
+
+
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 sdram.c
+     /tmp/ccRUiU57.s:18     .text.HAL_SDRAM_MspInit:0000000000000000 $t
+     /tmp/ccRUiU57.s:25     .text.HAL_SDRAM_MspInit:0000000000000000 HAL_SDRAM_MspInit
+     /tmp/ccRUiU57.s:170    .text.HAL_SDRAM_MspInit:00000000000000dc $d
+     /tmp/ccRUiU57.s:180    .text.SDRAM_Send_Cmd:0000000000000000 $t
+     /tmp/ccRUiU57.s:187    .text.SDRAM_Send_Cmd:0000000000000000 SDRAM_Send_Cmd
+     /tmp/ccRUiU57.s:257    .text.SDRAM_Send_Cmd:0000000000000030 $d
+                            *COM*:0000000000000034 SDRAM_Handler
+     /tmp/ccRUiU57.s:262    .text.SDRAM_Initialization_Sequence:0000000000000000 $t
+     /tmp/ccRUiU57.s:269    .text.SDRAM_Initialization_Sequence:0000000000000000 SDRAM_Initialization_Sequence
+     /tmp/ccRUiU57.s:320    .text.SDRAM_Init:0000000000000000 $t
+     /tmp/ccRUiU57.s:327    .text.SDRAM_Init:0000000000000000 SDRAM_Init
+     /tmp/ccRUiU57.s:413    .text.SDRAM_Init:0000000000000068 $d
+     /tmp/ccRUiU57.s:419    .text.FMC_SDRAM_WriteBuffer:0000000000000000 $t
+     /tmp/ccRUiU57.s:426    .text.FMC_SDRAM_WriteBuffer:0000000000000000 FMC_SDRAM_WriteBuffer
+     /tmp/ccRUiU57.s:467    .text.FMC_SDRAM_ReadBuffer:0000000000000000 $t
+     /tmp/ccRUiU57.s:474    .text.FMC_SDRAM_ReadBuffer:0000000000000000 FMC_SDRAM_ReadBuffer
+                     .debug_frame:0000000000000010 $d
+
+UNDEFINED SYMBOLS
+HAL_GPIO_Init
+HAL_SDRAM_SendCommand
+delay_us
+HAL_SDRAM_Init
+HAL_SDRAM_ProgramRefreshRate

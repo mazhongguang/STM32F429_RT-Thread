@@ -1,0 +1,590 @@
+ARM GAS  /tmp/ccj295uD.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.eabi_attribute 27, 1
+   3              		.eabi_attribute 28, 1
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.file	"can.c"
+  14              		.text
+  15              	.Ltext0:
+  16              		.cfi_sections	.debug_frame
+  17              		.section	.text.can1_mode_init,"ax",%progbits
+  18              		.align	1
+  19              		.global	can1_mode_init
+  20              		.syntax unified
+  21              		.thumb
+  22              		.thumb_func
+  23              		.fpu fpv4-sp-d16
+  25              	can1_mode_init:
+  26              	.LFB119:
+  27              		.file 1 "hardware/CAN/can.c"
+   1:hardware/CAN/can.c **** #include "can.h"
+   2:hardware/CAN/can.c **** #include <stdint.h>
+   3:hardware/CAN/can.c **** #include <stm32f4xx_hal_can.h>
+   4:hardware/CAN/can.c **** 
+   5:hardware/CAN/can.c **** CAN_HandleTypeDef CAN1_Handler;		//CAN1 句柄
+   6:hardware/CAN/can.c **** CAN_TxHeaderTypeDef TxMessage;		//发送消息
+   7:hardware/CAN/can.c **** CAN_RxHeaderTypeDef RxMessage;		//接收消息
+   8:hardware/CAN/can.c **** 
+   9:hardware/CAN/can.c **** /*CAN Init*/
+  10:hardware/CAN/can.c **** /*tsjw:重新同步跳跃时间单元，范围：CAN_SJW_1TQ~CAN_SJW_4TQ*/
+  11:hardware/CAN/can.c **** /*tbs2 :时间段2的时间单元		范围：CAN_BS2_1TQ~CAN_BS2_8TQ*/
+  12:hardware/CAN/can.c **** /*tbs1 :时间段1的时间单元		范围：CAN_BS1_1TQ~CAN_BS1_16TQ*/
+  13:hardware/CAN/can.c **** /*brp :波特率分频器			范围：1～1024 tq = (brp)*tpclk1*/
+  14:hardware/CAN/can.c **** /*波特率 = Fpclk1/((tbs1+tbs2+1)*brp);其中tbs1和tbs2只用关注标志符上标志的序号�
+  15:hardware/CAN/can.c **** /*例如：CAN_BS2_1TQ,当作tbs2 = 1来计算*/
+  16:hardware/CAN/can.c **** /*mode :CAN_MODE_NORMAL,普通模式。 CAN_MODE_LOOPBACK,->回环模式，自测模式*/
+  17:hardware/CAN/can.c **** /*Fpclk1 的时钟在初始化的时候设置为45Mhz,*/
+  18:hardware/CAN/can.c **** /*如果设置CAN1_MODE_init(CAN_SJW_1TQ,CAN_BS2_6TQ,CAN_BS2_8TQ,6,CAN_MODE_LOOPBACK);*/
+  19:hardware/CAN/can.c **** /*则波特率为：45M/（（6+8+1）×6）= 500Kbps*/
+  20:hardware/CAN/can.c **** /*返回值： 0-> 初始化OK*/
+  21:hardware/CAN/can.c **** /*		其它-> 初始化失败*/
+  22:hardware/CAN/can.c **** u8 can1_mode_init(u32 tsjw, u32 tbs2, u32 tbs1, u16 brp, u32 mode)
+  23:hardware/CAN/can.c **** {
+  28              		.loc 1 23 0
+  29              		.cfi_startproc
+  30              		@ args = 4, pretend = 0, frame = 40
+  31              		@ frame_needed = 0, uses_anonymous_args = 0
+  32              	.LVL0:
+  33 0000 30B5     		push	{r4, r5, lr}
+  34              	.LCFI0:
+  35              		.cfi_def_cfa_offset 12
+ARM GAS  /tmp/ccj295uD.s 			page 2
+
+
+  36              		.cfi_offset 4, -12
+  37              		.cfi_offset 5, -8
+  38              		.cfi_offset 14, -4
+  39 0002 8BB0     		sub	sp, sp, #44
+  40              	.LCFI1:
+  41              		.cfi_def_cfa_offset 56
+  24:hardware/CAN/can.c **** 	CAN_FilterTypeDef CAN1_Filterconf;
+  25:hardware/CAN/can.c **** 
+  26:hardware/CAN/can.c **** 	CAN1_Handler.Instance = CAN1;
+  42              		.loc 1 26 0
+  43 0004 184C     		ldr	r4, .L8
+  44 0006 194D     		ldr	r5, .L8+4
+  45 0008 2560     		str	r5, [r4]
+  27:hardware/CAN/can.c **** 	CAN1_Handler.Init.Prescaler = brp;
+  46              		.loc 1 27 0
+  47 000a 6360     		str	r3, [r4, #4]
+  28:hardware/CAN/can.c **** 	CAN1_Handler.Init.Mode = mode;
+  48              		.loc 1 28 0
+  49 000c 0E9B     		ldr	r3, [sp, #56]
+  50              	.LVL1:
+  51 000e A360     		str	r3, [r4, #8]
+  29:hardware/CAN/can.c **** 	CAN1_Handler.Init.SyncJumpWidth = tsjw;
+  52              		.loc 1 29 0
+  53 0010 E060     		str	r0, [r4, #12]
+  30:hardware/CAN/can.c **** 	CAN1_Handler.Init.TimeSeg1 = tbs1;	
+  54              		.loc 1 30 0
+  55 0012 2261     		str	r2, [r4, #16]
+  31:hardware/CAN/can.c **** 	CAN1_Handler.Init.TimeSeg2 = tbs2;
+  56              		.loc 1 31 0
+  57 0014 6161     		str	r1, [r4, #20]
+  32:hardware/CAN/can.c **** 	CAN1_Handler.Init.AutoBusOff = DISABLE;				//软件自动离线管理
+  58              		.loc 1 32 0
+  59 0016 0023     		movs	r3, #0
+  60 0018 6376     		strb	r3, [r4, #25]
+  33:hardware/CAN/can.c **** 	CAN1_Handler.Init.AutoWakeUp = DISABLE;				//睡眠模式通过软件唤醒
+  61              		.loc 1 33 0
+  62 001a A376     		strb	r3, [r4, #26]
+  34:hardware/CAN/can.c **** 	CAN1_Handler.Init.ReceiveFifoLocked = DISABLE;		//报文不锁定，新的覆盖旧的
+  63              		.loc 1 34 0
+  64 001c 2377     		strb	r3, [r4, #28]
+  35:hardware/CAN/can.c **** 	CAN1_Handler.Init.TransmitFifoPriority = DISABLE;	//优先级由报文标识符决定
+  65              		.loc 1 35 0
+  66 001e 6377     		strb	r3, [r4, #29]
+  36:hardware/CAN/can.c **** 	CAN1_Handler.Init.AutoRetransmission = ENABLE;		//禁止报文自动传送
+  67              		.loc 1 36 0
+  68 0020 0122     		movs	r2, #1
+  69              	.LVL2:
+  70 0022 E276     		strb	r2, [r4, #27]
+  37:hardware/CAN/can.c **** 	CAN1_Handler.Init.TimeTriggeredMode = DISABLE;		//非时间触发通信模式
+  71              		.loc 1 37 0
+  72 0024 2376     		strb	r3, [r4, #24]
+  38:hardware/CAN/can.c **** 
+  39:hardware/CAN/can.c **** 	if (HAL_CAN_Init(&CAN1_Handler) != HAL_OK)
+  73              		.loc 1 39 0
+  74 0026 2046     		mov	r0, r4
+  75              	.LVL3:
+  76 0028 FFF7FEFF 		bl	HAL_CAN_Init
+ARM GAS  /tmp/ccj295uD.s 			page 3
+
+
+  77              	.LVL4:
+  78 002c 10B1     		cbz	r0, .L6
+  40:hardware/CAN/can.c **** 		return 1;										//init CAN1
+  79              		.loc 1 40 0
+  80 002e 0120     		movs	r0, #1
+  81              	.L2:
+  41:hardware/CAN/can.c **** 
+  42:hardware/CAN/can.c **** 	CAN1_Filterconf.FilterIdHigh = 0x0000;				//32 bit ID
+  43:hardware/CAN/can.c **** 	CAN1_Filterconf.FilterIdLow = 0x0000;				//32 bit ID
+  44:hardware/CAN/can.c **** 	CAN1_Filterconf.FilterMaskIdHigh = 0x0000;			//32 bit mask
+  45:hardware/CAN/can.c **** 	CAN1_Filterconf.FilterMaskIdLow = 0x0000;			//32 bit mask low
+  46:hardware/CAN/can.c **** 	CAN1_Filterconf.FilterFIFOAssignment = CAN_FILTER_FIFO0;	//过滤器0关联到FIFO0
+  47:hardware/CAN/can.c **** 	CAN1_Filterconf.FilterBank = 0;								//过滤器0
+  48:hardware/CAN/can.c **** 	CAN1_Filterconf.FilterMode = CAN_FILTERMODE_IDMASK;			//
+  49:hardware/CAN/can.c **** 	CAN1_Filterconf.FilterScale = CAN_FILTERSCALE_32BIT;
+  50:hardware/CAN/can.c **** 	CAN1_Filterconf.FilterActivation = ENABLE;					//激活过滤器0
+  51:hardware/CAN/can.c **** 	CAN1_Filterconf.SlaveStartFilterBank = 14;
+  52:hardware/CAN/can.c **** 
+  53:hardware/CAN/can.c **** 	if (HAL_CAN_ConfigFilter(&CAN1_Handler, &CAN1_Filterconf) != HAL_OK)		//滤波器初始化
+  54:hardware/CAN/can.c **** 		return 2;
+  55:hardware/CAN/can.c **** 
+  56:hardware/CAN/can.c **** 	HAL_CAN_Start(&CAN1_Handler);
+  57:hardware/CAN/can.c **** 	return 0;
+  58:hardware/CAN/can.c **** }
+  82              		.loc 1 58 0
+  83 0030 0BB0     		add	sp, sp, #44
+  84              	.LCFI2:
+  85              		.cfi_remember_state
+  86              		.cfi_def_cfa_offset 12
+  87              		@ sp needed
+  88 0032 30BD     		pop	{r4, r5, pc}
+  89              	.LVL5:
+  90              	.L6:
+  91              	.LCFI3:
+  92              		.cfi_restore_state
+  42:hardware/CAN/can.c **** 	CAN1_Filterconf.FilterIdLow = 0x0000;				//32 bit ID
+  93              		.loc 1 42 0
+  94 0034 0023     		movs	r3, #0
+  95 0036 0093     		str	r3, [sp]
+  43:hardware/CAN/can.c **** 	CAN1_Filterconf.FilterMaskIdHigh = 0x0000;			//32 bit mask
+  96              		.loc 1 43 0
+  97 0038 0193     		str	r3, [sp, #4]
+  44:hardware/CAN/can.c **** 	CAN1_Filterconf.FilterMaskIdLow = 0x0000;			//32 bit mask low
+  98              		.loc 1 44 0
+  99 003a 0293     		str	r3, [sp, #8]
+  45:hardware/CAN/can.c **** 	CAN1_Filterconf.FilterFIFOAssignment = CAN_FILTER_FIFO0;	//过滤器0关联到FIFO0
+ 100              		.loc 1 45 0
+ 101 003c 0393     		str	r3, [sp, #12]
+  46:hardware/CAN/can.c **** 	CAN1_Filterconf.FilterBank = 0;								//过滤器0
+ 102              		.loc 1 46 0
+ 103 003e 0493     		str	r3, [sp, #16]
+  47:hardware/CAN/can.c **** 	CAN1_Filterconf.FilterMode = CAN_FILTERMODE_IDMASK;			//
+ 104              		.loc 1 47 0
+ 105 0040 0593     		str	r3, [sp, #20]
+  48:hardware/CAN/can.c **** 	CAN1_Filterconf.FilterScale = CAN_FILTERSCALE_32BIT;
+ 106              		.loc 1 48 0
+ 107 0042 0693     		str	r3, [sp, #24]
+ARM GAS  /tmp/ccj295uD.s 			page 4
+
+
+  49:hardware/CAN/can.c **** 	CAN1_Filterconf.FilterActivation = ENABLE;					//激活过滤器0
+ 108              		.loc 1 49 0
+ 109 0044 0123     		movs	r3, #1
+ 110 0046 0793     		str	r3, [sp, #28]
+  50:hardware/CAN/can.c **** 	CAN1_Filterconf.SlaveStartFilterBank = 14;
+ 111              		.loc 1 50 0
+ 112 0048 0893     		str	r3, [sp, #32]
+  51:hardware/CAN/can.c **** 
+ 113              		.loc 1 51 0
+ 114 004a 0E23     		movs	r3, #14
+ 115 004c 0993     		str	r3, [sp, #36]
+  53:hardware/CAN/can.c **** 		return 2;
+ 116              		.loc 1 53 0
+ 117 004e 6946     		mov	r1, sp
+ 118 0050 2046     		mov	r0, r4
+ 119 0052 FFF7FEFF 		bl	HAL_CAN_ConfigFilter
+ 120              	.LVL6:
+ 121 0056 08B1     		cbz	r0, .L7
+  54:hardware/CAN/can.c **** 
+ 122              		.loc 1 54 0
+ 123 0058 0220     		movs	r0, #2
+ 124 005a E9E7     		b	.L2
+ 125              	.L7:
+  56:hardware/CAN/can.c **** 	return 0;
+ 126              		.loc 1 56 0
+ 127 005c 2046     		mov	r0, r4
+ 128 005e FFF7FEFF 		bl	HAL_CAN_Start
+ 129              	.LVL7:
+  57:hardware/CAN/can.c **** }
+ 130              		.loc 1 57 0
+ 131 0062 0020     		movs	r0, #0
+ 132 0064 E4E7     		b	.L2
+ 133              	.L9:
+ 134 0066 00BF     		.align	2
+ 135              	.L8:
+ 136 0068 00000000 		.word	CAN1_Handler
+ 137 006c 00640040 		.word	1073767424
+ 138              		.cfi_endproc
+ 139              	.LFE119:
+ 141              		.section	.text.HAL_CAN_MspInit,"ax",%progbits
+ 142              		.align	1
+ 143              		.global	HAL_CAN_MspInit
+ 144              		.syntax unified
+ 145              		.thumb
+ 146              		.thumb_func
+ 147              		.fpu fpv4-sp-d16
+ 149              	HAL_CAN_MspInit:
+ 150              	.LFB120:
+  59:hardware/CAN/can.c **** 
+  60:hardware/CAN/can.c **** /*CAN底层驱动，引脚配置，时钟配置，中断配置*/
+  61:hardware/CAN/can.c **** /*此函数会被 HAL_CAN_Init()调用*/
+  62:hardware/CAN/can.c **** /*hcan :CAN句柄*/
+  63:hardware/CAN/can.c **** void HAL_CAN_MspInit(CAN_HandleTypeDef *hcan)
+  64:hardware/CAN/can.c **** {
+ 151              		.loc 1 64 0
+ 152              		.cfi_startproc
+ 153              		@ args = 0, pretend = 0, frame = 32
+ARM GAS  /tmp/ccj295uD.s 			page 5
+
+
+ 154              		@ frame_needed = 0, uses_anonymous_args = 0
+ 155              	.LVL8:
+ 156 0000 00B5     		push	{lr}
+ 157              	.LCFI4:
+ 158              		.cfi_def_cfa_offset 4
+ 159              		.cfi_offset 14, -4
+ 160 0002 89B0     		sub	sp, sp, #36
+ 161              	.LCFI5:
+ 162              		.cfi_def_cfa_offset 40
+ 163              	.LBB2:
+  65:hardware/CAN/can.c **** 	GPIO_InitTypeDef GPIO_Initure;
+  66:hardware/CAN/can.c **** 
+  67:hardware/CAN/can.c **** 	__HAL_RCC_GPIOA_CLK_ENABLE();
+ 164              		.loc 1 67 0
+ 165 0004 0021     		movs	r1, #0
+ 166 0006 0191     		str	r1, [sp, #4]
+ 167 0008 124B     		ldr	r3, .L12
+ 168 000a 1A6B     		ldr	r2, [r3, #48]
+ 169 000c 42F00102 		orr	r2, r2, #1
+ 170 0010 1A63     		str	r2, [r3, #48]
+ 171 0012 1A6B     		ldr	r2, [r3, #48]
+ 172 0014 02F00102 		and	r2, r2, #1
+ 173 0018 0192     		str	r2, [sp, #4]
+ 174 001a 019A     		ldr	r2, [sp, #4]
+ 175              	.LBE2:
+ 176              	.LBB3:
+  68:hardware/CAN/can.c **** 	__HAL_RCC_CAN1_CLK_ENABLE();
+ 177              		.loc 1 68 0
+ 178 001c 0291     		str	r1, [sp, #8]
+ 179 001e 1A6C     		ldr	r2, [r3, #64]
+ 180 0020 42F00072 		orr	r2, r2, #33554432
+ 181 0024 1A64     		str	r2, [r3, #64]
+ 182 0026 1B6C     		ldr	r3, [r3, #64]
+ 183 0028 03F00073 		and	r3, r3, #33554432
+ 184 002c 0293     		str	r3, [sp, #8]
+ 185 002e 029B     		ldr	r3, [sp, #8]
+ 186              	.LBE3:
+  69:hardware/CAN/can.c **** 
+  70:hardware/CAN/can.c **** 	GPIO_Initure.Pin = GPIO_PIN_11 | GPIO_PIN_12;
+ 187              		.loc 1 70 0
+ 188 0030 4FF4C053 		mov	r3, #6144
+ 189 0034 0393     		str	r3, [sp, #12]
+  71:hardware/CAN/can.c **** 	GPIO_Initure.Mode = GPIO_MODE_AF_PP;
+ 190              		.loc 1 71 0
+ 191 0036 0223     		movs	r3, #2
+ 192 0038 0493     		str	r3, [sp, #16]
+  72:hardware/CAN/can.c **** 	GPIO_Initure.Pull = GPIO_PULLUP;
+ 193              		.loc 1 72 0
+ 194 003a 0122     		movs	r2, #1
+ 195 003c 0592     		str	r2, [sp, #20]
+  73:hardware/CAN/can.c **** 	GPIO_Initure.Speed = GPIO_SPEED_FAST;
+ 196              		.loc 1 73 0
+ 197 003e 0693     		str	r3, [sp, #24]
+  74:hardware/CAN/can.c **** 	GPIO_Initure.Alternate = GPIO_AF9_CAN1;
+ 198              		.loc 1 74 0
+ 199 0040 0923     		movs	r3, #9
+ 200 0042 0793     		str	r3, [sp, #28]
+ARM GAS  /tmp/ccj295uD.s 			page 6
+
+
+  75:hardware/CAN/can.c **** 	HAL_GPIO_Init(GPIOA,&GPIO_Initure);
+ 201              		.loc 1 75 0
+ 202 0044 03A9     		add	r1, sp, #12
+ 203 0046 0448     		ldr	r0, .L12+4
+ 204              	.LVL9:
+ 205 0048 FFF7FEFF 		bl	HAL_GPIO_Init
+ 206              	.LVL10:
+  76:hardware/CAN/can.c **** 
+  77:hardware/CAN/can.c **** #if CAN1_RX0_INT_ENABLE
+  78:hardware/CAN/can.c **** 	__HAL_CAN_ENABLE_IT(&CAN1_Handler, CAN_IT_FMP0);			//FIFO0挂起中断允许
+  79:hardware/CAN/can.c **** 	HAL_NVIC_SetPriority(CAN1_RX0_IRQn, 1, 2);					//抢占优先级1,子优先级2
+  80:hardware/CAN/can.c **** 	HAL_NVIC_EnableIRQ(CAN1_RX0_IRQn);							//使能中断
+  81:hardware/CAN/can.c **** #endif
+  82:hardware/CAN/can.c **** 
+  83:hardware/CAN/can.c **** }
+ 207              		.loc 1 83 0
+ 208 004c 09B0     		add	sp, sp, #36
+ 209              	.LCFI6:
+ 210              		.cfi_def_cfa_offset 4
+ 211              		@ sp needed
+ 212 004e 5DF804FB 		ldr	pc, [sp], #4
+ 213              	.L13:
+ 214 0052 00BF     		.align	2
+ 215              	.L12:
+ 216 0054 00380240 		.word	1073887232
+ 217 0058 00000240 		.word	1073872896
+ 218              		.cfi_endproc
+ 219              	.LFE120:
+ 221              		.section	.text.can1_send_msg,"ax",%progbits
+ 222              		.align	1
+ 223              		.global	can1_send_msg
+ 224              		.syntax unified
+ 225              		.thumb
+ 226              		.thumb_func
+ 227              		.fpu fpv4-sp-d16
+ 229              	can1_send_msg:
+ 230              	.LFB121:
+  84:hardware/CAN/can.c **** 
+  85:hardware/CAN/can.c **** #if CAN1_RX0_INT_ENABLE											//使能RX0中断
+  86:hardware/CAN/can.c **** 
+  87:hardware/CAN/can.c **** //CAN 中断服务函数
+  88:hardware/CAN/can.c **** void CAN1_RX0_IRQHandler(void)
+  89:hardware/CAN/can.c **** {
+  90:hardware/CAN/can.c **** 	HAL_CAN_IRQHandler(&CAN1_Handler);							//此函数会调用CAN_Receive_IT()接收数据
+  91:hardware/CAN/can.c **** }
+  92:hardware/CAN/can.c **** 
+  93:hardware/CAN/can.c **** //CAN中断处理过程
+  94:hardware/CAN/can.c **** //此函数会被CAN_Receive_IT()调用
+  95:hardware/CAN/can.c **** //hcan :CAN句柄
+  96:hardware/CAN/can.c **** void HAL_CAN_RxCpltCallback(CAN_HandleTypeDef *hcan)
+  97:hardware/CAN/can.c **** {
+  98:hardware/CAN/can.c **** 	int i = 0;
+  99:hardware/CAN/can.c **** 
+ 100:hardware/CAN/can.c **** 	//CAN_Receive_IT()函数关闭FIFO0消息挂号中断，因此需要重新打开
+ 101:hardware/CAN/can.c **** 	__HAL_CAN_ENABLE_IT(&CAN1_Handler, CAN_IT_FMP0);			//重新开启FIFO0消息挂号中断
+ 102:hardware/CAN/can.c **** 	printf("id:%d\r\n", TxMessage.StdId);
+ 103:hardware/CAN/can.c **** 	printf("ide:%d\r\n", TxMessage.IDE);
+ARM GAS  /tmp/ccj295uD.s 			page 7
+
+
+ 104:hardware/CAN/can.c **** 	printf("rtr:%d\r\n", TxMessage.RTR);
+ 105:hardware/CAN/can.c **** 	printf("len:%d\r\n", TxMessage.DLC);	
+ 106:hardware/CAN/can.c **** 	for (i = 0; i < 8 ; i++)
+ 107:hardware/CAN/can.c **** 	{
+ 108:hardware/CAN/can.c **** 		printf("rxbuf[%d]:%d\r\n", i, data[i]);
+ 109:hardware/CAN/can.c **** 	}
+ 110:hardware/CAN/can.c **** }
+ 111:hardware/CAN/can.c **** 
+ 112:hardware/CAN/can.c **** #endif
+ 113:hardware/CAN/can.c **** 
+ 114:hardware/CAN/can.c **** /*CAN 发送一组数据（固定格式：ID为0x12,标准帧，数据帧）*/
+ 115:hardware/CAN/can.c **** /*len:数据长度（最大为8）*/
+ 116:hardware/CAN/can.c **** /*msg:数据指针，最大为8个字节*/
+ 117:hardware/CAN/can.c **** /*返回值： 0 -> 成功*/
+ 118:hardware/CAN/can.c **** /*		   其它 ->失败  */
+ 119:hardware/CAN/can.c **** u8 can1_send_msg(u8 *msg, u8 len)
+ 120:hardware/CAN/can.c **** {
+ 231              		.loc 1 120 0
+ 232              		.cfi_startproc
+ 233              		@ args = 0, pretend = 0, frame = 8
+ 234              		@ frame_needed = 0, uses_anonymous_args = 0
+ 235              	.LVL11:
+ 236 0000 10B5     		push	{r4, lr}
+ 237              	.LCFI7:
+ 238              		.cfi_def_cfa_offset 8
+ 239              		.cfi_offset 4, -8
+ 240              		.cfi_offset 14, -4
+ 241 0002 82B0     		sub	sp, sp, #8
+ 242              	.LCFI8:
+ 243              		.cfi_def_cfa_offset 16
+ 244 0004 0446     		mov	r4, r0
+ 121:hardware/CAN/can.c **** 	uint32_t a;
+ 122:hardware/CAN/can.c **** 
+ 123:hardware/CAN/can.c **** 	TxMessage.StdId = 0x12;				//标准标识符
+ 245              		.loc 1 123 0
+ 246 0006 0B4B     		ldr	r3, .L19
+ 247 0008 1222     		movs	r2, #18
+ 248 000a 1A60     		str	r2, [r3]
+ 124:hardware/CAN/can.c **** 	TxMessage.ExtId = 0x12;				//扩展标识符
+ 249              		.loc 1 124 0
+ 250 000c 5A60     		str	r2, [r3, #4]
+ 125:hardware/CAN/can.c **** 	TxMessage.IDE = CAN_ID_STD;			//使用标准帧
+ 251              		.loc 1 125 0
+ 252 000e 0022     		movs	r2, #0
+ 253 0010 9A60     		str	r2, [r3, #8]
+ 126:hardware/CAN/can.c **** 	TxMessage.RTR = CAN_RTR_DATA;			//数据帧
+ 254              		.loc 1 126 0
+ 255 0012 DA60     		str	r2, [r3, #12]
+ 127:hardware/CAN/can.c **** 	TxMessage.DLC = len;					
+ 256              		.loc 1 127 0
+ 257 0014 1961     		str	r1, [r3, #16]
+ 128:hardware/CAN/can.c **** 
+ 129:hardware/CAN/can.c **** 	if(HAL_CAN_GetTxMailboxesFreeLevel(&CAN1_Handler) == 0)
+ 258              		.loc 1 129 0
+ 259 0016 0848     		ldr	r0, .L19+4
+ 260              	.LVL12:
+ 261 0018 FFF7FEFF 		bl	HAL_CAN_GetTxMailboxesFreeLevel
+ARM GAS  /tmp/ccj295uD.s 			page 8
+
+
+ 262              	.LVL13:
+ 263 001c 10B9     		cbnz	r0, .L18
+ 130:hardware/CAN/can.c **** 	{
+ 131:hardware/CAN/can.c **** 		return 1;
+ 264              		.loc 1 131 0
+ 265 001e 0120     		movs	r0, #1
+ 266              	.L15:
+ 132:hardware/CAN/can.c **** 	}
+ 133:hardware/CAN/can.c **** 	HAL_CAN_AddTxMessage(&CAN1_Handler, &TxMessage, msg, &a);
+ 134:hardware/CAN/can.c **** 	return 0;
+ 135:hardware/CAN/can.c **** }
+ 267              		.loc 1 135 0
+ 268 0020 02B0     		add	sp, sp, #8
+ 269              	.LCFI9:
+ 270              		.cfi_remember_state
+ 271              		.cfi_def_cfa_offset 8
+ 272              		@ sp needed
+ 273 0022 10BD     		pop	{r4, pc}
+ 274              	.LVL14:
+ 275              	.L18:
+ 276              	.LCFI10:
+ 277              		.cfi_restore_state
+ 133:hardware/CAN/can.c **** 	return 0;
+ 278              		.loc 1 133 0
+ 279 0024 01AB     		add	r3, sp, #4
+ 280 0026 2246     		mov	r2, r4
+ 281 0028 0249     		ldr	r1, .L19
+ 282 002a 0348     		ldr	r0, .L19+4
+ 283 002c FFF7FEFF 		bl	HAL_CAN_AddTxMessage
+ 284              	.LVL15:
+ 134:hardware/CAN/can.c **** }
+ 285              		.loc 1 134 0
+ 286 0030 0020     		movs	r0, #0
+ 287 0032 F5E7     		b	.L15
+ 288              	.L20:
+ 289              		.align	2
+ 290              	.L19:
+ 291 0034 00000000 		.word	TxMessage
+ 292 0038 00000000 		.word	CAN1_Handler
+ 293              		.cfi_endproc
+ 294              	.LFE121:
+ 296              		.section	.text.can1_receive_msg,"ax",%progbits
+ 297              		.align	1
+ 298              		.global	can1_receive_msg
+ 299              		.syntax unified
+ 300              		.thumb
+ 301              		.thumb_func
+ 302              		.fpu fpv4-sp-d16
+ 304              	can1_receive_msg:
+ 305              	.LFB122:
+ 136:hardware/CAN/can.c **** 
+ 137:hardware/CAN/can.c **** //CAN口接收数据查询
+ 138:hardware/CAN/can.c **** //buf: 数据缓存区
+ 139:hardware/CAN/can.c **** //返回值：0 ->无数据被接收到
+ 140:hardware/CAN/can.c **** //		其它 ->接收的数据长度 
+ 141:hardware/CAN/can.c **** u8 can1_receive_msg(u8 *buf)
+ 142:hardware/CAN/can.c **** {
+ARM GAS  /tmp/ccj295uD.s 			page 9
+
+
+ 306              		.loc 1 142 0
+ 307              		.cfi_startproc
+ 308              		@ args = 0, pretend = 0, frame = 0
+ 309              		@ frame_needed = 0, uses_anonymous_args = 0
+ 310              	.LVL16:
+ 311 0000 38B5     		push	{r3, r4, r5, lr}
+ 312              	.LCFI11:
+ 313              		.cfi_def_cfa_offset 16
+ 314              		.cfi_offset 3, -16
+ 315              		.cfi_offset 4, -12
+ 316              		.cfi_offset 5, -8
+ 317              		.cfi_offset 14, -4
+ 318 0002 0446     		mov	r4, r0
+ 143:hardware/CAN/can.c **** 	if (HAL_CAN_GetRxFifoFillLevel(&CAN1_Handler, CAN_RX_FIFO0))
+ 319              		.loc 1 143 0
+ 320 0004 0021     		movs	r1, #0
+ 321 0006 0748     		ldr	r0, .L26
+ 322              	.LVL17:
+ 323 0008 FFF7FEFF 		bl	HAL_CAN_GetRxFifoFillLevel
+ 324              	.LVL18:
+ 325 000c 08B9     		cbnz	r0, .L25
+ 144:hardware/CAN/can.c **** 	{
+ 145:hardware/CAN/can.c **** 		HAL_CAN_GetRxMessage(&CAN1_Handler, CAN_FilterFIFO0, &RxMessage, buf);
+ 146:hardware/CAN/can.c **** 		return RxMessage.DLC;
+ 147:hardware/CAN/can.c **** 	}
+ 148:hardware/CAN/can.c **** 	else 
+ 149:hardware/CAN/can.c **** 	{
+ 150:hardware/CAN/can.c **** 		return 0;
+ 326              		.loc 1 150 0
+ 327 000e 0020     		movs	r0, #0
+ 151:hardware/CAN/can.c **** 	}
+ 152:hardware/CAN/can.c **** }
+ 328              		.loc 1 152 0
+ 329 0010 38BD     		pop	{r3, r4, r5, pc}
+ 330              	.LVL19:
+ 331              	.L25:
+ 145:hardware/CAN/can.c **** 		return RxMessage.DLC;
+ 332              		.loc 1 145 0
+ 333 0012 054D     		ldr	r5, .L26+4
+ 334 0014 2346     		mov	r3, r4
+ 335 0016 2A46     		mov	r2, r5
+ 336 0018 0021     		movs	r1, #0
+ 337 001a 0248     		ldr	r0, .L26
+ 338 001c FFF7FEFF 		bl	HAL_CAN_GetRxMessage
+ 339              	.LVL20:
+ 146:hardware/CAN/can.c **** 	}
+ 340              		.loc 1 146 0
+ 341 0020 287C     		ldrb	r0, [r5, #16]	@ zero_extendqisi2
+ 342 0022 38BD     		pop	{r3, r4, r5, pc}
+ 343              	.LVL21:
+ 344              	.L27:
+ 345              		.align	2
+ 346              	.L26:
+ 347 0024 00000000 		.word	CAN1_Handler
+ 348 0028 00000000 		.word	RxMessage
+ 349              		.cfi_endproc
+ 350              	.LFE122:
+ARM GAS  /tmp/ccj295uD.s 			page 10
+
+
+ 352              		.comm	RxMessage,28,4
+ 353              		.comm	TxMessage,24,4
+ 354              		.comm	CAN1_Handler,40,4
+ 355              		.text
+ 356              	.Letext0:
+ 357              		.file 2 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/machine/_default_types.h"
+ 358              		.file 3 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_stdint.h"
+ 359              		.file 4 "CORE/core_cm4.h"
+ 360              		.file 5 "USER/system_stm32f4xx.h"
+ 361              		.file 6 "USER/stm32f429xx.h"
+ 362              		.file 7 "USER/stm32f4xx.h"
+ 363              		.file 8 "HALLIB/Inc/stm32f4xx_hal_def.h"
+ 364              		.file 9 "HALLIB/Inc/stm32f4xx_hal_gpio.h"
+ 365              		.file 10 "HALLIB/Inc/stm32f4xx_hal_can.h"
+ 366              		.file 11 "HALLIB/Inc/stm32f4xx_hal.h"
+ 367              		.file 12 "SYSTEM/sys/sys.h"
+ARM GAS  /tmp/ccj295uD.s 			page 11
+
+
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 can.c
+     /tmp/ccj295uD.s:18     .text.can1_mode_init:0000000000000000 $t
+     /tmp/ccj295uD.s:25     .text.can1_mode_init:0000000000000000 can1_mode_init
+     /tmp/ccj295uD.s:136    .text.can1_mode_init:0000000000000068 $d
+                            *COM*:0000000000000028 CAN1_Handler
+     /tmp/ccj295uD.s:142    .text.HAL_CAN_MspInit:0000000000000000 $t
+     /tmp/ccj295uD.s:149    .text.HAL_CAN_MspInit:0000000000000000 HAL_CAN_MspInit
+     /tmp/ccj295uD.s:216    .text.HAL_CAN_MspInit:0000000000000054 $d
+     /tmp/ccj295uD.s:222    .text.can1_send_msg:0000000000000000 $t
+     /tmp/ccj295uD.s:229    .text.can1_send_msg:0000000000000000 can1_send_msg
+     /tmp/ccj295uD.s:291    .text.can1_send_msg:0000000000000034 $d
+                            *COM*:0000000000000018 TxMessage
+     /tmp/ccj295uD.s:297    .text.can1_receive_msg:0000000000000000 $t
+     /tmp/ccj295uD.s:304    .text.can1_receive_msg:0000000000000000 can1_receive_msg
+     /tmp/ccj295uD.s:347    .text.can1_receive_msg:0000000000000024 $d
+                            *COM*:000000000000001c RxMessage
+                     .debug_frame:0000000000000010 $d
+
+UNDEFINED SYMBOLS
+HAL_CAN_Init
+HAL_CAN_ConfigFilter
+HAL_CAN_Start
+HAL_GPIO_Init
+HAL_CAN_GetTxMailboxesFreeLevel
+HAL_CAN_AddTxMessage
+HAL_CAN_GetRxFifoFillLevel
+HAL_CAN_GetRxMessage

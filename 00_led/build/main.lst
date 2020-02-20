@@ -1,0 +1,114 @@
+ARM GAS  /tmp/ccTGUjkh.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.eabi_attribute 27, 1
+   3              		.eabi_attribute 28, 1
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.file	"main.c"
+  14              		.text
+  15              	.Ltext0:
+  16              		.cfi_sections	.debug_frame
+  17              		.section	.text.main,"ax",%progbits
+  18              		.align	1
+  19              		.global	main
+  20              		.syntax unified
+  21              		.thumb
+  22              		.thumb_func
+  23              		.fpu fpv4-sp-d16
+  25              	main:
+  26              	.LFB134:
+  27              		.file 1 "USER/main.c"
+   1:USER/main.c   **** #include "board.h"
+   2:USER/main.c   **** #include "led.h"
+   3:USER/main.c   **** #include "rtthread.h"
+   4:USER/main.c   **** 
+   5:USER/main.c   **** int main(void)
+   6:USER/main.c   **** {
+  28              		.loc 1 6 0
+  29              		.cfi_startproc
+  30              		@ Volatile: function does not return.
+  31              		@ args = 0, pretend = 0, frame = 0
+  32              		@ frame_needed = 0, uses_anonymous_args = 0
+  33 0000 80B5     		push	{r7, lr}
+  34              	.LCFI0:
+  35              		.cfi_def_cfa_offset 8
+  36              		.cfi_offset 7, -8
+  37              		.cfi_offset 14, -4
+  38              	.L2:
+   7:USER/main.c   **** 	while (1)
+   8:USER/main.c   **** 	{
+   9:USER/main.c   **** 		LED_Green = 1;
+  39              		.loc 1 9 0 discriminator 1
+  40 0002 084E     		ldr	r6, .L4
+  41 0004 0125     		movs	r5, #1
+  42 0006 3560     		str	r5, [r6]
+  10:USER/main.c   **** 		LED_White = 0;
+  43              		.loc 1 10 0 discriminator 1
+  44 0008 074C     		ldr	r4, .L4+4
+  45 000a 0027     		movs	r7, #0
+  46 000c 2760     		str	r7, [r4]
+  11:USER/main.c   **** 		rt_thread_delay(500);
+  47              		.loc 1 11 0 discriminator 1
+ARM GAS  /tmp/ccTGUjkh.s 			page 2
+
+
+  48 000e 4FF4FA70 		mov	r0, #500
+  49 0012 FFF7FEFF 		bl	rt_thread_delay
+  50              	.LVL0:
+  12:USER/main.c   **** 
+  13:USER/main.c   **** 		LED_Green = 0;
+  51              		.loc 1 13 0 discriminator 1
+  52 0016 3760     		str	r7, [r6]
+  14:USER/main.c   **** 		LED_White = 1;
+  53              		.loc 1 14 0 discriminator 1
+  54 0018 2560     		str	r5, [r4]
+  15:USER/main.c   **** 		rt_thread_delay(500);
+  55              		.loc 1 15 0 discriminator 1
+  56 001a 4FF4FA70 		mov	r0, #500
+  57 001e FFF7FEFF 		bl	rt_thread_delay
+  58              	.LVL1:
+  59 0022 EEE7     		b	.L2
+  60              	.L5:
+  61              		.align	2
+  62              	.L4:
+  63 0024 80824042 		.word	1111523968
+  64 0028 84824042 		.word	1111523972
+  65              		.cfi_endproc
+  66              	.LFE134:
+  68              		.text
+  69              	.Letext0:
+  70              		.file 2 "rt-thread/include/rtdef.h"
+  71              		.file 3 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/machine/_default_types.h"
+  72              		.file 4 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/lock.h"
+  73              		.file 5 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_types.h"
+  74              		.file 6 "/opt/gcc-arm-none-eabi-6-2017-q2-update/lib/gcc/arm-none-eabi/6.3.1/include/stddef.h"
+  75              		.file 7 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/reent.h"
+  76              		.file 8 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_stdint.h"
+  77              		.file 9 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/time.h"
+  78              		.file 10 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/errno.h"
+  79              		.file 11 "rt-thread/include/rtthread.h"
+  80              		.file 12 "CORE/core_cm4.h"
+  81              		.file 13 "USER/system_stm32f4xx.h"
+  82              		.file 14 "HALLIB/Inc/stm32f4xx_hal.h"
+  83              		.file 15 "board/board.h"
+ARM GAS  /tmp/ccTGUjkh.s 			page 3
+
+
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 main.c
+     /tmp/ccTGUjkh.s:18     .text.main:0000000000000000 $t
+     /tmp/ccTGUjkh.s:25     .text.main:0000000000000000 main
+     /tmp/ccTGUjkh.s:63     .text.main:0000000000000024 $d
+                     .debug_frame:0000000000000010 $d
+
+UNDEFINED SYMBOLS
+rt_thread_delay

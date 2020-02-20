@@ -1,0 +1,2996 @@
+ARM GAS  /tmp/ccKWdTJc.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.eabi_attribute 27, 1
+   3              		.eabi_attribute 28, 1
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.file	"finsh_ops.c"
+  14              		.text
+  15              	.Ltext0:
+  16              		.cfi_sections	.debug_frame
+  17              		.section	.text.OP_no_op,"ax",%progbits
+  18              		.align	1
+  19              		.global	OP_no_op
+  20              		.syntax unified
+  21              		.thumb
+  22              		.thumb_func
+  23              		.fpu fpv4-sp-d16
+  25              	OP_no_op:
+  26              	.LFB16:
+  27              		.file 1 "rt-thread/components/finsh/finsh_ops.c"
+   1:rt-thread/components/finsh/finsh_ops.c **** /*
+   2:rt-thread/components/finsh/finsh_ops.c ****  * Copyright (c) 2006-2018, RT-Thread Development Team
+   3:rt-thread/components/finsh/finsh_ops.c ****  *
+   4:rt-thread/components/finsh/finsh_ops.c ****  * SPDX-License-Identifier: Apache-2.0
+   5:rt-thread/components/finsh/finsh_ops.c ****  *
+   6:rt-thread/components/finsh/finsh_ops.c ****  * Change Logs:
+   7:rt-thread/components/finsh/finsh_ops.c ****  * Date           Author       Notes
+   8:rt-thread/components/finsh/finsh_ops.c ****  * 2010-03-22     Bernard      first version
+   9:rt-thread/components/finsh/finsh_ops.c ****  */
+  10:rt-thread/components/finsh/finsh_ops.c **** #include "finsh_ops.h"
+  11:rt-thread/components/finsh/finsh_ops.c **** #include "finsh_vm.h"
+  12:rt-thread/components/finsh/finsh_ops.c **** 
+  13:rt-thread/components/finsh/finsh_ops.c **** #define OP_BIN_BYTE(x)  do {\
+  14:rt-thread/components/finsh/finsh_ops.c ****         (finsh_sp - 2)->char_value = (finsh_sp - 2)->char_value x (finsh_sp - 1)->char_value; \
+  15:rt-thread/components/finsh/finsh_ops.c ****         finsh_sp--; \
+  16:rt-thread/components/finsh/finsh_ops.c ****     }while (0)
+  17:rt-thread/components/finsh/finsh_ops.c **** 
+  18:rt-thread/components/finsh/finsh_ops.c **** #define OP_BIN_WORD(x)  do {\
+  19:rt-thread/components/finsh/finsh_ops.c ****         (finsh_sp - 2)->short_value = (finsh_sp - 2)->short_value x (finsh_sp - 1)->short_value; \
+  20:rt-thread/components/finsh/finsh_ops.c ****         finsh_sp--; \
+  21:rt-thread/components/finsh/finsh_ops.c ****     }while (0)
+  22:rt-thread/components/finsh/finsh_ops.c **** 
+  23:rt-thread/components/finsh/finsh_ops.c **** #define OP_BIN_DWORD(x)  do {\
+  24:rt-thread/components/finsh/finsh_ops.c ****         (finsh_sp - 2)->long_value = (finsh_sp - 2)->long_value x (finsh_sp - 1)->long_value; \
+  25:rt-thread/components/finsh/finsh_ops.c ****         finsh_sp--; \
+  26:rt-thread/components/finsh/finsh_ops.c ****     }while (0)
+  27:rt-thread/components/finsh/finsh_ops.c **** 
+  28:rt-thread/components/finsh/finsh_ops.c **** /* --- noop --- */
+  29:rt-thread/components/finsh/finsh_ops.c **** void OP_no_op()
+  30:rt-thread/components/finsh/finsh_ops.c **** {
+  28              		.loc 1 30 0
+ARM GAS  /tmp/ccKWdTJc.s 			page 2
+
+
+  29              		.cfi_startproc
+  30              		@ args = 0, pretend = 0, frame = 0
+  31              		@ frame_needed = 0, uses_anonymous_args = 0
+  32              		@ link register save eliminated.
+  33 0000 7047     		bx	lr
+  34              		.cfi_endproc
+  35              	.LFE16:
+  37              		.section	.text.OP_add_byte,"ax",%progbits
+  38              		.align	1
+  39              		.global	OP_add_byte
+  40              		.syntax unified
+  41              		.thumb
+  42              		.thumb_func
+  43              		.fpu fpv4-sp-d16
+  45              	OP_add_byte:
+  46              	.LFB17:
+  31:rt-thread/components/finsh/finsh_ops.c ****     /* none */
+  32:rt-thread/components/finsh/finsh_ops.c ****     return ;
+  33:rt-thread/components/finsh/finsh_ops.c **** }
+  34:rt-thread/components/finsh/finsh_ops.c **** 
+  35:rt-thread/components/finsh/finsh_ops.c **** /* --- add --- */
+  36:rt-thread/components/finsh/finsh_ops.c **** void OP_add_byte()
+  37:rt-thread/components/finsh/finsh_ops.c **** {
+  47              		.loc 1 37 0
+  48              		.cfi_startproc
+  49              		@ args = 0, pretend = 0, frame = 0
+  50              		@ frame_needed = 0, uses_anonymous_args = 0
+  51              		@ link register save eliminated.
+  38:rt-thread/components/finsh/finsh_ops.c ****     OP_BIN_BYTE(+);
+  52              		.loc 1 38 0
+  53 0000 064B     		ldr	r3, .L3
+  54 0002 1A68     		ldr	r2, [r3]
+  55 0004 12F8081C 		ldrb	r1, [r2, #-8]	@ zero_extendqisi2
+  56 0008 12F8040C 		ldrb	r0, [r2, #-4]	@ zero_extendqisi2
+  57 000c 0144     		add	r1, r1, r0
+  58 000e 02F8081C 		strb	r1, [r2, #-8]
+  59 0012 1A68     		ldr	r2, [r3]
+  60 0014 043A     		subs	r2, r2, #4
+  61 0016 1A60     		str	r2, [r3]
+  62 0018 7047     		bx	lr
+  63              	.L4:
+  64 001a 00BF     		.align	2
+  65              	.L3:
+  66 001c 00000000 		.word	finsh_sp
+  67              		.cfi_endproc
+  68              	.LFE17:
+  70              		.section	.text.OP_add_word,"ax",%progbits
+  71              		.align	1
+  72              		.global	OP_add_word
+  73              		.syntax unified
+  74              		.thumb
+  75              		.thumb_func
+  76              		.fpu fpv4-sp-d16
+  78              	OP_add_word:
+  79              	.LFB18:
+  39:rt-thread/components/finsh/finsh_ops.c **** 
+  40:rt-thread/components/finsh/finsh_ops.c ****     return ;
+ARM GAS  /tmp/ccKWdTJc.s 			page 3
+
+
+  41:rt-thread/components/finsh/finsh_ops.c **** }
+  42:rt-thread/components/finsh/finsh_ops.c **** 
+  43:rt-thread/components/finsh/finsh_ops.c **** void OP_add_word()
+  44:rt-thread/components/finsh/finsh_ops.c **** {
+  80              		.loc 1 44 0
+  81              		.cfi_startproc
+  82              		@ args = 0, pretend = 0, frame = 0
+  83              		@ frame_needed = 0, uses_anonymous_args = 0
+  84              		@ link register save eliminated.
+  45:rt-thread/components/finsh/finsh_ops.c ****     OP_BIN_WORD(+);
+  85              		.loc 1 45 0
+  86 0000 064B     		ldr	r3, .L6
+  87 0002 1A68     		ldr	r2, [r3]
+  88 0004 32F8081C 		ldrh	r1, [r2, #-8]
+  89 0008 32F8040C 		ldrh	r0, [r2, #-4]
+  90 000c 0144     		add	r1, r1, r0
+  91 000e 22F8081C 		strh	r1, [r2, #-8]	@ movhi
+  92 0012 1A68     		ldr	r2, [r3]
+  93 0014 043A     		subs	r2, r2, #4
+  94 0016 1A60     		str	r2, [r3]
+  95 0018 7047     		bx	lr
+  96              	.L7:
+  97 001a 00BF     		.align	2
+  98              	.L6:
+  99 001c 00000000 		.word	finsh_sp
+ 100              		.cfi_endproc
+ 101              	.LFE18:
+ 103              		.section	.text.OP_add_dword,"ax",%progbits
+ 104              		.align	1
+ 105              		.global	OP_add_dword
+ 106              		.syntax unified
+ 107              		.thumb
+ 108              		.thumb_func
+ 109              		.fpu fpv4-sp-d16
+ 111              	OP_add_dword:
+ 112              	.LFB19:
+  46:rt-thread/components/finsh/finsh_ops.c **** 
+  47:rt-thread/components/finsh/finsh_ops.c ****     return ;
+  48:rt-thread/components/finsh/finsh_ops.c **** }
+  49:rt-thread/components/finsh/finsh_ops.c **** 
+  50:rt-thread/components/finsh/finsh_ops.c **** void OP_add_dword()
+  51:rt-thread/components/finsh/finsh_ops.c **** {
+ 113              		.loc 1 51 0
+ 114              		.cfi_startproc
+ 115              		@ args = 0, pretend = 0, frame = 0
+ 116              		@ frame_needed = 0, uses_anonymous_args = 0
+ 117              		@ link register save eliminated.
+  52:rt-thread/components/finsh/finsh_ops.c ****     OP_BIN_DWORD(+);
+ 118              		.loc 1 52 0
+ 119 0000 064B     		ldr	r3, .L9
+ 120 0002 1A68     		ldr	r2, [r3]
+ 121 0004 52F8081C 		ldr	r1, [r2, #-8]
+ 122 0008 52F8040C 		ldr	r0, [r2, #-4]
+ 123 000c 0144     		add	r1, r1, r0
+ 124 000e 42F8081C 		str	r1, [r2, #-8]
+ 125 0012 1A68     		ldr	r2, [r3]
+ 126 0014 043A     		subs	r2, r2, #4
+ARM GAS  /tmp/ccKWdTJc.s 			page 4
+
+
+ 127 0016 1A60     		str	r2, [r3]
+ 128 0018 7047     		bx	lr
+ 129              	.L10:
+ 130 001a 00BF     		.align	2
+ 131              	.L9:
+ 132 001c 00000000 		.word	finsh_sp
+ 133              		.cfi_endproc
+ 134              	.LFE19:
+ 136              		.section	.text.OP_sub_byte,"ax",%progbits
+ 137              		.align	1
+ 138              		.global	OP_sub_byte
+ 139              		.syntax unified
+ 140              		.thumb
+ 141              		.thumb_func
+ 142              		.fpu fpv4-sp-d16
+ 144              	OP_sub_byte:
+ 145              	.LFB20:
+  53:rt-thread/components/finsh/finsh_ops.c **** 
+  54:rt-thread/components/finsh/finsh_ops.c ****     return ;
+  55:rt-thread/components/finsh/finsh_ops.c **** }
+  56:rt-thread/components/finsh/finsh_ops.c **** 
+  57:rt-thread/components/finsh/finsh_ops.c **** /* --- sub --- */
+  58:rt-thread/components/finsh/finsh_ops.c **** void OP_sub_byte()
+  59:rt-thread/components/finsh/finsh_ops.c **** {
+ 146              		.loc 1 59 0
+ 147              		.cfi_startproc
+ 148              		@ args = 0, pretend = 0, frame = 0
+ 149              		@ frame_needed = 0, uses_anonymous_args = 0
+ 150              		@ link register save eliminated.
+  60:rt-thread/components/finsh/finsh_ops.c ****     OP_BIN_BYTE(-);
+ 151              		.loc 1 60 0
+ 152 0000 064B     		ldr	r3, .L12
+ 153 0002 1A68     		ldr	r2, [r3]
+ 154 0004 12F8081C 		ldrb	r1, [r2, #-8]	@ zero_extendqisi2
+ 155 0008 12F8040C 		ldrb	r0, [r2, #-4]	@ zero_extendqisi2
+ 156 000c 091A     		subs	r1, r1, r0
+ 157 000e 02F8081C 		strb	r1, [r2, #-8]
+ 158 0012 1A68     		ldr	r2, [r3]
+ 159 0014 043A     		subs	r2, r2, #4
+ 160 0016 1A60     		str	r2, [r3]
+ 161 0018 7047     		bx	lr
+ 162              	.L13:
+ 163 001a 00BF     		.align	2
+ 164              	.L12:
+ 165 001c 00000000 		.word	finsh_sp
+ 166              		.cfi_endproc
+ 167              	.LFE20:
+ 169              		.section	.text.OP_sub_word,"ax",%progbits
+ 170              		.align	1
+ 171              		.global	OP_sub_word
+ 172              		.syntax unified
+ 173              		.thumb
+ 174              		.thumb_func
+ 175              		.fpu fpv4-sp-d16
+ 177              	OP_sub_word:
+ 178              	.LFB21:
+  61:rt-thread/components/finsh/finsh_ops.c **** 
+ARM GAS  /tmp/ccKWdTJc.s 			page 5
+
+
+  62:rt-thread/components/finsh/finsh_ops.c ****     return ;
+  63:rt-thread/components/finsh/finsh_ops.c **** }
+  64:rt-thread/components/finsh/finsh_ops.c **** 
+  65:rt-thread/components/finsh/finsh_ops.c **** void OP_sub_word()
+  66:rt-thread/components/finsh/finsh_ops.c **** {
+ 179              		.loc 1 66 0
+ 180              		.cfi_startproc
+ 181              		@ args = 0, pretend = 0, frame = 0
+ 182              		@ frame_needed = 0, uses_anonymous_args = 0
+ 183              		@ link register save eliminated.
+  67:rt-thread/components/finsh/finsh_ops.c ****     OP_BIN_WORD(-);
+ 184              		.loc 1 67 0
+ 185 0000 064B     		ldr	r3, .L15
+ 186 0002 1A68     		ldr	r2, [r3]
+ 187 0004 32F8081C 		ldrh	r1, [r2, #-8]
+ 188 0008 32F8040C 		ldrh	r0, [r2, #-4]
+ 189 000c 091A     		subs	r1, r1, r0
+ 190 000e 22F8081C 		strh	r1, [r2, #-8]	@ movhi
+ 191 0012 1A68     		ldr	r2, [r3]
+ 192 0014 043A     		subs	r2, r2, #4
+ 193 0016 1A60     		str	r2, [r3]
+ 194 0018 7047     		bx	lr
+ 195              	.L16:
+ 196 001a 00BF     		.align	2
+ 197              	.L15:
+ 198 001c 00000000 		.word	finsh_sp
+ 199              		.cfi_endproc
+ 200              	.LFE21:
+ 202              		.section	.text.OP_sub_dword,"ax",%progbits
+ 203              		.align	1
+ 204              		.global	OP_sub_dword
+ 205              		.syntax unified
+ 206              		.thumb
+ 207              		.thumb_func
+ 208              		.fpu fpv4-sp-d16
+ 210              	OP_sub_dword:
+ 211              	.LFB22:
+  68:rt-thread/components/finsh/finsh_ops.c **** 
+  69:rt-thread/components/finsh/finsh_ops.c ****     return ;
+  70:rt-thread/components/finsh/finsh_ops.c **** }
+  71:rt-thread/components/finsh/finsh_ops.c **** 
+  72:rt-thread/components/finsh/finsh_ops.c **** void OP_sub_dword()
+  73:rt-thread/components/finsh/finsh_ops.c **** {
+ 212              		.loc 1 73 0
+ 213              		.cfi_startproc
+ 214              		@ args = 0, pretend = 0, frame = 0
+ 215              		@ frame_needed = 0, uses_anonymous_args = 0
+ 216              		@ link register save eliminated.
+  74:rt-thread/components/finsh/finsh_ops.c ****     OP_BIN_DWORD(-);
+ 217              		.loc 1 74 0
+ 218 0000 064B     		ldr	r3, .L18
+ 219 0002 1A68     		ldr	r2, [r3]
+ 220 0004 52F8081C 		ldr	r1, [r2, #-8]
+ 221 0008 52F8040C 		ldr	r0, [r2, #-4]
+ 222 000c 091A     		subs	r1, r1, r0
+ 223 000e 42F8081C 		str	r1, [r2, #-8]
+ 224 0012 1A68     		ldr	r2, [r3]
+ARM GAS  /tmp/ccKWdTJc.s 			page 6
+
+
+ 225 0014 043A     		subs	r2, r2, #4
+ 226 0016 1A60     		str	r2, [r3]
+ 227 0018 7047     		bx	lr
+ 228              	.L19:
+ 229 001a 00BF     		.align	2
+ 230              	.L18:
+ 231 001c 00000000 		.word	finsh_sp
+ 232              		.cfi_endproc
+ 233              	.LFE22:
+ 235              		.section	.text.OP_div_byte,"ax",%progbits
+ 236              		.align	1
+ 237              		.global	OP_div_byte
+ 238              		.syntax unified
+ 239              		.thumb
+ 240              		.thumb_func
+ 241              		.fpu fpv4-sp-d16
+ 243              	OP_div_byte:
+ 244              	.LFB23:
+  75:rt-thread/components/finsh/finsh_ops.c **** 
+  76:rt-thread/components/finsh/finsh_ops.c ****     return ;
+  77:rt-thread/components/finsh/finsh_ops.c **** }
+  78:rt-thread/components/finsh/finsh_ops.c **** 
+  79:rt-thread/components/finsh/finsh_ops.c **** /* --- div --- */
+  80:rt-thread/components/finsh/finsh_ops.c **** void OP_div_byte()
+  81:rt-thread/components/finsh/finsh_ops.c **** {
+ 245              		.loc 1 81 0
+ 246              		.cfi_startproc
+ 247              		@ args = 0, pretend = 0, frame = 0
+ 248              		@ frame_needed = 0, uses_anonymous_args = 0
+ 249              		@ link register save eliminated.
+  82:rt-thread/components/finsh/finsh_ops.c ****     OP_BIN_BYTE(/);
+ 250              		.loc 1 82 0
+ 251 0000 064B     		ldr	r3, .L21
+ 252 0002 1A68     		ldr	r2, [r3]
+ 253 0004 12F8081C 		ldrb	r1, [r2, #-8]	@ zero_extendqisi2
+ 254 0008 12F8040C 		ldrb	r0, [r2, #-4]	@ zero_extendqisi2
+ 255 000c B1FBF0F1 		udiv	r1, r1, r0
+ 256 0010 02F8081C 		strb	r1, [r2, #-8]
+ 257 0014 1A68     		ldr	r2, [r3]
+ 258 0016 043A     		subs	r2, r2, #4
+ 259 0018 1A60     		str	r2, [r3]
+ 260 001a 7047     		bx	lr
+ 261              	.L22:
+ 262              		.align	2
+ 263              	.L21:
+ 264 001c 00000000 		.word	finsh_sp
+ 265              		.cfi_endproc
+ 266              	.LFE23:
+ 268              		.section	.text.OP_div_word,"ax",%progbits
+ 269              		.align	1
+ 270              		.global	OP_div_word
+ 271              		.syntax unified
+ 272              		.thumb
+ 273              		.thumb_func
+ 274              		.fpu fpv4-sp-d16
+ 276              	OP_div_word:
+ 277              	.LFB24:
+ARM GAS  /tmp/ccKWdTJc.s 			page 7
+
+
+  83:rt-thread/components/finsh/finsh_ops.c **** 
+  84:rt-thread/components/finsh/finsh_ops.c ****     return ;
+  85:rt-thread/components/finsh/finsh_ops.c **** }
+  86:rt-thread/components/finsh/finsh_ops.c **** 
+  87:rt-thread/components/finsh/finsh_ops.c **** void OP_div_word()
+  88:rt-thread/components/finsh/finsh_ops.c **** {
+ 278              		.loc 1 88 0
+ 279              		.cfi_startproc
+ 280              		@ args = 0, pretend = 0, frame = 0
+ 281              		@ frame_needed = 0, uses_anonymous_args = 0
+ 282              		@ link register save eliminated.
+  89:rt-thread/components/finsh/finsh_ops.c ****     OP_BIN_WORD(/);
+ 283              		.loc 1 89 0
+ 284 0000 064B     		ldr	r3, .L24
+ 285 0002 1A68     		ldr	r2, [r3]
+ 286 0004 32F9081C 		ldrsh	r1, [r2, #-8]
+ 287 0008 32F9040C 		ldrsh	r0, [r2, #-4]
+ 288 000c 91FBF0F1 		sdiv	r1, r1, r0
+ 289 0010 22F8081C 		strh	r1, [r2, #-8]	@ movhi
+ 290 0014 1A68     		ldr	r2, [r3]
+ 291 0016 043A     		subs	r2, r2, #4
+ 292 0018 1A60     		str	r2, [r3]
+ 293 001a 7047     		bx	lr
+ 294              	.L25:
+ 295              		.align	2
+ 296              	.L24:
+ 297 001c 00000000 		.word	finsh_sp
+ 298              		.cfi_endproc
+ 299              	.LFE24:
+ 301              		.section	.text.OP_div_dword,"ax",%progbits
+ 302              		.align	1
+ 303              		.global	OP_div_dword
+ 304              		.syntax unified
+ 305              		.thumb
+ 306              		.thumb_func
+ 307              		.fpu fpv4-sp-d16
+ 309              	OP_div_dword:
+ 310              	.LFB25:
+  90:rt-thread/components/finsh/finsh_ops.c **** 
+  91:rt-thread/components/finsh/finsh_ops.c ****     return ;
+  92:rt-thread/components/finsh/finsh_ops.c **** }
+  93:rt-thread/components/finsh/finsh_ops.c **** 
+  94:rt-thread/components/finsh/finsh_ops.c **** void OP_div_dword()
+  95:rt-thread/components/finsh/finsh_ops.c **** {
+ 311              		.loc 1 95 0
+ 312              		.cfi_startproc
+ 313              		@ args = 0, pretend = 0, frame = 0
+ 314              		@ frame_needed = 0, uses_anonymous_args = 0
+ 315              		@ link register save eliminated.
+  96:rt-thread/components/finsh/finsh_ops.c ****     OP_BIN_DWORD(/);
+ 316              		.loc 1 96 0
+ 317 0000 064B     		ldr	r3, .L27
+ 318 0002 1A68     		ldr	r2, [r3]
+ 319 0004 52F8081C 		ldr	r1, [r2, #-8]
+ 320 0008 52F8040C 		ldr	r0, [r2, #-4]
+ 321 000c 91FBF0F1 		sdiv	r1, r1, r0
+ 322 0010 42F8081C 		str	r1, [r2, #-8]
+ARM GAS  /tmp/ccKWdTJc.s 			page 8
+
+
+ 323 0014 1A68     		ldr	r2, [r3]
+ 324 0016 043A     		subs	r2, r2, #4
+ 325 0018 1A60     		str	r2, [r3]
+ 326 001a 7047     		bx	lr
+ 327              	.L28:
+ 328              		.align	2
+ 329              	.L27:
+ 330 001c 00000000 		.word	finsh_sp
+ 331              		.cfi_endproc
+ 332              	.LFE25:
+ 334              		.section	.text.OP_mod_byte,"ax",%progbits
+ 335              		.align	1
+ 336              		.global	OP_mod_byte
+ 337              		.syntax unified
+ 338              		.thumb
+ 339              		.thumb_func
+ 340              		.fpu fpv4-sp-d16
+ 342              	OP_mod_byte:
+ 343              	.LFB26:
+  97:rt-thread/components/finsh/finsh_ops.c **** 
+  98:rt-thread/components/finsh/finsh_ops.c ****     return ;
+  99:rt-thread/components/finsh/finsh_ops.c **** }
+ 100:rt-thread/components/finsh/finsh_ops.c **** 
+ 101:rt-thread/components/finsh/finsh_ops.c **** /* --- mod --- */
+ 102:rt-thread/components/finsh/finsh_ops.c **** void OP_mod_byte()
+ 103:rt-thread/components/finsh/finsh_ops.c **** {
+ 344              		.loc 1 103 0
+ 345              		.cfi_startproc
+ 346              		@ args = 0, pretend = 0, frame = 0
+ 347              		@ frame_needed = 0, uses_anonymous_args = 0
+ 348              		@ link register save eliminated.
+ 349 0000 10B4     		push	{r4}
+ 350              	.LCFI0:
+ 351              		.cfi_def_cfa_offset 4
+ 352              		.cfi_offset 4, -4
+ 104:rt-thread/components/finsh/finsh_ops.c ****     OP_BIN_BYTE(%);
+ 353              		.loc 1 104 0
+ 354 0002 094B     		ldr	r3, .L31
+ 355 0004 1A68     		ldr	r2, [r3]
+ 356 0006 12F8084C 		ldrb	r4, [r2, #-8]	@ zero_extendqisi2
+ 357 000a 12F8040C 		ldrb	r0, [r2, #-4]	@ zero_extendqisi2
+ 358 000e B4FBF0F1 		udiv	r1, r4, r0
+ 359 0012 00FB1141 		mls	r1, r0, r1, r4
+ 360 0016 02F8081C 		strb	r1, [r2, #-8]
+ 361 001a 1A68     		ldr	r2, [r3]
+ 362 001c 043A     		subs	r2, r2, #4
+ 363 001e 1A60     		str	r2, [r3]
+ 105:rt-thread/components/finsh/finsh_ops.c **** 
+ 106:rt-thread/components/finsh/finsh_ops.c ****     return ;
+ 107:rt-thread/components/finsh/finsh_ops.c **** }
+ 364              		.loc 1 107 0
+ 365 0020 5DF8044B 		ldr	r4, [sp], #4
+ 366              	.LCFI1:
+ 367              		.cfi_restore 4
+ 368              		.cfi_def_cfa_offset 0
+ 369 0024 7047     		bx	lr
+ 370              	.L32:
+ARM GAS  /tmp/ccKWdTJc.s 			page 9
+
+
+ 371 0026 00BF     		.align	2
+ 372              	.L31:
+ 373 0028 00000000 		.word	finsh_sp
+ 374              		.cfi_endproc
+ 375              	.LFE26:
+ 377              		.section	.text.OP_mod_word,"ax",%progbits
+ 378              		.align	1
+ 379              		.global	OP_mod_word
+ 380              		.syntax unified
+ 381              		.thumb
+ 382              		.thumb_func
+ 383              		.fpu fpv4-sp-d16
+ 385              	OP_mod_word:
+ 386              	.LFB27:
+ 108:rt-thread/components/finsh/finsh_ops.c **** 
+ 109:rt-thread/components/finsh/finsh_ops.c **** void OP_mod_word()
+ 110:rt-thread/components/finsh/finsh_ops.c **** {
+ 387              		.loc 1 110 0
+ 388              		.cfi_startproc
+ 389              		@ args = 0, pretend = 0, frame = 0
+ 390              		@ frame_needed = 0, uses_anonymous_args = 0
+ 391              		@ link register save eliminated.
+ 392 0000 10B4     		push	{r4}
+ 393              	.LCFI2:
+ 394              		.cfi_def_cfa_offset 4
+ 395              		.cfi_offset 4, -4
+ 111:rt-thread/components/finsh/finsh_ops.c ****     OP_BIN_WORD(%);
+ 396              		.loc 1 111 0
+ 397 0002 094B     		ldr	r3, .L35
+ 398 0004 1A68     		ldr	r2, [r3]
+ 399 0006 32F9084C 		ldrsh	r4, [r2, #-8]
+ 400 000a 32F9040C 		ldrsh	r0, [r2, #-4]
+ 401 000e 94FBF0F1 		sdiv	r1, r4, r0
+ 402 0012 00FB1141 		mls	r1, r0, r1, r4
+ 403 0016 22F8081C 		strh	r1, [r2, #-8]	@ movhi
+ 404 001a 1A68     		ldr	r2, [r3]
+ 405 001c 043A     		subs	r2, r2, #4
+ 406 001e 1A60     		str	r2, [r3]
+ 112:rt-thread/components/finsh/finsh_ops.c **** 
+ 113:rt-thread/components/finsh/finsh_ops.c ****     return ;
+ 114:rt-thread/components/finsh/finsh_ops.c **** }
+ 407              		.loc 1 114 0
+ 408 0020 5DF8044B 		ldr	r4, [sp], #4
+ 409              	.LCFI3:
+ 410              		.cfi_restore 4
+ 411              		.cfi_def_cfa_offset 0
+ 412 0024 7047     		bx	lr
+ 413              	.L36:
+ 414 0026 00BF     		.align	2
+ 415              	.L35:
+ 416 0028 00000000 		.word	finsh_sp
+ 417              		.cfi_endproc
+ 418              	.LFE27:
+ 420              		.section	.text.OP_mod_dword,"ax",%progbits
+ 421              		.align	1
+ 422              		.global	OP_mod_dword
+ 423              		.syntax unified
+ARM GAS  /tmp/ccKWdTJc.s 			page 10
+
+
+ 424              		.thumb
+ 425              		.thumb_func
+ 426              		.fpu fpv4-sp-d16
+ 428              	OP_mod_dword:
+ 429              	.LFB28:
+ 115:rt-thread/components/finsh/finsh_ops.c **** 
+ 116:rt-thread/components/finsh/finsh_ops.c **** void OP_mod_dword()
+ 117:rt-thread/components/finsh/finsh_ops.c **** {
+ 430              		.loc 1 117 0
+ 431              		.cfi_startproc
+ 432              		@ args = 0, pretend = 0, frame = 0
+ 433              		@ frame_needed = 0, uses_anonymous_args = 0
+ 434              		@ link register save eliminated.
+ 435 0000 10B4     		push	{r4}
+ 436              	.LCFI4:
+ 437              		.cfi_def_cfa_offset 4
+ 438              		.cfi_offset 4, -4
+ 118:rt-thread/components/finsh/finsh_ops.c ****     OP_BIN_DWORD(%);
+ 439              		.loc 1 118 0
+ 440 0002 094B     		ldr	r3, .L39
+ 441 0004 1A68     		ldr	r2, [r3]
+ 442 0006 52F8084C 		ldr	r4, [r2, #-8]
+ 443 000a 52F8040C 		ldr	r0, [r2, #-4]
+ 444 000e 94FBF0F1 		sdiv	r1, r4, r0
+ 445 0012 00FB1141 		mls	r1, r0, r1, r4
+ 446 0016 42F8081C 		str	r1, [r2, #-8]
+ 447 001a 1A68     		ldr	r2, [r3]
+ 448 001c 043A     		subs	r2, r2, #4
+ 449 001e 1A60     		str	r2, [r3]
+ 119:rt-thread/components/finsh/finsh_ops.c **** 
+ 120:rt-thread/components/finsh/finsh_ops.c ****     return ;
+ 121:rt-thread/components/finsh/finsh_ops.c **** }
+ 450              		.loc 1 121 0
+ 451 0020 5DF8044B 		ldr	r4, [sp], #4
+ 452              	.LCFI5:
+ 453              		.cfi_restore 4
+ 454              		.cfi_def_cfa_offset 0
+ 455 0024 7047     		bx	lr
+ 456              	.L40:
+ 457 0026 00BF     		.align	2
+ 458              	.L39:
+ 459 0028 00000000 		.word	finsh_sp
+ 460              		.cfi_endproc
+ 461              	.LFE28:
+ 463              		.section	.text.OP_mul_byte,"ax",%progbits
+ 464              		.align	1
+ 465              		.global	OP_mul_byte
+ 466              		.syntax unified
+ 467              		.thumb
+ 468              		.thumb_func
+ 469              		.fpu fpv4-sp-d16
+ 471              	OP_mul_byte:
+ 472              	.LFB29:
+ 122:rt-thread/components/finsh/finsh_ops.c **** 
+ 123:rt-thread/components/finsh/finsh_ops.c **** /* --- mul --- */
+ 124:rt-thread/components/finsh/finsh_ops.c **** void OP_mul_byte()
+ 125:rt-thread/components/finsh/finsh_ops.c **** {
+ARM GAS  /tmp/ccKWdTJc.s 			page 11
+
+
+ 473              		.loc 1 125 0
+ 474              		.cfi_startproc
+ 475              		@ args = 0, pretend = 0, frame = 0
+ 476              		@ frame_needed = 0, uses_anonymous_args = 0
+ 477              		@ link register save eliminated.
+ 126:rt-thread/components/finsh/finsh_ops.c ****     OP_BIN_BYTE(*);
+ 478              		.loc 1 126 0
+ 479 0000 064B     		ldr	r3, .L42
+ 480 0002 1A68     		ldr	r2, [r3]
+ 481 0004 12F8081C 		ldrb	r1, [r2, #-8]	@ zero_extendqisi2
+ 482 0008 12F8040C 		ldrb	r0, [r2, #-4]	@ zero_extendqisi2
+ 483 000c 11FB00F1 		smulbb	r1, r1, r0
+ 484 0010 02F8081C 		strb	r1, [r2, #-8]
+ 485 0014 1A68     		ldr	r2, [r3]
+ 486 0016 043A     		subs	r2, r2, #4
+ 487 0018 1A60     		str	r2, [r3]
+ 488 001a 7047     		bx	lr
+ 489              	.L43:
+ 490              		.align	2
+ 491              	.L42:
+ 492 001c 00000000 		.word	finsh_sp
+ 493              		.cfi_endproc
+ 494              	.LFE29:
+ 496              		.section	.text.OP_mul_word,"ax",%progbits
+ 497              		.align	1
+ 498              		.global	OP_mul_word
+ 499              		.syntax unified
+ 500              		.thumb
+ 501              		.thumb_func
+ 502              		.fpu fpv4-sp-d16
+ 504              	OP_mul_word:
+ 505              	.LFB30:
+ 127:rt-thread/components/finsh/finsh_ops.c **** 
+ 128:rt-thread/components/finsh/finsh_ops.c ****     return ;
+ 129:rt-thread/components/finsh/finsh_ops.c **** }
+ 130:rt-thread/components/finsh/finsh_ops.c **** 
+ 131:rt-thread/components/finsh/finsh_ops.c **** void OP_mul_word()
+ 132:rt-thread/components/finsh/finsh_ops.c **** {
+ 506              		.loc 1 132 0
+ 507              		.cfi_startproc
+ 508              		@ args = 0, pretend = 0, frame = 0
+ 509              		@ frame_needed = 0, uses_anonymous_args = 0
+ 510              		@ link register save eliminated.
+ 133:rt-thread/components/finsh/finsh_ops.c ****     OP_BIN_WORD(*);
+ 511              		.loc 1 133 0
+ 512 0000 064B     		ldr	r3, .L45
+ 513 0002 1A68     		ldr	r2, [r3]
+ 514 0004 32F8081C 		ldrh	r1, [r2, #-8]
+ 515 0008 32F8040C 		ldrh	r0, [r2, #-4]
+ 516 000c 11FB00F1 		smulbb	r1, r1, r0
+ 517 0010 22F8081C 		strh	r1, [r2, #-8]	@ movhi
+ 518 0014 1A68     		ldr	r2, [r3]
+ 519 0016 043A     		subs	r2, r2, #4
+ 520 0018 1A60     		str	r2, [r3]
+ 521 001a 7047     		bx	lr
+ 522              	.L46:
+ 523              		.align	2
+ARM GAS  /tmp/ccKWdTJc.s 			page 12
+
+
+ 524              	.L45:
+ 525 001c 00000000 		.word	finsh_sp
+ 526              		.cfi_endproc
+ 527              	.LFE30:
+ 529              		.section	.text.OP_mul_dword,"ax",%progbits
+ 530              		.align	1
+ 531              		.global	OP_mul_dword
+ 532              		.syntax unified
+ 533              		.thumb
+ 534              		.thumb_func
+ 535              		.fpu fpv4-sp-d16
+ 537              	OP_mul_dword:
+ 538              	.LFB31:
+ 134:rt-thread/components/finsh/finsh_ops.c **** 
+ 135:rt-thread/components/finsh/finsh_ops.c ****     return ;
+ 136:rt-thread/components/finsh/finsh_ops.c **** }
+ 137:rt-thread/components/finsh/finsh_ops.c **** 
+ 138:rt-thread/components/finsh/finsh_ops.c **** void OP_mul_dword()
+ 139:rt-thread/components/finsh/finsh_ops.c **** {
+ 539              		.loc 1 139 0
+ 540              		.cfi_startproc
+ 541              		@ args = 0, pretend = 0, frame = 0
+ 542              		@ frame_needed = 0, uses_anonymous_args = 0
+ 543              		@ link register save eliminated.
+ 140:rt-thread/components/finsh/finsh_ops.c ****     OP_BIN_DWORD(*);
+ 544              		.loc 1 140 0
+ 545 0000 064B     		ldr	r3, .L48
+ 546 0002 1A68     		ldr	r2, [r3]
+ 547 0004 52F8080C 		ldr	r0, [r2, #-8]
+ 548 0008 52F8041C 		ldr	r1, [r2, #-4]
+ 549 000c 01FB00F1 		mul	r1, r1, r0
+ 550 0010 42F8081C 		str	r1, [r2, #-8]
+ 551 0014 1A68     		ldr	r2, [r3]
+ 552 0016 043A     		subs	r2, r2, #4
+ 553 0018 1A60     		str	r2, [r3]
+ 554 001a 7047     		bx	lr
+ 555              	.L49:
+ 556              		.align	2
+ 557              	.L48:
+ 558 001c 00000000 		.word	finsh_sp
+ 559              		.cfi_endproc
+ 560              	.LFE31:
+ 562              		.section	.text.OP_and_byte,"ax",%progbits
+ 563              		.align	1
+ 564              		.global	OP_and_byte
+ 565              		.syntax unified
+ 566              		.thumb
+ 567              		.thumb_func
+ 568              		.fpu fpv4-sp-d16
+ 570              	OP_and_byte:
+ 571              	.LFB32:
+ 141:rt-thread/components/finsh/finsh_ops.c **** 
+ 142:rt-thread/components/finsh/finsh_ops.c ****     return ;
+ 143:rt-thread/components/finsh/finsh_ops.c **** }
+ 144:rt-thread/components/finsh/finsh_ops.c **** 
+ 145:rt-thread/components/finsh/finsh_ops.c **** /* --- and --- */
+ 146:rt-thread/components/finsh/finsh_ops.c **** void OP_and_byte()
+ARM GAS  /tmp/ccKWdTJc.s 			page 13
+
+
+ 147:rt-thread/components/finsh/finsh_ops.c **** {
+ 572              		.loc 1 147 0
+ 573              		.cfi_startproc
+ 574              		@ args = 0, pretend = 0, frame = 0
+ 575              		@ frame_needed = 0, uses_anonymous_args = 0
+ 576              		@ link register save eliminated.
+ 148:rt-thread/components/finsh/finsh_ops.c ****     OP_BIN_BYTE(&);
+ 577              		.loc 1 148 0
+ 578 0000 064B     		ldr	r3, .L51
+ 579 0002 1A68     		ldr	r2, [r3]
+ 580 0004 12F8081C 		ldrb	r1, [r2, #-8]	@ zero_extendqisi2
+ 581 0008 12F8040C 		ldrb	r0, [r2, #-4]	@ zero_extendqisi2
+ 582 000c 0140     		ands	r1, r1, r0
+ 583 000e 02F8081C 		strb	r1, [r2, #-8]
+ 584 0012 1A68     		ldr	r2, [r3]
+ 585 0014 043A     		subs	r2, r2, #4
+ 586 0016 1A60     		str	r2, [r3]
+ 587 0018 7047     		bx	lr
+ 588              	.L52:
+ 589 001a 00BF     		.align	2
+ 590              	.L51:
+ 591 001c 00000000 		.word	finsh_sp
+ 592              		.cfi_endproc
+ 593              	.LFE32:
+ 595              		.section	.text.OP_and_word,"ax",%progbits
+ 596              		.align	1
+ 597              		.global	OP_and_word
+ 598              		.syntax unified
+ 599              		.thumb
+ 600              		.thumb_func
+ 601              		.fpu fpv4-sp-d16
+ 603              	OP_and_word:
+ 604              	.LFB33:
+ 149:rt-thread/components/finsh/finsh_ops.c **** 
+ 150:rt-thread/components/finsh/finsh_ops.c ****     return ;
+ 151:rt-thread/components/finsh/finsh_ops.c **** }
+ 152:rt-thread/components/finsh/finsh_ops.c **** 
+ 153:rt-thread/components/finsh/finsh_ops.c **** void OP_and_word()
+ 154:rt-thread/components/finsh/finsh_ops.c **** {
+ 605              		.loc 1 154 0
+ 606              		.cfi_startproc
+ 607              		@ args = 0, pretend = 0, frame = 0
+ 608              		@ frame_needed = 0, uses_anonymous_args = 0
+ 609              		@ link register save eliminated.
+ 155:rt-thread/components/finsh/finsh_ops.c ****     OP_BIN_WORD(&);
+ 610              		.loc 1 155 0
+ 611 0000 064B     		ldr	r3, .L54
+ 612 0002 1A68     		ldr	r2, [r3]
+ 613 0004 32F9081C 		ldrsh	r1, [r2, #-8]
+ 614 0008 32F9040C 		ldrsh	r0, [r2, #-4]
+ 615 000c 0140     		ands	r1, r1, r0
+ 616 000e 22F8081C 		strh	r1, [r2, #-8]	@ movhi
+ 617 0012 1A68     		ldr	r2, [r3]
+ 618 0014 043A     		subs	r2, r2, #4
+ 619 0016 1A60     		str	r2, [r3]
+ 620 0018 7047     		bx	lr
+ 621              	.L55:
+ARM GAS  /tmp/ccKWdTJc.s 			page 14
+
+
+ 622 001a 00BF     		.align	2
+ 623              	.L54:
+ 624 001c 00000000 		.word	finsh_sp
+ 625              		.cfi_endproc
+ 626              	.LFE33:
+ 628              		.section	.text.OP_and_dword,"ax",%progbits
+ 629              		.align	1
+ 630              		.global	OP_and_dword
+ 631              		.syntax unified
+ 632              		.thumb
+ 633              		.thumb_func
+ 634              		.fpu fpv4-sp-d16
+ 636              	OP_and_dword:
+ 637              	.LFB34:
+ 156:rt-thread/components/finsh/finsh_ops.c **** 
+ 157:rt-thread/components/finsh/finsh_ops.c ****     return ;
+ 158:rt-thread/components/finsh/finsh_ops.c **** }
+ 159:rt-thread/components/finsh/finsh_ops.c **** 
+ 160:rt-thread/components/finsh/finsh_ops.c **** void OP_and_dword()
+ 161:rt-thread/components/finsh/finsh_ops.c **** {
+ 638              		.loc 1 161 0
+ 639              		.cfi_startproc
+ 640              		@ args = 0, pretend = 0, frame = 0
+ 641              		@ frame_needed = 0, uses_anonymous_args = 0
+ 642              		@ link register save eliminated.
+ 162:rt-thread/components/finsh/finsh_ops.c ****     OP_BIN_DWORD(&);
+ 643              		.loc 1 162 0
+ 644 0000 064B     		ldr	r3, .L57
+ 645 0002 1A68     		ldr	r2, [r3]
+ 646 0004 52F8081C 		ldr	r1, [r2, #-8]
+ 647 0008 52F8040C 		ldr	r0, [r2, #-4]
+ 648 000c 0140     		ands	r1, r1, r0
+ 649 000e 42F8081C 		str	r1, [r2, #-8]
+ 650 0012 1A68     		ldr	r2, [r3]
+ 651 0014 043A     		subs	r2, r2, #4
+ 652 0016 1A60     		str	r2, [r3]
+ 653 0018 7047     		bx	lr
+ 654              	.L58:
+ 655 001a 00BF     		.align	2
+ 656              	.L57:
+ 657 001c 00000000 		.word	finsh_sp
+ 658              		.cfi_endproc
+ 659              	.LFE34:
+ 661              		.section	.text.OP_or_byte,"ax",%progbits
+ 662              		.align	1
+ 663              		.global	OP_or_byte
+ 664              		.syntax unified
+ 665              		.thumb
+ 666              		.thumb_func
+ 667              		.fpu fpv4-sp-d16
+ 669              	OP_or_byte:
+ 670              	.LFB35:
+ 163:rt-thread/components/finsh/finsh_ops.c **** 
+ 164:rt-thread/components/finsh/finsh_ops.c ****     return ;
+ 165:rt-thread/components/finsh/finsh_ops.c **** }
+ 166:rt-thread/components/finsh/finsh_ops.c **** 
+ 167:rt-thread/components/finsh/finsh_ops.c **** /* --- or --- */
+ARM GAS  /tmp/ccKWdTJc.s 			page 15
+
+
+ 168:rt-thread/components/finsh/finsh_ops.c **** void OP_or_byte()
+ 169:rt-thread/components/finsh/finsh_ops.c **** {
+ 671              		.loc 1 169 0
+ 672              		.cfi_startproc
+ 673              		@ args = 0, pretend = 0, frame = 0
+ 674              		@ frame_needed = 0, uses_anonymous_args = 0
+ 675              		@ link register save eliminated.
+ 170:rt-thread/components/finsh/finsh_ops.c ****     OP_BIN_BYTE(|);
+ 676              		.loc 1 170 0
+ 677 0000 064B     		ldr	r3, .L60
+ 678 0002 1A68     		ldr	r2, [r3]
+ 679 0004 12F8081C 		ldrb	r1, [r2, #-8]	@ zero_extendqisi2
+ 680 0008 12F8040C 		ldrb	r0, [r2, #-4]	@ zero_extendqisi2
+ 681 000c 0143     		orrs	r1, r1, r0
+ 682 000e 02F8081C 		strb	r1, [r2, #-8]
+ 683 0012 1A68     		ldr	r2, [r3]
+ 684 0014 043A     		subs	r2, r2, #4
+ 685 0016 1A60     		str	r2, [r3]
+ 686 0018 7047     		bx	lr
+ 687              	.L61:
+ 688 001a 00BF     		.align	2
+ 689              	.L60:
+ 690 001c 00000000 		.word	finsh_sp
+ 691              		.cfi_endproc
+ 692              	.LFE35:
+ 694              		.section	.text.OP_or_word,"ax",%progbits
+ 695              		.align	1
+ 696              		.global	OP_or_word
+ 697              		.syntax unified
+ 698              		.thumb
+ 699              		.thumb_func
+ 700              		.fpu fpv4-sp-d16
+ 702              	OP_or_word:
+ 703              	.LFB36:
+ 171:rt-thread/components/finsh/finsh_ops.c **** 
+ 172:rt-thread/components/finsh/finsh_ops.c ****     return ;
+ 173:rt-thread/components/finsh/finsh_ops.c **** }
+ 174:rt-thread/components/finsh/finsh_ops.c **** 
+ 175:rt-thread/components/finsh/finsh_ops.c **** void OP_or_word()
+ 176:rt-thread/components/finsh/finsh_ops.c **** {
+ 704              		.loc 1 176 0
+ 705              		.cfi_startproc
+ 706              		@ args = 0, pretend = 0, frame = 0
+ 707              		@ frame_needed = 0, uses_anonymous_args = 0
+ 708              		@ link register save eliminated.
+ 177:rt-thread/components/finsh/finsh_ops.c ****     OP_BIN_WORD(|);
+ 709              		.loc 1 177 0
+ 710 0000 064B     		ldr	r3, .L63
+ 711 0002 1A68     		ldr	r2, [r3]
+ 712 0004 32F9081C 		ldrsh	r1, [r2, #-8]
+ 713 0008 32F9040C 		ldrsh	r0, [r2, #-4]
+ 714 000c 0143     		orrs	r1, r1, r0
+ 715 000e 22F8081C 		strh	r1, [r2, #-8]	@ movhi
+ 716 0012 1A68     		ldr	r2, [r3]
+ 717 0014 043A     		subs	r2, r2, #4
+ 718 0016 1A60     		str	r2, [r3]
+ 719 0018 7047     		bx	lr
+ARM GAS  /tmp/ccKWdTJc.s 			page 16
+
+
+ 720              	.L64:
+ 721 001a 00BF     		.align	2
+ 722              	.L63:
+ 723 001c 00000000 		.word	finsh_sp
+ 724              		.cfi_endproc
+ 725              	.LFE36:
+ 727              		.section	.text.OP_or_dword,"ax",%progbits
+ 728              		.align	1
+ 729              		.global	OP_or_dword
+ 730              		.syntax unified
+ 731              		.thumb
+ 732              		.thumb_func
+ 733              		.fpu fpv4-sp-d16
+ 735              	OP_or_dword:
+ 736              	.LFB37:
+ 178:rt-thread/components/finsh/finsh_ops.c **** 
+ 179:rt-thread/components/finsh/finsh_ops.c ****     return ;
+ 180:rt-thread/components/finsh/finsh_ops.c **** }
+ 181:rt-thread/components/finsh/finsh_ops.c **** 
+ 182:rt-thread/components/finsh/finsh_ops.c **** void OP_or_dword()
+ 183:rt-thread/components/finsh/finsh_ops.c **** {
+ 737              		.loc 1 183 0
+ 738              		.cfi_startproc
+ 739              		@ args = 0, pretend = 0, frame = 0
+ 740              		@ frame_needed = 0, uses_anonymous_args = 0
+ 741              		@ link register save eliminated.
+ 184:rt-thread/components/finsh/finsh_ops.c ****     OP_BIN_DWORD(|);
+ 742              		.loc 1 184 0
+ 743 0000 064B     		ldr	r3, .L66
+ 744 0002 1A68     		ldr	r2, [r3]
+ 745 0004 52F8081C 		ldr	r1, [r2, #-8]
+ 746 0008 52F8040C 		ldr	r0, [r2, #-4]
+ 747 000c 0143     		orrs	r1, r1, r0
+ 748 000e 42F8081C 		str	r1, [r2, #-8]
+ 749 0012 1A68     		ldr	r2, [r3]
+ 750 0014 043A     		subs	r2, r2, #4
+ 751 0016 1A60     		str	r2, [r3]
+ 752 0018 7047     		bx	lr
+ 753              	.L67:
+ 754 001a 00BF     		.align	2
+ 755              	.L66:
+ 756 001c 00000000 		.word	finsh_sp
+ 757              		.cfi_endproc
+ 758              	.LFE37:
+ 760              		.section	.text.OP_xor_byte,"ax",%progbits
+ 761              		.align	1
+ 762              		.global	OP_xor_byte
+ 763              		.syntax unified
+ 764              		.thumb
+ 765              		.thumb_func
+ 766              		.fpu fpv4-sp-d16
+ 768              	OP_xor_byte:
+ 769              	.LFB38:
+ 185:rt-thread/components/finsh/finsh_ops.c **** 
+ 186:rt-thread/components/finsh/finsh_ops.c ****     return ;
+ 187:rt-thread/components/finsh/finsh_ops.c **** }
+ 188:rt-thread/components/finsh/finsh_ops.c **** 
+ARM GAS  /tmp/ccKWdTJc.s 			page 17
+
+
+ 189:rt-thread/components/finsh/finsh_ops.c **** /* --- xor --- */
+ 190:rt-thread/components/finsh/finsh_ops.c **** void OP_xor_byte()
+ 191:rt-thread/components/finsh/finsh_ops.c **** {
+ 770              		.loc 1 191 0
+ 771              		.cfi_startproc
+ 772              		@ args = 0, pretend = 0, frame = 0
+ 773              		@ frame_needed = 0, uses_anonymous_args = 0
+ 774              		@ link register save eliminated.
+ 192:rt-thread/components/finsh/finsh_ops.c ****     OP_BIN_BYTE(^);
+ 775              		.loc 1 192 0
+ 776 0000 064B     		ldr	r3, .L69
+ 777 0002 1A68     		ldr	r2, [r3]
+ 778 0004 12F8081C 		ldrb	r1, [r2, #-8]	@ zero_extendqisi2
+ 779 0008 12F8040C 		ldrb	r0, [r2, #-4]	@ zero_extendqisi2
+ 780 000c 4140     		eors	r1, r1, r0
+ 781 000e 02F8081C 		strb	r1, [r2, #-8]
+ 782 0012 1A68     		ldr	r2, [r3]
+ 783 0014 043A     		subs	r2, r2, #4
+ 784 0016 1A60     		str	r2, [r3]
+ 785 0018 7047     		bx	lr
+ 786              	.L70:
+ 787 001a 00BF     		.align	2
+ 788              	.L69:
+ 789 001c 00000000 		.word	finsh_sp
+ 790              		.cfi_endproc
+ 791              	.LFE38:
+ 793              		.section	.text.OP_xor_word,"ax",%progbits
+ 794              		.align	1
+ 795              		.global	OP_xor_word
+ 796              		.syntax unified
+ 797              		.thumb
+ 798              		.thumb_func
+ 799              		.fpu fpv4-sp-d16
+ 801              	OP_xor_word:
+ 802              	.LFB39:
+ 193:rt-thread/components/finsh/finsh_ops.c **** 
+ 194:rt-thread/components/finsh/finsh_ops.c ****     return ;
+ 195:rt-thread/components/finsh/finsh_ops.c **** }
+ 196:rt-thread/components/finsh/finsh_ops.c **** 
+ 197:rt-thread/components/finsh/finsh_ops.c **** void OP_xor_word()
+ 198:rt-thread/components/finsh/finsh_ops.c **** {
+ 803              		.loc 1 198 0
+ 804              		.cfi_startproc
+ 805              		@ args = 0, pretend = 0, frame = 0
+ 806              		@ frame_needed = 0, uses_anonymous_args = 0
+ 807              		@ link register save eliminated.
+ 199:rt-thread/components/finsh/finsh_ops.c ****     OP_BIN_WORD(^);
+ 808              		.loc 1 199 0
+ 809 0000 064B     		ldr	r3, .L72
+ 810 0002 1A68     		ldr	r2, [r3]
+ 811 0004 32F9081C 		ldrsh	r1, [r2, #-8]
+ 812 0008 32F9040C 		ldrsh	r0, [r2, #-4]
+ 813 000c 4140     		eors	r1, r1, r0
+ 814 000e 22F8081C 		strh	r1, [r2, #-8]	@ movhi
+ 815 0012 1A68     		ldr	r2, [r3]
+ 816 0014 043A     		subs	r2, r2, #4
+ 817 0016 1A60     		str	r2, [r3]
+ARM GAS  /tmp/ccKWdTJc.s 			page 18
+
+
+ 818 0018 7047     		bx	lr
+ 819              	.L73:
+ 820 001a 00BF     		.align	2
+ 821              	.L72:
+ 822 001c 00000000 		.word	finsh_sp
+ 823              		.cfi_endproc
+ 824              	.LFE39:
+ 826              		.section	.text.OP_xor_dword,"ax",%progbits
+ 827              		.align	1
+ 828              		.global	OP_xor_dword
+ 829              		.syntax unified
+ 830              		.thumb
+ 831              		.thumb_func
+ 832              		.fpu fpv4-sp-d16
+ 834              	OP_xor_dword:
+ 835              	.LFB40:
+ 200:rt-thread/components/finsh/finsh_ops.c **** 
+ 201:rt-thread/components/finsh/finsh_ops.c ****     return ;
+ 202:rt-thread/components/finsh/finsh_ops.c **** }
+ 203:rt-thread/components/finsh/finsh_ops.c **** 
+ 204:rt-thread/components/finsh/finsh_ops.c **** void OP_xor_dword()
+ 205:rt-thread/components/finsh/finsh_ops.c **** {
+ 836              		.loc 1 205 0
+ 837              		.cfi_startproc
+ 838              		@ args = 0, pretend = 0, frame = 0
+ 839              		@ frame_needed = 0, uses_anonymous_args = 0
+ 840              		@ link register save eliminated.
+ 206:rt-thread/components/finsh/finsh_ops.c ****     OP_BIN_DWORD(^);
+ 841              		.loc 1 206 0
+ 842 0000 064B     		ldr	r3, .L75
+ 843 0002 1A68     		ldr	r2, [r3]
+ 844 0004 52F8081C 		ldr	r1, [r2, #-8]
+ 845 0008 52F8040C 		ldr	r0, [r2, #-4]
+ 846 000c 4140     		eors	r1, r1, r0
+ 847 000e 42F8081C 		str	r1, [r2, #-8]
+ 848 0012 1A68     		ldr	r2, [r3]
+ 849 0014 043A     		subs	r2, r2, #4
+ 850 0016 1A60     		str	r2, [r3]
+ 851 0018 7047     		bx	lr
+ 852              	.L76:
+ 853 001a 00BF     		.align	2
+ 854              	.L75:
+ 855 001c 00000000 		.word	finsh_sp
+ 856              		.cfi_endproc
+ 857              	.LFE40:
+ 859              		.section	.text.OP_bw_byte,"ax",%progbits
+ 860              		.align	1
+ 861              		.global	OP_bw_byte
+ 862              		.syntax unified
+ 863              		.thumb
+ 864              		.thumb_func
+ 865              		.fpu fpv4-sp-d16
+ 867              	OP_bw_byte:
+ 868              	.LFB41:
+ 207:rt-thread/components/finsh/finsh_ops.c **** 
+ 208:rt-thread/components/finsh/finsh_ops.c ****     return ;
+ 209:rt-thread/components/finsh/finsh_ops.c **** }
+ARM GAS  /tmp/ccKWdTJc.s 			page 19
+
+
+ 210:rt-thread/components/finsh/finsh_ops.c **** 
+ 211:rt-thread/components/finsh/finsh_ops.c **** /* --- bw --- */
+ 212:rt-thread/components/finsh/finsh_ops.c **** void OP_bw_byte()
+ 213:rt-thread/components/finsh/finsh_ops.c **** {
+ 869              		.loc 1 213 0
+ 870              		.cfi_startproc
+ 871              		@ args = 0, pretend = 0, frame = 0
+ 872              		@ frame_needed = 0, uses_anonymous_args = 0
+ 873              		@ link register save eliminated.
+ 214:rt-thread/components/finsh/finsh_ops.c ****     (finsh_sp - 1)->char_value = ~ ((finsh_sp - 1)->char_value);
+ 874              		.loc 1 214 0
+ 875 0000 034B     		ldr	r3, .L78
+ 876 0002 1A68     		ldr	r2, [r3]
+ 877 0004 12F8043C 		ldrb	r3, [r2, #-4]	@ zero_extendqisi2
+ 878 0008 DB43     		mvns	r3, r3
+ 879 000a 02F8043C 		strb	r3, [r2, #-4]
+ 880 000e 7047     		bx	lr
+ 881              	.L79:
+ 882              		.align	2
+ 883              	.L78:
+ 884 0010 00000000 		.word	finsh_sp
+ 885              		.cfi_endproc
+ 886              	.LFE41:
+ 888              		.section	.text.OP_bw_word,"ax",%progbits
+ 889              		.align	1
+ 890              		.global	OP_bw_word
+ 891              		.syntax unified
+ 892              		.thumb
+ 893              		.thumb_func
+ 894              		.fpu fpv4-sp-d16
+ 896              	OP_bw_word:
+ 897              	.LFB42:
+ 215:rt-thread/components/finsh/finsh_ops.c **** 
+ 216:rt-thread/components/finsh/finsh_ops.c ****     return ;
+ 217:rt-thread/components/finsh/finsh_ops.c **** }
+ 218:rt-thread/components/finsh/finsh_ops.c **** 
+ 219:rt-thread/components/finsh/finsh_ops.c **** void OP_bw_word()
+ 220:rt-thread/components/finsh/finsh_ops.c **** {
+ 898              		.loc 1 220 0
+ 899              		.cfi_startproc
+ 900              		@ args = 0, pretend = 0, frame = 0
+ 901              		@ frame_needed = 0, uses_anonymous_args = 0
+ 902              		@ link register save eliminated.
+ 221:rt-thread/components/finsh/finsh_ops.c ****     (finsh_sp - 1)->short_value = ~ ((finsh_sp - 1)->short_value);
+ 903              		.loc 1 221 0
+ 904 0000 034B     		ldr	r3, .L81
+ 905 0002 1A68     		ldr	r2, [r3]
+ 906 0004 32F9043C 		ldrsh	r3, [r2, #-4]
+ 907 0008 DB43     		mvns	r3, r3
+ 908 000a 22F8043C 		strh	r3, [r2, #-4]	@ movhi
+ 909 000e 7047     		bx	lr
+ 910              	.L82:
+ 911              		.align	2
+ 912              	.L81:
+ 913 0010 00000000 		.word	finsh_sp
+ 914              		.cfi_endproc
+ 915              	.LFE42:
+ARM GAS  /tmp/ccKWdTJc.s 			page 20
+
+
+ 917              		.section	.text.OP_bw_dword,"ax",%progbits
+ 918              		.align	1
+ 919              		.global	OP_bw_dword
+ 920              		.syntax unified
+ 921              		.thumb
+ 922              		.thumb_func
+ 923              		.fpu fpv4-sp-d16
+ 925              	OP_bw_dword:
+ 926              	.LFB43:
+ 222:rt-thread/components/finsh/finsh_ops.c **** 
+ 223:rt-thread/components/finsh/finsh_ops.c ****     return ;
+ 224:rt-thread/components/finsh/finsh_ops.c **** }
+ 225:rt-thread/components/finsh/finsh_ops.c **** 
+ 226:rt-thread/components/finsh/finsh_ops.c **** void OP_bw_dword()
+ 227:rt-thread/components/finsh/finsh_ops.c **** {
+ 927              		.loc 1 227 0
+ 928              		.cfi_startproc
+ 929              		@ args = 0, pretend = 0, frame = 0
+ 930              		@ frame_needed = 0, uses_anonymous_args = 0
+ 931              		@ link register save eliminated.
+ 228:rt-thread/components/finsh/finsh_ops.c ****     (finsh_sp - 1)->long_value = ~ ((finsh_sp - 1)->long_value);
+ 932              		.loc 1 228 0
+ 933 0000 034B     		ldr	r3, .L84
+ 934 0002 1A68     		ldr	r2, [r3]
+ 935 0004 52F8043C 		ldr	r3, [r2, #-4]
+ 936 0008 DB43     		mvns	r3, r3
+ 937 000a 42F8043C 		str	r3, [r2, #-4]
+ 938 000e 7047     		bx	lr
+ 939              	.L85:
+ 940              		.align	2
+ 941              	.L84:
+ 942 0010 00000000 		.word	finsh_sp
+ 943              		.cfi_endproc
+ 944              	.LFE43:
+ 946              		.section	.text.OP_shl_byte,"ax",%progbits
+ 947              		.align	1
+ 948              		.global	OP_shl_byte
+ 949              		.syntax unified
+ 950              		.thumb
+ 951              		.thumb_func
+ 952              		.fpu fpv4-sp-d16
+ 954              	OP_shl_byte:
+ 955              	.LFB44:
+ 229:rt-thread/components/finsh/finsh_ops.c **** 
+ 230:rt-thread/components/finsh/finsh_ops.c ****     return ;
+ 231:rt-thread/components/finsh/finsh_ops.c **** }
+ 232:rt-thread/components/finsh/finsh_ops.c **** 
+ 233:rt-thread/components/finsh/finsh_ops.c **** /* --- shl --- */
+ 234:rt-thread/components/finsh/finsh_ops.c **** void OP_shl_byte()
+ 235:rt-thread/components/finsh/finsh_ops.c **** {
+ 956              		.loc 1 235 0
+ 957              		.cfi_startproc
+ 958              		@ args = 0, pretend = 0, frame = 0
+ 959              		@ frame_needed = 0, uses_anonymous_args = 0
+ 960              		@ link register save eliminated.
+ 236:rt-thread/components/finsh/finsh_ops.c ****     OP_BIN_BYTE(<<);
+ 961              		.loc 1 236 0
+ARM GAS  /tmp/ccKWdTJc.s 			page 21
+
+
+ 962 0000 064B     		ldr	r3, .L87
+ 963 0002 1A68     		ldr	r2, [r3]
+ 964 0004 12F8081C 		ldrb	r1, [r2, #-8]	@ zero_extendqisi2
+ 965 0008 12F8040C 		ldrb	r0, [r2, #-4]	@ zero_extendqisi2
+ 966 000c 8140     		lsls	r1, r1, r0
+ 967 000e 02F8081C 		strb	r1, [r2, #-8]
+ 968 0012 1A68     		ldr	r2, [r3]
+ 969 0014 043A     		subs	r2, r2, #4
+ 970 0016 1A60     		str	r2, [r3]
+ 971 0018 7047     		bx	lr
+ 972              	.L88:
+ 973 001a 00BF     		.align	2
+ 974              	.L87:
+ 975 001c 00000000 		.word	finsh_sp
+ 976              		.cfi_endproc
+ 977              	.LFE44:
+ 979              		.section	.text.OP_shl_word,"ax",%progbits
+ 980              		.align	1
+ 981              		.global	OP_shl_word
+ 982              		.syntax unified
+ 983              		.thumb
+ 984              		.thumb_func
+ 985              		.fpu fpv4-sp-d16
+ 987              	OP_shl_word:
+ 988              	.LFB45:
+ 237:rt-thread/components/finsh/finsh_ops.c **** 
+ 238:rt-thread/components/finsh/finsh_ops.c ****     return ;
+ 239:rt-thread/components/finsh/finsh_ops.c **** }
+ 240:rt-thread/components/finsh/finsh_ops.c **** 
+ 241:rt-thread/components/finsh/finsh_ops.c **** void OP_shl_word()
+ 242:rt-thread/components/finsh/finsh_ops.c **** {
+ 989              		.loc 1 242 0
+ 990              		.cfi_startproc
+ 991              		@ args = 0, pretend = 0, frame = 0
+ 992              		@ frame_needed = 0, uses_anonymous_args = 0
+ 993              		@ link register save eliminated.
+ 243:rt-thread/components/finsh/finsh_ops.c ****     OP_BIN_WORD(<<);
+ 994              		.loc 1 243 0
+ 995 0000 064B     		ldr	r3, .L90
+ 996 0002 1A68     		ldr	r2, [r3]
+ 997 0004 32F9081C 		ldrsh	r1, [r2, #-8]
+ 998 0008 32F9040C 		ldrsh	r0, [r2, #-4]
+ 999 000c 8140     		lsls	r1, r1, r0
+ 1000 000e 22F8081C 		strh	r1, [r2, #-8]	@ movhi
+ 1001 0012 1A68     		ldr	r2, [r3]
+ 1002 0014 043A     		subs	r2, r2, #4
+ 1003 0016 1A60     		str	r2, [r3]
+ 1004 0018 7047     		bx	lr
+ 1005              	.L91:
+ 1006 001a 00BF     		.align	2
+ 1007              	.L90:
+ 1008 001c 00000000 		.word	finsh_sp
+ 1009              		.cfi_endproc
+ 1010              	.LFE45:
+ 1012              		.section	.text.OP_shl_dword,"ax",%progbits
+ 1013              		.align	1
+ 1014              		.global	OP_shl_dword
+ARM GAS  /tmp/ccKWdTJc.s 			page 22
+
+
+ 1015              		.syntax unified
+ 1016              		.thumb
+ 1017              		.thumb_func
+ 1018              		.fpu fpv4-sp-d16
+ 1020              	OP_shl_dword:
+ 1021              	.LFB46:
+ 244:rt-thread/components/finsh/finsh_ops.c **** 
+ 245:rt-thread/components/finsh/finsh_ops.c ****     return ;
+ 246:rt-thread/components/finsh/finsh_ops.c **** }
+ 247:rt-thread/components/finsh/finsh_ops.c **** 
+ 248:rt-thread/components/finsh/finsh_ops.c **** void OP_shl_dword()
+ 249:rt-thread/components/finsh/finsh_ops.c **** {
+ 1022              		.loc 1 249 0
+ 1023              		.cfi_startproc
+ 1024              		@ args = 0, pretend = 0, frame = 0
+ 1025              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1026              		@ link register save eliminated.
+ 250:rt-thread/components/finsh/finsh_ops.c ****     OP_BIN_DWORD(<<);
+ 1027              		.loc 1 250 0
+ 1028 0000 064B     		ldr	r3, .L93
+ 1029 0002 1A68     		ldr	r2, [r3]
+ 1030 0004 52F8081C 		ldr	r1, [r2, #-8]
+ 1031 0008 52F8040C 		ldr	r0, [r2, #-4]
+ 1032 000c 8140     		lsls	r1, r1, r0
+ 1033 000e 42F8081C 		str	r1, [r2, #-8]
+ 1034 0012 1A68     		ldr	r2, [r3]
+ 1035 0014 043A     		subs	r2, r2, #4
+ 1036 0016 1A60     		str	r2, [r3]
+ 1037 0018 7047     		bx	lr
+ 1038              	.L94:
+ 1039 001a 00BF     		.align	2
+ 1040              	.L93:
+ 1041 001c 00000000 		.word	finsh_sp
+ 1042              		.cfi_endproc
+ 1043              	.LFE46:
+ 1045              		.section	.text.OP_shr_byte,"ax",%progbits
+ 1046              		.align	1
+ 1047              		.global	OP_shr_byte
+ 1048              		.syntax unified
+ 1049              		.thumb
+ 1050              		.thumb_func
+ 1051              		.fpu fpv4-sp-d16
+ 1053              	OP_shr_byte:
+ 1054              	.LFB47:
+ 251:rt-thread/components/finsh/finsh_ops.c **** 
+ 252:rt-thread/components/finsh/finsh_ops.c ****     return ;
+ 253:rt-thread/components/finsh/finsh_ops.c **** }
+ 254:rt-thread/components/finsh/finsh_ops.c **** 
+ 255:rt-thread/components/finsh/finsh_ops.c **** /* --- shr --- */
+ 256:rt-thread/components/finsh/finsh_ops.c **** void OP_shr_byte()
+ 257:rt-thread/components/finsh/finsh_ops.c **** {
+ 1055              		.loc 1 257 0
+ 1056              		.cfi_startproc
+ 1057              		@ args = 0, pretend = 0, frame = 0
+ 1058              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1059              		@ link register save eliminated.
+ 258:rt-thread/components/finsh/finsh_ops.c ****     OP_BIN_BYTE(>>);
+ARM GAS  /tmp/ccKWdTJc.s 			page 23
+
+
+ 1060              		.loc 1 258 0
+ 1061 0000 064B     		ldr	r3, .L96
+ 1062 0002 1A68     		ldr	r2, [r3]
+ 1063 0004 12F8081C 		ldrb	r1, [r2, #-8]	@ zero_extendqisi2
+ 1064 0008 12F8040C 		ldrb	r0, [r2, #-4]	@ zero_extendqisi2
+ 1065 000c 0141     		asrs	r1, r1, r0
+ 1066 000e 02F8081C 		strb	r1, [r2, #-8]
+ 1067 0012 1A68     		ldr	r2, [r3]
+ 1068 0014 043A     		subs	r2, r2, #4
+ 1069 0016 1A60     		str	r2, [r3]
+ 1070 0018 7047     		bx	lr
+ 1071              	.L97:
+ 1072 001a 00BF     		.align	2
+ 1073              	.L96:
+ 1074 001c 00000000 		.word	finsh_sp
+ 1075              		.cfi_endproc
+ 1076              	.LFE47:
+ 1078              		.section	.text.OP_shr_word,"ax",%progbits
+ 1079              		.align	1
+ 1080              		.global	OP_shr_word
+ 1081              		.syntax unified
+ 1082              		.thumb
+ 1083              		.thumb_func
+ 1084              		.fpu fpv4-sp-d16
+ 1086              	OP_shr_word:
+ 1087              	.LFB48:
+ 259:rt-thread/components/finsh/finsh_ops.c **** 
+ 260:rt-thread/components/finsh/finsh_ops.c ****     return ;
+ 261:rt-thread/components/finsh/finsh_ops.c **** }
+ 262:rt-thread/components/finsh/finsh_ops.c **** 
+ 263:rt-thread/components/finsh/finsh_ops.c **** void OP_shr_word()
+ 264:rt-thread/components/finsh/finsh_ops.c **** {
+ 1088              		.loc 1 264 0
+ 1089              		.cfi_startproc
+ 1090              		@ args = 0, pretend = 0, frame = 0
+ 1091              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1092              		@ link register save eliminated.
+ 265:rt-thread/components/finsh/finsh_ops.c ****     OP_BIN_WORD(>>);
+ 1093              		.loc 1 265 0
+ 1094 0000 064B     		ldr	r3, .L99
+ 1095 0002 1A68     		ldr	r2, [r3]
+ 1096 0004 32F9081C 		ldrsh	r1, [r2, #-8]
+ 1097 0008 32F9040C 		ldrsh	r0, [r2, #-4]
+ 1098 000c 0141     		asrs	r1, r1, r0
+ 1099 000e 22F8081C 		strh	r1, [r2, #-8]	@ movhi
+ 1100 0012 1A68     		ldr	r2, [r3]
+ 1101 0014 043A     		subs	r2, r2, #4
+ 1102 0016 1A60     		str	r2, [r3]
+ 1103 0018 7047     		bx	lr
+ 1104              	.L100:
+ 1105 001a 00BF     		.align	2
+ 1106              	.L99:
+ 1107 001c 00000000 		.word	finsh_sp
+ 1108              		.cfi_endproc
+ 1109              	.LFE48:
+ 1111              		.section	.text.OP_shr_dword,"ax",%progbits
+ 1112              		.align	1
+ARM GAS  /tmp/ccKWdTJc.s 			page 24
+
+
+ 1113              		.global	OP_shr_dword
+ 1114              		.syntax unified
+ 1115              		.thumb
+ 1116              		.thumb_func
+ 1117              		.fpu fpv4-sp-d16
+ 1119              	OP_shr_dword:
+ 1120              	.LFB49:
+ 266:rt-thread/components/finsh/finsh_ops.c **** 
+ 267:rt-thread/components/finsh/finsh_ops.c ****     return ;
+ 268:rt-thread/components/finsh/finsh_ops.c **** }
+ 269:rt-thread/components/finsh/finsh_ops.c **** 
+ 270:rt-thread/components/finsh/finsh_ops.c **** void OP_shr_dword()
+ 271:rt-thread/components/finsh/finsh_ops.c **** {
+ 1121              		.loc 1 271 0
+ 1122              		.cfi_startproc
+ 1123              		@ args = 0, pretend = 0, frame = 0
+ 1124              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1125              		@ link register save eliminated.
+ 272:rt-thread/components/finsh/finsh_ops.c ****     OP_BIN_DWORD(>>);
+ 1126              		.loc 1 272 0
+ 1127 0000 064B     		ldr	r3, .L102
+ 1128 0002 1A68     		ldr	r2, [r3]
+ 1129 0004 52F8081C 		ldr	r1, [r2, #-8]
+ 1130 0008 52F8040C 		ldr	r0, [r2, #-4]
+ 1131 000c 0141     		asrs	r1, r1, r0
+ 1132 000e 42F8081C 		str	r1, [r2, #-8]
+ 1133 0012 1A68     		ldr	r2, [r3]
+ 1134 0014 043A     		subs	r2, r2, #4
+ 1135 0016 1A60     		str	r2, [r3]
+ 1136 0018 7047     		bx	lr
+ 1137              	.L103:
+ 1138 001a 00BF     		.align	2
+ 1139              	.L102:
+ 1140 001c 00000000 		.word	finsh_sp
+ 1141              		.cfi_endproc
+ 1142              	.LFE49:
+ 1144              		.section	.text.OP_ld_byte,"ax",%progbits
+ 1145              		.align	1
+ 1146              		.global	OP_ld_byte
+ 1147              		.syntax unified
+ 1148              		.thumb
+ 1149              		.thumb_func
+ 1150              		.fpu fpv4-sp-d16
+ 1152              	OP_ld_byte:
+ 1153              	.LFB50:
+ 273:rt-thread/components/finsh/finsh_ops.c **** 
+ 274:rt-thread/components/finsh/finsh_ops.c ****     return ;
+ 275:rt-thread/components/finsh/finsh_ops.c **** }
+ 276:rt-thread/components/finsh/finsh_ops.c **** 
+ 277:rt-thread/components/finsh/finsh_ops.c **** /* --- ld --- */
+ 278:rt-thread/components/finsh/finsh_ops.c **** void OP_ld_byte()
+ 279:rt-thread/components/finsh/finsh_ops.c **** {
+ 1154              		.loc 1 279 0
+ 1155              		.cfi_startproc
+ 1156              		@ args = 0, pretend = 0, frame = 0
+ 1157              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1158              		@ link register save eliminated.
+ARM GAS  /tmp/ccKWdTJc.s 			page 25
+
+
+ 280:rt-thread/components/finsh/finsh_ops.c ****     finsh_sp->char_value = *finsh_pc;
+ 1159              		.loc 1 280 0
+ 1160 0000 064A     		ldr	r2, .L105
+ 1161 0002 1168     		ldr	r1, [r2]
+ 1162 0004 064B     		ldr	r3, .L105+4
+ 1163 0006 1868     		ldr	r0, [r3]
+ 1164 0008 0078     		ldrb	r0, [r0]	@ zero_extendqisi2
+ 1165 000a 0870     		strb	r0, [r1]
+ 281:rt-thread/components/finsh/finsh_ops.c **** 
+ 282:rt-thread/components/finsh/finsh_ops.c ****     finsh_sp++;
+ 1166              		.loc 1 282 0
+ 1167 000c 1168     		ldr	r1, [r2]
+ 1168 000e 0431     		adds	r1, r1, #4
+ 1169 0010 1160     		str	r1, [r2]
+ 283:rt-thread/components/finsh/finsh_ops.c ****     finsh_pc++;
+ 1170              		.loc 1 283 0
+ 1171 0012 1A68     		ldr	r2, [r3]
+ 1172 0014 0132     		adds	r2, r2, #1
+ 1173 0016 1A60     		str	r2, [r3]
+ 1174 0018 7047     		bx	lr
+ 1175              	.L106:
+ 1176 001a 00BF     		.align	2
+ 1177              	.L105:
+ 1178 001c 00000000 		.word	finsh_sp
+ 1179 0020 00000000 		.word	finsh_pc
+ 1180              		.cfi_endproc
+ 1181              	.LFE50:
+ 1183              		.section	.text.OP_ld_word,"ax",%progbits
+ 1184              		.align	1
+ 1185              		.global	OP_ld_word
+ 1186              		.syntax unified
+ 1187              		.thumb
+ 1188              		.thumb_func
+ 1189              		.fpu fpv4-sp-d16
+ 1191              	OP_ld_word:
+ 1192              	.LFB51:
+ 284:rt-thread/components/finsh/finsh_ops.c **** 
+ 285:rt-thread/components/finsh/finsh_ops.c ****     return ;
+ 286:rt-thread/components/finsh/finsh_ops.c **** }
+ 287:rt-thread/components/finsh/finsh_ops.c **** 
+ 288:rt-thread/components/finsh/finsh_ops.c **** void OP_ld_word()
+ 289:rt-thread/components/finsh/finsh_ops.c **** {
+ 1193              		.loc 1 289 0
+ 1194              		.cfi_startproc
+ 1195              		@ args = 0, pretend = 0, frame = 0
+ 1196              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1197              		@ link register save eliminated.
+ 1198 0000 10B4     		push	{r4}
+ 1199              	.LCFI6:
+ 1200              		.cfi_def_cfa_offset 4
+ 1201              		.cfi_offset 4, -4
+ 290:rt-thread/components/finsh/finsh_ops.c ****     finsh_sp->short_value = FINSH_GET16(finsh_pc);
+ 1202              		.loc 1 290 0
+ 1203 0002 094A     		ldr	r2, .L109
+ 1204 0004 1468     		ldr	r4, [r2]
+ 1205 0006 094B     		ldr	r3, .L109+4
+ 1206 0008 1868     		ldr	r0, [r3]
+ARM GAS  /tmp/ccKWdTJc.s 			page 26
+
+
+ 1207 000a 0178     		ldrb	r1, [r0]	@ zero_extendqisi2
+ 1208 000c 4078     		ldrb	r0, [r0, #1]	@ zero_extendqisi2
+ 1209 000e 41EA0021 		orr	r1, r1, r0, lsl #8
+ 1210 0012 2180     		strh	r1, [r4]	@ movhi
+ 291:rt-thread/components/finsh/finsh_ops.c **** 
+ 292:rt-thread/components/finsh/finsh_ops.c ****     finsh_sp ++;
+ 1211              		.loc 1 292 0
+ 1212 0014 1168     		ldr	r1, [r2]
+ 1213 0016 0431     		adds	r1, r1, #4
+ 1214 0018 1160     		str	r1, [r2]
+ 293:rt-thread/components/finsh/finsh_ops.c ****     finsh_pc += 2;
+ 1215              		.loc 1 293 0
+ 1216 001a 1A68     		ldr	r2, [r3]
+ 1217 001c 0232     		adds	r2, r2, #2
+ 1218 001e 1A60     		str	r2, [r3]
+ 294:rt-thread/components/finsh/finsh_ops.c **** 
+ 295:rt-thread/components/finsh/finsh_ops.c ****     return ;
+ 296:rt-thread/components/finsh/finsh_ops.c **** }
+ 1219              		.loc 1 296 0
+ 1220 0020 5DF8044B 		ldr	r4, [sp], #4
+ 1221              	.LCFI7:
+ 1222              		.cfi_restore 4
+ 1223              		.cfi_def_cfa_offset 0
+ 1224 0024 7047     		bx	lr
+ 1225              	.L110:
+ 1226 0026 00BF     		.align	2
+ 1227              	.L109:
+ 1228 0028 00000000 		.word	finsh_sp
+ 1229 002c 00000000 		.word	finsh_pc
+ 1230              		.cfi_endproc
+ 1231              	.LFE51:
+ 1233              		.section	.text.OP_ld_dword,"ax",%progbits
+ 1234              		.align	1
+ 1235              		.global	OP_ld_dword
+ 1236              		.syntax unified
+ 1237              		.thumb
+ 1238              		.thumb_func
+ 1239              		.fpu fpv4-sp-d16
+ 1241              	OP_ld_dword:
+ 1242              	.LFB52:
+ 297:rt-thread/components/finsh/finsh_ops.c **** 
+ 298:rt-thread/components/finsh/finsh_ops.c **** void OP_ld_dword()
+ 299:rt-thread/components/finsh/finsh_ops.c **** {
+ 1243              		.loc 1 299 0
+ 1244              		.cfi_startproc
+ 1245              		@ args = 0, pretend = 0, frame = 0
+ 1246              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1247              		@ link register save eliminated.
+ 1248 0000 30B4     		push	{r4, r5}
+ 1249              	.LCFI8:
+ 1250              		.cfi_def_cfa_offset 8
+ 1251              		.cfi_offset 4, -8
+ 1252              		.cfi_offset 5, -4
+ 300:rt-thread/components/finsh/finsh_ops.c ****     finsh_sp->long_value = FINSH_GET32(finsh_pc);
+ 1253              		.loc 1 300 0
+ 1254 0002 0B48     		ldr	r0, .L113
+ 1255 0004 0468     		ldr	r4, [r0]
+ARM GAS  /tmp/ccKWdTJc.s 			page 27
+
+
+ 1256 0006 0B49     		ldr	r1, .L113+4
+ 1257 0008 0A68     		ldr	r2, [r1]
+ 1258 000a 1378     		ldrb	r3, [r2]	@ zero_extendqisi2
+ 1259 000c 5578     		ldrb	r5, [r2, #1]	@ zero_extendqisi2
+ 1260 000e 43EA0523 		orr	r3, r3, r5, lsl #8
+ 1261 0012 9578     		ldrb	r5, [r2, #2]	@ zero_extendqisi2
+ 1262 0014 43EA0543 		orr	r3, r3, r5, lsl #16
+ 1263 0018 D278     		ldrb	r2, [r2, #3]	@ zero_extendqisi2
+ 1264 001a 43EA0263 		orr	r3, r3, r2, lsl #24
+ 1265 001e 2360     		str	r3, [r4]
+ 301:rt-thread/components/finsh/finsh_ops.c **** 
+ 302:rt-thread/components/finsh/finsh_ops.c ****     finsh_sp ++;
+ 1266              		.loc 1 302 0
+ 1267 0020 0368     		ldr	r3, [r0]
+ 1268 0022 0433     		adds	r3, r3, #4
+ 1269 0024 0360     		str	r3, [r0]
+ 303:rt-thread/components/finsh/finsh_ops.c ****     finsh_pc += 4;
+ 1270              		.loc 1 303 0
+ 1271 0026 0B68     		ldr	r3, [r1]
+ 1272 0028 0433     		adds	r3, r3, #4
+ 1273 002a 0B60     		str	r3, [r1]
+ 304:rt-thread/components/finsh/finsh_ops.c **** 
+ 305:rt-thread/components/finsh/finsh_ops.c ****     return ;
+ 306:rt-thread/components/finsh/finsh_ops.c **** }
+ 1274              		.loc 1 306 0
+ 1275 002c 30BC     		pop	{r4, r5}
+ 1276              	.LCFI9:
+ 1277              		.cfi_restore 5
+ 1278              		.cfi_restore 4
+ 1279              		.cfi_def_cfa_offset 0
+ 1280 002e 7047     		bx	lr
+ 1281              	.L114:
+ 1282              		.align	2
+ 1283              	.L113:
+ 1284 0030 00000000 		.word	finsh_sp
+ 1285 0034 00000000 		.word	finsh_pc
+ 1286              		.cfi_endproc
+ 1287              	.LFE52:
+ 1289              		.section	.text.OP_ld_value_byte,"ax",%progbits
+ 1290              		.align	1
+ 1291              		.global	OP_ld_value_byte
+ 1292              		.syntax unified
+ 1293              		.thumb
+ 1294              		.thumb_func
+ 1295              		.fpu fpv4-sp-d16
+ 1297              	OP_ld_value_byte:
+ 1298              	.LFB53:
+ 307:rt-thread/components/finsh/finsh_ops.c **** 
+ 308:rt-thread/components/finsh/finsh_ops.c **** void OP_ld_value_byte()
+ 309:rt-thread/components/finsh/finsh_ops.c **** {
+ 1299              		.loc 1 309 0
+ 1300              		.cfi_startproc
+ 1301              		@ args = 0, pretend = 0, frame = 0
+ 1302              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1303              		@ link register save eliminated.
+ 310:rt-thread/components/finsh/finsh_ops.c ****     char* c;
+ 311:rt-thread/components/finsh/finsh_ops.c **** 
+ARM GAS  /tmp/ccKWdTJc.s 			page 28
+
+
+ 312:rt-thread/components/finsh/finsh_ops.c ****     c = (char*) (FINSH_GET32(finsh_pc));
+ 1304              		.loc 1 312 0
+ 1305 0000 0B49     		ldr	r1, .L116
+ 1306 0002 0A68     		ldr	r2, [r1]
+ 1307 0004 1378     		ldrb	r3, [r2]	@ zero_extendqisi2
+ 1308 0006 5078     		ldrb	r0, [r2, #1]	@ zero_extendqisi2
+ 1309 0008 43EA0023 		orr	r3, r3, r0, lsl #8
+ 1310 000c 9078     		ldrb	r0, [r2, #2]	@ zero_extendqisi2
+ 1311 000e 43EA0043 		orr	r3, r3, r0, lsl #16
+ 1312 0012 D278     		ldrb	r2, [r2, #3]	@ zero_extendqisi2
+ 1313 0014 43EA0263 		orr	r3, r3, r2, lsl #24
+ 1314              	.LVL0:
+ 313:rt-thread/components/finsh/finsh_ops.c **** 
+ 314:rt-thread/components/finsh/finsh_ops.c ****     finsh_sp->char_value = *c;
+ 1315              		.loc 1 314 0
+ 1316 0018 064A     		ldr	r2, .L116+4
+ 1317 001a 1068     		ldr	r0, [r2]
+ 1318 001c 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 1319              	.LVL1:
+ 1320 001e 0370     		strb	r3, [r0]
+ 1321              	.LVL2:
+ 315:rt-thread/components/finsh/finsh_ops.c **** 
+ 316:rt-thread/components/finsh/finsh_ops.c ****     finsh_sp ++;
+ 1322              		.loc 1 316 0
+ 1323 0020 1368     		ldr	r3, [r2]
+ 1324 0022 0433     		adds	r3, r3, #4
+ 1325 0024 1360     		str	r3, [r2]
+ 317:rt-thread/components/finsh/finsh_ops.c ****     finsh_pc += 4;
+ 1326              		.loc 1 317 0
+ 1327 0026 0B68     		ldr	r3, [r1]
+ 1328 0028 0433     		adds	r3, r3, #4
+ 1329 002a 0B60     		str	r3, [r1]
+ 1330 002c 7047     		bx	lr
+ 1331              	.L117:
+ 1332 002e 00BF     		.align	2
+ 1333              	.L116:
+ 1334 0030 00000000 		.word	finsh_pc
+ 1335 0034 00000000 		.word	finsh_sp
+ 1336              		.cfi_endproc
+ 1337              	.LFE53:
+ 1339              		.section	.text.OP_ld_value_byte_stack,"ax",%progbits
+ 1340              		.align	1
+ 1341              		.global	OP_ld_value_byte_stack
+ 1342              		.syntax unified
+ 1343              		.thumb
+ 1344              		.thumb_func
+ 1345              		.fpu fpv4-sp-d16
+ 1347              	OP_ld_value_byte_stack:
+ 1348              	.LFB54:
+ 318:rt-thread/components/finsh/finsh_ops.c **** 
+ 319:rt-thread/components/finsh/finsh_ops.c ****     return;
+ 320:rt-thread/components/finsh/finsh_ops.c **** }
+ 321:rt-thread/components/finsh/finsh_ops.c **** 
+ 322:rt-thread/components/finsh/finsh_ops.c **** void OP_ld_value_byte_stack()
+ 323:rt-thread/components/finsh/finsh_ops.c **** {
+ 1349              		.loc 1 323 0
+ 1350              		.cfi_startproc
+ARM GAS  /tmp/ccKWdTJc.s 			page 29
+
+
+ 1351              		@ args = 0, pretend = 0, frame = 0
+ 1352              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1353              		@ link register save eliminated.
+ 324:rt-thread/components/finsh/finsh_ops.c ****     char* c;
+ 325:rt-thread/components/finsh/finsh_ops.c **** 
+ 326:rt-thread/components/finsh/finsh_ops.c ****     c = (char *)(finsh_sp - 1)->long_value;
+ 1354              		.loc 1 326 0
+ 1355 0000 034B     		ldr	r3, .L119
+ 1356 0002 1B68     		ldr	r3, [r3]
+ 1357 0004 53F8042C 		ldr	r2, [r3, #-4]
+ 1358              	.LVL3:
+ 327:rt-thread/components/finsh/finsh_ops.c ****     (finsh_sp - 1)->char_value = *c;
+ 1359              		.loc 1 327 0
+ 1360 0008 1278     		ldrb	r2, [r2]	@ zero_extendqisi2
+ 1361              	.LVL4:
+ 1362 000a 03F8042C 		strb	r2, [r3, #-4]
+ 1363              	.LVL5:
+ 1364 000e 7047     		bx	lr
+ 1365              	.L120:
+ 1366              		.align	2
+ 1367              	.L119:
+ 1368 0010 00000000 		.word	finsh_sp
+ 1369              		.cfi_endproc
+ 1370              	.LFE54:
+ 1372              		.section	.text.OP_ld_value_word,"ax",%progbits
+ 1373              		.align	1
+ 1374              		.global	OP_ld_value_word
+ 1375              		.syntax unified
+ 1376              		.thumb
+ 1377              		.thumb_func
+ 1378              		.fpu fpv4-sp-d16
+ 1380              	OP_ld_value_word:
+ 1381              	.LFB55:
+ 328:rt-thread/components/finsh/finsh_ops.c **** 
+ 329:rt-thread/components/finsh/finsh_ops.c ****     return;
+ 330:rt-thread/components/finsh/finsh_ops.c **** }
+ 331:rt-thread/components/finsh/finsh_ops.c **** 
+ 332:rt-thread/components/finsh/finsh_ops.c **** void OP_ld_value_word()
+ 333:rt-thread/components/finsh/finsh_ops.c **** {
+ 1382              		.loc 1 333 0
+ 1383              		.cfi_startproc
+ 1384              		@ args = 0, pretend = 0, frame = 0
+ 1385              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1386              		@ link register save eliminated.
+ 334:rt-thread/components/finsh/finsh_ops.c ****     short* s;
+ 335:rt-thread/components/finsh/finsh_ops.c **** 
+ 336:rt-thread/components/finsh/finsh_ops.c ****     s = (short*) (FINSH_GET32(finsh_pc));
+ 1387              		.loc 1 336 0
+ 1388 0000 0B49     		ldr	r1, .L122
+ 1389 0002 0A68     		ldr	r2, [r1]
+ 1390 0004 1378     		ldrb	r3, [r2]	@ zero_extendqisi2
+ 1391 0006 5078     		ldrb	r0, [r2, #1]	@ zero_extendqisi2
+ 1392 0008 43EA0023 		orr	r3, r3, r0, lsl #8
+ 1393 000c 9078     		ldrb	r0, [r2, #2]	@ zero_extendqisi2
+ 1394 000e 43EA0043 		orr	r3, r3, r0, lsl #16
+ 1395 0012 D278     		ldrb	r2, [r2, #3]	@ zero_extendqisi2
+ 1396 0014 43EA0263 		orr	r3, r3, r2, lsl #24
+ARM GAS  /tmp/ccKWdTJc.s 			page 30
+
+
+ 1397              	.LVL6:
+ 337:rt-thread/components/finsh/finsh_ops.c **** 
+ 338:rt-thread/components/finsh/finsh_ops.c ****     finsh_sp->short_value = *s;
+ 1398              		.loc 1 338 0
+ 1399 0018 064A     		ldr	r2, .L122+4
+ 1400 001a 1068     		ldr	r0, [r2]
+ 1401 001c B3F90030 		ldrsh	r3, [r3]
+ 1402              	.LVL7:
+ 1403 0020 0380     		strh	r3, [r0]	@ movhi
+ 1404              	.LVL8:
+ 339:rt-thread/components/finsh/finsh_ops.c **** 
+ 340:rt-thread/components/finsh/finsh_ops.c ****     finsh_sp ++;
+ 1405              		.loc 1 340 0
+ 1406 0022 1368     		ldr	r3, [r2]
+ 1407 0024 0433     		adds	r3, r3, #4
+ 1408 0026 1360     		str	r3, [r2]
+ 341:rt-thread/components/finsh/finsh_ops.c ****     finsh_pc += 4;
+ 1409              		.loc 1 341 0
+ 1410 0028 0B68     		ldr	r3, [r1]
+ 1411 002a 0433     		adds	r3, r3, #4
+ 1412 002c 0B60     		str	r3, [r1]
+ 1413 002e 7047     		bx	lr
+ 1414              	.L123:
+ 1415              		.align	2
+ 1416              	.L122:
+ 1417 0030 00000000 		.word	finsh_pc
+ 1418 0034 00000000 		.word	finsh_sp
+ 1419              		.cfi_endproc
+ 1420              	.LFE55:
+ 1422              		.section	.text.OP_ld_value_word_stack,"ax",%progbits
+ 1423              		.align	1
+ 1424              		.global	OP_ld_value_word_stack
+ 1425              		.syntax unified
+ 1426              		.thumb
+ 1427              		.thumb_func
+ 1428              		.fpu fpv4-sp-d16
+ 1430              	OP_ld_value_word_stack:
+ 1431              	.LFB56:
+ 342:rt-thread/components/finsh/finsh_ops.c **** 
+ 343:rt-thread/components/finsh/finsh_ops.c ****     return;
+ 344:rt-thread/components/finsh/finsh_ops.c **** }
+ 345:rt-thread/components/finsh/finsh_ops.c **** 
+ 346:rt-thread/components/finsh/finsh_ops.c **** void OP_ld_value_word_stack()
+ 347:rt-thread/components/finsh/finsh_ops.c **** {
+ 1432              		.loc 1 347 0
+ 1433              		.cfi_startproc
+ 1434              		@ args = 0, pretend = 0, frame = 0
+ 1435              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1436              		@ link register save eliminated.
+ 348:rt-thread/components/finsh/finsh_ops.c ****     short* s;
+ 349:rt-thread/components/finsh/finsh_ops.c **** 
+ 350:rt-thread/components/finsh/finsh_ops.c ****     s = (short *)(finsh_sp - 1)->long_value;
+ 1437              		.loc 1 350 0
+ 1438 0000 044B     		ldr	r3, .L125
+ 1439 0002 1B68     		ldr	r3, [r3]
+ 1440 0004 53F8042C 		ldr	r2, [r3, #-4]
+ 1441              	.LVL9:
+ARM GAS  /tmp/ccKWdTJc.s 			page 31
+
+
+ 351:rt-thread/components/finsh/finsh_ops.c ****     (finsh_sp - 1)->short_value = *s;
+ 1442              		.loc 1 351 0
+ 1443 0008 B2F90020 		ldrsh	r2, [r2]
+ 1444              	.LVL10:
+ 1445 000c 23F8042C 		strh	r2, [r3, #-4]	@ movhi
+ 1446              	.LVL11:
+ 1447 0010 7047     		bx	lr
+ 1448              	.L126:
+ 1449 0012 00BF     		.align	2
+ 1450              	.L125:
+ 1451 0014 00000000 		.word	finsh_sp
+ 1452              		.cfi_endproc
+ 1453              	.LFE56:
+ 1455              		.section	.text.OP_ld_value_dword,"ax",%progbits
+ 1456              		.align	1
+ 1457              		.global	OP_ld_value_dword
+ 1458              		.syntax unified
+ 1459              		.thumb
+ 1460              		.thumb_func
+ 1461              		.fpu fpv4-sp-d16
+ 1463              	OP_ld_value_dword:
+ 1464              	.LFB57:
+ 352:rt-thread/components/finsh/finsh_ops.c **** 
+ 353:rt-thread/components/finsh/finsh_ops.c ****     return;
+ 354:rt-thread/components/finsh/finsh_ops.c **** }
+ 355:rt-thread/components/finsh/finsh_ops.c **** 
+ 356:rt-thread/components/finsh/finsh_ops.c **** void OP_ld_value_dword()
+ 357:rt-thread/components/finsh/finsh_ops.c **** {
+ 1465              		.loc 1 357 0
+ 1466              		.cfi_startproc
+ 1467              		@ args = 0, pretend = 0, frame = 0
+ 1468              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1469              		@ link register save eliminated.
+ 358:rt-thread/components/finsh/finsh_ops.c ****     long* l;
+ 359:rt-thread/components/finsh/finsh_ops.c **** 
+ 360:rt-thread/components/finsh/finsh_ops.c ****     l = (long*) (FINSH_GET32(finsh_pc));
+ 1470              		.loc 1 360 0
+ 1471 0000 0B49     		ldr	r1, .L128
+ 1472 0002 0A68     		ldr	r2, [r1]
+ 1473 0004 1378     		ldrb	r3, [r2]	@ zero_extendqisi2
+ 1474 0006 5078     		ldrb	r0, [r2, #1]	@ zero_extendqisi2
+ 1475 0008 43EA0023 		orr	r3, r3, r0, lsl #8
+ 1476 000c 9078     		ldrb	r0, [r2, #2]	@ zero_extendqisi2
+ 1477 000e 43EA0043 		orr	r3, r3, r0, lsl #16
+ 1478 0012 D278     		ldrb	r2, [r2, #3]	@ zero_extendqisi2
+ 1479 0014 43EA0263 		orr	r3, r3, r2, lsl #24
+ 1480              	.LVL12:
+ 361:rt-thread/components/finsh/finsh_ops.c **** 
+ 362:rt-thread/components/finsh/finsh_ops.c ****     finsh_sp->long_value = *l;
+ 1481              		.loc 1 362 0
+ 1482 0018 064A     		ldr	r2, .L128+4
+ 1483 001a 1068     		ldr	r0, [r2]
+ 1484 001c 1B68     		ldr	r3, [r3]
+ 1485              	.LVL13:
+ 1486 001e 0360     		str	r3, [r0]
+ 1487              	.LVL14:
+ 363:rt-thread/components/finsh/finsh_ops.c **** 
+ARM GAS  /tmp/ccKWdTJc.s 			page 32
+
+
+ 364:rt-thread/components/finsh/finsh_ops.c ****     finsh_sp ++;
+ 1488              		.loc 1 364 0
+ 1489 0020 1368     		ldr	r3, [r2]
+ 1490 0022 0433     		adds	r3, r3, #4
+ 1491 0024 1360     		str	r3, [r2]
+ 365:rt-thread/components/finsh/finsh_ops.c ****     finsh_pc += 4;
+ 1492              		.loc 1 365 0
+ 1493 0026 0B68     		ldr	r3, [r1]
+ 1494 0028 0433     		adds	r3, r3, #4
+ 1495 002a 0B60     		str	r3, [r1]
+ 1496 002c 7047     		bx	lr
+ 1497              	.L129:
+ 1498 002e 00BF     		.align	2
+ 1499              	.L128:
+ 1500 0030 00000000 		.word	finsh_pc
+ 1501 0034 00000000 		.word	finsh_sp
+ 1502              		.cfi_endproc
+ 1503              	.LFE57:
+ 1505              		.section	.text.OP_ld_value_dword_stack,"ax",%progbits
+ 1506              		.align	1
+ 1507              		.global	OP_ld_value_dword_stack
+ 1508              		.syntax unified
+ 1509              		.thumb
+ 1510              		.thumb_func
+ 1511              		.fpu fpv4-sp-d16
+ 1513              	OP_ld_value_dword_stack:
+ 1514              	.LFB58:
+ 366:rt-thread/components/finsh/finsh_ops.c **** 
+ 367:rt-thread/components/finsh/finsh_ops.c ****     return;
+ 368:rt-thread/components/finsh/finsh_ops.c **** }
+ 369:rt-thread/components/finsh/finsh_ops.c **** 
+ 370:rt-thread/components/finsh/finsh_ops.c **** void OP_ld_value_dword_stack()
+ 371:rt-thread/components/finsh/finsh_ops.c **** {
+ 1515              		.loc 1 371 0
+ 1516              		.cfi_startproc
+ 1517              		@ args = 0, pretend = 0, frame = 0
+ 1518              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1519              		@ link register save eliminated.
+ 372:rt-thread/components/finsh/finsh_ops.c ****     long* l;
+ 373:rt-thread/components/finsh/finsh_ops.c **** 
+ 374:rt-thread/components/finsh/finsh_ops.c ****     l = (long *)(finsh_sp - 1)->long_value;
+ 1520              		.loc 1 374 0
+ 1521 0000 034B     		ldr	r3, .L131
+ 1522 0002 1B68     		ldr	r3, [r3]
+ 1523 0004 53F8042C 		ldr	r2, [r3, #-4]
+ 1524              	.LVL15:
+ 375:rt-thread/components/finsh/finsh_ops.c ****     (finsh_sp - 1)->long_value = *l;
+ 1525              		.loc 1 375 0
+ 1526 0008 1268     		ldr	r2, [r2]
+ 1527              	.LVL16:
+ 1528 000a 43F8042C 		str	r2, [r3, #-4]
+ 1529              	.LVL17:
+ 1530 000e 7047     		bx	lr
+ 1531              	.L132:
+ 1532              		.align	2
+ 1533              	.L131:
+ 1534 0010 00000000 		.word	finsh_sp
+ARM GAS  /tmp/ccKWdTJc.s 			page 33
+
+
+ 1535              		.cfi_endproc
+ 1536              	.LFE58:
+ 1538              		.section	.text.OP_st_byte,"ax",%progbits
+ 1539              		.align	1
+ 1540              		.global	OP_st_byte
+ 1541              		.syntax unified
+ 1542              		.thumb
+ 1543              		.thumb_func
+ 1544              		.fpu fpv4-sp-d16
+ 1546              	OP_st_byte:
+ 1547              	.LFB59:
+ 376:rt-thread/components/finsh/finsh_ops.c **** 
+ 377:rt-thread/components/finsh/finsh_ops.c ****     return;
+ 378:rt-thread/components/finsh/finsh_ops.c **** }
+ 379:rt-thread/components/finsh/finsh_ops.c **** 
+ 380:rt-thread/components/finsh/finsh_ops.c **** /* --- st --- */
+ 381:rt-thread/components/finsh/finsh_ops.c **** /*
+ 382:rt-thread/components/finsh/finsh_ops.c ****  * 2006-4-16 bernard
+ 383:rt-thread/components/finsh/finsh_ops.c ****  * fixed the sp move bug
+ 384:rt-thread/components/finsh/finsh_ops.c ****  */
+ 385:rt-thread/components/finsh/finsh_ops.c **** void OP_st_byte()
+ 386:rt-thread/components/finsh/finsh_ops.c **** {
+ 1548              		.loc 1 386 0
+ 1549              		.cfi_startproc
+ 1550              		@ args = 0, pretend = 0, frame = 0
+ 1551              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1552              		@ link register save eliminated.
+ 387:rt-thread/components/finsh/finsh_ops.c ****     *(char*)((finsh_sp - 2)->long_value) = (finsh_sp - 1)->char_value;
+ 1553              		.loc 1 387 0
+ 1554 0000 054B     		ldr	r3, .L134
+ 1555 0002 1A68     		ldr	r2, [r3]
+ 1556 0004 52F8081C 		ldr	r1, [r2, #-8]
+ 1557 0008 12F8042C 		ldrb	r2, [r2, #-4]	@ zero_extendqisi2
+ 1558 000c 0A70     		strb	r2, [r1]
+ 388:rt-thread/components/finsh/finsh_ops.c ****     finsh_sp --;
+ 1559              		.loc 1 388 0
+ 1560 000e 1A68     		ldr	r2, [r3]
+ 1561 0010 043A     		subs	r2, r2, #4
+ 1562 0012 1A60     		str	r2, [r3]
+ 1563 0014 7047     		bx	lr
+ 1564              	.L135:
+ 1565 0016 00BF     		.align	2
+ 1566              	.L134:
+ 1567 0018 00000000 		.word	finsh_sp
+ 1568              		.cfi_endproc
+ 1569              	.LFE59:
+ 1571              		.section	.text.OP_st_word,"ax",%progbits
+ 1572              		.align	1
+ 1573              		.global	OP_st_word
+ 1574              		.syntax unified
+ 1575              		.thumb
+ 1576              		.thumb_func
+ 1577              		.fpu fpv4-sp-d16
+ 1579              	OP_st_word:
+ 1580              	.LFB60:
+ 389:rt-thread/components/finsh/finsh_ops.c **** 
+ 390:rt-thread/components/finsh/finsh_ops.c ****     return ;
+ARM GAS  /tmp/ccKWdTJc.s 			page 34
+
+
+ 391:rt-thread/components/finsh/finsh_ops.c **** }
+ 392:rt-thread/components/finsh/finsh_ops.c **** 
+ 393:rt-thread/components/finsh/finsh_ops.c **** /*
+ 394:rt-thread/components/finsh/finsh_ops.c ****  * 2006-4-16 bernard
+ 395:rt-thread/components/finsh/finsh_ops.c ****  * fixed the sp move bug
+ 396:rt-thread/components/finsh/finsh_ops.c ****  */
+ 397:rt-thread/components/finsh/finsh_ops.c **** void OP_st_word()
+ 398:rt-thread/components/finsh/finsh_ops.c **** {
+ 1581              		.loc 1 398 0
+ 1582              		.cfi_startproc
+ 1583              		@ args = 0, pretend = 0, frame = 0
+ 1584              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1585              		@ link register save eliminated.
+ 399:rt-thread/components/finsh/finsh_ops.c ****     *(short*)((finsh_sp - 2)->long_value) = (finsh_sp - 1)->short_value;
+ 1586              		.loc 1 399 0
+ 1587 0000 054B     		ldr	r3, .L137
+ 1588 0002 1A68     		ldr	r2, [r3]
+ 1589 0004 52F8081C 		ldr	r1, [r2, #-8]
+ 1590 0008 32F9042C 		ldrsh	r2, [r2, #-4]
+ 1591 000c 0A80     		strh	r2, [r1]	@ movhi
+ 400:rt-thread/components/finsh/finsh_ops.c ****     finsh_sp --;
+ 1592              		.loc 1 400 0
+ 1593 000e 1A68     		ldr	r2, [r3]
+ 1594 0010 043A     		subs	r2, r2, #4
+ 1595 0012 1A60     		str	r2, [r3]
+ 1596 0014 7047     		bx	lr
+ 1597              	.L138:
+ 1598 0016 00BF     		.align	2
+ 1599              	.L137:
+ 1600 0018 00000000 		.word	finsh_sp
+ 1601              		.cfi_endproc
+ 1602              	.LFE60:
+ 1604              		.section	.text.OP_st_dword,"ax",%progbits
+ 1605              		.align	1
+ 1606              		.global	OP_st_dword
+ 1607              		.syntax unified
+ 1608              		.thumb
+ 1609              		.thumb_func
+ 1610              		.fpu fpv4-sp-d16
+ 1612              	OP_st_dword:
+ 1613              	.LFB61:
+ 401:rt-thread/components/finsh/finsh_ops.c **** 
+ 402:rt-thread/components/finsh/finsh_ops.c ****     return ;
+ 403:rt-thread/components/finsh/finsh_ops.c **** }
+ 404:rt-thread/components/finsh/finsh_ops.c **** 
+ 405:rt-thread/components/finsh/finsh_ops.c **** /*
+ 406:rt-thread/components/finsh/finsh_ops.c ****  * 2006-4-16 bernard
+ 407:rt-thread/components/finsh/finsh_ops.c ****  * fixed the sp move bug
+ 408:rt-thread/components/finsh/finsh_ops.c ****  */
+ 409:rt-thread/components/finsh/finsh_ops.c **** void OP_st_dword()
+ 410:rt-thread/components/finsh/finsh_ops.c **** {
+ 1614              		.loc 1 410 0
+ 1615              		.cfi_startproc
+ 1616              		@ args = 0, pretend = 0, frame = 0
+ 1617              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1618              		@ link register save eliminated.
+ 411:rt-thread/components/finsh/finsh_ops.c ****     *(long*)((finsh_sp - 2)->long_value) = (finsh_sp - 1)->long_value;
+ARM GAS  /tmp/ccKWdTJc.s 			page 35
+
+
+ 1619              		.loc 1 411 0
+ 1620 0000 054B     		ldr	r3, .L140
+ 1621 0002 1A68     		ldr	r2, [r3]
+ 1622 0004 52F8081C 		ldr	r1, [r2, #-8]
+ 1623 0008 52F8042C 		ldr	r2, [r2, #-4]
+ 1624 000c 0A60     		str	r2, [r1]
+ 412:rt-thread/components/finsh/finsh_ops.c ****     finsh_sp --;
+ 1625              		.loc 1 412 0
+ 1626 000e 1A68     		ldr	r2, [r3]
+ 1627 0010 043A     		subs	r2, r2, #4
+ 1628 0012 1A60     		str	r2, [r3]
+ 1629 0014 7047     		bx	lr
+ 1630              	.L141:
+ 1631 0016 00BF     		.align	2
+ 1632              	.L140:
+ 1633 0018 00000000 		.word	finsh_sp
+ 1634              		.cfi_endproc
+ 1635              	.LFE61:
+ 1637              		.section	.text.OP_pop,"ax",%progbits
+ 1638              		.align	1
+ 1639              		.global	OP_pop
+ 1640              		.syntax unified
+ 1641              		.thumb
+ 1642              		.thumb_func
+ 1643              		.fpu fpv4-sp-d16
+ 1645              	OP_pop:
+ 1646              	.LFB62:
+ 413:rt-thread/components/finsh/finsh_ops.c **** 
+ 414:rt-thread/components/finsh/finsh_ops.c ****     return ;
+ 415:rt-thread/components/finsh/finsh_ops.c **** }
+ 416:rt-thread/components/finsh/finsh_ops.c **** 
+ 417:rt-thread/components/finsh/finsh_ops.c **** /* --- pop --- */
+ 418:rt-thread/components/finsh/finsh_ops.c **** void OP_pop()
+ 419:rt-thread/components/finsh/finsh_ops.c **** {
+ 1647              		.loc 1 419 0
+ 1648              		.cfi_startproc
+ 1649              		@ args = 0, pretend = 0, frame = 0
+ 1650              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1651              		@ link register save eliminated.
+ 420:rt-thread/components/finsh/finsh_ops.c ****     finsh_sp --;
+ 1652              		.loc 1 420 0
+ 1653 0000 024A     		ldr	r2, .L143
+ 1654 0002 1368     		ldr	r3, [r2]
+ 1655 0004 043B     		subs	r3, r3, #4
+ 1656 0006 1360     		str	r3, [r2]
+ 1657 0008 7047     		bx	lr
+ 1658              	.L144:
+ 1659 000a 00BF     		.align	2
+ 1660              	.L143:
+ 1661 000c 00000000 		.word	finsh_sp
+ 1662              		.cfi_endproc
+ 1663              	.LFE62:
+ 1665              		.section	.text.OP_call,"ax",%progbits
+ 1666              		.align	1
+ 1667              		.global	OP_call
+ 1668              		.syntax unified
+ 1669              		.thumb
+ARM GAS  /tmp/ccKWdTJc.s 			page 36
+
+
+ 1670              		.thumb_func
+ 1671              		.fpu fpv4-sp-d16
+ 1673              	OP_call:
+ 1674              	.LFB63:
+ 421:rt-thread/components/finsh/finsh_ops.c ****     return ;
+ 422:rt-thread/components/finsh/finsh_ops.c **** }
+ 423:rt-thread/components/finsh/finsh_ops.c **** 
+ 424:rt-thread/components/finsh/finsh_ops.c **** /* --- call --- */
+ 425:rt-thread/components/finsh/finsh_ops.c **** void OP_call()
+ 426:rt-thread/components/finsh/finsh_ops.c **** {
+ 1675              		.loc 1 426 0
+ 1676              		.cfi_startproc
+ 1677              		@ args = 0, pretend = 0, frame = 64
+ 1678              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1679 0000 70B5     		push	{r4, r5, r6, lr}
+ 1680              	.LCFI10:
+ 1681              		.cfi_def_cfa_offset 16
+ 1682              		.cfi_offset 4, -16
+ 1683              		.cfi_offset 5, -12
+ 1684              		.cfi_offset 6, -8
+ 1685              		.cfi_offset 14, -4
+ 1686 0002 9CB0     		sub	sp, sp, #112
+ 1687              	.LCFI11:
+ 1688              		.cfi_def_cfa_offset 128
+ 427:rt-thread/components/finsh/finsh_ops.c ****     /* the max number of arg*/
+ 428:rt-thread/components/finsh/finsh_ops.c ****     unsigned long parameterv[16];
+ 429:rt-thread/components/finsh/finsh_ops.c ****     unsigned int  parameters, i;
+ 430:rt-thread/components/finsh/finsh_ops.c **** 
+ 431:rt-thread/components/finsh/finsh_ops.c ****     typedef unsigned long var_t;
+ 432:rt-thread/components/finsh/finsh_ops.c ****     typedef var_t (*op_func)();
+ 433:rt-thread/components/finsh/finsh_ops.c ****     op_func f;
+ 434:rt-thread/components/finsh/finsh_ops.c ****     var_t   r;
+ 435:rt-thread/components/finsh/finsh_ops.c **** 
+ 436:rt-thread/components/finsh/finsh_ops.c ****     parameters = *finsh_pc ++;
+ 1689              		.loc 1 436 0
+ 1690 0004 7D4A     		ldr	r2, .L169
+ 1691 0006 1368     		ldr	r3, [r2]
+ 1692 0008 591C     		adds	r1, r3, #1
+ 1693 000a 1160     		str	r1, [r2]
+ 1694 000c 1E78     		ldrb	r6, [r3]	@ zero_extendqisi2
+ 1695 000e 3446     		mov	r4, r6
+ 1696              	.LVL18:
+ 437:rt-thread/components/finsh/finsh_ops.c **** 
+ 438:rt-thread/components/finsh/finsh_ops.c ****     i = 0; finsh_sp --;
+ 1697              		.loc 1 438 0
+ 1698 0010 7B4A     		ldr	r2, .L169+4
+ 1699 0012 1368     		ldr	r3, [r2]
+ 1700 0014 043B     		subs	r3, r3, #4
+ 1701 0016 1360     		str	r3, [r2]
+ 1702 0018 0022     		movs	r2, #0
+ 439:rt-thread/components/finsh/finsh_ops.c ****     while (i < parameters)
+ 1703              		.loc 1 439 0
+ 1704 001a 0DE0     		b	.L146
+ 1705              	.LVL19:
+ 1706              	.L147:
+ 440:rt-thread/components/finsh/finsh_ops.c ****     {
+ 441:rt-thread/components/finsh/finsh_ops.c ****         parameterv[parameters - 1 - i] = finsh_sp->long_value;
+ARM GAS  /tmp/ccKWdTJc.s 			page 37
+
+
+ 1707              		.loc 1 441 0
+ 1708 001c A31A     		subs	r3, r4, r2
+ 1709 001e 013B     		subs	r3, r3, #1
+ 1710 0020 7748     		ldr	r0, .L169+4
+ 1711 0022 0168     		ldr	r1, [r0]
+ 1712 0024 51F80459 		ldr	r5, [r1], #-4
+ 1713 0028 0DF1700E 		add	lr, sp, #112
+ 1714 002c 0EEB8303 		add	r3, lr, r3, lsl #2
+ 1715 0030 43F8405C 		str	r5, [r3, #-64]
+ 442:rt-thread/components/finsh/finsh_ops.c ****         finsh_sp --;
+ 1716              		.loc 1 442 0
+ 1717 0034 0160     		str	r1, [r0]
+ 443:rt-thread/components/finsh/finsh_ops.c ****         i++;
+ 1718              		.loc 1 443 0
+ 1719 0036 0132     		adds	r2, r2, #1
+ 1720              	.LVL20:
+ 1721              	.L146:
+ 439:rt-thread/components/finsh/finsh_ops.c ****     {
+ 1722              		.loc 1 439 0
+ 1723 0038 A242     		cmp	r2, r4
+ 1724 003a EFD3     		bcc	.L147
+ 444:rt-thread/components/finsh/finsh_ops.c ****     }
+ 445:rt-thread/components/finsh/finsh_ops.c **** 
+ 446:rt-thread/components/finsh/finsh_ops.c ****     f = (op_func)(finsh_sp->long_value);
+ 1725              		.loc 1 446 0
+ 1726 003c 704B     		ldr	r3, .L169+4
+ 1727 003e 1B68     		ldr	r3, [r3]
+ 1728 0040 1C68     		ldr	r4, [r3]
+ 1729              	.LVL21:
+ 447:rt-thread/components/finsh/finsh_ops.c ****     switch (parameters)
+ 1730              		.loc 1 447 0
+ 1731 0042 102E     		cmp	r6, #16
+ 1732 0044 00F21881 		bhi	.L167
+ 1733 0048 DFE816F0 		tbh	[pc, r6, lsl #1]
+ 1734              	.L150:
+ 1735 004c 1100     		.2byte	(.L149-.L150)/2
+ 1736 004e 1B00     		.2byte	(.L151-.L150)/2
+ 1737 0050 1E00     		.2byte	(.L152-.L150)/2
+ 1738 0052 2200     		.2byte	(.L153-.L150)/2
+ 1739 0054 2700     		.2byte	(.L154-.L150)/2
+ 1740 0056 2D00     		.2byte	(.L155-.L150)/2
+ 1741 0058 3500     		.2byte	(.L156-.L150)/2
+ 1742 005a 3F00     		.2byte	(.L157-.L150)/2
+ 1743 005c 4B00     		.2byte	(.L158-.L150)/2
+ 1744 005e 5900     		.2byte	(.L159-.L150)/2
+ 1745 0060 6900     		.2byte	(.L160-.L150)/2
+ 1746 0062 7B00     		.2byte	(.L161-.L150)/2
+ 1747 0064 8F00     		.2byte	(.L162-.L150)/2
+ 1748 0066 A500     		.2byte	(.L163-.L150)/2
+ 1749 0068 BD00     		.2byte	(.L164-.L150)/2
+ 1750 006a DC00     		.2byte	(.L165-.L150)/2
+ 1751 006c F800     		.2byte	(.L166-.L150)/2
+ 1752              		.p2align 1
+ 1753              	.L149:
+ 448:rt-thread/components/finsh/finsh_ops.c ****     {
+ 449:rt-thread/components/finsh/finsh_ops.c ****     case 0:
+ 450:rt-thread/components/finsh/finsh_ops.c ****         r = f(0);
+ARM GAS  /tmp/ccKWdTJc.s 			page 38
+
+
+ 1754              		.loc 1 450 0
+ 1755 006e 0020     		movs	r0, #0
+ 1756 0070 A047     		blx	r4
+ 1757              	.LVL22:
+ 1758              	.L148:
+ 451:rt-thread/components/finsh/finsh_ops.c ****         break;
+ 452:rt-thread/components/finsh/finsh_ops.c **** 
+ 453:rt-thread/components/finsh/finsh_ops.c ****     case 1:
+ 454:rt-thread/components/finsh/finsh_ops.c ****         r = f(parameterv[0]);
+ 455:rt-thread/components/finsh/finsh_ops.c ****         break;
+ 456:rt-thread/components/finsh/finsh_ops.c **** 
+ 457:rt-thread/components/finsh/finsh_ops.c ****     case 2:
+ 458:rt-thread/components/finsh/finsh_ops.c ****         r = f(parameterv[0], parameterv[1]);
+ 459:rt-thread/components/finsh/finsh_ops.c ****         break;
+ 460:rt-thread/components/finsh/finsh_ops.c **** 
+ 461:rt-thread/components/finsh/finsh_ops.c ****     case 3:
+ 462:rt-thread/components/finsh/finsh_ops.c ****         r = f(parameterv[0], parameterv[1], parameterv[2]);
+ 463:rt-thread/components/finsh/finsh_ops.c ****         break;
+ 464:rt-thread/components/finsh/finsh_ops.c **** 
+ 465:rt-thread/components/finsh/finsh_ops.c ****     case 4:
+ 466:rt-thread/components/finsh/finsh_ops.c ****         r = f(parameterv[0], parameterv[1], parameterv[2], parameterv[3]);
+ 467:rt-thread/components/finsh/finsh_ops.c ****         break;
+ 468:rt-thread/components/finsh/finsh_ops.c **** 
+ 469:rt-thread/components/finsh/finsh_ops.c ****     case 5:
+ 470:rt-thread/components/finsh/finsh_ops.c ****         r = f(parameterv[0], parameterv[1], parameterv[2], parameterv[3],
+ 471:rt-thread/components/finsh/finsh_ops.c ****                 parameterv[4]);
+ 472:rt-thread/components/finsh/finsh_ops.c ****         break;
+ 473:rt-thread/components/finsh/finsh_ops.c **** 
+ 474:rt-thread/components/finsh/finsh_ops.c ****     case 6:
+ 475:rt-thread/components/finsh/finsh_ops.c ****         r = f(parameterv[0], parameterv[1], parameterv[2], parameterv[3],
+ 476:rt-thread/components/finsh/finsh_ops.c ****                 parameterv[4], parameterv[5]);
+ 477:rt-thread/components/finsh/finsh_ops.c ****         break;
+ 478:rt-thread/components/finsh/finsh_ops.c **** 
+ 479:rt-thread/components/finsh/finsh_ops.c ****     case 7:
+ 480:rt-thread/components/finsh/finsh_ops.c ****         r = f(parameterv[0], parameterv[1], parameterv[2], parameterv[3],
+ 481:rt-thread/components/finsh/finsh_ops.c ****                 parameterv[4], parameterv[5], parameterv[6]);
+ 482:rt-thread/components/finsh/finsh_ops.c ****         break;
+ 483:rt-thread/components/finsh/finsh_ops.c **** 
+ 484:rt-thread/components/finsh/finsh_ops.c ****     case 8:
+ 485:rt-thread/components/finsh/finsh_ops.c ****         r = f(parameterv[0], parameterv[1], parameterv[2], parameterv[3],
+ 486:rt-thread/components/finsh/finsh_ops.c ****                 parameterv[4], parameterv[5], parameterv[6], parameterv[7]);
+ 487:rt-thread/components/finsh/finsh_ops.c ****         break;
+ 488:rt-thread/components/finsh/finsh_ops.c **** 
+ 489:rt-thread/components/finsh/finsh_ops.c ****     case 9:
+ 490:rt-thread/components/finsh/finsh_ops.c ****         r = f(parameterv[0], parameterv[1], parameterv[2], parameterv[3],
+ 491:rt-thread/components/finsh/finsh_ops.c ****                 parameterv[4], parameterv[5], parameterv[6], parameterv[7],
+ 492:rt-thread/components/finsh/finsh_ops.c ****                 parameterv[8]);
+ 493:rt-thread/components/finsh/finsh_ops.c ****         break;
+ 494:rt-thread/components/finsh/finsh_ops.c **** 
+ 495:rt-thread/components/finsh/finsh_ops.c ****     case 10:
+ 496:rt-thread/components/finsh/finsh_ops.c ****         r = f(parameterv[0], parameterv[1], parameterv[2], parameterv[3],
+ 497:rt-thread/components/finsh/finsh_ops.c ****                 parameterv[4], parameterv[5], parameterv[6], parameterv[7],
+ 498:rt-thread/components/finsh/finsh_ops.c ****                 parameterv[8], parameterv[9]);
+ 499:rt-thread/components/finsh/finsh_ops.c ****         break;
+ 500:rt-thread/components/finsh/finsh_ops.c **** 
+ 501:rt-thread/components/finsh/finsh_ops.c ****     case 11:
+ 502:rt-thread/components/finsh/finsh_ops.c ****         r = f(parameterv[0], parameterv[1], parameterv[2], parameterv[3],
+ARM GAS  /tmp/ccKWdTJc.s 			page 39
+
+
+ 503:rt-thread/components/finsh/finsh_ops.c ****                 parameterv[4], parameterv[5], parameterv[6], parameterv[7],
+ 504:rt-thread/components/finsh/finsh_ops.c ****                 parameterv[8], parameterv[9], parameterv[10]);
+ 505:rt-thread/components/finsh/finsh_ops.c ****         break;
+ 506:rt-thread/components/finsh/finsh_ops.c **** 
+ 507:rt-thread/components/finsh/finsh_ops.c ****     case 12:
+ 508:rt-thread/components/finsh/finsh_ops.c ****         r = f(parameterv[0], parameterv[1], parameterv[2], parameterv[3],
+ 509:rt-thread/components/finsh/finsh_ops.c ****                 parameterv[4], parameterv[5], parameterv[6], parameterv[7],
+ 510:rt-thread/components/finsh/finsh_ops.c ****                 parameterv[8], parameterv[9], parameterv[10], parameterv[11]);
+ 511:rt-thread/components/finsh/finsh_ops.c ****         break;
+ 512:rt-thread/components/finsh/finsh_ops.c **** 
+ 513:rt-thread/components/finsh/finsh_ops.c ****     case 13:
+ 514:rt-thread/components/finsh/finsh_ops.c ****         r = f(parameterv[0], parameterv[1], parameterv[2], parameterv[3],
+ 515:rt-thread/components/finsh/finsh_ops.c ****                 parameterv[4], parameterv[5], parameterv[6], parameterv[7],
+ 516:rt-thread/components/finsh/finsh_ops.c ****                 parameterv[8], parameterv[9], parameterv[10], parameterv[11],
+ 517:rt-thread/components/finsh/finsh_ops.c ****                 parameterv[12]);
+ 518:rt-thread/components/finsh/finsh_ops.c ****         break;
+ 519:rt-thread/components/finsh/finsh_ops.c **** 
+ 520:rt-thread/components/finsh/finsh_ops.c ****     case 14:
+ 521:rt-thread/components/finsh/finsh_ops.c ****         r = f(parameterv[0], parameterv[1], parameterv[2], parameterv[3],
+ 522:rt-thread/components/finsh/finsh_ops.c ****                 parameterv[4], parameterv[5], parameterv[6], parameterv[7],
+ 523:rt-thread/components/finsh/finsh_ops.c ****                 parameterv[8], parameterv[9], parameterv[10], parameterv[11],
+ 524:rt-thread/components/finsh/finsh_ops.c ****                 parameterv[12], parameterv[13]);
+ 525:rt-thread/components/finsh/finsh_ops.c ****         break;
+ 526:rt-thread/components/finsh/finsh_ops.c **** 
+ 527:rt-thread/components/finsh/finsh_ops.c ****     case 15:
+ 528:rt-thread/components/finsh/finsh_ops.c ****         r = f(parameterv[0], parameterv[1], parameterv[2], parameterv[3],
+ 529:rt-thread/components/finsh/finsh_ops.c ****                 parameterv[4], parameterv[5], parameterv[6], parameterv[7],
+ 530:rt-thread/components/finsh/finsh_ops.c ****                 parameterv[8], parameterv[9], parameterv[10], parameterv[11],
+ 531:rt-thread/components/finsh/finsh_ops.c ****                 parameterv[12], parameterv[13], parameterv[14]);
+ 532:rt-thread/components/finsh/finsh_ops.c ****         break;
+ 533:rt-thread/components/finsh/finsh_ops.c **** 
+ 534:rt-thread/components/finsh/finsh_ops.c ****     case 16:
+ 535:rt-thread/components/finsh/finsh_ops.c ****         r = f(parameterv[0], parameterv[1], parameterv[2], parameterv[3],
+ 536:rt-thread/components/finsh/finsh_ops.c ****                 parameterv[4], parameterv[5], parameterv[6], parameterv[7],
+ 537:rt-thread/components/finsh/finsh_ops.c ****                 parameterv[8], parameterv[9], parameterv[10], parameterv[11],
+ 538:rt-thread/components/finsh/finsh_ops.c ****                 parameterv[12], parameterv[13], parameterv[14], parameterv[15]);
+ 539:rt-thread/components/finsh/finsh_ops.c ****         break;
+ 540:rt-thread/components/finsh/finsh_ops.c **** 
+ 541:rt-thread/components/finsh/finsh_ops.c ****     default:
+ 542:rt-thread/components/finsh/finsh_ops.c ****         r = 0;
+ 543:rt-thread/components/finsh/finsh_ops.c ****         break;
+ 544:rt-thread/components/finsh/finsh_ops.c ****     }
+ 545:rt-thread/components/finsh/finsh_ops.c **** 
+ 546:rt-thread/components/finsh/finsh_ops.c ****     finsh_sp->long_value = r;
+ 1759              		.loc 1 546 0
+ 1760 0072 634B     		ldr	r3, .L169+4
+ 1761 0074 1A68     		ldr	r2, [r3]
+ 1762 0076 1060     		str	r0, [r2]
+ 547:rt-thread/components/finsh/finsh_ops.c ****     finsh_sp ++;
+ 1763              		.loc 1 547 0
+ 1764 0078 1A68     		ldr	r2, [r3]
+ 1765 007a 0432     		adds	r2, r2, #4
+ 1766 007c 1A60     		str	r2, [r3]
+ 548:rt-thread/components/finsh/finsh_ops.c **** 
+ 549:rt-thread/components/finsh/finsh_ops.c ****     return ;
+ 550:rt-thread/components/finsh/finsh_ops.c **** }
+ 1767              		.loc 1 550 0
+ARM GAS  /tmp/ccKWdTJc.s 			page 40
+
+
+ 1768 007e 1CB0     		add	sp, sp, #112
+ 1769              	.LCFI12:
+ 1770              		.cfi_remember_state
+ 1771              		.cfi_def_cfa_offset 16
+ 1772              		@ sp needed
+ 1773 0080 70BD     		pop	{r4, r5, r6, pc}
+ 1774              	.LVL23:
+ 1775              	.L151:
+ 1776              	.LCFI13:
+ 1777              		.cfi_restore_state
+ 454:rt-thread/components/finsh/finsh_ops.c ****         break;
+ 1778              		.loc 1 454 0
+ 1779 0082 0C98     		ldr	r0, [sp, #48]
+ 1780 0084 A047     		blx	r4
+ 1781              	.LVL24:
+ 455:rt-thread/components/finsh/finsh_ops.c **** 
+ 1782              		.loc 1 455 0
+ 1783 0086 F4E7     		b	.L148
+ 1784              	.LVL25:
+ 1785              	.L152:
+ 458:rt-thread/components/finsh/finsh_ops.c ****         break;
+ 1786              		.loc 1 458 0
+ 1787 0088 0D99     		ldr	r1, [sp, #52]
+ 1788 008a 0C98     		ldr	r0, [sp, #48]
+ 1789 008c A047     		blx	r4
+ 1790              	.LVL26:
+ 459:rt-thread/components/finsh/finsh_ops.c **** 
+ 1791              		.loc 1 459 0
+ 1792 008e F0E7     		b	.L148
+ 1793              	.LVL27:
+ 1794              	.L153:
+ 462:rt-thread/components/finsh/finsh_ops.c ****         break;
+ 1795              		.loc 1 462 0
+ 1796 0090 0E9A     		ldr	r2, [sp, #56]
+ 1797              	.LVL28:
+ 1798 0092 0D99     		ldr	r1, [sp, #52]
+ 1799 0094 0C98     		ldr	r0, [sp, #48]
+ 1800 0096 A047     		blx	r4
+ 1801              	.LVL29:
+ 463:rt-thread/components/finsh/finsh_ops.c **** 
+ 1802              		.loc 1 463 0
+ 1803 0098 EBE7     		b	.L148
+ 1804              	.LVL30:
+ 1805              	.L154:
+ 466:rt-thread/components/finsh/finsh_ops.c ****         break;
+ 1806              		.loc 1 466 0
+ 1807 009a 0F9B     		ldr	r3, [sp, #60]
+ 1808 009c 0E9A     		ldr	r2, [sp, #56]
+ 1809              	.LVL31:
+ 1810 009e 0D99     		ldr	r1, [sp, #52]
+ 1811 00a0 0C98     		ldr	r0, [sp, #48]
+ 1812 00a2 A047     		blx	r4
+ 1813              	.LVL32:
+ 467:rt-thread/components/finsh/finsh_ops.c **** 
+ 1814              		.loc 1 467 0
+ 1815 00a4 E5E7     		b	.L148
+ 1816              	.LVL33:
+ARM GAS  /tmp/ccKWdTJc.s 			page 41
+
+
+ 1817              	.L155:
+ 470:rt-thread/components/finsh/finsh_ops.c ****                 parameterv[4]);
+ 1818              		.loc 1 470 0
+ 1819 00a6 109B     		ldr	r3, [sp, #64]
+ 1820 00a8 0093     		str	r3, [sp]
+ 1821 00aa 0F9B     		ldr	r3, [sp, #60]
+ 1822 00ac 0E9A     		ldr	r2, [sp, #56]
+ 1823              	.LVL34:
+ 1824 00ae 0D99     		ldr	r1, [sp, #52]
+ 1825 00b0 0C98     		ldr	r0, [sp, #48]
+ 1826 00b2 A047     		blx	r4
+ 1827              	.LVL35:
+ 472:rt-thread/components/finsh/finsh_ops.c **** 
+ 1828              		.loc 1 472 0
+ 1829 00b4 DDE7     		b	.L148
+ 1830              	.LVL36:
+ 1831              	.L156:
+ 475:rt-thread/components/finsh/finsh_ops.c ****                 parameterv[4], parameterv[5]);
+ 1832              		.loc 1 475 0
+ 1833 00b6 119B     		ldr	r3, [sp, #68]
+ 1834 00b8 0193     		str	r3, [sp, #4]
+ 1835 00ba 109B     		ldr	r3, [sp, #64]
+ 1836 00bc 0093     		str	r3, [sp]
+ 1837 00be 0F9B     		ldr	r3, [sp, #60]
+ 1838 00c0 0E9A     		ldr	r2, [sp, #56]
+ 1839              	.LVL37:
+ 1840 00c2 0D99     		ldr	r1, [sp, #52]
+ 1841 00c4 0C98     		ldr	r0, [sp, #48]
+ 1842 00c6 A047     		blx	r4
+ 1843              	.LVL38:
+ 477:rt-thread/components/finsh/finsh_ops.c **** 
+ 1844              		.loc 1 477 0
+ 1845 00c8 D3E7     		b	.L148
+ 1846              	.LVL39:
+ 1847              	.L157:
+ 480:rt-thread/components/finsh/finsh_ops.c ****                 parameterv[4], parameterv[5], parameterv[6]);
+ 1848              		.loc 1 480 0
+ 1849 00ca 129B     		ldr	r3, [sp, #72]
+ 1850 00cc 0293     		str	r3, [sp, #8]
+ 1851 00ce 119B     		ldr	r3, [sp, #68]
+ 1852 00d0 0193     		str	r3, [sp, #4]
+ 1853 00d2 109B     		ldr	r3, [sp, #64]
+ 1854 00d4 0093     		str	r3, [sp]
+ 1855 00d6 0F9B     		ldr	r3, [sp, #60]
+ 1856 00d8 0E9A     		ldr	r2, [sp, #56]
+ 1857              	.LVL40:
+ 1858 00da 0D99     		ldr	r1, [sp, #52]
+ 1859 00dc 0C98     		ldr	r0, [sp, #48]
+ 1860 00de A047     		blx	r4
+ 1861              	.LVL41:
+ 482:rt-thread/components/finsh/finsh_ops.c **** 
+ 1862              		.loc 1 482 0
+ 1863 00e0 C7E7     		b	.L148
+ 1864              	.LVL42:
+ 1865              	.L158:
+ 485:rt-thread/components/finsh/finsh_ops.c ****                 parameterv[4], parameterv[5], parameterv[6], parameterv[7]);
+ 1866              		.loc 1 485 0
+ARM GAS  /tmp/ccKWdTJc.s 			page 42
+
+
+ 1867 00e2 139B     		ldr	r3, [sp, #76]
+ 1868 00e4 0393     		str	r3, [sp, #12]
+ 1869 00e6 129B     		ldr	r3, [sp, #72]
+ 1870 00e8 0293     		str	r3, [sp, #8]
+ 1871 00ea 119B     		ldr	r3, [sp, #68]
+ 1872 00ec 0193     		str	r3, [sp, #4]
+ 1873 00ee 109B     		ldr	r3, [sp, #64]
+ 1874 00f0 0093     		str	r3, [sp]
+ 1875 00f2 0F9B     		ldr	r3, [sp, #60]
+ 1876 00f4 0E9A     		ldr	r2, [sp, #56]
+ 1877              	.LVL43:
+ 1878 00f6 0D99     		ldr	r1, [sp, #52]
+ 1879 00f8 0C98     		ldr	r0, [sp, #48]
+ 1880 00fa A047     		blx	r4
+ 1881              	.LVL44:
+ 487:rt-thread/components/finsh/finsh_ops.c **** 
+ 1882              		.loc 1 487 0
+ 1883 00fc B9E7     		b	.L148
+ 1884              	.LVL45:
+ 1885              	.L159:
+ 490:rt-thread/components/finsh/finsh_ops.c ****                 parameterv[4], parameterv[5], parameterv[6], parameterv[7],
+ 1886              		.loc 1 490 0
+ 1887 00fe 149B     		ldr	r3, [sp, #80]
+ 1888 0100 0493     		str	r3, [sp, #16]
+ 1889 0102 139B     		ldr	r3, [sp, #76]
+ 1890 0104 0393     		str	r3, [sp, #12]
+ 1891 0106 129B     		ldr	r3, [sp, #72]
+ 1892 0108 0293     		str	r3, [sp, #8]
+ 1893 010a 119B     		ldr	r3, [sp, #68]
+ 1894 010c 0193     		str	r3, [sp, #4]
+ 1895 010e 109B     		ldr	r3, [sp, #64]
+ 1896 0110 0093     		str	r3, [sp]
+ 1897 0112 0F9B     		ldr	r3, [sp, #60]
+ 1898 0114 0E9A     		ldr	r2, [sp, #56]
+ 1899              	.LVL46:
+ 1900 0116 0D99     		ldr	r1, [sp, #52]
+ 1901 0118 0C98     		ldr	r0, [sp, #48]
+ 1902 011a A047     		blx	r4
+ 1903              	.LVL47:
+ 493:rt-thread/components/finsh/finsh_ops.c **** 
+ 1904              		.loc 1 493 0
+ 1905 011c A9E7     		b	.L148
+ 1906              	.LVL48:
+ 1907              	.L160:
+ 496:rt-thread/components/finsh/finsh_ops.c ****                 parameterv[4], parameterv[5], parameterv[6], parameterv[7],
+ 1908              		.loc 1 496 0
+ 1909 011e 159B     		ldr	r3, [sp, #84]
+ 1910 0120 0593     		str	r3, [sp, #20]
+ 1911 0122 149B     		ldr	r3, [sp, #80]
+ 1912 0124 0493     		str	r3, [sp, #16]
+ 1913 0126 139B     		ldr	r3, [sp, #76]
+ 1914 0128 0393     		str	r3, [sp, #12]
+ 1915 012a 129B     		ldr	r3, [sp, #72]
+ 1916 012c 0293     		str	r3, [sp, #8]
+ 1917 012e 119B     		ldr	r3, [sp, #68]
+ 1918 0130 0193     		str	r3, [sp, #4]
+ 1919 0132 109B     		ldr	r3, [sp, #64]
+ARM GAS  /tmp/ccKWdTJc.s 			page 43
+
+
+ 1920 0134 0093     		str	r3, [sp]
+ 1921 0136 0F9B     		ldr	r3, [sp, #60]
+ 1922 0138 0E9A     		ldr	r2, [sp, #56]
+ 1923              	.LVL49:
+ 1924 013a 0D99     		ldr	r1, [sp, #52]
+ 1925 013c 0C98     		ldr	r0, [sp, #48]
+ 1926 013e A047     		blx	r4
+ 1927              	.LVL50:
+ 499:rt-thread/components/finsh/finsh_ops.c **** 
+ 1928              		.loc 1 499 0
+ 1929 0140 97E7     		b	.L148
+ 1930              	.LVL51:
+ 1931              	.L161:
+ 502:rt-thread/components/finsh/finsh_ops.c ****                 parameterv[4], parameterv[5], parameterv[6], parameterv[7],
+ 1932              		.loc 1 502 0
+ 1933 0142 169B     		ldr	r3, [sp, #88]
+ 1934 0144 0693     		str	r3, [sp, #24]
+ 1935 0146 159B     		ldr	r3, [sp, #84]
+ 1936 0148 0593     		str	r3, [sp, #20]
+ 1937 014a 149B     		ldr	r3, [sp, #80]
+ 1938 014c 0493     		str	r3, [sp, #16]
+ 1939 014e 139B     		ldr	r3, [sp, #76]
+ 1940 0150 0393     		str	r3, [sp, #12]
+ 1941 0152 129B     		ldr	r3, [sp, #72]
+ 1942 0154 0293     		str	r3, [sp, #8]
+ 1943 0156 119B     		ldr	r3, [sp, #68]
+ 1944 0158 0193     		str	r3, [sp, #4]
+ 1945 015a 109B     		ldr	r3, [sp, #64]
+ 1946 015c 0093     		str	r3, [sp]
+ 1947 015e 0F9B     		ldr	r3, [sp, #60]
+ 1948 0160 0E9A     		ldr	r2, [sp, #56]
+ 1949              	.LVL52:
+ 1950 0162 0D99     		ldr	r1, [sp, #52]
+ 1951 0164 0C98     		ldr	r0, [sp, #48]
+ 1952 0166 A047     		blx	r4
+ 1953              	.LVL53:
+ 505:rt-thread/components/finsh/finsh_ops.c **** 
+ 1954              		.loc 1 505 0
+ 1955 0168 83E7     		b	.L148
+ 1956              	.LVL54:
+ 1957              	.L162:
+ 508:rt-thread/components/finsh/finsh_ops.c ****                 parameterv[4], parameterv[5], parameterv[6], parameterv[7],
+ 1958              		.loc 1 508 0
+ 1959 016a 179B     		ldr	r3, [sp, #92]
+ 1960 016c 0793     		str	r3, [sp, #28]
+ 1961 016e 169B     		ldr	r3, [sp, #88]
+ 1962 0170 0693     		str	r3, [sp, #24]
+ 1963 0172 159B     		ldr	r3, [sp, #84]
+ 1964 0174 0593     		str	r3, [sp, #20]
+ 1965 0176 149B     		ldr	r3, [sp, #80]
+ 1966 0178 0493     		str	r3, [sp, #16]
+ 1967 017a 139B     		ldr	r3, [sp, #76]
+ 1968 017c 0393     		str	r3, [sp, #12]
+ 1969 017e 129B     		ldr	r3, [sp, #72]
+ 1970 0180 0293     		str	r3, [sp, #8]
+ 1971 0182 119B     		ldr	r3, [sp, #68]
+ 1972 0184 0193     		str	r3, [sp, #4]
+ARM GAS  /tmp/ccKWdTJc.s 			page 44
+
+
+ 1973 0186 109B     		ldr	r3, [sp, #64]
+ 1974 0188 0093     		str	r3, [sp]
+ 1975 018a 0F9B     		ldr	r3, [sp, #60]
+ 1976 018c 0E9A     		ldr	r2, [sp, #56]
+ 1977              	.LVL55:
+ 1978 018e 0D99     		ldr	r1, [sp, #52]
+ 1979 0190 0C98     		ldr	r0, [sp, #48]
+ 1980 0192 A047     		blx	r4
+ 1981              	.LVL56:
+ 511:rt-thread/components/finsh/finsh_ops.c **** 
+ 1982              		.loc 1 511 0
+ 1983 0194 6DE7     		b	.L148
+ 1984              	.LVL57:
+ 1985              	.L163:
+ 514:rt-thread/components/finsh/finsh_ops.c ****                 parameterv[4], parameterv[5], parameterv[6], parameterv[7],
+ 1986              		.loc 1 514 0
+ 1987 0196 189B     		ldr	r3, [sp, #96]
+ 1988 0198 0893     		str	r3, [sp, #32]
+ 1989 019a 179B     		ldr	r3, [sp, #92]
+ 1990 019c 0793     		str	r3, [sp, #28]
+ 1991 019e 169B     		ldr	r3, [sp, #88]
+ 1992 01a0 0693     		str	r3, [sp, #24]
+ 1993 01a2 159B     		ldr	r3, [sp, #84]
+ 1994 01a4 0593     		str	r3, [sp, #20]
+ 1995 01a6 149B     		ldr	r3, [sp, #80]
+ 1996 01a8 0493     		str	r3, [sp, #16]
+ 1997 01aa 139B     		ldr	r3, [sp, #76]
+ 1998 01ac 0393     		str	r3, [sp, #12]
+ 1999 01ae 129B     		ldr	r3, [sp, #72]
+ 2000 01b0 0293     		str	r3, [sp, #8]
+ 2001 01b2 119B     		ldr	r3, [sp, #68]
+ 2002 01b4 0193     		str	r3, [sp, #4]
+ 2003 01b6 109B     		ldr	r3, [sp, #64]
+ 2004 01b8 0093     		str	r3, [sp]
+ 2005 01ba 0F9B     		ldr	r3, [sp, #60]
+ 2006 01bc 0E9A     		ldr	r2, [sp, #56]
+ 2007              	.LVL58:
+ 2008 01be 0D99     		ldr	r1, [sp, #52]
+ 2009 01c0 0C98     		ldr	r0, [sp, #48]
+ 2010 01c2 A047     		blx	r4
+ 2011              	.LVL59:
+ 518:rt-thread/components/finsh/finsh_ops.c **** 
+ 2012              		.loc 1 518 0
+ 2013 01c4 55E7     		b	.L148
+ 2014              	.LVL60:
+ 2015              	.L164:
+ 521:rt-thread/components/finsh/finsh_ops.c ****                 parameterv[4], parameterv[5], parameterv[6], parameterv[7],
+ 2016              		.loc 1 521 0
+ 2017 01c6 199B     		ldr	r3, [sp, #100]
+ 2018 01c8 0993     		str	r3, [sp, #36]
+ 2019 01ca 189B     		ldr	r3, [sp, #96]
+ 2020 01cc 0893     		str	r3, [sp, #32]
+ 2021 01ce 179B     		ldr	r3, [sp, #92]
+ 2022 01d0 0793     		str	r3, [sp, #28]
+ 2023 01d2 169B     		ldr	r3, [sp, #88]
+ 2024 01d4 0693     		str	r3, [sp, #24]
+ 2025 01d6 159B     		ldr	r3, [sp, #84]
+ARM GAS  /tmp/ccKWdTJc.s 			page 45
+
+
+ 2026 01d8 0593     		str	r3, [sp, #20]
+ 2027 01da 149B     		ldr	r3, [sp, #80]
+ 2028 01dc 0493     		str	r3, [sp, #16]
+ 2029 01de 139B     		ldr	r3, [sp, #76]
+ 2030 01e0 0393     		str	r3, [sp, #12]
+ 2031 01e2 129B     		ldr	r3, [sp, #72]
+ 2032 01e4 0293     		str	r3, [sp, #8]
+ 2033 01e6 119B     		ldr	r3, [sp, #68]
+ 2034 01e8 0193     		str	r3, [sp, #4]
+ 2035 01ea 109B     		ldr	r3, [sp, #64]
+ 2036 01ec 0093     		str	r3, [sp]
+ 2037 01ee 0F9B     		ldr	r3, [sp, #60]
+ 2038 01f0 0E9A     		ldr	r2, [sp, #56]
+ 2039              	.LVL61:
+ 2040 01f2 0D99     		ldr	r1, [sp, #52]
+ 2041 01f4 0C98     		ldr	r0, [sp, #48]
+ 2042 01f6 A047     		blx	r4
+ 2043              	.LVL62:
+ 525:rt-thread/components/finsh/finsh_ops.c **** 
+ 2044              		.loc 1 525 0
+ 2045 01f8 3BE7     		b	.L148
+ 2046              	.L170:
+ 2047 01fa 00BF     		.align	2
+ 2048              	.L169:
+ 2049 01fc 00000000 		.word	finsh_pc
+ 2050 0200 00000000 		.word	finsh_sp
+ 2051              	.LVL63:
+ 2052              	.L165:
+ 528:rt-thread/components/finsh/finsh_ops.c ****                 parameterv[4], parameterv[5], parameterv[6], parameterv[7],
+ 2053              		.loc 1 528 0
+ 2054 0204 1A9B     		ldr	r3, [sp, #104]
+ 2055 0206 0A93     		str	r3, [sp, #40]
+ 2056 0208 199B     		ldr	r3, [sp, #100]
+ 2057 020a 0993     		str	r3, [sp, #36]
+ 2058 020c 189B     		ldr	r3, [sp, #96]
+ 2059 020e 0893     		str	r3, [sp, #32]
+ 2060 0210 179B     		ldr	r3, [sp, #92]
+ 2061 0212 0793     		str	r3, [sp, #28]
+ 2062 0214 169B     		ldr	r3, [sp, #88]
+ 2063 0216 0693     		str	r3, [sp, #24]
+ 2064 0218 159B     		ldr	r3, [sp, #84]
+ 2065 021a 0593     		str	r3, [sp, #20]
+ 2066 021c 149B     		ldr	r3, [sp, #80]
+ 2067 021e 0493     		str	r3, [sp, #16]
+ 2068 0220 139B     		ldr	r3, [sp, #76]
+ 2069 0222 0393     		str	r3, [sp, #12]
+ 2070 0224 129B     		ldr	r3, [sp, #72]
+ 2071 0226 0293     		str	r3, [sp, #8]
+ 2072 0228 119B     		ldr	r3, [sp, #68]
+ 2073 022a 0193     		str	r3, [sp, #4]
+ 2074 022c 109B     		ldr	r3, [sp, #64]
+ 2075 022e 0093     		str	r3, [sp]
+ 2076 0230 0F9B     		ldr	r3, [sp, #60]
+ 2077 0232 0E9A     		ldr	r2, [sp, #56]
+ 2078              	.LVL64:
+ 2079 0234 0D99     		ldr	r1, [sp, #52]
+ 2080 0236 0C98     		ldr	r0, [sp, #48]
+ARM GAS  /tmp/ccKWdTJc.s 			page 46
+
+
+ 2081 0238 A047     		blx	r4
+ 2082              	.LVL65:
+ 532:rt-thread/components/finsh/finsh_ops.c **** 
+ 2083              		.loc 1 532 0
+ 2084 023a 1AE7     		b	.L148
+ 2085              	.LVL66:
+ 2086              	.L166:
+ 535:rt-thread/components/finsh/finsh_ops.c ****                 parameterv[4], parameterv[5], parameterv[6], parameterv[7],
+ 2087              		.loc 1 535 0
+ 2088 023c 1B9B     		ldr	r3, [sp, #108]
+ 2089 023e 0B93     		str	r3, [sp, #44]
+ 2090 0240 1A9B     		ldr	r3, [sp, #104]
+ 2091 0242 0A93     		str	r3, [sp, #40]
+ 2092 0244 199B     		ldr	r3, [sp, #100]
+ 2093 0246 0993     		str	r3, [sp, #36]
+ 2094 0248 189B     		ldr	r3, [sp, #96]
+ 2095 024a 0893     		str	r3, [sp, #32]
+ 2096 024c 179B     		ldr	r3, [sp, #92]
+ 2097 024e 0793     		str	r3, [sp, #28]
+ 2098 0250 169B     		ldr	r3, [sp, #88]
+ 2099 0252 0693     		str	r3, [sp, #24]
+ 2100 0254 159B     		ldr	r3, [sp, #84]
+ 2101 0256 0593     		str	r3, [sp, #20]
+ 2102 0258 149B     		ldr	r3, [sp, #80]
+ 2103 025a 0493     		str	r3, [sp, #16]
+ 2104 025c 139B     		ldr	r3, [sp, #76]
+ 2105 025e 0393     		str	r3, [sp, #12]
+ 2106 0260 129B     		ldr	r3, [sp, #72]
+ 2107 0262 0293     		str	r3, [sp, #8]
+ 2108 0264 119B     		ldr	r3, [sp, #68]
+ 2109 0266 0193     		str	r3, [sp, #4]
+ 2110 0268 109B     		ldr	r3, [sp, #64]
+ 2111 026a 0093     		str	r3, [sp]
+ 2112 026c 0F9B     		ldr	r3, [sp, #60]
+ 2113 026e 0E9A     		ldr	r2, [sp, #56]
+ 2114              	.LVL67:
+ 2115 0270 0D99     		ldr	r1, [sp, #52]
+ 2116 0272 0C98     		ldr	r0, [sp, #48]
+ 2117 0274 A047     		blx	r4
+ 2118              	.LVL68:
+ 539:rt-thread/components/finsh/finsh_ops.c **** 
+ 2119              		.loc 1 539 0
+ 2120 0276 FCE6     		b	.L148
+ 2121              	.LVL69:
+ 2122              	.L167:
+ 542:rt-thread/components/finsh/finsh_ops.c ****         break;
+ 2123              		.loc 1 542 0
+ 2124 0278 0020     		movs	r0, #0
+ 2125 027a FAE6     		b	.L148
+ 2126              		.cfi_endproc
+ 2127              	.LFE63:
+ 2129              		.global	op_table
+ 2130              		.section	.rodata.op_table,"a",%progbits
+ 2131              		.align	2
+ 2134              	op_table:
+ 2135 0000 00000000 		.word	OP_no_op
+ 2136 0004 00000000 		.word	OP_add_byte
+ARM GAS  /tmp/ccKWdTJc.s 			page 47
+
+
+ 2137 0008 00000000 		.word	OP_add_word
+ 2138 000c 00000000 		.word	OP_add_dword
+ 2139 0010 00000000 		.word	OP_sub_byte
+ 2140 0014 00000000 		.word	OP_sub_word
+ 2141 0018 00000000 		.word	OP_sub_dword
+ 2142 001c 00000000 		.word	OP_div_byte
+ 2143 0020 00000000 		.word	OP_div_word
+ 2144 0024 00000000 		.word	OP_div_dword
+ 2145 0028 00000000 		.word	OP_mod_byte
+ 2146 002c 00000000 		.word	OP_mod_word
+ 2147 0030 00000000 		.word	OP_mod_dword
+ 2148 0034 00000000 		.word	OP_mul_byte
+ 2149 0038 00000000 		.word	OP_mul_word
+ 2150 003c 00000000 		.word	OP_mul_dword
+ 2151 0040 00000000 		.word	OP_and_byte
+ 2152 0044 00000000 		.word	OP_and_word
+ 2153 0048 00000000 		.word	OP_and_dword
+ 2154 004c 00000000 		.word	OP_or_byte
+ 2155 0050 00000000 		.word	OP_or_word
+ 2156 0054 00000000 		.word	OP_or_dword
+ 2157 0058 00000000 		.word	OP_xor_byte
+ 2158 005c 00000000 		.word	OP_xor_word
+ 2159 0060 00000000 		.word	OP_xor_dword
+ 2160 0064 00000000 		.word	OP_bw_byte
+ 2161 0068 00000000 		.word	OP_bw_word
+ 2162 006c 00000000 		.word	OP_bw_dword
+ 2163 0070 00000000 		.word	OP_shl_byte
+ 2164 0074 00000000 		.word	OP_shl_word
+ 2165 0078 00000000 		.word	OP_shl_dword
+ 2166 007c 00000000 		.word	OP_shr_byte
+ 2167 0080 00000000 		.word	OP_shr_word
+ 2168 0084 00000000 		.word	OP_shr_dword
+ 2169 0088 00000000 		.word	OP_ld_byte
+ 2170 008c 00000000 		.word	OP_ld_word
+ 2171 0090 00000000 		.word	OP_ld_dword
+ 2172 0094 00000000 		.word	OP_ld_value_byte
+ 2173 0098 00000000 		.word	OP_ld_value_word
+ 2174 009c 00000000 		.word	OP_ld_value_dword
+ 2175 00a0 00000000 		.word	OP_st_byte
+ 2176 00a4 00000000 		.word	OP_st_word
+ 2177 00a8 00000000 		.word	OP_st_dword
+ 2178 00ac 00000000 		.word	OP_pop
+ 2179 00b0 00000000 		.word	OP_call
+ 2180 00b4 00000000 		.word	OP_ld_value_byte_stack
+ 2181 00b8 00000000 		.word	OP_ld_value_word_stack
+ 2182 00bc 00000000 		.word	OP_ld_value_dword_stack
+ 2183 00c0 00000000 		.word	0
+ 2184              		.text
+ 2185              	.Letext0:
+ 2186              		.file 2 "rt-thread/include/rtdef.h"
+ 2187              		.file 3 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/machine/_default_types.h"
+ 2188              		.file 4 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/lock.h"
+ 2189              		.file 5 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_types.h"
+ 2190              		.file 6 "/opt/gcc-arm-none-eabi-6-2017-q2-update/lib/gcc/arm-none-eabi/6.3.1/include/stddef.h"
+ 2191              		.file 7 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/reent.h"
+ 2192              		.file 8 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_stdint.h"
+ 2193              		.file 9 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/time.h"
+ARM GAS  /tmp/ccKWdTJc.s 			page 48
+
+
+ 2194              		.file 10 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/errno.h"
+ 2195              		.file 11 "rt-thread/include/rtthread.h"
+ 2196              		.file 12 "rt-thread/components/finsh/finsh_api.h"
+ 2197              		.file 13 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/ctype.h"
+ 2198              		.file 14 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/stdlib.h"
+ 2199              		.file 15 "rt-thread/components/finsh/finsh.h"
+ 2200              		.file 16 "rt-thread/components/finsh/finsh_var.h"
+ 2201              		.file 17 "rt-thread/components/finsh/finsh_vm.h"
+ 2202              		.file 18 "rt-thread/components/finsh/finsh_ops.h"
+ARM GAS  /tmp/ccKWdTJc.s 			page 49
+
+
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 finsh_ops.c
+     /tmp/ccKWdTJc.s:18     .text.OP_no_op:0000000000000000 $t
+     /tmp/ccKWdTJc.s:25     .text.OP_no_op:0000000000000000 OP_no_op
+     /tmp/ccKWdTJc.s:38     .text.OP_add_byte:0000000000000000 $t
+     /tmp/ccKWdTJc.s:45     .text.OP_add_byte:0000000000000000 OP_add_byte
+     /tmp/ccKWdTJc.s:66     .text.OP_add_byte:000000000000001c $d
+     /tmp/ccKWdTJc.s:71     .text.OP_add_word:0000000000000000 $t
+     /tmp/ccKWdTJc.s:78     .text.OP_add_word:0000000000000000 OP_add_word
+     /tmp/ccKWdTJc.s:99     .text.OP_add_word:000000000000001c $d
+     /tmp/ccKWdTJc.s:104    .text.OP_add_dword:0000000000000000 $t
+     /tmp/ccKWdTJc.s:111    .text.OP_add_dword:0000000000000000 OP_add_dword
+     /tmp/ccKWdTJc.s:132    .text.OP_add_dword:000000000000001c $d
+     /tmp/ccKWdTJc.s:137    .text.OP_sub_byte:0000000000000000 $t
+     /tmp/ccKWdTJc.s:144    .text.OP_sub_byte:0000000000000000 OP_sub_byte
+     /tmp/ccKWdTJc.s:165    .text.OP_sub_byte:000000000000001c $d
+     /tmp/ccKWdTJc.s:170    .text.OP_sub_word:0000000000000000 $t
+     /tmp/ccKWdTJc.s:177    .text.OP_sub_word:0000000000000000 OP_sub_word
+     /tmp/ccKWdTJc.s:198    .text.OP_sub_word:000000000000001c $d
+     /tmp/ccKWdTJc.s:203    .text.OP_sub_dword:0000000000000000 $t
+     /tmp/ccKWdTJc.s:210    .text.OP_sub_dword:0000000000000000 OP_sub_dword
+     /tmp/ccKWdTJc.s:231    .text.OP_sub_dword:000000000000001c $d
+     /tmp/ccKWdTJc.s:236    .text.OP_div_byte:0000000000000000 $t
+     /tmp/ccKWdTJc.s:243    .text.OP_div_byte:0000000000000000 OP_div_byte
+     /tmp/ccKWdTJc.s:264    .text.OP_div_byte:000000000000001c $d
+     /tmp/ccKWdTJc.s:269    .text.OP_div_word:0000000000000000 $t
+     /tmp/ccKWdTJc.s:276    .text.OP_div_word:0000000000000000 OP_div_word
+     /tmp/ccKWdTJc.s:297    .text.OP_div_word:000000000000001c $d
+     /tmp/ccKWdTJc.s:302    .text.OP_div_dword:0000000000000000 $t
+     /tmp/ccKWdTJc.s:309    .text.OP_div_dword:0000000000000000 OP_div_dword
+     /tmp/ccKWdTJc.s:330    .text.OP_div_dword:000000000000001c $d
+     /tmp/ccKWdTJc.s:335    .text.OP_mod_byte:0000000000000000 $t
+     /tmp/ccKWdTJc.s:342    .text.OP_mod_byte:0000000000000000 OP_mod_byte
+     /tmp/ccKWdTJc.s:373    .text.OP_mod_byte:0000000000000028 $d
+     /tmp/ccKWdTJc.s:378    .text.OP_mod_word:0000000000000000 $t
+     /tmp/ccKWdTJc.s:385    .text.OP_mod_word:0000000000000000 OP_mod_word
+     /tmp/ccKWdTJc.s:416    .text.OP_mod_word:0000000000000028 $d
+     /tmp/ccKWdTJc.s:421    .text.OP_mod_dword:0000000000000000 $t
+     /tmp/ccKWdTJc.s:428    .text.OP_mod_dword:0000000000000000 OP_mod_dword
+     /tmp/ccKWdTJc.s:459    .text.OP_mod_dword:0000000000000028 $d
+     /tmp/ccKWdTJc.s:464    .text.OP_mul_byte:0000000000000000 $t
+     /tmp/ccKWdTJc.s:471    .text.OP_mul_byte:0000000000000000 OP_mul_byte
+     /tmp/ccKWdTJc.s:492    .text.OP_mul_byte:000000000000001c $d
+     /tmp/ccKWdTJc.s:497    .text.OP_mul_word:0000000000000000 $t
+     /tmp/ccKWdTJc.s:504    .text.OP_mul_word:0000000000000000 OP_mul_word
+     /tmp/ccKWdTJc.s:525    .text.OP_mul_word:000000000000001c $d
+     /tmp/ccKWdTJc.s:530    .text.OP_mul_dword:0000000000000000 $t
+     /tmp/ccKWdTJc.s:537    .text.OP_mul_dword:0000000000000000 OP_mul_dword
+     /tmp/ccKWdTJc.s:558    .text.OP_mul_dword:000000000000001c $d
+     /tmp/ccKWdTJc.s:563    .text.OP_and_byte:0000000000000000 $t
+     /tmp/ccKWdTJc.s:570    .text.OP_and_byte:0000000000000000 OP_and_byte
+     /tmp/ccKWdTJc.s:591    .text.OP_and_byte:000000000000001c $d
+     /tmp/ccKWdTJc.s:596    .text.OP_and_word:0000000000000000 $t
+     /tmp/ccKWdTJc.s:603    .text.OP_and_word:0000000000000000 OP_and_word
+     /tmp/ccKWdTJc.s:624    .text.OP_and_word:000000000000001c $d
+     /tmp/ccKWdTJc.s:629    .text.OP_and_dword:0000000000000000 $t
+     /tmp/ccKWdTJc.s:636    .text.OP_and_dword:0000000000000000 OP_and_dword
+ARM GAS  /tmp/ccKWdTJc.s 			page 50
+
+
+     /tmp/ccKWdTJc.s:657    .text.OP_and_dword:000000000000001c $d
+     /tmp/ccKWdTJc.s:662    .text.OP_or_byte:0000000000000000 $t
+     /tmp/ccKWdTJc.s:669    .text.OP_or_byte:0000000000000000 OP_or_byte
+     /tmp/ccKWdTJc.s:690    .text.OP_or_byte:000000000000001c $d
+     /tmp/ccKWdTJc.s:695    .text.OP_or_word:0000000000000000 $t
+     /tmp/ccKWdTJc.s:702    .text.OP_or_word:0000000000000000 OP_or_word
+     /tmp/ccKWdTJc.s:723    .text.OP_or_word:000000000000001c $d
+     /tmp/ccKWdTJc.s:728    .text.OP_or_dword:0000000000000000 $t
+     /tmp/ccKWdTJc.s:735    .text.OP_or_dword:0000000000000000 OP_or_dword
+     /tmp/ccKWdTJc.s:756    .text.OP_or_dword:000000000000001c $d
+     /tmp/ccKWdTJc.s:761    .text.OP_xor_byte:0000000000000000 $t
+     /tmp/ccKWdTJc.s:768    .text.OP_xor_byte:0000000000000000 OP_xor_byte
+     /tmp/ccKWdTJc.s:789    .text.OP_xor_byte:000000000000001c $d
+     /tmp/ccKWdTJc.s:794    .text.OP_xor_word:0000000000000000 $t
+     /tmp/ccKWdTJc.s:801    .text.OP_xor_word:0000000000000000 OP_xor_word
+     /tmp/ccKWdTJc.s:822    .text.OP_xor_word:000000000000001c $d
+     /tmp/ccKWdTJc.s:827    .text.OP_xor_dword:0000000000000000 $t
+     /tmp/ccKWdTJc.s:834    .text.OP_xor_dword:0000000000000000 OP_xor_dword
+     /tmp/ccKWdTJc.s:855    .text.OP_xor_dword:000000000000001c $d
+     /tmp/ccKWdTJc.s:860    .text.OP_bw_byte:0000000000000000 $t
+     /tmp/ccKWdTJc.s:867    .text.OP_bw_byte:0000000000000000 OP_bw_byte
+     /tmp/ccKWdTJc.s:884    .text.OP_bw_byte:0000000000000010 $d
+     /tmp/ccKWdTJc.s:889    .text.OP_bw_word:0000000000000000 $t
+     /tmp/ccKWdTJc.s:896    .text.OP_bw_word:0000000000000000 OP_bw_word
+     /tmp/ccKWdTJc.s:913    .text.OP_bw_word:0000000000000010 $d
+     /tmp/ccKWdTJc.s:918    .text.OP_bw_dword:0000000000000000 $t
+     /tmp/ccKWdTJc.s:925    .text.OP_bw_dword:0000000000000000 OP_bw_dword
+     /tmp/ccKWdTJc.s:942    .text.OP_bw_dword:0000000000000010 $d
+     /tmp/ccKWdTJc.s:947    .text.OP_shl_byte:0000000000000000 $t
+     /tmp/ccKWdTJc.s:954    .text.OP_shl_byte:0000000000000000 OP_shl_byte
+     /tmp/ccKWdTJc.s:975    .text.OP_shl_byte:000000000000001c $d
+     /tmp/ccKWdTJc.s:980    .text.OP_shl_word:0000000000000000 $t
+     /tmp/ccKWdTJc.s:987    .text.OP_shl_word:0000000000000000 OP_shl_word
+     /tmp/ccKWdTJc.s:1008   .text.OP_shl_word:000000000000001c $d
+     /tmp/ccKWdTJc.s:1013   .text.OP_shl_dword:0000000000000000 $t
+     /tmp/ccKWdTJc.s:1020   .text.OP_shl_dword:0000000000000000 OP_shl_dword
+     /tmp/ccKWdTJc.s:1041   .text.OP_shl_dword:000000000000001c $d
+     /tmp/ccKWdTJc.s:1046   .text.OP_shr_byte:0000000000000000 $t
+     /tmp/ccKWdTJc.s:1053   .text.OP_shr_byte:0000000000000000 OP_shr_byte
+     /tmp/ccKWdTJc.s:1074   .text.OP_shr_byte:000000000000001c $d
+     /tmp/ccKWdTJc.s:1079   .text.OP_shr_word:0000000000000000 $t
+     /tmp/ccKWdTJc.s:1086   .text.OP_shr_word:0000000000000000 OP_shr_word
+     /tmp/ccKWdTJc.s:1107   .text.OP_shr_word:000000000000001c $d
+     /tmp/ccKWdTJc.s:1112   .text.OP_shr_dword:0000000000000000 $t
+     /tmp/ccKWdTJc.s:1119   .text.OP_shr_dword:0000000000000000 OP_shr_dword
+     /tmp/ccKWdTJc.s:1140   .text.OP_shr_dword:000000000000001c $d
+     /tmp/ccKWdTJc.s:1145   .text.OP_ld_byte:0000000000000000 $t
+     /tmp/ccKWdTJc.s:1152   .text.OP_ld_byte:0000000000000000 OP_ld_byte
+     /tmp/ccKWdTJc.s:1178   .text.OP_ld_byte:000000000000001c $d
+     /tmp/ccKWdTJc.s:1184   .text.OP_ld_word:0000000000000000 $t
+     /tmp/ccKWdTJc.s:1191   .text.OP_ld_word:0000000000000000 OP_ld_word
+     /tmp/ccKWdTJc.s:1228   .text.OP_ld_word:0000000000000028 $d
+     /tmp/ccKWdTJc.s:1234   .text.OP_ld_dword:0000000000000000 $t
+     /tmp/ccKWdTJc.s:1241   .text.OP_ld_dword:0000000000000000 OP_ld_dword
+     /tmp/ccKWdTJc.s:1284   .text.OP_ld_dword:0000000000000030 $d
+     /tmp/ccKWdTJc.s:1290   .text.OP_ld_value_byte:0000000000000000 $t
+     /tmp/ccKWdTJc.s:1297   .text.OP_ld_value_byte:0000000000000000 OP_ld_value_byte
+ARM GAS  /tmp/ccKWdTJc.s 			page 51
+
+
+     /tmp/ccKWdTJc.s:1334   .text.OP_ld_value_byte:0000000000000030 $d
+     /tmp/ccKWdTJc.s:1340   .text.OP_ld_value_byte_stack:0000000000000000 $t
+     /tmp/ccKWdTJc.s:1347   .text.OP_ld_value_byte_stack:0000000000000000 OP_ld_value_byte_stack
+     /tmp/ccKWdTJc.s:1368   .text.OP_ld_value_byte_stack:0000000000000010 $d
+     /tmp/ccKWdTJc.s:1373   .text.OP_ld_value_word:0000000000000000 $t
+     /tmp/ccKWdTJc.s:1380   .text.OP_ld_value_word:0000000000000000 OP_ld_value_word
+     /tmp/ccKWdTJc.s:1417   .text.OP_ld_value_word:0000000000000030 $d
+     /tmp/ccKWdTJc.s:1423   .text.OP_ld_value_word_stack:0000000000000000 $t
+     /tmp/ccKWdTJc.s:1430   .text.OP_ld_value_word_stack:0000000000000000 OP_ld_value_word_stack
+     /tmp/ccKWdTJc.s:1451   .text.OP_ld_value_word_stack:0000000000000014 $d
+     /tmp/ccKWdTJc.s:1456   .text.OP_ld_value_dword:0000000000000000 $t
+     /tmp/ccKWdTJc.s:1463   .text.OP_ld_value_dword:0000000000000000 OP_ld_value_dword
+     /tmp/ccKWdTJc.s:1500   .text.OP_ld_value_dword:0000000000000030 $d
+     /tmp/ccKWdTJc.s:1506   .text.OP_ld_value_dword_stack:0000000000000000 $t
+     /tmp/ccKWdTJc.s:1513   .text.OP_ld_value_dword_stack:0000000000000000 OP_ld_value_dword_stack
+     /tmp/ccKWdTJc.s:1534   .text.OP_ld_value_dword_stack:0000000000000010 $d
+     /tmp/ccKWdTJc.s:1539   .text.OP_st_byte:0000000000000000 $t
+     /tmp/ccKWdTJc.s:1546   .text.OP_st_byte:0000000000000000 OP_st_byte
+     /tmp/ccKWdTJc.s:1567   .text.OP_st_byte:0000000000000018 $d
+     /tmp/ccKWdTJc.s:1572   .text.OP_st_word:0000000000000000 $t
+     /tmp/ccKWdTJc.s:1579   .text.OP_st_word:0000000000000000 OP_st_word
+     /tmp/ccKWdTJc.s:1600   .text.OP_st_word:0000000000000018 $d
+     /tmp/ccKWdTJc.s:1605   .text.OP_st_dword:0000000000000000 $t
+     /tmp/ccKWdTJc.s:1612   .text.OP_st_dword:0000000000000000 OP_st_dword
+     /tmp/ccKWdTJc.s:1633   .text.OP_st_dword:0000000000000018 $d
+     /tmp/ccKWdTJc.s:1638   .text.OP_pop:0000000000000000 $t
+     /tmp/ccKWdTJc.s:1645   .text.OP_pop:0000000000000000 OP_pop
+     /tmp/ccKWdTJc.s:1661   .text.OP_pop:000000000000000c $d
+     /tmp/ccKWdTJc.s:1666   .text.OP_call:0000000000000000 $t
+     /tmp/ccKWdTJc.s:1673   .text.OP_call:0000000000000000 OP_call
+     /tmp/ccKWdTJc.s:1735   .text.OP_call:000000000000004c $d
+     /tmp/ccKWdTJc.s:1752   .text.OP_call:000000000000006e $t
+     /tmp/ccKWdTJc.s:2049   .text.OP_call:00000000000001fc $d
+     /tmp/ccKWdTJc.s:2054   .text.OP_call:0000000000000204 $t
+     /tmp/ccKWdTJc.s:2134   .rodata.op_table:0000000000000000 op_table
+     /tmp/ccKWdTJc.s:2131   .rodata.op_table:0000000000000000 $d
+                     .debug_frame:0000000000000010 $d
+
+UNDEFINED SYMBOLS
+finsh_sp
+finsh_pc

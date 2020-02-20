@@ -1,0 +1,2065 @@
+ARM GAS  /tmp/ccyaZLNK.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.eabi_attribute 27, 1
+   3              		.eabi_attribute 28, 1
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.file	"ipc.c"
+  14              		.text
+  15              	.Ltext0:
+  16              		.cfi_sections	.debug_frame
+  17              		.section	.text.rt_sem_init,"ax",%progbits
+  18              		.align	1
+  19              		.global	rt_sem_init
+  20              		.syntax unified
+  21              		.thumb
+  22              		.thumb_func
+  23              		.fpu fpv4-sp-d16
+  25              	rt_sem_init:
+  26              	.LFB19:
+  27              		.file 1 "rt-thread/src/ipc.c"
+   1:rt-thread/src/ipc.c **** /*
+   2:rt-thread/src/ipc.c ****  * Copyright (c) 2006-2018, RT-Thread Development Team
+   3:rt-thread/src/ipc.c ****  *
+   4:rt-thread/src/ipc.c ****  * SPDX-License-Identifier: Apache-2.0
+   5:rt-thread/src/ipc.c ****  *
+   6:rt-thread/src/ipc.c ****  * Change Logs:
+   7:rt-thread/src/ipc.c ****  * Date           Author       Notes
+   8:rt-thread/src/ipc.c ****  * 2006-03-14     Bernard      the first version
+   9:rt-thread/src/ipc.c ****  * 2006-04-25     Bernard      implement semaphore
+  10:rt-thread/src/ipc.c ****  * 2006-05-03     Bernard      add RT_IPC_DEBUG
+  11:rt-thread/src/ipc.c ****  *                             modify the type of IPC waiting time to rt_int32_t
+  12:rt-thread/src/ipc.c ****  * 2006-05-10     Bernard      fix the semaphore take bug and add IPC object
+  13:rt-thread/src/ipc.c ****  * 2006-05-12     Bernard      implement mailbox and message queue
+  14:rt-thread/src/ipc.c ****  * 2006-05-20     Bernard      implement mutex
+  15:rt-thread/src/ipc.c ****  * 2006-05-23     Bernard      implement fast event
+  16:rt-thread/src/ipc.c ****  * 2006-05-24     Bernard      implement event
+  17:rt-thread/src/ipc.c ****  * 2006-06-03     Bernard      fix the thread timer init bug
+  18:rt-thread/src/ipc.c ****  * 2006-06-05     Bernard      fix the mutex release bug
+  19:rt-thread/src/ipc.c ****  * 2006-06-07     Bernard      fix the message queue send bug
+  20:rt-thread/src/ipc.c ****  * 2006-08-04     Bernard      add hook support
+  21:rt-thread/src/ipc.c ****  * 2009-05-21     Yi.qiu       fix the sem release bug
+  22:rt-thread/src/ipc.c ****  * 2009-07-18     Bernard      fix the event clear bug
+  23:rt-thread/src/ipc.c ****  * 2009-09-09     Bernard      remove fast event and fix ipc release bug
+  24:rt-thread/src/ipc.c ****  * 2009-10-10     Bernard      change semaphore and mutex value to unsigned value
+  25:rt-thread/src/ipc.c ****  * 2009-10-25     Bernard      change the mb/mq receive timeout to 0 if the
+  26:rt-thread/src/ipc.c ****  *                             re-calculated delta tick is a negative number.
+  27:rt-thread/src/ipc.c ****  * 2009-12-16     Bernard      fix the rt_ipc_object_suspend issue when IPC flag
+  28:rt-thread/src/ipc.c ****  *                             is RT_IPC_FLAG_PRIO
+  29:rt-thread/src/ipc.c ****  * 2010-01-20     mbbill       remove rt_ipc_object_decrease function.
+  30:rt-thread/src/ipc.c ****  * 2010-04-20     Bernard      move memcpy outside interrupt disable in mq
+  31:rt-thread/src/ipc.c ****  * 2010-10-26     yi.qiu       add module support in rt_mp_delete and rt_mq_delete
+ARM GAS  /tmp/ccyaZLNK.s 			page 2
+
+
+  32:rt-thread/src/ipc.c ****  * 2010-11-10     Bernard      add IPC reset command implementation.
+  33:rt-thread/src/ipc.c ****  * 2011-12-18     Bernard      add more parameter checking in message queue
+  34:rt-thread/src/ipc.c ****  * 2013-09-14     Grissiom     add an option check in rt_event_recv
+  35:rt-thread/src/ipc.c ****  * 2018-10-02     Bernard      add 64bit support for mailbox
+  36:rt-thread/src/ipc.c ****  * 2019-09-16     tyx          add send wait support for message queue
+  37:rt-thread/src/ipc.c ****  */
+  38:rt-thread/src/ipc.c **** 
+  39:rt-thread/src/ipc.c **** #include <rtthread.h>
+  40:rt-thread/src/ipc.c **** #include <rthw.h>
+  41:rt-thread/src/ipc.c **** 
+  42:rt-thread/src/ipc.c **** #ifdef RT_USING_HOOK
+  43:rt-thread/src/ipc.c **** extern void (*rt_object_trytake_hook)(struct rt_object *object);
+  44:rt-thread/src/ipc.c **** extern void (*rt_object_take_hook)(struct rt_object *object);
+  45:rt-thread/src/ipc.c **** extern void (*rt_object_put_hook)(struct rt_object *object);
+  46:rt-thread/src/ipc.c **** #endif
+  47:rt-thread/src/ipc.c **** 
+  48:rt-thread/src/ipc.c **** /**
+  49:rt-thread/src/ipc.c ****  * @addtogroup IPC
+  50:rt-thread/src/ipc.c ****  */
+  51:rt-thread/src/ipc.c **** 
+  52:rt-thread/src/ipc.c **** /**@{*/
+  53:rt-thread/src/ipc.c **** 
+  54:rt-thread/src/ipc.c **** /**
+  55:rt-thread/src/ipc.c ****  * This function will initialize an IPC object
+  56:rt-thread/src/ipc.c ****  *
+  57:rt-thread/src/ipc.c ****  * @param ipc the IPC object
+  58:rt-thread/src/ipc.c ****  *
+  59:rt-thread/src/ipc.c ****  * @return the operation status, RT_EOK on successful
+  60:rt-thread/src/ipc.c ****  */
+  61:rt-thread/src/ipc.c **** rt_inline rt_err_t rt_ipc_object_init(struct rt_ipc_object *ipc)
+  62:rt-thread/src/ipc.c **** {
+  63:rt-thread/src/ipc.c ****     /* initialize ipc object */
+  64:rt-thread/src/ipc.c ****     rt_list_init(&(ipc->suspend_thread));
+  65:rt-thread/src/ipc.c **** 
+  66:rt-thread/src/ipc.c ****     return RT_EOK;
+  67:rt-thread/src/ipc.c **** }
+  68:rt-thread/src/ipc.c **** 
+  69:rt-thread/src/ipc.c **** /**
+  70:rt-thread/src/ipc.c ****  * This function will suspend a thread to a specified list. IPC object or some
+  71:rt-thread/src/ipc.c ****  * double-queue object (mailbox etc.) contains this kind of list.
+  72:rt-thread/src/ipc.c ****  *
+  73:rt-thread/src/ipc.c ****  * @param list the IPC suspended thread list
+  74:rt-thread/src/ipc.c ****  * @param thread the thread object to be suspended
+  75:rt-thread/src/ipc.c ****  * @param flag the IPC object flag,
+  76:rt-thread/src/ipc.c ****  *        which shall be RT_IPC_FLAG_FIFO/RT_IPC_FLAG_PRIO.
+  77:rt-thread/src/ipc.c ****  *
+  78:rt-thread/src/ipc.c ****  * @return the operation status, RT_EOK on successful
+  79:rt-thread/src/ipc.c ****  */
+  80:rt-thread/src/ipc.c **** rt_inline rt_err_t rt_ipc_list_suspend(rt_list_t        *list,
+  81:rt-thread/src/ipc.c ****                                        struct rt_thread *thread,
+  82:rt-thread/src/ipc.c ****                                        rt_uint8_t        flag)
+  83:rt-thread/src/ipc.c **** {
+  84:rt-thread/src/ipc.c ****     /* suspend thread */
+  85:rt-thread/src/ipc.c ****     rt_thread_suspend(thread);
+  86:rt-thread/src/ipc.c **** 
+  87:rt-thread/src/ipc.c ****     switch (flag)
+  88:rt-thread/src/ipc.c ****     {
+ARM GAS  /tmp/ccyaZLNK.s 			page 3
+
+
+  89:rt-thread/src/ipc.c ****     case RT_IPC_FLAG_FIFO:
+  90:rt-thread/src/ipc.c ****         rt_list_insert_before(list, &(thread->tlist));
+  91:rt-thread/src/ipc.c ****         break;
+  92:rt-thread/src/ipc.c **** 
+  93:rt-thread/src/ipc.c ****     case RT_IPC_FLAG_PRIO:
+  94:rt-thread/src/ipc.c ****         {
+  95:rt-thread/src/ipc.c ****             struct rt_list_node *n;
+  96:rt-thread/src/ipc.c ****             struct rt_thread *sthread;
+  97:rt-thread/src/ipc.c **** 
+  98:rt-thread/src/ipc.c ****             /* find a suitable position */
+  99:rt-thread/src/ipc.c ****             for (n = list->next; n != list; n = n->next)
+ 100:rt-thread/src/ipc.c ****             {
+ 101:rt-thread/src/ipc.c ****                 sthread = rt_list_entry(n, struct rt_thread, tlist);
+ 102:rt-thread/src/ipc.c **** 
+ 103:rt-thread/src/ipc.c ****                 /* find out */
+ 104:rt-thread/src/ipc.c ****                 if (thread->current_priority < sthread->current_priority)
+ 105:rt-thread/src/ipc.c ****                 {
+ 106:rt-thread/src/ipc.c ****                     /* insert this thread before the sthread */
+ 107:rt-thread/src/ipc.c ****                     rt_list_insert_before(&(sthread->tlist), &(thread->tlist));
+ 108:rt-thread/src/ipc.c ****                     break;
+ 109:rt-thread/src/ipc.c ****                 }
+ 110:rt-thread/src/ipc.c ****             }
+ 111:rt-thread/src/ipc.c **** 
+ 112:rt-thread/src/ipc.c ****             /*
+ 113:rt-thread/src/ipc.c ****              * not found a suitable position,
+ 114:rt-thread/src/ipc.c ****              * append to the end of suspend_thread list
+ 115:rt-thread/src/ipc.c ****              */
+ 116:rt-thread/src/ipc.c ****             if (n == list)
+ 117:rt-thread/src/ipc.c ****                 rt_list_insert_before(list, &(thread->tlist));
+ 118:rt-thread/src/ipc.c ****         }
+ 119:rt-thread/src/ipc.c ****         break;
+ 120:rt-thread/src/ipc.c ****     }
+ 121:rt-thread/src/ipc.c **** 
+ 122:rt-thread/src/ipc.c ****     return RT_EOK;
+ 123:rt-thread/src/ipc.c **** }
+ 124:rt-thread/src/ipc.c **** 
+ 125:rt-thread/src/ipc.c **** /**
+ 126:rt-thread/src/ipc.c ****  * This function will resume the first thread in the list of a IPC object:
+ 127:rt-thread/src/ipc.c ****  * - remove the thread from suspend queue of IPC object
+ 128:rt-thread/src/ipc.c ****  * - put the thread into system ready queue
+ 129:rt-thread/src/ipc.c ****  *
+ 130:rt-thread/src/ipc.c ****  * @param list the thread list
+ 131:rt-thread/src/ipc.c ****  *
+ 132:rt-thread/src/ipc.c ****  * @return the operation status, RT_EOK on successful
+ 133:rt-thread/src/ipc.c ****  */
+ 134:rt-thread/src/ipc.c **** rt_inline rt_err_t rt_ipc_list_resume(rt_list_t *list)
+ 135:rt-thread/src/ipc.c **** {
+ 136:rt-thread/src/ipc.c ****     struct rt_thread *thread;
+ 137:rt-thread/src/ipc.c **** 
+ 138:rt-thread/src/ipc.c ****     /* get thread entry */
+ 139:rt-thread/src/ipc.c ****     thread = rt_list_entry(list->next, struct rt_thread, tlist);
+ 140:rt-thread/src/ipc.c **** 
+ 141:rt-thread/src/ipc.c ****     RT_DEBUG_LOG(RT_DEBUG_IPC, ("resume thread:%s\n", thread->name));
+ 142:rt-thread/src/ipc.c **** 
+ 143:rt-thread/src/ipc.c ****     /* resume it */
+ 144:rt-thread/src/ipc.c ****     rt_thread_resume(thread);
+ 145:rt-thread/src/ipc.c **** 
+ARM GAS  /tmp/ccyaZLNK.s 			page 4
+
+
+ 146:rt-thread/src/ipc.c ****     return RT_EOK;
+ 147:rt-thread/src/ipc.c **** }
+ 148:rt-thread/src/ipc.c **** 
+ 149:rt-thread/src/ipc.c **** /**
+ 150:rt-thread/src/ipc.c ****  * This function will resume all suspended threads in a list, including
+ 151:rt-thread/src/ipc.c ****  * suspend list of IPC object and private list of mailbox etc.
+ 152:rt-thread/src/ipc.c ****  *
+ 153:rt-thread/src/ipc.c ****  * @param list of the threads to resume
+ 154:rt-thread/src/ipc.c ****  *
+ 155:rt-thread/src/ipc.c ****  * @return the operation status, RT_EOK on successful
+ 156:rt-thread/src/ipc.c ****  */
+ 157:rt-thread/src/ipc.c **** rt_inline rt_err_t rt_ipc_list_resume_all(rt_list_t *list)
+ 158:rt-thread/src/ipc.c **** {
+ 159:rt-thread/src/ipc.c ****     struct rt_thread *thread;
+ 160:rt-thread/src/ipc.c ****     register rt_ubase_t temp;
+ 161:rt-thread/src/ipc.c **** 
+ 162:rt-thread/src/ipc.c ****     /* wakeup all suspended threads */
+ 163:rt-thread/src/ipc.c ****     while (!rt_list_isempty(list))
+ 164:rt-thread/src/ipc.c ****     {
+ 165:rt-thread/src/ipc.c ****         /* disable interrupt */
+ 166:rt-thread/src/ipc.c ****         temp = rt_hw_interrupt_disable();
+ 167:rt-thread/src/ipc.c **** 
+ 168:rt-thread/src/ipc.c ****         /* get next suspended thread */
+ 169:rt-thread/src/ipc.c ****         thread = rt_list_entry(list->next, struct rt_thread, tlist);
+ 170:rt-thread/src/ipc.c ****         /* set error code to RT_ERROR */
+ 171:rt-thread/src/ipc.c ****         thread->error = -RT_ERROR;
+ 172:rt-thread/src/ipc.c **** 
+ 173:rt-thread/src/ipc.c ****         /*
+ 174:rt-thread/src/ipc.c ****          * resume thread
+ 175:rt-thread/src/ipc.c ****          * In rt_thread_resume function, it will remove current thread from
+ 176:rt-thread/src/ipc.c ****          * suspended list
+ 177:rt-thread/src/ipc.c ****          */
+ 178:rt-thread/src/ipc.c ****         rt_thread_resume(thread);
+ 179:rt-thread/src/ipc.c **** 
+ 180:rt-thread/src/ipc.c ****         /* enable interrupt */
+ 181:rt-thread/src/ipc.c ****         rt_hw_interrupt_enable(temp);
+ 182:rt-thread/src/ipc.c ****     }
+ 183:rt-thread/src/ipc.c **** 
+ 184:rt-thread/src/ipc.c ****     return RT_EOK;
+ 185:rt-thread/src/ipc.c **** }
+ 186:rt-thread/src/ipc.c **** 
+ 187:rt-thread/src/ipc.c **** #ifdef RT_USING_SEMAPHORE
+ 188:rt-thread/src/ipc.c **** /**
+ 189:rt-thread/src/ipc.c ****  * This function will initialize a semaphore and put it under control of
+ 190:rt-thread/src/ipc.c ****  * resource management.
+ 191:rt-thread/src/ipc.c ****  *
+ 192:rt-thread/src/ipc.c ****  * @param sem the semaphore object
+ 193:rt-thread/src/ipc.c ****  * @param name the name of semaphore
+ 194:rt-thread/src/ipc.c ****  * @param value the initial value of semaphore
+ 195:rt-thread/src/ipc.c ****  * @param flag the flag of semaphore
+ 196:rt-thread/src/ipc.c ****  *
+ 197:rt-thread/src/ipc.c ****  * @return the operation status, RT_EOK on successful
+ 198:rt-thread/src/ipc.c ****  */
+ 199:rt-thread/src/ipc.c **** rt_err_t rt_sem_init(rt_sem_t    sem,
+ 200:rt-thread/src/ipc.c ****                      const char *name,
+ 201:rt-thread/src/ipc.c ****                      rt_uint32_t value,
+ 202:rt-thread/src/ipc.c ****                      rt_uint8_t  flag)
+ARM GAS  /tmp/ccyaZLNK.s 			page 5
+
+
+ 203:rt-thread/src/ipc.c **** {
+  28              		.loc 1 203 0
+  29              		.cfi_startproc
+  30              		@ args = 0, pretend = 0, frame = 0
+  31              		@ frame_needed = 0, uses_anonymous_args = 0
+  32              	.LVL0:
+  33 0000 F8B5     		push	{r3, r4, r5, r6, r7, lr}
+  34              	.LCFI0:
+  35              		.cfi_def_cfa_offset 24
+  36              		.cfi_offset 3, -24
+  37              		.cfi_offset 4, -20
+  38              		.cfi_offset 5, -16
+  39              		.cfi_offset 6, -12
+  40              		.cfi_offset 7, -8
+  41              		.cfi_offset 14, -4
+  42 0002 0F46     		mov	r7, r1
+  43 0004 1546     		mov	r5, r2
+  44 0006 1E46     		mov	r6, r3
+ 204:rt-thread/src/ipc.c ****     RT_ASSERT(sem != RT_NULL);
+  45              		.loc 1 204 0
+  46 0008 0446     		mov	r4, r0
+  47 000a 78B1     		cbz	r0, .L5
+  48              	.LVL1:
+  49              	.L2:
+ 205:rt-thread/src/ipc.c ****     RT_ASSERT(value < 0x10000U);
+  50              		.loc 1 205 0
+  51 000c B5F5803F 		cmp	r5, #65536
+  52 0010 12D2     		bcs	.L6
+  53              	.L3:
+ 206:rt-thread/src/ipc.c **** 
+ 207:rt-thread/src/ipc.c ****     /* initialize object */
+ 208:rt-thread/src/ipc.c ****     rt_object_init(&(sem->parent.parent), RT_Object_Class_Semaphore, name);
+  54              		.loc 1 208 0
+  55 0012 3A46     		mov	r2, r7
+  56 0014 0221     		movs	r1, #2
+  57 0016 2046     		mov	r0, r4
+  58 0018 FFF7FEFF 		bl	rt_object_init
+  59              	.LVL2:
+  60              	.LBB26:
+  61              	.LBB27:
+  64:rt-thread/src/ipc.c **** 
+  62              		.loc 1 64 0
+  63 001c 04F11403 		add	r3, r4, #20
+  64              	.LVL3:
+  65              	.LBB28:
+  66              	.LBB29:
+  67              		.file 2 "rt-thread/include/rtservice.h"
+   1:rt-thread/include/rtservice.h **** /*
+   2:rt-thread/include/rtservice.h ****  * Copyright (c) 2006-2018, RT-Thread Development Team
+   3:rt-thread/include/rtservice.h ****  *
+   4:rt-thread/include/rtservice.h ****  * SPDX-License-Identifier: Apache-2.0
+   5:rt-thread/include/rtservice.h ****  *
+   6:rt-thread/include/rtservice.h ****  * Change Logs:
+   7:rt-thread/include/rtservice.h ****  * Date           Author       Notes
+   8:rt-thread/include/rtservice.h ****  * 2006-03-16     Bernard      the first version
+   9:rt-thread/include/rtservice.h ****  * 2006-09-07     Bernard      move the kservice APIs to rtthread.h
+  10:rt-thread/include/rtservice.h ****  * 2007-06-27     Bernard      fix the rt_list_remove bug
+ARM GAS  /tmp/ccyaZLNK.s 			page 6
+
+
+  11:rt-thread/include/rtservice.h ****  * 2012-03-22     Bernard      rename kservice.h to rtservice.h
+  12:rt-thread/include/rtservice.h ****  * 2017-11-15     JasonJia     Modify rt_slist_foreach to rt_slist_for_each_entry.
+  13:rt-thread/include/rtservice.h ****  *                             Make code cleanup.
+  14:rt-thread/include/rtservice.h ****  */
+  15:rt-thread/include/rtservice.h **** 
+  16:rt-thread/include/rtservice.h **** #ifndef __RT_SERVICE_H__
+  17:rt-thread/include/rtservice.h **** #define __RT_SERVICE_H__
+  18:rt-thread/include/rtservice.h **** 
+  19:rt-thread/include/rtservice.h **** #ifdef __cplusplus
+  20:rt-thread/include/rtservice.h **** extern "C" {
+  21:rt-thread/include/rtservice.h **** #endif
+  22:rt-thread/include/rtservice.h **** 
+  23:rt-thread/include/rtservice.h **** /**
+  24:rt-thread/include/rtservice.h ****  * @addtogroup KernelService
+  25:rt-thread/include/rtservice.h ****  */
+  26:rt-thread/include/rtservice.h **** 
+  27:rt-thread/include/rtservice.h **** /**@{*/
+  28:rt-thread/include/rtservice.h **** 
+  29:rt-thread/include/rtservice.h **** /**
+  30:rt-thread/include/rtservice.h ****  * rt_container_of - return the member address of ptr, if the type of ptr is the
+  31:rt-thread/include/rtservice.h ****  * struct type.
+  32:rt-thread/include/rtservice.h ****  */
+  33:rt-thread/include/rtservice.h **** #define rt_container_of(ptr, type, member) \
+  34:rt-thread/include/rtservice.h ****     ((type *)((char *)(ptr) - (unsigned long)(&((type *)0)->member)))
+  35:rt-thread/include/rtservice.h **** 
+  36:rt-thread/include/rtservice.h **** 
+  37:rt-thread/include/rtservice.h **** /**
+  38:rt-thread/include/rtservice.h ****  * @brief initialize a list object
+  39:rt-thread/include/rtservice.h ****  */
+  40:rt-thread/include/rtservice.h **** #define RT_LIST_OBJECT_INIT(object) { &(object), &(object) }
+  41:rt-thread/include/rtservice.h **** 
+  42:rt-thread/include/rtservice.h **** /**
+  43:rt-thread/include/rtservice.h ****  * @brief initialize a list
+  44:rt-thread/include/rtservice.h ****  *
+  45:rt-thread/include/rtservice.h ****  * @param l list to be initialized
+  46:rt-thread/include/rtservice.h ****  */
+  47:rt-thread/include/rtservice.h **** rt_inline void rt_list_init(rt_list_t *l)
+  48:rt-thread/include/rtservice.h **** {
+  49:rt-thread/include/rtservice.h ****     l->next = l->prev = l;
+  68              		.loc 2 49 0
+  69 0020 A361     		str	r3, [r4, #24]
+  70 0022 6361     		str	r3, [r4, #20]
+  71              	.LVL4:
+  72              	.LBE29:
+  73              	.LBE28:
+  74              	.LBE27:
+  75              	.LBE26:
+ 209:rt-thread/src/ipc.c **** 
+ 210:rt-thread/src/ipc.c ****     /* initialize ipc object */
+ 211:rt-thread/src/ipc.c ****     rt_ipc_object_init(&(sem->parent));
+ 212:rt-thread/src/ipc.c **** 
+ 213:rt-thread/src/ipc.c ****     /* set initial value */
+ 214:rt-thread/src/ipc.c ****     sem->value = (rt_uint16_t)value;
+  76              		.loc 1 214 0
+  77 0024 A583     		strh	r5, [r4, #28]	@ movhi
+ 215:rt-thread/src/ipc.c **** 
+ 216:rt-thread/src/ipc.c ****     /* set parent */
+ARM GAS  /tmp/ccyaZLNK.s 			page 7
+
+
+ 217:rt-thread/src/ipc.c ****     sem->parent.parent.flag = flag;
+  78              		.loc 1 217 0
+  79 0026 6672     		strb	r6, [r4, #9]
+ 218:rt-thread/src/ipc.c **** 
+ 219:rt-thread/src/ipc.c ****     return RT_EOK;
+ 220:rt-thread/src/ipc.c **** }
+  80              		.loc 1 220 0
+  81 0028 0020     		movs	r0, #0
+  82 002a F8BD     		pop	{r3, r4, r5, r6, r7, pc}
+  83              	.LVL5:
+  84              	.L5:
+ 204:rt-thread/src/ipc.c ****     RT_ASSERT(value < 0x10000U);
+  85              		.loc 1 204 0 discriminator 1
+  86 002c CC22     		movs	r2, #204
+  87              	.LVL6:
+  88 002e 0549     		ldr	r1, .L7
+  89              	.LVL7:
+  90 0030 0548     		ldr	r0, .L7+4
+  91              	.LVL8:
+  92 0032 FFF7FEFF 		bl	rt_assert_handler
+  93              	.LVL9:
+  94 0036 E9E7     		b	.L2
+  95              	.L6:
+ 205:rt-thread/src/ipc.c **** 
+  96              		.loc 1 205 0 discriminator 1
+  97 0038 CD22     		movs	r2, #205
+  98 003a 0249     		ldr	r1, .L7
+  99 003c 0348     		ldr	r0, .L7+8
+ 100 003e FFF7FEFF 		bl	rt_assert_handler
+ 101              	.LVL10:
+ 102 0042 E6E7     		b	.L3
+ 103              	.L8:
+ 104              		.align	2
+ 105              	.L7:
+ 106 0044 00000000 		.word	.LANCHOR0
+ 107 0048 00000000 		.word	.LC0
+ 108 004c 10000000 		.word	.LC1
+ 109              		.cfi_endproc
+ 110              	.LFE19:
+ 112              		.section	.text.rt_sem_detach,"ax",%progbits
+ 113              		.align	1
+ 114              		.global	rt_sem_detach
+ 115              		.syntax unified
+ 116              		.thumb
+ 117              		.thumb_func
+ 118              		.fpu fpv4-sp-d16
+ 120              	rt_sem_detach:
+ 121              	.LFB20:
+ 221:rt-thread/src/ipc.c **** RTM_EXPORT(rt_sem_init);
+ 222:rt-thread/src/ipc.c **** 
+ 223:rt-thread/src/ipc.c **** /**
+ 224:rt-thread/src/ipc.c ****  * This function will detach a semaphore from resource management
+ 225:rt-thread/src/ipc.c ****  *
+ 226:rt-thread/src/ipc.c ****  * @param sem the semaphore object
+ 227:rt-thread/src/ipc.c ****  *
+ 228:rt-thread/src/ipc.c ****  * @return the operation status, RT_EOK on successful
+ 229:rt-thread/src/ipc.c ****  *
+ARM GAS  /tmp/ccyaZLNK.s 			page 8
+
+
+ 230:rt-thread/src/ipc.c ****  * @see rt_sem_delete
+ 231:rt-thread/src/ipc.c ****  */
+ 232:rt-thread/src/ipc.c **** rt_err_t rt_sem_detach(rt_sem_t sem)
+ 233:rt-thread/src/ipc.c **** {
+ 122              		.loc 1 233 0
+ 123              		.cfi_startproc
+ 124              		@ args = 0, pretend = 0, frame = 0
+ 125              		@ frame_needed = 0, uses_anonymous_args = 0
+ 126              	.LVL11:
+ 127 0000 70B5     		push	{r4, r5, r6, lr}
+ 128              	.LCFI1:
+ 129              		.cfi_def_cfa_offset 16
+ 130              		.cfi_offset 4, -16
+ 131              		.cfi_offset 5, -12
+ 132              		.cfi_offset 6, -8
+ 133              		.cfi_offset 14, -4
+ 234:rt-thread/src/ipc.c ****     /* parameter check */
+ 235:rt-thread/src/ipc.c ****     RT_ASSERT(sem != RT_NULL);
+ 134              		.loc 1 235 0
+ 135 0002 0646     		mov	r6, r0
+ 136 0004 80B1     		cbz	r0, .L16
+ 137              	.LVL12:
+ 138              	.L10:
+ 236:rt-thread/src/ipc.c ****     RT_ASSERT(rt_object_get_type(&sem->parent.parent) == RT_Object_Class_Semaphore);
+ 139              		.loc 1 236 0
+ 140 0006 3046     		mov	r0, r6
+ 141 0008 FFF7FEFF 		bl	rt_object_get_type
+ 142              	.LVL13:
+ 143 000c 0228     		cmp	r0, #2
+ 144 000e 04D0     		beq	.L11
+ 145              		.loc 1 236 0 is_stmt 0 discriminator 1
+ 146 0010 EC22     		movs	r2, #236
+ 147 0012 1649     		ldr	r1, .L18
+ 148 0014 1648     		ldr	r0, .L18+4
+ 149 0016 FFF7FEFF 		bl	rt_assert_handler
+ 150              	.LVL14:
+ 151              	.L11:
+ 237:rt-thread/src/ipc.c ****     RT_ASSERT(rt_object_is_systemobject(&sem->parent.parent));
+ 152              		.loc 1 237 0 is_stmt 1
+ 153 001a 3046     		mov	r0, r6
+ 154 001c FFF7FEFF 		bl	rt_object_is_systemobject
+ 155              	.LVL15:
+ 156 0020 40B1     		cbz	r0, .L17
+ 157              	.L12:
+ 238:rt-thread/src/ipc.c **** 
+ 239:rt-thread/src/ipc.c ****     /* wakeup all suspended threads */
+ 240:rt-thread/src/ipc.c ****     rt_ipc_list_resume_all(&(sem->parent.suspend_thread));
+ 158              		.loc 1 240 0
+ 159 0022 06F11404 		add	r4, r6, #20
+ 160              	.LVL16:
+ 161 0026 18E0     		b	.L13
+ 162              	.LVL17:
+ 163              	.L16:
+ 235:rt-thread/src/ipc.c ****     RT_ASSERT(rt_object_get_type(&sem->parent.parent) == RT_Object_Class_Semaphore);
+ 164              		.loc 1 235 0 discriminator 1
+ 165 0028 EB22     		movs	r2, #235
+ 166 002a 1049     		ldr	r1, .L18
+ARM GAS  /tmp/ccyaZLNK.s 			page 9
+
+
+ 167 002c 1148     		ldr	r0, .L18+8
+ 168              	.LVL18:
+ 169 002e FFF7FEFF 		bl	rt_assert_handler
+ 170              	.LVL19:
+ 171 0032 E8E7     		b	.L10
+ 172              	.L17:
+ 237:rt-thread/src/ipc.c ****     RT_ASSERT(rt_object_is_systemobject(&sem->parent.parent));
+ 173              		.loc 1 237 0 discriminator 1
+ 174 0034 ED22     		movs	r2, #237
+ 175 0036 0D49     		ldr	r1, .L18
+ 176 0038 0F48     		ldr	r0, .L18+12
+ 177 003a FFF7FEFF 		bl	rt_assert_handler
+ 178              	.LVL20:
+ 179 003e F0E7     		b	.L12
+ 180              	.LVL21:
+ 181              	.L14:
+ 182              	.LBB34:
+ 183              	.LBB35:
+ 166:rt-thread/src/ipc.c **** 
+ 184              		.loc 1 166 0
+ 185 0040 FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 186              	.LVL22:
+ 187 0044 0546     		mov	r5, r0
+ 188              	.LVL23:
+ 169:rt-thread/src/ipc.c ****         /* set error code to RT_ERROR */
+ 189              		.loc 1 169 0
+ 190 0046 2068     		ldr	r0, [r4]
+ 191              	.LVL24:
+ 171:rt-thread/src/ipc.c **** 
+ 192              		.loc 1 171 0
+ 193 0048 4FF0FF33 		mov	r3, #-1
+ 194 004c C361     		str	r3, [r0, #28]
+ 178:rt-thread/src/ipc.c **** 
+ 195              		.loc 1 178 0
+ 196 004e 1438     		subs	r0, r0, #20
+ 197              	.LVL25:
+ 198 0050 FFF7FEFF 		bl	rt_thread_resume
+ 199              	.LVL26:
+ 181:rt-thread/src/ipc.c ****     }
+ 200              		.loc 1 181 0
+ 201 0054 2846     		mov	r0, r5
+ 202 0056 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 203              	.LVL27:
+ 204              	.L13:
+ 205              	.LBB36:
+ 206              	.LBB37:
+  50:rt-thread/include/rtservice.h **** }
+  51:rt-thread/include/rtservice.h **** 
+  52:rt-thread/include/rtservice.h **** /**
+  53:rt-thread/include/rtservice.h ****  * @brief insert a node after a list
+  54:rt-thread/include/rtservice.h ****  *
+  55:rt-thread/include/rtservice.h ****  * @param l list to insert it
+  56:rt-thread/include/rtservice.h ****  * @param n new node to be inserted
+  57:rt-thread/include/rtservice.h ****  */
+  58:rt-thread/include/rtservice.h **** rt_inline void rt_list_insert_after(rt_list_t *l, rt_list_t *n)
+  59:rt-thread/include/rtservice.h **** {
+  60:rt-thread/include/rtservice.h ****     l->next->prev = n;
+ARM GAS  /tmp/ccyaZLNK.s 			page 10
+
+
+  61:rt-thread/include/rtservice.h ****     n->next = l->next;
+  62:rt-thread/include/rtservice.h **** 
+  63:rt-thread/include/rtservice.h ****     l->next = n;
+  64:rt-thread/include/rtservice.h ****     n->prev = l;
+  65:rt-thread/include/rtservice.h **** }
+  66:rt-thread/include/rtservice.h **** 
+  67:rt-thread/include/rtservice.h **** /**
+  68:rt-thread/include/rtservice.h ****  * @brief insert a node before a list
+  69:rt-thread/include/rtservice.h ****  *
+  70:rt-thread/include/rtservice.h ****  * @param n new node to be inserted
+  71:rt-thread/include/rtservice.h ****  * @param l list to insert it
+  72:rt-thread/include/rtservice.h ****  */
+  73:rt-thread/include/rtservice.h **** rt_inline void rt_list_insert_before(rt_list_t *l, rt_list_t *n)
+  74:rt-thread/include/rtservice.h **** {
+  75:rt-thread/include/rtservice.h ****     l->prev->next = n;
+  76:rt-thread/include/rtservice.h ****     n->prev = l->prev;
+  77:rt-thread/include/rtservice.h **** 
+  78:rt-thread/include/rtservice.h ****     l->prev = n;
+  79:rt-thread/include/rtservice.h ****     n->next = l;
+  80:rt-thread/include/rtservice.h **** }
+  81:rt-thread/include/rtservice.h **** 
+  82:rt-thread/include/rtservice.h **** /**
+  83:rt-thread/include/rtservice.h ****  * @brief remove node from list.
+  84:rt-thread/include/rtservice.h ****  * @param n the node to remove from the list.
+  85:rt-thread/include/rtservice.h ****  */
+  86:rt-thread/include/rtservice.h **** rt_inline void rt_list_remove(rt_list_t *n)
+  87:rt-thread/include/rtservice.h **** {
+  88:rt-thread/include/rtservice.h ****     n->next->prev = n->prev;
+  89:rt-thread/include/rtservice.h ****     n->prev->next = n->next;
+  90:rt-thread/include/rtservice.h **** 
+  91:rt-thread/include/rtservice.h ****     n->next = n->prev = n;
+  92:rt-thread/include/rtservice.h **** }
+  93:rt-thread/include/rtservice.h **** 
+  94:rt-thread/include/rtservice.h **** /**
+  95:rt-thread/include/rtservice.h ****  * @brief tests whether a list is empty
+  96:rt-thread/include/rtservice.h ****  * @param l the list to test.
+  97:rt-thread/include/rtservice.h ****  */
+  98:rt-thread/include/rtservice.h **** rt_inline int rt_list_isempty(const rt_list_t *l)
+  99:rt-thread/include/rtservice.h **** {
+ 100:rt-thread/include/rtservice.h ****     return l->next == l;
+ 207              		.loc 2 100 0
+ 208 005a 2368     		ldr	r3, [r4]
+ 209              	.LVL28:
+ 210              	.LBE37:
+ 211              	.LBE36:
+ 163:rt-thread/src/ipc.c ****     {
+ 212              		.loc 1 163 0
+ 213 005c 9C42     		cmp	r4, r3
+ 214 005e EFD1     		bne	.L14
+ 215              	.LVL29:
+ 216              	.LBE35:
+ 217              	.LBE34:
+ 241:rt-thread/src/ipc.c **** 
+ 242:rt-thread/src/ipc.c ****     /* detach semaphore object */
+ 243:rt-thread/src/ipc.c ****     rt_object_detach(&(sem->parent.parent));
+ 218              		.loc 1 243 0
+ 219 0060 3046     		mov	r0, r6
+ARM GAS  /tmp/ccyaZLNK.s 			page 11
+
+
+ 220 0062 FFF7FEFF 		bl	rt_object_detach
+ 221              	.LVL30:
+ 244:rt-thread/src/ipc.c **** 
+ 245:rt-thread/src/ipc.c ****     return RT_EOK;
+ 246:rt-thread/src/ipc.c **** }
+ 222              		.loc 1 246 0
+ 223 0066 0020     		movs	r0, #0
+ 224 0068 70BD     		pop	{r4, r5, r6, pc}
+ 225              	.LVL31:
+ 226              	.L19:
+ 227 006a 00BF     		.align	2
+ 228              	.L18:
+ 229 006c 00000000 		.word	.LANCHOR1
+ 230 0070 00000000 		.word	.LC2
+ 231 0074 00000000 		.word	.LC0
+ 232 0078 48000000 		.word	.LC3
+ 233              		.cfi_endproc
+ 234              	.LFE20:
+ 236              		.section	.text.rt_sem_create,"ax",%progbits
+ 237              		.align	1
+ 238              		.global	rt_sem_create
+ 239              		.syntax unified
+ 240              		.thumb
+ 241              		.thumb_func
+ 242              		.fpu fpv4-sp-d16
+ 244              	rt_sem_create:
+ 245              	.LFB21:
+ 247:rt-thread/src/ipc.c **** RTM_EXPORT(rt_sem_detach);
+ 248:rt-thread/src/ipc.c **** 
+ 249:rt-thread/src/ipc.c **** #ifdef RT_USING_HEAP
+ 250:rt-thread/src/ipc.c **** /**
+ 251:rt-thread/src/ipc.c ****  * This function will create a semaphore from system resource
+ 252:rt-thread/src/ipc.c ****  *
+ 253:rt-thread/src/ipc.c ****  * @param name the name of semaphore
+ 254:rt-thread/src/ipc.c ****  * @param value the initial value of semaphore
+ 255:rt-thread/src/ipc.c ****  * @param flag the flag of semaphore
+ 256:rt-thread/src/ipc.c ****  *
+ 257:rt-thread/src/ipc.c ****  * @return the created semaphore, RT_NULL on error happen
+ 258:rt-thread/src/ipc.c ****  *
+ 259:rt-thread/src/ipc.c ****  * @see rt_sem_init
+ 260:rt-thread/src/ipc.c ****  */
+ 261:rt-thread/src/ipc.c **** rt_sem_t rt_sem_create(const char *name, rt_uint32_t value, rt_uint8_t flag)
+ 262:rt-thread/src/ipc.c **** {
+ 246              		.loc 1 262 0
+ 247              		.cfi_startproc
+ 248              		@ args = 0, pretend = 0, frame = 0
+ 249              		@ frame_needed = 0, uses_anonymous_args = 0
+ 250              	.LVL32:
+ 251 0000 2DE9F041 		push	{r4, r5, r6, r7, r8, lr}
+ 252              	.LCFI2:
+ 253              		.cfi_def_cfa_offset 24
+ 254              		.cfi_offset 4, -24
+ 255              		.cfi_offset 5, -20
+ 256              		.cfi_offset 6, -16
+ 257              		.cfi_offset 7, -12
+ 258              		.cfi_offset 8, -8
+ 259              		.cfi_offset 14, -4
+ARM GAS  /tmp/ccyaZLNK.s 			page 12
+
+
+ 260 0004 0546     		mov	r5, r0
+ 261 0006 0C46     		mov	r4, r1
+ 262 0008 1746     		mov	r7, r2
+ 263              	.LBB38:
+ 263:rt-thread/src/ipc.c ****     rt_sem_t sem;
+ 264:rt-thread/src/ipc.c **** 
+ 265:rt-thread/src/ipc.c ****     RT_DEBUG_NOT_IN_INTERRUPT;
+ 264              		.loc 1 265 0
+ 265 000a FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 266              	.LVL33:
+ 267 000e 0646     		mov	r6, r0
+ 268              	.LVL34:
+ 269 0010 FFF7FEFF 		bl	rt_interrupt_get_nest
+ 270              	.LVL35:
+ 271 0014 A0B9     		cbnz	r0, .L25
+ 272              	.L21:
+ 273              		.loc 1 265 0 is_stmt 0 discriminator 5
+ 274 0016 3046     		mov	r0, r6
+ 275 0018 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 276              	.LVL36:
+ 277              	.LBE38:
+ 266:rt-thread/src/ipc.c ****     RT_ASSERT(value < 0x10000U);
+ 278              		.loc 1 266 0 is_stmt 1 discriminator 5
+ 279 001c B4F5803F 		cmp	r4, #65536
+ 280 0020 1BD2     		bcs	.L26
+ 281              	.L22:
+ 267:rt-thread/src/ipc.c **** 
+ 268:rt-thread/src/ipc.c ****     /* allocate object */
+ 269:rt-thread/src/ipc.c ****     sem = (rt_sem_t)rt_object_allocate(RT_Object_Class_Semaphore, name);
+ 282              		.loc 1 269 0
+ 283 0022 2946     		mov	r1, r5
+ 284 0024 0220     		movs	r0, #2
+ 285 0026 FFF7FEFF 		bl	rt_object_allocate
+ 286              	.LVL37:
+ 270:rt-thread/src/ipc.c ****     if (sem == RT_NULL)
+ 287              		.loc 1 270 0
+ 288 002a 0346     		mov	r3, r0
+ 289 002c 28B1     		cbz	r0, .L20
+ 290              	.LVL38:
+ 291              	.LBB39:
+ 292              	.LBB40:
+  64:rt-thread/src/ipc.c **** 
+ 293              		.loc 1 64 0
+ 294 002e 00F11402 		add	r2, r0, #20
+ 295              	.LVL39:
+ 296              	.LBB41:
+ 297              	.LBB42:
+  49:rt-thread/include/rtservice.h **** }
+ 298              		.loc 2 49 0
+ 299 0032 8261     		str	r2, [r0, #24]
+ 300 0034 4261     		str	r2, [r0, #20]
+ 301              	.LVL40:
+ 302              	.LBE42:
+ 303              	.LBE41:
+ 304              	.LBE40:
+ 305              	.LBE39:
+ 271:rt-thread/src/ipc.c ****         return sem;
+ARM GAS  /tmp/ccyaZLNK.s 			page 13
+
+
+ 272:rt-thread/src/ipc.c **** 
+ 273:rt-thread/src/ipc.c ****     /* initialize ipc object */
+ 274:rt-thread/src/ipc.c ****     rt_ipc_object_init(&(sem->parent));
+ 275:rt-thread/src/ipc.c **** 
+ 276:rt-thread/src/ipc.c ****     /* set initial value */
+ 277:rt-thread/src/ipc.c ****     sem->value = value;
+ 306              		.loc 1 277 0
+ 307 0036 8483     		strh	r4, [r0, #28]	@ movhi
+ 278:rt-thread/src/ipc.c **** 
+ 279:rt-thread/src/ipc.c ****     /* set parent */
+ 280:rt-thread/src/ipc.c ****     sem->parent.parent.flag = flag;
+ 308              		.loc 1 280 0
+ 309 0038 4772     		strb	r7, [r0, #9]
+ 310              	.L20:
+ 281:rt-thread/src/ipc.c **** 
+ 282:rt-thread/src/ipc.c ****     return sem;
+ 283:rt-thread/src/ipc.c **** }
+ 311              		.loc 1 283 0
+ 312 003a 1846     		mov	r0, r3
+ 313              	.LVL41:
+ 314 003c BDE8F081 		pop	{r4, r5, r6, r7, r8, pc}
+ 315              	.LVL42:
+ 316              	.L25:
+ 317              	.LBB43:
+ 265:rt-thread/src/ipc.c ****     RT_ASSERT(value < 0x10000U);
+ 318              		.loc 1 265 0 discriminator 1
+ 319 0040 DFF82C80 		ldr	r8, .L27+8
+ 320 0044 4146     		mov	r1, r8
+ 321 0046 0848     		ldr	r0, .L27
+ 322 0048 FFF7FEFF 		bl	rt_kprintf
+ 323              	.LVL43:
+ 324 004c 40F20912 		movw	r2, #265
+ 325 0050 4146     		mov	r1, r8
+ 326 0052 0648     		ldr	r0, .L27+4
+ 327 0054 FFF7FEFF 		bl	rt_assert_handler
+ 328              	.LVL44:
+ 329 0058 DDE7     		b	.L21
+ 330              	.L26:
+ 331              	.LBE43:
+ 266:rt-thread/src/ipc.c **** 
+ 332              		.loc 1 266 0 discriminator 1
+ 333 005a 4FF48572 		mov	r2, #266
+ 334 005e 0449     		ldr	r1, .L27+8
+ 335 0060 0448     		ldr	r0, .L27+12
+ 336 0062 FFF7FEFF 		bl	rt_assert_handler
+ 337              	.LVL45:
+ 338 0066 DCE7     		b	.L22
+ 339              	.L28:
+ 340              		.align	2
+ 341              	.L27:
+ 342 0068 00000000 		.word	.LC4
+ 343 006c 28000000 		.word	.LC5
+ 344 0070 00000000 		.word	.LANCHOR2
+ 345 0074 10000000 		.word	.LC1
+ 346              		.cfi_endproc
+ 347              	.LFE21:
+ 349              		.section	.text.rt_sem_delete,"ax",%progbits
+ARM GAS  /tmp/ccyaZLNK.s 			page 14
+
+
+ 350              		.align	1
+ 351              		.global	rt_sem_delete
+ 352              		.syntax unified
+ 353              		.thumb
+ 354              		.thumb_func
+ 355              		.fpu fpv4-sp-d16
+ 357              	rt_sem_delete:
+ 358              	.LFB22:
+ 284:rt-thread/src/ipc.c **** RTM_EXPORT(rt_sem_create);
+ 285:rt-thread/src/ipc.c **** 
+ 286:rt-thread/src/ipc.c **** /**
+ 287:rt-thread/src/ipc.c ****  * This function will delete a semaphore object and release the memory
+ 288:rt-thread/src/ipc.c ****  *
+ 289:rt-thread/src/ipc.c ****  * @param sem the semaphore object
+ 290:rt-thread/src/ipc.c ****  *
+ 291:rt-thread/src/ipc.c ****  * @return the error code
+ 292:rt-thread/src/ipc.c ****  *
+ 293:rt-thread/src/ipc.c ****  * @see rt_sem_detach
+ 294:rt-thread/src/ipc.c ****  */
+ 295:rt-thread/src/ipc.c **** rt_err_t rt_sem_delete(rt_sem_t sem)
+ 296:rt-thread/src/ipc.c **** {
+ 359              		.loc 1 296 0
+ 360              		.cfi_startproc
+ 361              		@ args = 0, pretend = 0, frame = 0
+ 362              		@ frame_needed = 0, uses_anonymous_args = 0
+ 363              	.LVL46:
+ 364 0000 70B5     		push	{r4, r5, r6, lr}
+ 365              	.LCFI3:
+ 366              		.cfi_def_cfa_offset 16
+ 367              		.cfi_offset 4, -16
+ 368              		.cfi_offset 5, -12
+ 369              		.cfi_offset 6, -8
+ 370              		.cfi_offset 14, -4
+ 371 0002 0646     		mov	r6, r0
+ 372              	.LBB49:
+ 297:rt-thread/src/ipc.c ****     RT_DEBUG_NOT_IN_INTERRUPT;
+ 373              		.loc 1 297 0
+ 374 0004 FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 375              	.LVL47:
+ 376 0008 0446     		mov	r4, r0
+ 377              	.LVL48:
+ 378 000a FFF7FEFF 		bl	rt_interrupt_get_nest
+ 379              	.LVL49:
+ 380 000e A8B9     		cbnz	r0, .L37
+ 381              	.L30:
+ 382              		.loc 1 297 0 is_stmt 0 discriminator 5
+ 383 0010 2046     		mov	r0, r4
+ 384 0012 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 385              	.LVL50:
+ 386              	.LBE49:
+ 298:rt-thread/src/ipc.c **** 
+ 299:rt-thread/src/ipc.c ****     /* parameter check */
+ 300:rt-thread/src/ipc.c ****     RT_ASSERT(sem != RT_NULL);
+ 387              		.loc 1 300 0 is_stmt 1 discriminator 5
+ 388 0016 EEB1     		cbz	r6, .L38
+ 389              	.L31:
+ 301:rt-thread/src/ipc.c ****     RT_ASSERT(rt_object_get_type(&sem->parent.parent) == RT_Object_Class_Semaphore);
+ARM GAS  /tmp/ccyaZLNK.s 			page 15
+
+
+ 390              		.loc 1 301 0
+ 391 0018 3046     		mov	r0, r6
+ 392 001a FFF7FEFF 		bl	rt_object_get_type
+ 393              	.LVL51:
+ 394 001e 0228     		cmp	r0, #2
+ 395 0020 05D0     		beq	.L32
+ 396              		.loc 1 301 0 is_stmt 0 discriminator 1
+ 397 0022 40F22D12 		movw	r2, #301
+ 398 0026 1D49     		ldr	r1, .L40
+ 399 0028 1D48     		ldr	r0, .L40+4
+ 400 002a FFF7FEFF 		bl	rt_assert_handler
+ 401              	.LVL52:
+ 402              	.L32:
+ 302:rt-thread/src/ipc.c ****     RT_ASSERT(rt_object_is_systemobject(&sem->parent.parent) == RT_FALSE);
+ 403              		.loc 1 302 0 is_stmt 1
+ 404 002e 3046     		mov	r0, r6
+ 405 0030 FFF7FEFF 		bl	rt_object_is_systemobject
+ 406              	.LVL53:
+ 407 0034 A8B9     		cbnz	r0, .L39
+ 408              	.L33:
+ 303:rt-thread/src/ipc.c **** 
+ 304:rt-thread/src/ipc.c ****     /* wakeup all suspended threads */
+ 305:rt-thread/src/ipc.c ****     rt_ipc_list_resume_all(&(sem->parent.suspend_thread));
+ 409              		.loc 1 305 0
+ 410 0036 06F11404 		add	r4, r6, #20
+ 411              	.LVL54:
+ 412 003a 26E0     		b	.L34
+ 413              	.LVL55:
+ 414              	.L37:
+ 415              	.LBB50:
+ 297:rt-thread/src/ipc.c **** 
+ 416              		.loc 1 297 0 discriminator 1
+ 417 003c 174D     		ldr	r5, .L40
+ 418 003e 2946     		mov	r1, r5
+ 419 0040 1848     		ldr	r0, .L40+8
+ 420 0042 FFF7FEFF 		bl	rt_kprintf
+ 421              	.LVL56:
+ 422 0046 40F22912 		movw	r2, #297
+ 423 004a 2946     		mov	r1, r5
+ 424 004c 1648     		ldr	r0, .L40+12
+ 425 004e FFF7FEFF 		bl	rt_assert_handler
+ 426              	.LVL57:
+ 427 0052 DDE7     		b	.L30
+ 428              	.L38:
+ 429              	.LBE50:
+ 300:rt-thread/src/ipc.c ****     RT_ASSERT(rt_object_get_type(&sem->parent.parent) == RT_Object_Class_Semaphore);
+ 430              		.loc 1 300 0 discriminator 1
+ 431 0054 4FF49672 		mov	r2, #300
+ 432 0058 1049     		ldr	r1, .L40
+ 433 005a 1448     		ldr	r0, .L40+16
+ 434 005c FFF7FEFF 		bl	rt_assert_handler
+ 435              	.LVL58:
+ 436 0060 DAE7     		b	.L31
+ 437              	.L39:
+ 302:rt-thread/src/ipc.c **** 
+ 438              		.loc 1 302 0 discriminator 1
+ 439 0062 4FF49772 		mov	r2, #302
+ARM GAS  /tmp/ccyaZLNK.s 			page 16
+
+
+ 440 0066 0D49     		ldr	r1, .L40
+ 441 0068 1148     		ldr	r0, .L40+20
+ 442 006a FFF7FEFF 		bl	rt_assert_handler
+ 443              	.LVL59:
+ 444 006e E2E7     		b	.L33
+ 445              	.LVL60:
+ 446              	.L35:
+ 447              	.LBB51:
+ 448              	.LBB52:
+ 166:rt-thread/src/ipc.c **** 
+ 449              		.loc 1 166 0
+ 450 0070 FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 451              	.LVL61:
+ 452 0074 0546     		mov	r5, r0
+ 453              	.LVL62:
+ 169:rt-thread/src/ipc.c ****         /* set error code to RT_ERROR */
+ 454              		.loc 1 169 0
+ 455 0076 2068     		ldr	r0, [r4]
+ 456              	.LVL63:
+ 171:rt-thread/src/ipc.c **** 
+ 457              		.loc 1 171 0
+ 458 0078 4FF0FF33 		mov	r3, #-1
+ 459 007c C361     		str	r3, [r0, #28]
+ 178:rt-thread/src/ipc.c **** 
+ 460              		.loc 1 178 0
+ 461 007e 1438     		subs	r0, r0, #20
+ 462              	.LVL64:
+ 463 0080 FFF7FEFF 		bl	rt_thread_resume
+ 464              	.LVL65:
+ 181:rt-thread/src/ipc.c ****     }
+ 465              		.loc 1 181 0
+ 466 0084 2846     		mov	r0, r5
+ 467 0086 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 468              	.LVL66:
+ 469              	.L34:
+ 470              	.LBB53:
+ 471              	.LBB54:
+ 472              		.loc 2 100 0
+ 473 008a 2368     		ldr	r3, [r4]
+ 474              	.LVL67:
+ 475              	.LBE54:
+ 476              	.LBE53:
+ 163:rt-thread/src/ipc.c ****     {
+ 477              		.loc 1 163 0
+ 478 008c 9C42     		cmp	r4, r3
+ 479 008e EFD1     		bne	.L35
+ 480              	.LVL68:
+ 481              	.LBE52:
+ 482              	.LBE51:
+ 306:rt-thread/src/ipc.c **** 
+ 307:rt-thread/src/ipc.c ****     /* delete semaphore object */
+ 308:rt-thread/src/ipc.c ****     rt_object_delete(&(sem->parent.parent));
+ 483              		.loc 1 308 0
+ 484 0090 3046     		mov	r0, r6
+ 485 0092 FFF7FEFF 		bl	rt_object_delete
+ 486              	.LVL69:
+ 309:rt-thread/src/ipc.c **** 
+ARM GAS  /tmp/ccyaZLNK.s 			page 17
+
+
+ 310:rt-thread/src/ipc.c ****     return RT_EOK;
+ 311:rt-thread/src/ipc.c **** }
+ 487              		.loc 1 311 0
+ 488 0096 0020     		movs	r0, #0
+ 489 0098 70BD     		pop	{r4, r5, r6, pc}
+ 490              	.LVL70:
+ 491              	.L41:
+ 492 009a 00BF     		.align	2
+ 493              	.L40:
+ 494 009c 00000000 		.word	.LANCHOR3
+ 495 00a0 00000000 		.word	.LC2
+ 496 00a4 00000000 		.word	.LC4
+ 497 00a8 28000000 		.word	.LC5
+ 498 00ac 00000000 		.word	.LC0
+ 499 00b0 00000000 		.word	.LC6
+ 500              		.cfi_endproc
+ 501              	.LFE22:
+ 503              		.section	.text.rt_sem_take,"ax",%progbits
+ 504              		.align	1
+ 505              		.global	rt_sem_take
+ 506              		.syntax unified
+ 507              		.thumb
+ 508              		.thumb_func
+ 509              		.fpu fpv4-sp-d16
+ 511              	rt_sem_take:
+ 512              	.LFB23:
+ 312:rt-thread/src/ipc.c **** RTM_EXPORT(rt_sem_delete);
+ 313:rt-thread/src/ipc.c **** #endif
+ 314:rt-thread/src/ipc.c **** 
+ 315:rt-thread/src/ipc.c **** /**
+ 316:rt-thread/src/ipc.c ****  * This function will take a semaphore, if the semaphore is unavailable, the
+ 317:rt-thread/src/ipc.c ****  * thread shall wait for a specified time.
+ 318:rt-thread/src/ipc.c ****  *
+ 319:rt-thread/src/ipc.c ****  * @param sem the semaphore object
+ 320:rt-thread/src/ipc.c ****  * @param time the waiting time
+ 321:rt-thread/src/ipc.c ****  *
+ 322:rt-thread/src/ipc.c ****  * @return the error code
+ 323:rt-thread/src/ipc.c ****  */
+ 324:rt-thread/src/ipc.c **** rt_err_t rt_sem_take(rt_sem_t sem, rt_int32_t time)
+ 325:rt-thread/src/ipc.c **** {
+ 513              		.loc 1 325 0
+ 514              		.cfi_startproc
+ 515              		@ args = 0, pretend = 0, frame = 8
+ 516              		@ frame_needed = 0, uses_anonymous_args = 0
+ 517              	.LVL71:
+ 518 0000 2DE9F041 		push	{r4, r5, r6, r7, r8, lr}
+ 519              	.LCFI4:
+ 520              		.cfi_def_cfa_offset 24
+ 521              		.cfi_offset 4, -24
+ 522              		.cfi_offset 5, -20
+ 523              		.cfi_offset 6, -16
+ 524              		.cfi_offset 7, -12
+ 525              		.cfi_offset 8, -8
+ 526              		.cfi_offset 14, -4
+ 527 0004 82B0     		sub	sp, sp, #8
+ 528              	.LCFI5:
+ 529              		.cfi_def_cfa_offset 32
+ARM GAS  /tmp/ccyaZLNK.s 			page 18
+
+
+ 530 0006 0191     		str	r1, [sp, #4]
+ 326:rt-thread/src/ipc.c ****     register rt_base_t temp;
+ 327:rt-thread/src/ipc.c ****     struct rt_thread *thread;
+ 328:rt-thread/src/ipc.c **** 
+ 329:rt-thread/src/ipc.c ****     /* parameter check */
+ 330:rt-thread/src/ipc.c ****     RT_ASSERT(sem != RT_NULL);
+ 531              		.loc 1 330 0
+ 532 0008 0646     		mov	r6, r0
+ 533 000a 0028     		cmp	r0, #0
+ 534 000c 4ED0     		beq	.L59
+ 535              	.LVL72:
+ 536              	.L43:
+ 331:rt-thread/src/ipc.c ****     RT_ASSERT(rt_object_get_type(&sem->parent.parent) == RT_Object_Class_Semaphore);
+ 537              		.loc 1 331 0
+ 538 000e 3046     		mov	r0, r6
+ 539 0010 FFF7FEFF 		bl	rt_object_get_type
+ 540              	.LVL73:
+ 541 0014 0228     		cmp	r0, #2
+ 542 0016 05D0     		beq	.L44
+ 543              		.loc 1 331 0 is_stmt 0 discriminator 1
+ 544 0018 40F24B12 		movw	r2, #331
+ 545 001c 4C49     		ldr	r1, .L65
+ 546 001e 4D48     		ldr	r0, .L65+4
+ 547 0020 FFF7FEFF 		bl	rt_assert_handler
+ 548              	.LVL74:
+ 549              	.L44:
+ 332:rt-thread/src/ipc.c **** 
+ 333:rt-thread/src/ipc.c ****     RT_OBJECT_HOOK_CALL(rt_object_trytake_hook, (&(sem->parent.parent)));
+ 334:rt-thread/src/ipc.c **** 
+ 335:rt-thread/src/ipc.c ****     /* disable interrupt */
+ 336:rt-thread/src/ipc.c ****     temp = rt_hw_interrupt_disable();
+ 550              		.loc 1 336 0 is_stmt 1
+ 551 0024 FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 552              	.LVL75:
+ 553 0028 0746     		mov	r7, r0
+ 554              	.LVL76:
+ 337:rt-thread/src/ipc.c **** 
+ 338:rt-thread/src/ipc.c ****     RT_DEBUG_LOG(RT_DEBUG_IPC, ("thread %s take sem:%s, which value is: %d\n",
+ 339:rt-thread/src/ipc.c ****                                 rt_thread_self()->name,
+ 340:rt-thread/src/ipc.c ****                                 ((struct rt_object *)sem)->name,
+ 341:rt-thread/src/ipc.c ****                                 sem->value));
+ 342:rt-thread/src/ipc.c **** 
+ 343:rt-thread/src/ipc.c ****     if (sem->value > 0)
+ 555              		.loc 1 343 0
+ 556 002a B38B     		ldrh	r3, [r6, #28]
+ 557 002c 002B     		cmp	r3, #0
+ 558 002e 44D1     		bne	.L60
+ 344:rt-thread/src/ipc.c ****     {
+ 345:rt-thread/src/ipc.c ****         /* semaphore is available */
+ 346:rt-thread/src/ipc.c ****         sem->value --;
+ 347:rt-thread/src/ipc.c **** 
+ 348:rt-thread/src/ipc.c ****         /* enable interrupt */
+ 349:rt-thread/src/ipc.c ****         rt_hw_interrupt_enable(temp);
+ 350:rt-thread/src/ipc.c ****     }
+ 351:rt-thread/src/ipc.c ****     else
+ 352:rt-thread/src/ipc.c ****     {
+ 353:rt-thread/src/ipc.c ****         /* no waiting, return with timeout */
+ARM GAS  /tmp/ccyaZLNK.s 			page 19
+
+
+ 354:rt-thread/src/ipc.c ****         if (time == 0)
+ 559              		.loc 1 354 0
+ 560 0030 019B     		ldr	r3, [sp, #4]
+ 561 0032 002B     		cmp	r3, #0
+ 562 0034 47D0     		beq	.L61
+ 563              	.LBB66:
+ 355:rt-thread/src/ipc.c ****         {
+ 356:rt-thread/src/ipc.c ****             rt_hw_interrupt_enable(temp);
+ 357:rt-thread/src/ipc.c **** 
+ 358:rt-thread/src/ipc.c ****             return -RT_ETIMEOUT;
+ 359:rt-thread/src/ipc.c ****         }
+ 360:rt-thread/src/ipc.c ****         else
+ 361:rt-thread/src/ipc.c ****         {
+ 362:rt-thread/src/ipc.c ****             /* current context checking */
+ 363:rt-thread/src/ipc.c ****             RT_DEBUG_IN_THREAD_CONTEXT;
+ 564              		.loc 1 363 0
+ 565 0036 FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 566              	.LVL77:
+ 567 003a 0446     		mov	r4, r0
+ 568              	.LVL78:
+ 569 003c FFF7FEFF 		bl	rt_thread_self
+ 570              	.LVL79:
+ 571 0040 0028     		cmp	r0, #0
+ 572 0042 45D0     		beq	.L62
+ 573              	.L48:
+ 574              	.LBB67:
+ 575              		.loc 1 363 0 is_stmt 0 discriminator 5
+ 576 0044 FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 577              	.LVL80:
+ 578 0048 0546     		mov	r5, r0
+ 579              	.LVL81:
+ 580 004a FFF7FEFF 		bl	rt_interrupt_get_nest
+ 581              	.LVL82:
+ 582 004e 0028     		cmp	r0, #0
+ 583 0050 4AD1     		bne	.L63
+ 584              	.L49:
+ 585              		.loc 1 363 0 discriminator 10
+ 586 0052 2846     		mov	r0, r5
+ 587 0054 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 588              	.LVL83:
+ 589              	.LBE67:
+ 590 0058 2046     		mov	r0, r4
+ 591 005a FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 592              	.LVL84:
+ 593              	.LBE66:
+ 364:rt-thread/src/ipc.c **** 
+ 365:rt-thread/src/ipc.c ****             /* semaphore is unavailable, push to suspend list */
+ 366:rt-thread/src/ipc.c ****             /* get current thread */
+ 367:rt-thread/src/ipc.c ****             thread = rt_thread_self();
+ 594              		.loc 1 367 0 is_stmt 1 discriminator 10
+ 595 005e FFF7FEFF 		bl	rt_thread_self
+ 596              	.LVL85:
+ 597 0062 0446     		mov	r4, r0
+ 598              	.LVL86:
+ 368:rt-thread/src/ipc.c **** 
+ 369:rt-thread/src/ipc.c ****             /* reset thread error number */
+ 370:rt-thread/src/ipc.c ****             thread->error = RT_EOK;
+ARM GAS  /tmp/ccyaZLNK.s 			page 20
+
+
+ 599              		.loc 1 370 0 discriminator 10
+ 600 0064 0023     		movs	r3, #0
+ 601 0066 0363     		str	r3, [r0, #48]
+ 371:rt-thread/src/ipc.c **** 
+ 372:rt-thread/src/ipc.c ****             RT_DEBUG_LOG(RT_DEBUG_IPC, ("sem take: suspend thread - %s\n",
+ 373:rt-thread/src/ipc.c ****                                         thread->name));
+ 374:rt-thread/src/ipc.c **** 
+ 375:rt-thread/src/ipc.c ****             /* suspend thread */
+ 376:rt-thread/src/ipc.c ****             rt_ipc_list_suspend(&(sem->parent.suspend_thread),
+ 602              		.loc 1 376 0 discriminator 10
+ 603 0068 06F11405 		add	r5, r6, #20
+ 604              	.LVL87:
+ 605 006c 96F80980 		ldrb	r8, [r6, #9]	@ zero_extendqisi2
+ 606              	.LVL88:
+ 607              	.LBB69:
+ 608              	.LBB70:
+  85:rt-thread/src/ipc.c **** 
+ 609              		.loc 1 85 0 discriminator 10
+ 610 0070 FFF7FEFF 		bl	rt_thread_suspend
+ 611              	.LVL89:
+  87:rt-thread/src/ipc.c ****     {
+ 612              		.loc 1 87 0 discriminator 10
+ 613 0074 B8F1000F 		cmp	r8, #0
+ 614 0078 43D0     		beq	.L51
+ 615 007a B8F1010F 		cmp	r8, #1
+ 616 007e 49D0     		beq	.L52
+ 617              	.L50:
+ 618              	.LVL90:
+ 619              	.LBE70:
+ 620              	.LBE69:
+ 377:rt-thread/src/ipc.c ****                                 thread,
+ 378:rt-thread/src/ipc.c ****                                 sem->parent.parent.flag);
+ 379:rt-thread/src/ipc.c **** 
+ 380:rt-thread/src/ipc.c ****             /* has waiting time, start thread timer */
+ 381:rt-thread/src/ipc.c ****             if (time > 0)
+ 621              		.loc 1 381 0
+ 622 0080 019B     		ldr	r3, [sp, #4]
+ 623 0082 002B     		cmp	r3, #0
+ 624 0084 09DD     		ble	.L57
+ 382:rt-thread/src/ipc.c ****             {
+ 383:rt-thread/src/ipc.c ****                 RT_DEBUG_LOG(RT_DEBUG_IPC, ("set thread:%s to timer list\n",
+ 384:rt-thread/src/ipc.c ****                                             thread->name));
+ 385:rt-thread/src/ipc.c **** 
+ 386:rt-thread/src/ipc.c ****                 /* reset the timeout of thread timer and start it */
+ 387:rt-thread/src/ipc.c ****                 rt_timer_control(&(thread->thread_timer),
+ 625              		.loc 1 387 0
+ 626 0086 04F14405 		add	r5, r4, #68
+ 627 008a 01AA     		add	r2, sp, #4
+ 628 008c 0021     		movs	r1, #0
+ 629 008e 2846     		mov	r0, r5
+ 630 0090 FFF7FEFF 		bl	rt_timer_control
+ 631              	.LVL91:
+ 388:rt-thread/src/ipc.c ****                                  RT_TIMER_CTRL_SET_TIME,
+ 389:rt-thread/src/ipc.c ****                                  &time);
+ 390:rt-thread/src/ipc.c ****                 rt_timer_start(&(thread->thread_timer));
+ 632              		.loc 1 390 0
+ 633 0094 2846     		mov	r0, r5
+ARM GAS  /tmp/ccyaZLNK.s 			page 21
+
+
+ 634 0096 FFF7FEFF 		bl	rt_timer_start
+ 635              	.LVL92:
+ 636              	.L57:
+ 391:rt-thread/src/ipc.c ****             }
+ 392:rt-thread/src/ipc.c **** 
+ 393:rt-thread/src/ipc.c ****             /* enable interrupt */
+ 394:rt-thread/src/ipc.c ****             rt_hw_interrupt_enable(temp);
+ 637              		.loc 1 394 0
+ 638 009a 3846     		mov	r0, r7
+ 639 009c FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 640              	.LVL93:
+ 395:rt-thread/src/ipc.c **** 
+ 396:rt-thread/src/ipc.c ****             /* do schedule */
+ 397:rt-thread/src/ipc.c ****             rt_schedule();
+ 641              		.loc 1 397 0
+ 642 00a0 FFF7FEFF 		bl	rt_schedule
+ 643              	.LVL94:
+ 398:rt-thread/src/ipc.c **** 
+ 399:rt-thread/src/ipc.c ****             if (thread->error != RT_EOK)
+ 644              		.loc 1 399 0
+ 645 00a4 206B     		ldr	r0, [r4, #48]
+ 646              	.LVL95:
+ 647              	.L42:
+ 400:rt-thread/src/ipc.c ****             {
+ 401:rt-thread/src/ipc.c ****                 return thread->error;
+ 402:rt-thread/src/ipc.c ****             }
+ 403:rt-thread/src/ipc.c ****         }
+ 404:rt-thread/src/ipc.c ****     }
+ 405:rt-thread/src/ipc.c **** 
+ 406:rt-thread/src/ipc.c ****     RT_OBJECT_HOOK_CALL(rt_object_take_hook, (&(sem->parent.parent)));
+ 407:rt-thread/src/ipc.c **** 
+ 408:rt-thread/src/ipc.c ****     return RT_EOK;
+ 409:rt-thread/src/ipc.c **** }
+ 648              		.loc 1 409 0
+ 649 00a6 02B0     		add	sp, sp, #8
+ 650              	.LCFI6:
+ 651              		.cfi_remember_state
+ 652              		.cfi_def_cfa_offset 24
+ 653              		@ sp needed
+ 654 00a8 BDE8F081 		pop	{r4, r5, r6, r7, r8, pc}
+ 655              	.LVL96:
+ 656              	.L59:
+ 657              	.LCFI7:
+ 658              		.cfi_restore_state
+ 330:rt-thread/src/ipc.c ****     RT_ASSERT(rt_object_get_type(&sem->parent.parent) == RT_Object_Class_Semaphore);
+ 659              		.loc 1 330 0 discriminator 1
+ 660 00ac 4FF4A572 		mov	r2, #330
+ 661 00b0 2749     		ldr	r1, .L65
+ 662              	.LVL97:
+ 663 00b2 2948     		ldr	r0, .L65+8
+ 664              	.LVL98:
+ 665 00b4 FFF7FEFF 		bl	rt_assert_handler
+ 666              	.LVL99:
+ 667 00b8 A9E7     		b	.L43
+ 668              	.LVL100:
+ 669              	.L60:
+ 346:rt-thread/src/ipc.c **** 
+ARM GAS  /tmp/ccyaZLNK.s 			page 22
+
+
+ 670              		.loc 1 346 0
+ 671 00ba 013B     		subs	r3, r3, #1
+ 672 00bc B383     		strh	r3, [r6, #28]	@ movhi
+ 349:rt-thread/src/ipc.c ****     }
+ 673              		.loc 1 349 0
+ 674 00be FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 675              	.LVL101:
+ 408:rt-thread/src/ipc.c **** }
+ 676              		.loc 1 408 0
+ 677 00c2 0020     		movs	r0, #0
+ 678 00c4 EFE7     		b	.L42
+ 679              	.LVL102:
+ 680              	.L61:
+ 356:rt-thread/src/ipc.c **** 
+ 681              		.loc 1 356 0
+ 682 00c6 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 683              	.LVL103:
+ 358:rt-thread/src/ipc.c ****         }
+ 684              		.loc 1 358 0
+ 685 00ca 6FF00100 		mvn	r0, #1
+ 686 00ce EAE7     		b	.L42
+ 687              	.LVL104:
+ 688              	.L62:
+ 689              	.LBB79:
+ 363:rt-thread/src/ipc.c **** 
+ 690              		.loc 1 363 0 discriminator 1
+ 691 00d0 1F4D     		ldr	r5, .L65
+ 692 00d2 2946     		mov	r1, r5
+ 693 00d4 2148     		ldr	r0, .L65+12
+ 694 00d6 FFF7FEFF 		bl	rt_kprintf
+ 695              	.LVL105:
+ 696 00da 40F26B12 		movw	r2, #363
+ 697 00de 2946     		mov	r1, r5
+ 698 00e0 1F48     		ldr	r0, .L65+16
+ 699 00e2 FFF7FEFF 		bl	rt_assert_handler
+ 700              	.LVL106:
+ 701 00e6 ADE7     		b	.L48
+ 702              	.LVL107:
+ 703              	.L63:
+ 704              	.LBB68:
+ 363:rt-thread/src/ipc.c **** 
+ 705              		.loc 1 363 0 is_stmt 0 discriminator 6
+ 706 00e8 DFF86480 		ldr	r8, .L65
+ 707 00ec 4146     		mov	r1, r8
+ 708 00ee 1D48     		ldr	r0, .L65+20
+ 709 00f0 FFF7FEFF 		bl	rt_kprintf
+ 710              	.LVL108:
+ 711 00f4 40F26B12 		movw	r2, #363
+ 712 00f8 4146     		mov	r1, r8
+ 713 00fa 1948     		ldr	r0, .L65+16
+ 714 00fc FFF7FEFF 		bl	rt_assert_handler
+ 715              	.LVL109:
+ 716 0100 A7E7     		b	.L49
+ 717              	.LVL110:
+ 718              	.L51:
+ 719              	.LBE68:
+ 720              	.LBE79:
+ARM GAS  /tmp/ccyaZLNK.s 			page 23
+
+
+ 721              	.LBB80:
+ 722              	.LBB78:
+  90:rt-thread/src/ipc.c ****         break;
+ 723              		.loc 1 90 0 is_stmt 1
+ 724 0102 04F11403 		add	r3, r4, #20
+ 725              	.LVL111:
+ 726              	.LBB71:
+ 727              	.LBB72:
+  75:rt-thread/include/rtservice.h ****     n->prev = l->prev;
+ 728              		.loc 2 75 0
+ 729 0106 6A68     		ldr	r2, [r5, #4]
+ 730 0108 1360     		str	r3, [r2]
+  76:rt-thread/include/rtservice.h **** 
+ 731              		.loc 2 76 0
+ 732 010a 6A68     		ldr	r2, [r5, #4]
+ 733 010c A261     		str	r2, [r4, #24]
+  78:rt-thread/include/rtservice.h ****     n->next = l;
+ 734              		.loc 2 78 0
+ 735 010e 6B60     		str	r3, [r5, #4]
+  79:rt-thread/include/rtservice.h **** }
+ 736              		.loc 2 79 0
+ 737 0110 6561     		str	r5, [r4, #20]
+ 738 0112 B5E7     		b	.L50
+ 739              	.LVL112:
+ 740              	.L52:
+ 741              	.LBE72:
+ 742              	.LBE71:
+ 743              	.LBB73:
+  99:rt-thread/src/ipc.c ****             {
+ 744              		.loc 1 99 0
+ 745 0114 7369     		ldr	r3, [r6, #20]
+ 746              	.LVL113:
+ 747              	.L53:
+ 748 0116 9D42     		cmp	r5, r3
+ 749 0118 0FD0     		beq	.L55
+ 750              	.LVL114:
+ 104:rt-thread/src/ipc.c ****                 {
+ 751              		.loc 1 104 0
+ 752 011a 94F83510 		ldrb	r1, [r4, #53]	@ zero_extendqisi2
+ 753 011e 93F82120 		ldrb	r2, [r3, #33]	@ zero_extendqisi2
+ 754 0122 9142     		cmp	r1, r2
+ 755 0124 01D3     		bcc	.L64
+  99:rt-thread/src/ipc.c ****             {
+ 756              		.loc 1 99 0
+ 757 0126 1B68     		ldr	r3, [r3]
+ 758              	.LVL115:
+ 759 0128 F5E7     		b	.L53
+ 760              	.LVL116:
+ 761              	.L64:
+ 107:rt-thread/src/ipc.c ****                     break;
+ 762              		.loc 1 107 0
+ 763 012a 04F11402 		add	r2, r4, #20
+ 764              	.LVL117:
+ 765              	.LBB74:
+ 766              	.LBB75:
+  75:rt-thread/include/rtservice.h ****     n->prev = l->prev;
+ 767              		.loc 2 75 0
+ARM GAS  /tmp/ccyaZLNK.s 			page 24
+
+
+ 768 012e 5968     		ldr	r1, [r3, #4]
+ 769 0130 0A60     		str	r2, [r1]
+  76:rt-thread/include/rtservice.h **** 
+ 770              		.loc 2 76 0
+ 771 0132 5968     		ldr	r1, [r3, #4]
+ 772 0134 A161     		str	r1, [r4, #24]
+  78:rt-thread/include/rtservice.h ****     n->next = l;
+ 773              		.loc 2 78 0
+ 774 0136 5A60     		str	r2, [r3, #4]
+  79:rt-thread/include/rtservice.h **** }
+ 775              		.loc 2 79 0
+ 776 0138 6361     		str	r3, [r4, #20]
+ 777              	.LVL118:
+ 778              	.L55:
+ 779              	.LBE75:
+ 780              	.LBE74:
+ 116:rt-thread/src/ipc.c ****                 rt_list_insert_before(list, &(thread->tlist));
+ 781              		.loc 1 116 0
+ 782 013a 9D42     		cmp	r5, r3
+ 783 013c A0D1     		bne	.L50
+ 117:rt-thread/src/ipc.c ****         }
+ 784              		.loc 1 117 0
+ 785 013e 04F11403 		add	r3, r4, #20
+ 786              	.LVL119:
+ 787              	.LBB76:
+ 788              	.LBB77:
+  75:rt-thread/include/rtservice.h ****     n->prev = l->prev;
+ 789              		.loc 2 75 0
+ 790 0142 6A68     		ldr	r2, [r5, #4]
+ 791 0144 1360     		str	r3, [r2]
+  76:rt-thread/include/rtservice.h **** 
+ 792              		.loc 2 76 0
+ 793 0146 6A68     		ldr	r2, [r5, #4]
+ 794 0148 A261     		str	r2, [r4, #24]
+  78:rt-thread/include/rtservice.h ****     n->next = l;
+ 795              		.loc 2 78 0
+ 796 014a 6B60     		str	r3, [r5, #4]
+  79:rt-thread/include/rtservice.h **** }
+ 797              		.loc 2 79 0
+ 798 014c 6561     		str	r5, [r4, #20]
+ 799 014e 97E7     		b	.L50
+ 800              	.L66:
+ 801              		.align	2
+ 802              	.L65:
+ 803 0150 00000000 		.word	.LANCHOR4
+ 804 0154 00000000 		.word	.LC2
+ 805 0158 00000000 		.word	.LC0
+ 806 015c 00000000 		.word	.LC7
+ 807 0160 28000000 		.word	.LC5
+ 808 0164 00000000 		.word	.LC4
+ 809              	.LBE77:
+ 810              	.LBE76:
+ 811              	.LBE73:
+ 812              	.LBE78:
+ 813              	.LBE80:
+ 814              		.cfi_endproc
+ 815              	.LFE23:
+ARM GAS  /tmp/ccyaZLNK.s 			page 25
+
+
+ 817              		.section	.text.rt_sem_trytake,"ax",%progbits
+ 818              		.align	1
+ 819              		.global	rt_sem_trytake
+ 820              		.syntax unified
+ 821              		.thumb
+ 822              		.thumb_func
+ 823              		.fpu fpv4-sp-d16
+ 825              	rt_sem_trytake:
+ 826              	.LFB24:
+ 410:rt-thread/src/ipc.c **** RTM_EXPORT(rt_sem_take);
+ 411:rt-thread/src/ipc.c **** 
+ 412:rt-thread/src/ipc.c **** /**
+ 413:rt-thread/src/ipc.c ****  * This function will try to take a semaphore and immediately return
+ 414:rt-thread/src/ipc.c ****  *
+ 415:rt-thread/src/ipc.c ****  * @param sem the semaphore object
+ 416:rt-thread/src/ipc.c ****  *
+ 417:rt-thread/src/ipc.c ****  * @return the error code
+ 418:rt-thread/src/ipc.c ****  */
+ 419:rt-thread/src/ipc.c **** rt_err_t rt_sem_trytake(rt_sem_t sem)
+ 420:rt-thread/src/ipc.c **** {
+ 827              		.loc 1 420 0
+ 828              		.cfi_startproc
+ 829              		@ args = 0, pretend = 0, frame = 0
+ 830              		@ frame_needed = 0, uses_anonymous_args = 0
+ 831              	.LVL120:
+ 832 0000 08B5     		push	{r3, lr}
+ 833              	.LCFI8:
+ 834              		.cfi_def_cfa_offset 8
+ 835              		.cfi_offset 3, -8
+ 836              		.cfi_offset 14, -4
+ 421:rt-thread/src/ipc.c ****     return rt_sem_take(sem, 0);
+ 837              		.loc 1 421 0
+ 838 0002 0021     		movs	r1, #0
+ 839 0004 FFF7FEFF 		bl	rt_sem_take
+ 840              	.LVL121:
+ 422:rt-thread/src/ipc.c **** }
+ 841              		.loc 1 422 0
+ 842 0008 08BD     		pop	{r3, pc}
+ 843              		.cfi_endproc
+ 844              	.LFE24:
+ 846              		.section	.text.rt_sem_release,"ax",%progbits
+ 847              		.align	1
+ 848              		.global	rt_sem_release
+ 849              		.syntax unified
+ 850              		.thumb
+ 851              		.thumb_func
+ 852              		.fpu fpv4-sp-d16
+ 854              	rt_sem_release:
+ 855              	.LFB25:
+ 423:rt-thread/src/ipc.c **** RTM_EXPORT(rt_sem_trytake);
+ 424:rt-thread/src/ipc.c **** 
+ 425:rt-thread/src/ipc.c **** /**
+ 426:rt-thread/src/ipc.c ****  * This function will release a semaphore, if there are threads suspended on
+ 427:rt-thread/src/ipc.c ****  * semaphore, it will be waked up.
+ 428:rt-thread/src/ipc.c ****  *
+ 429:rt-thread/src/ipc.c ****  * @param sem the semaphore object
+ 430:rt-thread/src/ipc.c ****  *
+ARM GAS  /tmp/ccyaZLNK.s 			page 26
+
+
+ 431:rt-thread/src/ipc.c ****  * @return the error code
+ 432:rt-thread/src/ipc.c ****  */
+ 433:rt-thread/src/ipc.c **** rt_err_t rt_sem_release(rt_sem_t sem)
+ 434:rt-thread/src/ipc.c **** {
+ 856              		.loc 1 434 0
+ 857              		.cfi_startproc
+ 858              		@ args = 0, pretend = 0, frame = 0
+ 859              		@ frame_needed = 0, uses_anonymous_args = 0
+ 860              	.LVL122:
+ 861 0000 38B5     		push	{r3, r4, r5, lr}
+ 862              	.LCFI9:
+ 863              		.cfi_def_cfa_offset 16
+ 864              		.cfi_offset 3, -16
+ 865              		.cfi_offset 4, -12
+ 866              		.cfi_offset 5, -8
+ 867              		.cfi_offset 14, -4
+ 435:rt-thread/src/ipc.c ****     register rt_base_t temp;
+ 436:rt-thread/src/ipc.c ****     register rt_bool_t need_schedule;
+ 437:rt-thread/src/ipc.c **** 
+ 438:rt-thread/src/ipc.c ****     /* parameter check */
+ 439:rt-thread/src/ipc.c ****     RT_ASSERT(sem != RT_NULL);
+ 868              		.loc 1 439 0
+ 869 0002 0446     		mov	r4, r0
+ 870 0004 E0B1     		cbz	r0, .L76
+ 871              	.LVL123:
+ 872              	.L70:
+ 440:rt-thread/src/ipc.c ****     RT_ASSERT(rt_object_get_type(&sem->parent.parent) == RT_Object_Class_Semaphore);
+ 873              		.loc 1 440 0
+ 874 0006 2046     		mov	r0, r4
+ 875 0008 FFF7FEFF 		bl	rt_object_get_type
+ 876              	.LVL124:
+ 877 000c 0228     		cmp	r0, #2
+ 878 000e 05D0     		beq	.L71
+ 879              		.loc 1 440 0 is_stmt 0 discriminator 1
+ 880 0010 4FF4DC72 		mov	r2, #440
+ 881 0014 1249     		ldr	r1, .L78
+ 882 0016 1348     		ldr	r0, .L78+4
+ 883 0018 FFF7FEFF 		bl	rt_assert_handler
+ 884              	.LVL125:
+ 885              	.L71:
+ 441:rt-thread/src/ipc.c **** 
+ 442:rt-thread/src/ipc.c ****     RT_OBJECT_HOOK_CALL(rt_object_put_hook, (&(sem->parent.parent)));
+ 443:rt-thread/src/ipc.c **** 
+ 444:rt-thread/src/ipc.c ****     need_schedule = RT_FALSE;
+ 445:rt-thread/src/ipc.c **** 
+ 446:rt-thread/src/ipc.c ****     /* disable interrupt */
+ 447:rt-thread/src/ipc.c ****     temp = rt_hw_interrupt_disable();
+ 886              		.loc 1 447 0 is_stmt 1
+ 887 001c FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 888              	.LVL126:
+ 889 0020 0546     		mov	r5, r0
+ 890              	.LVL127:
+ 448:rt-thread/src/ipc.c **** 
+ 449:rt-thread/src/ipc.c ****     RT_DEBUG_LOG(RT_DEBUG_IPC, ("thread %s releases sem:%s, which value is: %d\n",
+ 450:rt-thread/src/ipc.c ****                                 rt_thread_self()->name,
+ 451:rt-thread/src/ipc.c ****                                 ((struct rt_object *)sem)->name,
+ 452:rt-thread/src/ipc.c ****                                 sem->value));
+ARM GAS  /tmp/ccyaZLNK.s 			page 27
+
+
+ 453:rt-thread/src/ipc.c **** 
+ 454:rt-thread/src/ipc.c ****     if (!rt_list_isempty(&sem->parent.suspend_thread))
+ 891              		.loc 1 454 0
+ 892 0022 04F11403 		add	r3, r4, #20
+ 893              	.LBB81:
+ 894              	.LBB82:
+ 895              		.loc 2 100 0
+ 896 0026 6069     		ldr	r0, [r4, #20]
+ 897              	.LVL128:
+ 898              	.LBE82:
+ 899              	.LBE81:
+ 900              		.loc 1 454 0
+ 901 0028 8342     		cmp	r3, r0
+ 902 002a 10D0     		beq	.L72
+ 903              	.LVL129:
+ 904              	.LBB83:
+ 905              	.LBB84:
+ 144:rt-thread/src/ipc.c **** 
+ 906              		.loc 1 144 0
+ 907 002c 1438     		subs	r0, r0, #20
+ 908              	.LVL130:
+ 909 002e FFF7FEFF 		bl	rt_thread_resume
+ 910              	.LVL131:
+ 911              	.LBE84:
+ 912              	.LBE83:
+ 455:rt-thread/src/ipc.c ****     {
+ 456:rt-thread/src/ipc.c ****         /* resume the suspended thread */
+ 457:rt-thread/src/ipc.c ****         rt_ipc_list_resume(&(sem->parent.suspend_thread));
+ 458:rt-thread/src/ipc.c ****         need_schedule = RT_TRUE;
+ 913              		.loc 1 458 0
+ 914 0032 0124     		movs	r4, #1
+ 915              	.LVL132:
+ 916              	.L73:
+ 459:rt-thread/src/ipc.c ****     }
+ 460:rt-thread/src/ipc.c ****     else
+ 461:rt-thread/src/ipc.c ****         sem->value ++; /* increase value */
+ 462:rt-thread/src/ipc.c **** 
+ 463:rt-thread/src/ipc.c ****     /* enable interrupt */
+ 464:rt-thread/src/ipc.c ****     rt_hw_interrupt_enable(temp);
+ 917              		.loc 1 464 0
+ 918 0034 2846     		mov	r0, r5
+ 919 0036 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 920              	.LVL133:
+ 465:rt-thread/src/ipc.c **** 
+ 466:rt-thread/src/ipc.c ****     /* resume a thread, re-schedule */
+ 467:rt-thread/src/ipc.c ****     if (need_schedule == RT_TRUE)
+ 921              		.loc 1 467 0
+ 922 003a 6CB9     		cbnz	r4, .L77
+ 923              	.L74:
+ 468:rt-thread/src/ipc.c ****         rt_schedule();
+ 469:rt-thread/src/ipc.c **** 
+ 470:rt-thread/src/ipc.c ****     return RT_EOK;
+ 471:rt-thread/src/ipc.c **** }
+ 924              		.loc 1 471 0
+ 925 003c 0020     		movs	r0, #0
+ 926 003e 38BD     		pop	{r3, r4, r5, pc}
+ 927              	.LVL134:
+ARM GAS  /tmp/ccyaZLNK.s 			page 28
+
+
+ 928              	.L76:
+ 439:rt-thread/src/ipc.c ****     RT_ASSERT(rt_object_get_type(&sem->parent.parent) == RT_Object_Class_Semaphore);
+ 929              		.loc 1 439 0 discriminator 1
+ 930 0040 40F2B712 		movw	r2, #439
+ 931 0044 0649     		ldr	r1, .L78
+ 932 0046 0848     		ldr	r0, .L78+8
+ 933              	.LVL135:
+ 934 0048 FFF7FEFF 		bl	rt_assert_handler
+ 935              	.LVL136:
+ 936 004c DBE7     		b	.L70
+ 937              	.LVL137:
+ 938              	.L72:
+ 461:rt-thread/src/ipc.c **** 
+ 939              		.loc 1 461 0
+ 940 004e A38B     		ldrh	r3, [r4, #28]
+ 941 0050 0133     		adds	r3, r3, #1
+ 942 0052 A383     		strh	r3, [r4, #28]	@ movhi
+ 444:rt-thread/src/ipc.c **** 
+ 943              		.loc 1 444 0
+ 944 0054 0024     		movs	r4, #0
+ 945              	.LVL138:
+ 946 0056 EDE7     		b	.L73
+ 947              	.LVL139:
+ 948              	.L77:
+ 468:rt-thread/src/ipc.c **** 
+ 949              		.loc 1 468 0
+ 950 0058 FFF7FEFF 		bl	rt_schedule
+ 951              	.LVL140:
+ 952 005c EEE7     		b	.L74
+ 953              	.L79:
+ 954 005e 00BF     		.align	2
+ 955              	.L78:
+ 956 0060 00000000 		.word	.LANCHOR5
+ 957 0064 00000000 		.word	.LC2
+ 958 0068 00000000 		.word	.LC0
+ 959              		.cfi_endproc
+ 960              	.LFE25:
+ 962              		.section	.text.rt_sem_control,"ax",%progbits
+ 963              		.align	1
+ 964              		.global	rt_sem_control
+ 965              		.syntax unified
+ 966              		.thumb
+ 967              		.thumb_func
+ 968              		.fpu fpv4-sp-d16
+ 970              	rt_sem_control:
+ 971              	.LFB26:
+ 472:rt-thread/src/ipc.c **** RTM_EXPORT(rt_sem_release);
+ 473:rt-thread/src/ipc.c **** 
+ 474:rt-thread/src/ipc.c **** /**
+ 475:rt-thread/src/ipc.c ****  * This function can get or set some extra attributions of a semaphore object.
+ 476:rt-thread/src/ipc.c ****  *
+ 477:rt-thread/src/ipc.c ****  * @param sem the semaphore object
+ 478:rt-thread/src/ipc.c ****  * @param cmd the execution command
+ 479:rt-thread/src/ipc.c ****  * @param arg the execution argument
+ 480:rt-thread/src/ipc.c ****  *
+ 481:rt-thread/src/ipc.c ****  * @return the error code
+ 482:rt-thread/src/ipc.c ****  */
+ARM GAS  /tmp/ccyaZLNK.s 			page 29
+
+
+ 483:rt-thread/src/ipc.c **** rt_err_t rt_sem_control(rt_sem_t sem, int cmd, void *arg)
+ 484:rt-thread/src/ipc.c **** {
+ 972              		.loc 1 484 0
+ 973              		.cfi_startproc
+ 974              		@ args = 0, pretend = 0, frame = 0
+ 975              		@ frame_needed = 0, uses_anonymous_args = 0
+ 976              	.LVL141:
+ 977 0000 2DE9F041 		push	{r4, r5, r6, r7, r8, lr}
+ 978              	.LCFI10:
+ 979              		.cfi_def_cfa_offset 24
+ 980              		.cfi_offset 4, -24
+ 981              		.cfi_offset 5, -20
+ 982              		.cfi_offset 6, -16
+ 983              		.cfi_offset 7, -12
+ 984              		.cfi_offset 8, -8
+ 985              		.cfi_offset 14, -4
+ 986 0004 0C46     		mov	r4, r1
+ 987 0006 1746     		mov	r7, r2
+ 485:rt-thread/src/ipc.c ****     rt_ubase_t level;
+ 486:rt-thread/src/ipc.c **** 
+ 487:rt-thread/src/ipc.c ****     /* parameter check */
+ 488:rt-thread/src/ipc.c ****     RT_ASSERT(sem != RT_NULL);
+ 988              		.loc 1 488 0
+ 989 0008 0646     		mov	r6, r0
+ 990 000a 90B1     		cbz	r0, .L88
+ 991              	.LVL142:
+ 992              	.L81:
+ 489:rt-thread/src/ipc.c ****     RT_ASSERT(rt_object_get_type(&sem->parent.parent) == RT_Object_Class_Semaphore);
+ 993              		.loc 1 489 0
+ 994 000c 3046     		mov	r0, r6
+ 995 000e FFF7FEFF 		bl	rt_object_get_type
+ 996              	.LVL143:
+ 997 0012 0228     		cmp	r0, #2
+ 998 0014 05D0     		beq	.L82
+ 999              		.loc 1 489 0 is_stmt 0 discriminator 1
+ 1000 0016 40F2E912 		movw	r2, #489
+ 1001 001a 1849     		ldr	r1, .L89
+ 1002 001c 1848     		ldr	r0, .L89+4
+ 1003 001e FFF7FEFF 		bl	rt_assert_handler
+ 1004              	.LVL144:
+ 1005              	.L82:
+ 490:rt-thread/src/ipc.c **** 
+ 491:rt-thread/src/ipc.c ****     if (cmd == RT_IPC_CMD_RESET)
+ 1006              		.loc 1 491 0 is_stmt 1
+ 1007 0022 012C     		cmp	r4, #1
+ 1008 0024 25D1     		bne	.L86
+ 1009              	.LVL145:
+ 1010              	.LBB90:
+ 492:rt-thread/src/ipc.c ****     {
+ 493:rt-thread/src/ipc.c ****         rt_ubase_t value;
+ 494:rt-thread/src/ipc.c **** 
+ 495:rt-thread/src/ipc.c ****         /* get value */
+ 496:rt-thread/src/ipc.c ****         value = (rt_ubase_t)arg;
+ 497:rt-thread/src/ipc.c ****         /* disable interrupt */
+ 498:rt-thread/src/ipc.c ****         level = rt_hw_interrupt_disable();
+ 1011              		.loc 1 498 0
+ 1012 0026 FFF7FEFF 		bl	rt_hw_interrupt_disable
+ARM GAS  /tmp/ccyaZLNK.s 			page 30
+
+
+ 1013              	.LVL146:
+ 1014 002a 8046     		mov	r8, r0
+ 1015              	.LVL147:
+ 499:rt-thread/src/ipc.c **** 
+ 500:rt-thread/src/ipc.c ****         /* resume all waiting thread */
+ 501:rt-thread/src/ipc.c ****         rt_ipc_list_resume_all(&sem->parent.suspend_thread);
+ 1016              		.loc 1 501 0
+ 1017 002c 06F11404 		add	r4, r6, #20
+ 1018              	.LVL148:
+ 1019 0030 13E0     		b	.L84
+ 1020              	.LVL149:
+ 1021              	.L88:
+ 1022              	.LBE90:
+ 488:rt-thread/src/ipc.c ****     RT_ASSERT(rt_object_get_type(&sem->parent.parent) == RT_Object_Class_Semaphore);
+ 1023              		.loc 1 488 0 discriminator 1
+ 1024 0032 4FF4F472 		mov	r2, #488
+ 1025              	.LVL150:
+ 1026 0036 1149     		ldr	r1, .L89
+ 1027              	.LVL151:
+ 1028 0038 1248     		ldr	r0, .L89+8
+ 1029              	.LVL152:
+ 1030 003a FFF7FEFF 		bl	rt_assert_handler
+ 1031              	.LVL153:
+ 1032 003e E5E7     		b	.L81
+ 1033              	.LVL154:
+ 1034              	.L85:
+ 1035              	.LBB95:
+ 1036              	.LBB91:
+ 1037              	.LBB92:
+ 166:rt-thread/src/ipc.c **** 
+ 1038              		.loc 1 166 0
+ 1039 0040 FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 1040              	.LVL155:
+ 1041 0044 0546     		mov	r5, r0
+ 1042              	.LVL156:
+ 169:rt-thread/src/ipc.c ****         /* set error code to RT_ERROR */
+ 1043              		.loc 1 169 0
+ 1044 0046 2068     		ldr	r0, [r4]
+ 1045              	.LVL157:
+ 171:rt-thread/src/ipc.c **** 
+ 1046              		.loc 1 171 0
+ 1047 0048 4FF0FF33 		mov	r3, #-1
+ 1048 004c C361     		str	r3, [r0, #28]
+ 178:rt-thread/src/ipc.c **** 
+ 1049              		.loc 1 178 0
+ 1050 004e 1438     		subs	r0, r0, #20
+ 1051              	.LVL158:
+ 1052 0050 FFF7FEFF 		bl	rt_thread_resume
+ 1053              	.LVL159:
+ 181:rt-thread/src/ipc.c ****     }
+ 1054              		.loc 1 181 0
+ 1055 0054 2846     		mov	r0, r5
+ 1056 0056 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 1057              	.LVL160:
+ 1058              	.L84:
+ 1059              	.LBB93:
+ 1060              	.LBB94:
+ARM GAS  /tmp/ccyaZLNK.s 			page 31
+
+
+ 1061              		.loc 2 100 0
+ 1062 005a 2368     		ldr	r3, [r4]
+ 1063              	.LVL161:
+ 1064              	.LBE94:
+ 1065              	.LBE93:
+ 163:rt-thread/src/ipc.c ****     {
+ 1066              		.loc 1 163 0
+ 1067 005c 9C42     		cmp	r4, r3
+ 1068 005e EFD1     		bne	.L85
+ 1069              	.LVL162:
+ 1070              	.LBE92:
+ 1071              	.LBE91:
+ 502:rt-thread/src/ipc.c **** 
+ 503:rt-thread/src/ipc.c ****         /* set new value */
+ 504:rt-thread/src/ipc.c ****         sem->value = (rt_uint16_t)value;
+ 1072              		.loc 1 504 0
+ 1073 0060 B783     		strh	r7, [r6, #28]	@ movhi
+ 505:rt-thread/src/ipc.c **** 
+ 506:rt-thread/src/ipc.c ****         /* enable interrupt */
+ 507:rt-thread/src/ipc.c ****         rt_hw_interrupt_enable(level);
+ 1074              		.loc 1 507 0
+ 1075 0062 4046     		mov	r0, r8
+ 1076 0064 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 1077              	.LVL163:
+ 508:rt-thread/src/ipc.c **** 
+ 509:rt-thread/src/ipc.c ****         rt_schedule();
+ 1078              		.loc 1 509 0
+ 1079 0068 FFF7FEFF 		bl	rt_schedule
+ 1080              	.LVL164:
+ 510:rt-thread/src/ipc.c **** 
+ 511:rt-thread/src/ipc.c ****         return RT_EOK;
+ 1081              		.loc 1 511 0
+ 1082 006c 0020     		movs	r0, #0
+ 1083 006e BDE8F081 		pop	{r4, r5, r6, r7, r8, pc}
+ 1084              	.LVL165:
+ 1085              	.L86:
+ 1086              	.LBE95:
+ 512:rt-thread/src/ipc.c ****     }
+ 513:rt-thread/src/ipc.c **** 
+ 514:rt-thread/src/ipc.c ****     return -RT_ERROR;
+ 1087              		.loc 1 514 0
+ 1088 0072 4FF0FF30 		mov	r0, #-1
+ 515:rt-thread/src/ipc.c **** }
+ 1089              		.loc 1 515 0
+ 1090 0076 BDE8F081 		pop	{r4, r5, r6, r7, r8, pc}
+ 1091              	.LVL166:
+ 1092              	.L90:
+ 1093 007a 00BF     		.align	2
+ 1094              	.L89:
+ 1095 007c 00000000 		.word	.LANCHOR6
+ 1096 0080 00000000 		.word	.LC2
+ 1097 0084 00000000 		.word	.LC0
+ 1098              		.cfi_endproc
+ 1099              	.LFE26:
+ 1101              		.section	.rodata.__FUNCTION__.6547,"a",%progbits
+ 1102              		.align	2
+ 1103              		.set	.LANCHOR0,. + 0
+ARM GAS  /tmp/ccyaZLNK.s 			page 32
+
+
+ 1106              	__FUNCTION__.6547:
+ 1107 0000 72745F73 		.ascii	"rt_sem_init\000"
+ 1107      656D5F69 
+ 1107      6E697400 
+ 1108              		.section	.rodata.__FUNCTION__.6551,"a",%progbits
+ 1109              		.align	2
+ 1110              		.set	.LANCHOR1,. + 0
+ 1113              	__FUNCTION__.6551:
+ 1114 0000 72745F73 		.ascii	"rt_sem_detach\000"
+ 1114      656D5F64 
+ 1114      65746163 
+ 1114      6800
+ 1115              		.section	.rodata.__FUNCTION__.6559,"a",%progbits
+ 1116              		.align	2
+ 1117              		.set	.LANCHOR2,. + 0
+ 1120              	__FUNCTION__.6559:
+ 1121 0000 72745F73 		.ascii	"rt_sem_create\000"
+ 1121      656D5F63 
+ 1121      72656174 
+ 1121      6500
+ 1122              		.section	.rodata.__FUNCTION__.6564,"a",%progbits
+ 1123              		.align	2
+ 1124              		.set	.LANCHOR3,. + 0
+ 1127              	__FUNCTION__.6564:
+ 1128 0000 72745F73 		.ascii	"rt_sem_delete\000"
+ 1128      656D5F64 
+ 1128      656C6574 
+ 1128      6500
+ 1129              		.section	.rodata.__FUNCTION__.6571,"a",%progbits
+ 1130              		.align	2
+ 1131              		.set	.LANCHOR4,. + 0
+ 1134              	__FUNCTION__.6571:
+ 1135 0000 72745F73 		.ascii	"rt_sem_take\000"
+ 1135      656D5F74 
+ 1135      616B6500 
+ 1136              		.section	.rodata.__FUNCTION__.6582,"a",%progbits
+ 1137              		.align	2
+ 1138              		.set	.LANCHOR5,. + 0
+ 1141              	__FUNCTION__.6582:
+ 1142 0000 72745F73 		.ascii	"rt_sem_release\000"
+ 1142      656D5F72 
+ 1142      656C6561 
+ 1142      736500
+ 1143              		.section	.rodata.__FUNCTION__.6589,"a",%progbits
+ 1144              		.align	2
+ 1145              		.set	.LANCHOR6,. + 0
+ 1148              	__FUNCTION__.6589:
+ 1149 0000 72745F73 		.ascii	"rt_sem_control\000"
+ 1149      656D5F63 
+ 1149      6F6E7472 
+ 1149      6F6C00
+ 1150              		.section	.rodata.rt_sem_create.str1.4,"aMS",%progbits,1
+ 1151              		.align	2
+ 1152              	.LC4:
+ 1153 0000 46756E63 		.ascii	"Function[%s] shall not be used in ISR\012\000"
+ 1153      74696F6E 
+ 1153      5B25735D 
+ARM GAS  /tmp/ccyaZLNK.s 			page 33
+
+
+ 1153      20736861 
+ 1153      6C6C206E 
+ 1154 0027 00       		.space	1
+ 1155              	.LC5:
+ 1156 0028 3000     		.ascii	"0\000"
+ 1157              		.section	.rodata.rt_sem_delete.str1.4,"aMS",%progbits,1
+ 1158              		.align	2
+ 1159              	.LC6:
+ 1160 0000 72745F6F 		.ascii	"rt_object_is_systemobject(&sem->parent.parent) == R"
+ 1160      626A6563 
+ 1160      745F6973 
+ 1160      5F737973 
+ 1160      74656D6F 
+ 1161 0033 545F4641 		.ascii	"T_FALSE\000"
+ 1161      4C534500 
+ 1162              		.section	.rodata.rt_sem_detach.str1.4,"aMS",%progbits,1
+ 1163              		.align	2
+ 1164              	.LC2:
+ 1165 0000 72745F6F 		.ascii	"rt_object_get_type(&sem->parent.parent) == RT_Objec"
+ 1165      626A6563 
+ 1165      745F6765 
+ 1165      745F7479 
+ 1165      70652826 
+ 1166 0033 745F436C 		.ascii	"t_Class_Semaphore\000"
+ 1166      6173735F 
+ 1166      53656D61 
+ 1166      70686F72 
+ 1166      6500
+ 1167 0045 000000   		.space	3
+ 1168              	.LC3:
+ 1169 0048 72745F6F 		.ascii	"rt_object_is_systemobject(&sem->parent.parent)\000"
+ 1169      626A6563 
+ 1169      745F6973 
+ 1169      5F737973 
+ 1169      74656D6F 
+ 1170              		.section	.rodata.rt_sem_init.str1.4,"aMS",%progbits,1
+ 1171              		.align	2
+ 1172              	.LC0:
+ 1173 0000 73656D20 		.ascii	"sem != RT_NULL\000"
+ 1173      213D2052 
+ 1173      545F4E55 
+ 1173      4C4C00
+ 1174 000f 00       		.space	1
+ 1175              	.LC1:
+ 1176 0010 76616C75 		.ascii	"value < 0x10000U\000"
+ 1176      65203C20 
+ 1176      30783130 
+ 1176      30303055 
+ 1176      00
+ 1177              		.section	.rodata.rt_sem_take.str1.4,"aMS",%progbits,1
+ 1178              		.align	2
+ 1179              	.LC7:
+ 1180 0000 46756E63 		.ascii	"Function[%s] shall not be used before scheduler sta"
+ 1180      74696F6E 
+ 1180      5B25735D 
+ 1180      20736861 
+ 1180      6C6C206E 
+ARM GAS  /tmp/ccyaZLNK.s 			page 34
+
+
+ 1181 0033 72740A00 		.ascii	"rt\012\000"
+ 1182              		.text
+ 1183              	.Letext0:
+ 1184              		.file 3 "rt-thread/include/rtdef.h"
+ 1185              		.file 4 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/lock.h"
+ 1186              		.file 5 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_types.h"
+ 1187              		.file 6 "/opt/gcc-arm-none-eabi-6-2017-q2-update/lib/gcc/arm-none-eabi/6.3.1/include/stddef.h"
+ 1188              		.file 7 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/reent.h"
+ 1189              		.file 8 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/time.h"
+ 1190              		.file 9 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/errno.h"
+ 1191              		.file 10 "rt-thread/include/rtthread.h"
+ 1192              		.file 11 "rt-thread/include/rthw.h"
+ARM GAS  /tmp/ccyaZLNK.s 			page 35
+
+
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 ipc.c
+     /tmp/ccyaZLNK.s:18     .text.rt_sem_init:0000000000000000 $t
+     /tmp/ccyaZLNK.s:25     .text.rt_sem_init:0000000000000000 rt_sem_init
+     /tmp/ccyaZLNK.s:106    .text.rt_sem_init:0000000000000044 $d
+     /tmp/ccyaZLNK.s:113    .text.rt_sem_detach:0000000000000000 $t
+     /tmp/ccyaZLNK.s:120    .text.rt_sem_detach:0000000000000000 rt_sem_detach
+     /tmp/ccyaZLNK.s:229    .text.rt_sem_detach:000000000000006c $d
+     /tmp/ccyaZLNK.s:237    .text.rt_sem_create:0000000000000000 $t
+     /tmp/ccyaZLNK.s:244    .text.rt_sem_create:0000000000000000 rt_sem_create
+     /tmp/ccyaZLNK.s:342    .text.rt_sem_create:0000000000000068 $d
+     /tmp/ccyaZLNK.s:350    .text.rt_sem_delete:0000000000000000 $t
+     /tmp/ccyaZLNK.s:357    .text.rt_sem_delete:0000000000000000 rt_sem_delete
+     /tmp/ccyaZLNK.s:494    .text.rt_sem_delete:000000000000009c $d
+     /tmp/ccyaZLNK.s:504    .text.rt_sem_take:0000000000000000 $t
+     /tmp/ccyaZLNK.s:511    .text.rt_sem_take:0000000000000000 rt_sem_take
+     /tmp/ccyaZLNK.s:803    .text.rt_sem_take:0000000000000150 $d
+     /tmp/ccyaZLNK.s:818    .text.rt_sem_trytake:0000000000000000 $t
+     /tmp/ccyaZLNK.s:825    .text.rt_sem_trytake:0000000000000000 rt_sem_trytake
+     /tmp/ccyaZLNK.s:847    .text.rt_sem_release:0000000000000000 $t
+     /tmp/ccyaZLNK.s:854    .text.rt_sem_release:0000000000000000 rt_sem_release
+     /tmp/ccyaZLNK.s:956    .text.rt_sem_release:0000000000000060 $d
+     /tmp/ccyaZLNK.s:963    .text.rt_sem_control:0000000000000000 $t
+     /tmp/ccyaZLNK.s:970    .text.rt_sem_control:0000000000000000 rt_sem_control
+     /tmp/ccyaZLNK.s:1095   .text.rt_sem_control:000000000000007c $d
+     /tmp/ccyaZLNK.s:1102   .rodata.__FUNCTION__.6547:0000000000000000 $d
+     /tmp/ccyaZLNK.s:1106   .rodata.__FUNCTION__.6547:0000000000000000 __FUNCTION__.6547
+     /tmp/ccyaZLNK.s:1109   .rodata.__FUNCTION__.6551:0000000000000000 $d
+     /tmp/ccyaZLNK.s:1113   .rodata.__FUNCTION__.6551:0000000000000000 __FUNCTION__.6551
+     /tmp/ccyaZLNK.s:1116   .rodata.__FUNCTION__.6559:0000000000000000 $d
+     /tmp/ccyaZLNK.s:1120   .rodata.__FUNCTION__.6559:0000000000000000 __FUNCTION__.6559
+     /tmp/ccyaZLNK.s:1123   .rodata.__FUNCTION__.6564:0000000000000000 $d
+     /tmp/ccyaZLNK.s:1127   .rodata.__FUNCTION__.6564:0000000000000000 __FUNCTION__.6564
+     /tmp/ccyaZLNK.s:1130   .rodata.__FUNCTION__.6571:0000000000000000 $d
+     /tmp/ccyaZLNK.s:1134   .rodata.__FUNCTION__.6571:0000000000000000 __FUNCTION__.6571
+     /tmp/ccyaZLNK.s:1137   .rodata.__FUNCTION__.6582:0000000000000000 $d
+     /tmp/ccyaZLNK.s:1141   .rodata.__FUNCTION__.6582:0000000000000000 __FUNCTION__.6582
+     /tmp/ccyaZLNK.s:1144   .rodata.__FUNCTION__.6589:0000000000000000 $d
+     /tmp/ccyaZLNK.s:1148   .rodata.__FUNCTION__.6589:0000000000000000 __FUNCTION__.6589
+     /tmp/ccyaZLNK.s:1151   .rodata.rt_sem_create.str1.4:0000000000000000 $d
+     /tmp/ccyaZLNK.s:1158   .rodata.rt_sem_delete.str1.4:0000000000000000 $d
+     /tmp/ccyaZLNK.s:1163   .rodata.rt_sem_detach.str1.4:0000000000000000 $d
+     /tmp/ccyaZLNK.s:1171   .rodata.rt_sem_init.str1.4:0000000000000000 $d
+     /tmp/ccyaZLNK.s:1178   .rodata.rt_sem_take.str1.4:0000000000000000 $d
+                     .debug_frame:0000000000000010 $d
+
+UNDEFINED SYMBOLS
+rt_object_init
+rt_assert_handler
+rt_object_get_type
+rt_object_is_systemobject
+rt_hw_interrupt_disable
+rt_thread_resume
+rt_hw_interrupt_enable
+rt_object_detach
+rt_interrupt_get_nest
+rt_object_allocate
+ARM GAS  /tmp/ccyaZLNK.s 			page 36
+
+
+rt_kprintf
+rt_object_delete
+rt_thread_self
+rt_thread_suspend
+rt_timer_control
+rt_timer_start
+rt_schedule

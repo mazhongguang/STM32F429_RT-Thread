@@ -1,0 +1,266 @@
+ARM GAS  /tmp/ccRDU04B.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.eabi_attribute 27, 1
+   3              		.eabi_attribute 28, 1
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.file	"finsh_init.c"
+  14              		.text
+  15              	.Ltext0:
+  16              		.cfi_sections	.debug_frame
+  17              		.section	.text.finsh_init,"ax",%progbits
+  18              		.align	1
+  19              		.global	finsh_init
+  20              		.syntax unified
+  21              		.thumb
+  22              		.thumb_func
+  23              		.fpu fpv4-sp-d16
+  25              	finsh_init:
+  26              	.LFB16:
+  27              		.file 1 "rt-thread/components/finsh/finsh_init.c"
+   1:rt-thread/components/finsh/finsh_init.c **** /*
+   2:rt-thread/components/finsh/finsh_init.c ****  * Copyright (c) 2006-2018, RT-Thread Development Team
+   3:rt-thread/components/finsh/finsh_init.c ****  *
+   4:rt-thread/components/finsh/finsh_init.c ****  * SPDX-License-Identifier: Apache-2.0
+   5:rt-thread/components/finsh/finsh_init.c ****  *
+   6:rt-thread/components/finsh/finsh_init.c ****  * Change Logs:
+   7:rt-thread/components/finsh/finsh_init.c ****  * Date           Author       Notes
+   8:rt-thread/components/finsh/finsh_init.c ****  * 2010-03-22     Bernard      first version
+   9:rt-thread/components/finsh/finsh_init.c ****  */
+  10:rt-thread/components/finsh/finsh_init.c **** #include <finsh.h>
+  11:rt-thread/components/finsh/finsh_init.c **** 
+  12:rt-thread/components/finsh/finsh_init.c **** #include "finsh_node.h"
+  13:rt-thread/components/finsh/finsh_init.c **** #include "finsh_vm.h"
+  14:rt-thread/components/finsh/finsh_init.c **** #include "finsh_parser.h"
+  15:rt-thread/components/finsh/finsh_init.c **** #include "finsh_var.h"
+  16:rt-thread/components/finsh/finsh_init.c **** #include "finsh_error.h"
+  17:rt-thread/components/finsh/finsh_init.c **** #include "finsh_heap.h"
+  18:rt-thread/components/finsh/finsh_init.c **** 
+  19:rt-thread/components/finsh/finsh_init.c **** int finsh_init(struct finsh_parser* parser)
+  20:rt-thread/components/finsh/finsh_init.c **** {
+  28              		.loc 1 20 0
+  29              		.cfi_startproc
+  30              		@ args = 0, pretend = 0, frame = 0
+  31              		@ frame_needed = 0, uses_anonymous_args = 0
+  32              	.LVL0:
+  33 0000 08B5     		push	{r3, lr}
+  34              	.LCFI0:
+  35              		.cfi_def_cfa_offset 8
+  36              		.cfi_offset 3, -8
+  37              		.cfi_offset 14, -4
+  21:rt-thread/components/finsh/finsh_init.c ****     finsh_parser_init(parser);
+ARM GAS  /tmp/ccRDU04B.s 			page 2
+
+
+  38              		.loc 1 21 0
+  39 0002 FFF7FEFF 		bl	finsh_parser_init
+  40              	.LVL1:
+  22:rt-thread/components/finsh/finsh_init.c **** 
+  23:rt-thread/components/finsh/finsh_init.c ****     /* finsh init */
+  24:rt-thread/components/finsh/finsh_init.c ****     finsh_node_init();
+  41              		.loc 1 24 0
+  42 0006 FFF7FEFF 		bl	finsh_node_init
+  43              	.LVL2:
+  25:rt-thread/components/finsh/finsh_init.c ****     finsh_var_init();
+  44              		.loc 1 25 0
+  45 000a FFF7FEFF 		bl	finsh_var_init
+  46              	.LVL3:
+  26:rt-thread/components/finsh/finsh_init.c ****     finsh_error_init();
+  47              		.loc 1 26 0
+  48 000e FFF7FEFF 		bl	finsh_error_init
+  49              	.LVL4:
+  27:rt-thread/components/finsh/finsh_init.c ****     finsh_heap_init();
+  50              		.loc 1 27 0
+  51 0012 FFF7FEFF 		bl	finsh_heap_init
+  52              	.LVL5:
+  28:rt-thread/components/finsh/finsh_init.c **** 
+  29:rt-thread/components/finsh/finsh_init.c ****     return 0;
+  30:rt-thread/components/finsh/finsh_init.c **** }
+  53              		.loc 1 30 0
+  54 0016 0020     		movs	r0, #0
+  55 0018 08BD     		pop	{r3, pc}
+  56              		.cfi_endproc
+  57              	.LFE16:
+  59              		.section	.text.finsh_stack_bottom,"ax",%progbits
+  60              		.align	1
+  61              		.global	finsh_stack_bottom
+  62              		.syntax unified
+  63              		.thumb
+  64              		.thumb_func
+  65              		.fpu fpv4-sp-d16
+  67              	finsh_stack_bottom:
+  68              	.LFB17:
+  31:rt-thread/components/finsh/finsh_init.c **** 
+  32:rt-thread/components/finsh/finsh_init.c **** long finsh_stack_bottom()
+  33:rt-thread/components/finsh/finsh_init.c **** {
+  69              		.loc 1 33 0
+  70              		.cfi_startproc
+  71              		@ args = 0, pretend = 0, frame = 0
+  72              		@ frame_needed = 0, uses_anonymous_args = 0
+  73              		@ link register save eliminated.
+  34:rt-thread/components/finsh/finsh_init.c ****     return finsh_vm_stack[0].long_value;
+  35:rt-thread/components/finsh/finsh_init.c **** }
+  74              		.loc 1 35 0
+  75 0000 014B     		ldr	r3, .L4
+  76 0002 1868     		ldr	r0, [r3]
+  77 0004 7047     		bx	lr
+  78              	.L5:
+  79 0006 00BF     		.align	2
+  80              	.L4:
+  81 0008 00000000 		.word	finsh_vm_stack
+  82              		.cfi_endproc
+ARM GAS  /tmp/ccRDU04B.s 			page 3
+
+
+  83              	.LFE17:
+  85              		.section	.text.finsh_flush,"ax",%progbits
+  86              		.align	1
+  87              		.global	finsh_flush
+  88              		.syntax unified
+  89              		.thumb
+  90              		.thumb_func
+  91              		.fpu fpv4-sp-d16
+  93              	finsh_flush:
+  94              	.LFB18:
+  36:rt-thread/components/finsh/finsh_init.c **** 
+  37:rt-thread/components/finsh/finsh_init.c **** int finsh_flush(struct finsh_parser* parser)
+  38:rt-thread/components/finsh/finsh_init.c **** {
+  95              		.loc 1 38 0
+  96              		.cfi_startproc
+  97              		@ args = 0, pretend = 0, frame = 0
+  98              		@ frame_needed = 0, uses_anonymous_args = 0
+  99              	.LVL6:
+ 100 0000 08B5     		push	{r3, lr}
+ 101              	.LCFI1:
+ 102              		.cfi_def_cfa_offset 8
+ 103              		.cfi_offset 3, -8
+ 104              		.cfi_offset 14, -4
+  39:rt-thread/components/finsh/finsh_init.c ****     finsh_parser_init(parser);
+ 105              		.loc 1 39 0
+ 106 0002 FFF7FEFF 		bl	finsh_parser_init
+ 107              	.LVL7:
+  40:rt-thread/components/finsh/finsh_init.c **** 
+  41:rt-thread/components/finsh/finsh_init.c ****     /* finsh init */
+  42:rt-thread/components/finsh/finsh_init.c ****     finsh_node_init();
+ 108              		.loc 1 42 0
+ 109 0006 FFF7FEFF 		bl	finsh_node_init
+ 110              	.LVL8:
+  43:rt-thread/components/finsh/finsh_init.c ****     finsh_error_init();
+ 111              		.loc 1 43 0
+ 112 000a FFF7FEFF 		bl	finsh_error_init
+ 113              	.LVL9:
+  44:rt-thread/components/finsh/finsh_init.c **** 
+  45:rt-thread/components/finsh/finsh_init.c ****     return 0;
+  46:rt-thread/components/finsh/finsh_init.c **** }
+ 114              		.loc 1 46 0
+ 115 000e 0020     		movs	r0, #0
+ 116 0010 08BD     		pop	{r3, pc}
+ 117              		.cfi_endproc
+ 118              	.LFE18:
+ 120              		.section	.text.finsh_reset,"ax",%progbits
+ 121              		.align	1
+ 122              		.global	finsh_reset
+ 123              		.syntax unified
+ 124              		.thumb
+ 125              		.thumb_func
+ 126              		.fpu fpv4-sp-d16
+ 128              	finsh_reset:
+ 129              	.LFB19:
+  47:rt-thread/components/finsh/finsh_init.c **** 
+  48:rt-thread/components/finsh/finsh_init.c **** int finsh_reset(struct finsh_parser* parser)
+  49:rt-thread/components/finsh/finsh_init.c **** {
+ARM GAS  /tmp/ccRDU04B.s 			page 4
+
+
+ 130              		.loc 1 49 0
+ 131              		.cfi_startproc
+ 132              		@ args = 0, pretend = 0, frame = 0
+ 133              		@ frame_needed = 0, uses_anonymous_args = 0
+ 134              	.LVL10:
+ 135 0000 08B5     		push	{r3, lr}
+ 136              	.LCFI2:
+ 137              		.cfi_def_cfa_offset 8
+ 138              		.cfi_offset 3, -8
+ 139              		.cfi_offset 14, -4
+  50:rt-thread/components/finsh/finsh_init.c ****     /* finsh init */
+  51:rt-thread/components/finsh/finsh_init.c ****     finsh_node_init();
+ 140              		.loc 1 51 0
+ 141 0002 FFF7FEFF 		bl	finsh_node_init
+ 142              	.LVL11:
+  52:rt-thread/components/finsh/finsh_init.c ****     finsh_var_init();
+ 143              		.loc 1 52 0
+ 144 0006 FFF7FEFF 		bl	finsh_var_init
+ 145              	.LVL12:
+  53:rt-thread/components/finsh/finsh_init.c ****     finsh_error_init();
+ 146              		.loc 1 53 0
+ 147 000a FFF7FEFF 		bl	finsh_error_init
+ 148              	.LVL13:
+  54:rt-thread/components/finsh/finsh_init.c ****     finsh_heap_init();
+ 149              		.loc 1 54 0
+ 150 000e FFF7FEFF 		bl	finsh_heap_init
+ 151              	.LVL14:
+  55:rt-thread/components/finsh/finsh_init.c **** 
+  56:rt-thread/components/finsh/finsh_init.c ****     return 0;
+  57:rt-thread/components/finsh/finsh_init.c **** }
+ 152              		.loc 1 57 0
+ 153 0012 0020     		movs	r0, #0
+ 154 0014 08BD     		pop	{r3, pc}
+ 155              		.cfi_endproc
+ 156              	.LFE19:
+ 158              		.text
+ 159              	.Letext0:
+ 160              		.file 2 "rt-thread/include/rtdef.h"
+ 161              		.file 3 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/machine/_default_types.h"
+ 162              		.file 4 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/lock.h"
+ 163              		.file 5 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_types.h"
+ 164              		.file 6 "/opt/gcc-arm-none-eabi-6-2017-q2-update/lib/gcc/arm-none-eabi/6.3.1/include/stddef.h"
+ 165              		.file 7 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/reent.h"
+ 166              		.file 8 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_stdint.h"
+ 167              		.file 9 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/time.h"
+ 168              		.file 10 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/errno.h"
+ 169              		.file 11 "rt-thread/include/rtthread.h"
+ 170              		.file 12 "rt-thread/components/finsh/finsh_api.h"
+ 171              		.file 13 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/ctype.h"
+ 172              		.file 14 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/stdlib.h"
+ 173              		.file 15 "rt-thread/components/finsh/finsh.h"
+ 174              		.file 16 "rt-thread/components/finsh/finsh_var.h"
+ 175              		.file 17 "rt-thread/components/finsh/finsh_vm.h"
+ 176              		.file 18 "rt-thread/components/finsh/finsh_node.h"
+ 177              		.file 19 "rt-thread/components/finsh/finsh_error.h"
+ 178              		.file 20 "rt-thread/components/finsh/finsh_heap.h"
+ 179              		.file 21 "rt-thread/components/finsh/finsh_parser.h"
+ARM GAS  /tmp/ccRDU04B.s 			page 5
+
+
+ARM GAS  /tmp/ccRDU04B.s 			page 6
+
+
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 finsh_init.c
+     /tmp/ccRDU04B.s:18     .text.finsh_init:0000000000000000 $t
+     /tmp/ccRDU04B.s:25     .text.finsh_init:0000000000000000 finsh_init
+     /tmp/ccRDU04B.s:60     .text.finsh_stack_bottom:0000000000000000 $t
+     /tmp/ccRDU04B.s:67     .text.finsh_stack_bottom:0000000000000000 finsh_stack_bottom
+     /tmp/ccRDU04B.s:81     .text.finsh_stack_bottom:0000000000000008 $d
+     /tmp/ccRDU04B.s:86     .text.finsh_flush:0000000000000000 $t
+     /tmp/ccRDU04B.s:93     .text.finsh_flush:0000000000000000 finsh_flush
+     /tmp/ccRDU04B.s:121    .text.finsh_reset:0000000000000000 $t
+     /tmp/ccRDU04B.s:128    .text.finsh_reset:0000000000000000 finsh_reset
+                     .debug_frame:0000000000000010 $d
+
+UNDEFINED SYMBOLS
+finsh_parser_init
+finsh_node_init
+finsh_var_init
+finsh_error_init
+finsh_heap_init
+finsh_vm_stack

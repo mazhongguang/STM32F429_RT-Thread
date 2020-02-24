@@ -10,6 +10,7 @@
 /*bsp 硬件相关头文件*/
 #include "board.h"
 #include "drv_gpio.h"
+#include "drv_common.h"
 #include "rtconfig.h"
 #include "rtdef.h"
 #include "stm32f429xx.h"
@@ -76,7 +77,7 @@ void rt_hw_board_init()
 	rt_components_board_init();
 #endif
 	
-#if defined(RT_USING_CONSOLE) && defined(RT_USING_DEVICE)
+#if defined(RT_USING_CONSOLE) //&& defined(RT_USING_DEVICE)
 	rt_console_set_device(RT_CONSOLE_DEVICE_NAME);
 #endif
 	
@@ -173,3 +174,54 @@ void rt_hw_console_output(const char *str)
 	rt_exit_critical();
 }
 
+#if 0
+RT_WEAK void rt_hw_board_init()
+{
+#ifdef SCB_EnableICache
+    /* Enable I-Cache---------------------------------------------------------*/
+    SCB_EnableICache();
+#endif
+
+#ifdef SCB_EnableDCache
+    /* Enable D-Cache---------------------------------------------------------*/
+    SCB_EnableDCache();
+#endif
+
+    /* HAL_Init() function is called at the beginning of the program */
+    HAL_Init();
+
+    /* enable interrupt */
+    __set_PRIMASK(0);
+    /* System clock initialization */
+    SystemClock_Config();
+    /* disable interrupt */
+    __set_PRIMASK(1);
+
+    /*rt_hw_systick_init();*/
+
+    /* Heap initialization */
+#if defined(RT_USING_HEAP)
+    rt_system_heap_init((void *)HEAP_BEGIN, (void *)HEAP_END);
+#endif
+
+    /* Pin driver initialization is open by default */
+#ifdef RT_USING_PIN
+    rt_hw_pin_init();
+#endif
+
+    /* USART driver initialization is open by default */
+#ifdef RT_USING_SERIAL
+    /*rt_hw_usart_init();*/
+#endif
+
+    /* Set the shell console output device */
+#ifdef RT_USING_CONSOLE
+    rt_console_set_device(RT_CONSOLE_DEVICE_NAME);
+#endif
+
+    /* Board underlying hardware initialization */
+#ifdef RT_USING_COMPONENTS_INIT
+	rt_components_board_init();
+#endif
+}
+#endif

@@ -1,6 +1,5 @@
 #ifndef RT_CONFIG_H__
 #define RT_CONFIG_H__
-
 /* Automatically generated file; DO NOT EDIT. */
 /* RT-Thread Configuration */
 
@@ -24,12 +23,14 @@
 
 //SECTION：调试选项
 //打开 RT-Thread 的ASSERT 选项
-#define RT_DEBUG
+//#define RT_DEBUG
 
 //打开 RT-Thread 的线程栈溢出检查
 #define RT_USING_OVERFLOW_CHECK
 
-
+#define RT_USING_HOOK
+#define RT_USING_IDLE_HOOK
+#define RT_IDLE_HOOK_LIST_SIZE 4
 #define IDLE_THREAD_STACK_SIZE 512
 
 /* Inter-Thread communication */
@@ -38,6 +39,7 @@
 /* Memory Management */
 //使用内存池
 //#define RT_USING_MEMPOOL
+//#define RT_USING_MEMHEAP
 
 //使用小内存
 #define RT_USING_SMALL_MEM
@@ -58,7 +60,7 @@
 //控制台缓冲区大小
 #define RT_CONSOLEBUF_SIZE 128
 
-#define RT_CONSOLE_DEVICE_NAME "uart1"
+#define RT_CONSOLE_DEVICE_NAME "uart22"
 
 #define RT_VER_NUM 0x40002
 
@@ -115,7 +117,7 @@
 
 #define FINSH_USING_MSH_DEFAULT
 
-#define FINSH_USING_MSH_ONLY
+//#define FINSH_USING_MSH_ONLY
 
 #define FINSH_ARG_MAX 10
 

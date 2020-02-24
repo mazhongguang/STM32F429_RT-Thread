@@ -24,7 +24,7 @@
 
 //SECTION：调试选项
 //打开 RT-Thread 的ASSERT 选项
-#define RT_DEBUG
+//#define RT_DEBUG
 
 //打开 RT-Thread 的线程栈溢出检查
 #define RT_USING_OVERFLOW_CHECK
@@ -115,7 +115,7 @@
 
 #define FINSH_USING_MSH_DEFAULT
 
-#define FINSH_USING_MSH_ONLY
+//#define FINSH_USING_MSH_ONLY
 
 #define FINSH_ARG_MAX 10
 

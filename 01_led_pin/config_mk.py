@@ -20,8 +20,8 @@ remove_dir = ['.','HALLIB/Src','HALLIB/Src/Legacy','build', \
             'rt-thread/components/drivers/misc','rt-thread/components/drivers/mtd', \
             'rt-thread/components/drivers/pm','rt-thread/components/drivers/rtc', \
             'rt-thread/components/drivers/sdio','rt-thread/components/drivers/sensors', \
-            'rt-thread/components/drivers/serial','rt-thread/components/drivers/spi', \
-            'rt-thread/components/drivers/src','rt-thread/components/drivers/touch', \
+            'rt-thread/components/drivers/spi', \
+            'rt-thread/components/drivers/touch', \
             'rt-thread/components/drivers/usb','rt-thread/components/drivers/watchdog', \
             'rt-thread/components/drivers/wlan', \
             'rt-thread/components/dfs','rt-thread/components/dfs', \
@@ -29,7 +29,7 @@ remove_dir = ['.','HALLIB/Src','HALLIB/Src/Legacy','build', \
             'rt-thread/components/utilities','rt-thread/components/vbus',\
             'rt-thread/components/vmm','rt-thread/libcpu/arm/cortex-a',\
             'rt-thread/libcpu/arm/cortex-m0','rt-thread/libcpu/arm/cortex-m3',\
-            'rt-thread/libcpu/arm/cortex-m7', 'hardware/HAL_Drivers']
+            'rt-thread/libcpu/arm/cortex-m7', 'hardware/HAL_Drivers','SYSTEM/usart']
 
 # 从第四个元素开始将所有包含的子目录路径加入到不使用的文件夹路径列表中
 for m in remove_dir[4:] :
@@ -51,6 +51,7 @@ for root,dirs,files in os.walk(os.getcwd()):
 ycm_flags.append('hardware/HAL_Drivers')
 add_sources = '''\
 hardware/HAL_Drivers/drv_gpio.c \\
+hardware/HAL_Drivers/drv_usart.c \\
 rt-thread/components/drivers/misc/pin.c \\
 
 include hal_src.mk

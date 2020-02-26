@@ -1,6 +1,8 @@
 #include "board.h"
+#include "finsh.h"
 #include "rtthread.h"
 #include "rtdevice.h"
+#include "shell.h"
 
 #define PIN_LED_G	16	
 #define PIN_LED_W	17	

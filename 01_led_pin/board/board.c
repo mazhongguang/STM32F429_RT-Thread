@@ -10,9 +10,11 @@
 /*bsp 硬件相关头文件*/
 #include "board.h"
 #include "drv_gpio.h"
+#include "drv_usart.h"
 #include "drv_common.h"
 #include "rtconfig.h"
 #include "rtdef.h"
+#include "shell.h"
 #include "stm32f429xx.h"
 #include "stm32f4xx.h"
 #include "stm32f4xx_hal.h"
@@ -24,7 +26,7 @@
 /*硬件相关头文件*/
 #include "led.h"
 #include "sys.h"
-#include "usart.h"
+/*#include "usart.h"*/
 
 /*RT-Thread 相关头文件*/
 #include <rthw.h>
@@ -70,7 +72,8 @@ void rt_hw_board_init()
 	/* hardware initial , eg. led lcd uart*/
 	/*LED_Init();*/
 	rt_hw_pin_init();
-	uart_init(115200);	
+	rt_hw_usart_init();
+	/*uart_init(115200);	*/
 
 	/* Call components board initial (use INIT_BOARD_EXPORT()) */
 #ifdef RT_USING_COMPONENTS_INIT
@@ -148,6 +151,7 @@ void SysTick_Handler(void)
  * @param	str:要输出到串口的字符
  * @retval	none
  */
+#if 0
 void rt_hw_console_output(const char *str)
 {
 	/* 进入临界段 */
@@ -173,55 +177,36 @@ void rt_hw_console_output(const char *str)
 	/* 退出临界段 */
 	rt_exit_critical();
 }
+#endif
+//UART底层初始化，时钟使能，引脚配置，中断配置
+//此函数会被HAL_UART_Init()调用
+//huart:串口句柄
 
-#if 0
-RT_WEAK void rt_hw_board_init()
+void HAL_UART_MspInit(UART_HandleTypeDef *huart)
 {
-#ifdef SCB_EnableICache
-    /* Enable I-Cache---------------------------------------------------------*/
-    SCB_EnableICache();
-#endif
+    //GPIO端口设置
+	GPIO_InitTypeDef GPIO_Initure;
+	
+	if(huart->Instance==USART1)//如果是串口1，进行串口1 MSP初始化
+	{
+		__HAL_RCC_GPIOA_CLK_ENABLE();			//使能GPIOA时钟
+		__HAL_RCC_USART1_CLK_ENABLE();			//使能USART1时钟
+	
+		GPIO_Initure.Pin=GPIO_PIN_9;			//PA9
+		GPIO_Initure.Mode=GPIO_MODE_AF_PP;		//复用推挽输出
+		GPIO_Initure.Pull=GPIO_PULLUP;			//上拉
+		GPIO_Initure.Speed=GPIO_SPEED_FAST;		//高速
+		GPIO_Initure.Alternate=GPIO_AF7_USART1;	//复用为USART1
+		HAL_GPIO_Init(GPIOA,&GPIO_Initure);	   	//初始化PA9
 
-#ifdef SCB_EnableDCache
-    /* Enable D-Cache---------------------------------------------------------*/
-    SCB_EnableDCache();
-#endif
-
-    /* HAL_Init() function is called at the beginning of the program */
-    HAL_Init();
-
-    /* enable interrupt */
-    __set_PRIMASK(0);
-    /* System clock initialization */
-    SystemClock_Config();
-    /* disable interrupt */
-    __set_PRIMASK(1);
-
-    /*rt_hw_systick_init();*/
-
-    /* Heap initialization */
-#if defined(RT_USING_HEAP)
-    rt_system_heap_init((void *)HEAP_BEGIN, (void *)HEAP_END);
-#endif
-
-    /* Pin driver initialization is open by default */
-#ifdef RT_USING_PIN
-    rt_hw_pin_init();
-#endif
-
-    /* USART driver initialization is open by default */
-#ifdef RT_USING_SERIAL
-    /*rt_hw_usart_init();*/
-#endif
-
-    /* Set the shell console output device */
-#ifdef RT_USING_CONSOLE
-    rt_console_set_device(RT_CONSOLE_DEVICE_NAME);
-#endif
-
-    /* Board underlying hardware initialization */
-#ifdef RT_USING_COMPONENTS_INIT
-	rt_components_board_init();
-#endif
+		GPIO_Initure.Pin=GPIO_PIN_10;			//PA10
+		HAL_GPIO_Init(GPIOA,&GPIO_Initure);	   	//初始化PA10
+		
+#if EN_USART1_RX
+		HAL_NVIC_EnableIRQ(USART1_IRQn);				//使能USART1中断通道
+		HAL_NVIC_SetPriority(USART1_IRQn,3,3);			//抢占优先级3，子优先级3
+#endif	
+	}
 }
-#endif
+
+

@@ -19,6 +19,7 @@
 
 #include <rthw.h>
 #include <rtthread.h>
+#include "shell.h"
 
 #ifdef RT_USING_USER_MAIN
 #ifndef RT_MAIN_THREAD_STACK_SIZE
@@ -96,6 +97,7 @@ void rt_components_board_init(void)
 
     for (fn_ptr = &__rt_init_rti_board_start; fn_ptr < &__rt_init_rti_board_end; fn_ptr++)
     {
+		rt_kprintf("rt_components_board_init fn_ptr = %#x \n",fn_ptr);
         (*fn_ptr)();
     }
 #endif

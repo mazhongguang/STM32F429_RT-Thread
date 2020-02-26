@@ -16,7 +16,6 @@ C_INCLUDES = \
 -Irt-thread/include/libc \
 -ISYSTEM/delay \
 -ISYSTEM/sys \
--ISYSTEM/usart \
 -IUSER \
 -Ihardware/HAL_Drivers \
 
@@ -69,8 +68,6 @@ AS_INCLUDES =
 #'SYSTEM/delay',
 #'-I',
 #'SYSTEM/sys',
-#'-I',
-#'SYSTEM/usart',
 #'-I',
 #'USER',
 #'-I',

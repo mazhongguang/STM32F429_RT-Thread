@@ -6,6 +6,14 @@ hardware/LCD/font.c \
 hardware/LCD/ili9341.c \
 hardware/LED/led.c \
 hardware/SDRAM/sdram.c \
+rt-thread/components/drivers/serial/serial.c \
+rt-thread/components/drivers/src/completion.c \
+rt-thread/components/drivers/src/dataqueue.c \
+rt-thread/components/drivers/src/pipe.c \
+rt-thread/components/drivers/src/ringblk_buf.c \
+rt-thread/components/drivers/src/ringbuffer.c \
+rt-thread/components/drivers/src/waitqueue.c \
+rt-thread/components/drivers/src/workqueue.c \
 rt-thread/components/finsh/cmd.c \
 rt-thread/components/finsh/finsh_compiler.c \
 rt-thread/components/finsh/finsh_error.c \
@@ -41,12 +49,12 @@ rt-thread/src/thread.c \
 rt-thread/src/timer.c \
 SYSTEM/delay/delay.c \
 SYSTEM/sys/sys.c \
-SYSTEM/usart/usart.c \
 USER/main.c \
 USER/stm32f4xx_hal_msp.c \
 USER/stm32f4xx_it.c \
 USER/system_stm32f4xx.c \
 hardware/HAL_Drivers/drv_gpio.c \
+hardware/HAL_Drivers/drv_usart.c \
 rt-thread/components/drivers/misc/pin.c \
 
 include hal_src.mk

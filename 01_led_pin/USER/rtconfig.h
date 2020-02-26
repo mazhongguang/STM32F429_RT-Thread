@@ -24,6 +24,7 @@
 //SECTION：调试选项
 //打开 RT-Thread 的ASSERT 选项
 //#define RT_DEBUG
+//#define RT_DEBUG_INIT
 
 //打开 RT-Thread 的线程栈溢出检查
 #define RT_USING_OVERFLOW_CHECK
@@ -31,7 +32,7 @@
 #define RT_USING_HOOK
 #define RT_USING_IDLE_HOOK
 #define RT_IDLE_HOOK_LIST_SIZE 4
-#define IDLE_THREAD_STACK_SIZE 512
+#define IDLE_THREAD_STACK_SIZE 128
 
 /* Inter-Thread communication */
 
@@ -50,6 +51,7 @@
 /* Kernel Device Object */
 #define RT_USING_MUTEX
 #define RT_USING_SEMAPHORE
+#define RT_USING_EVENT
 
 //支持设备模块
 #define RT_USING_DEVICE
@@ -60,7 +62,7 @@
 //控制台缓冲区大小
 #define RT_CONSOLEBUF_SIZE 128
 
-#define RT_CONSOLE_DEVICE_NAME "uart22"
+#define RT_CONSOLE_DEVICE_NAME "uart1"
 
 #define RT_VER_NUM 0x40002
 
@@ -81,7 +83,7 @@
 #define RT_USING_USER_MAIN
 
 // <o>the size of main thread<1-4086>
-#define RT_MAIN_THREAD_STACK_SIZE 512
+#define RT_MAIN_THREAD_STACK_SIZE 400
 
 //main线程优先级 10
 #define RT_MAIN_THREAD_PRIORITY 10
@@ -109,7 +111,7 @@
 
 #define FINSH_THREAD_PRIORITY 20
 
-#define FINSH_THREAD_STACK_SIZE 4096
+#define FINSH_THREAD_STACK_SIZE	800
 
 #define FINSH_CMD_SIZE 80
 

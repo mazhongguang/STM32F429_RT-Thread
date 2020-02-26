@@ -18,6 +18,7 @@
  * 2018-07-02     aozima       add custom prompt support.
  */
 
+#include "rtthread.h"
 #include <rthw.h>
 
 #ifdef RT_USING_FINSH

@@ -7,7 +7,11 @@ RT-Thread学习
 
 描述：
 	1.增加 rt_kprintf()函数，方便在PC端使用串口进行调试
+		2020.02.26  -> 增加 rt_hw_usart_init()函数进行串口初始化，禁用rt_kprintf()函数，使用内置控制台输出。（控制台为‘usart1',输出为串口1）	
 	2.使用 pin通过驱动模块来驱动LED
+	
+	2020.02.26
+		3.修改链接文件为 /board/linker_scripts/link.lds (内部有关于finsh相关的section的相关设置及优化，不然finsh组件无法使用）
 备注：
 	rt_pin_mode 相关函数使用之前需要先进行设备注册，本实验在board.c中的rt_hw_board_init()中加入rt_hw_init()函数注册。
 

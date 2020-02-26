@@ -24,7 +24,6 @@
 #include "stm32f4xx_ll_usart.h"
 
 /*硬件相关头文件*/
-#include "led.h"
 #include "sys.h"
 /*#include "usart.h"*/
 
@@ -70,10 +69,8 @@ void rt_hw_board_init()
 	HAL_SYSTICK_Config(HAL_RCC_GetSysClockFreq() / RT_TICK_PER_SECOND);
 
 	/* hardware initial , eg. led lcd uart*/
-	/*LED_Init();*/
 	rt_hw_pin_init();
 	rt_hw_usart_init();
-	/*uart_init(115200);	*/
 
 	/* Call components board initial (use INIT_BOARD_EXPORT()) */
 #ifdef RT_USING_COMPONENTS_INIT

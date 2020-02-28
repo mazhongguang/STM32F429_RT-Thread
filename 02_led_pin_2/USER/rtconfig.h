@@ -1,6 +1,5 @@
 #ifndef RT_CONFIG_H__
 #define RT_CONFIG_H__
-
 /* Automatically generated file; DO NOT EDIT. */
 /* RT-Thread Configuration */
 
@@ -24,13 +23,16 @@
 
 //SECTION：调试选项
 //打开 RT-Thread 的ASSERT 选项
-#define RT_DEBUG
+//#define RT_DEBUG
+//#define RT_DEBUG_INIT
 
 //打开 RT-Thread 的线程栈溢出检查
 #define RT_USING_OVERFLOW_CHECK
 
-
-#define IDLE_THREAD_STACK_SIZE 512
+#define RT_USING_HOOK
+#define RT_USING_IDLE_HOOK
+#define RT_IDLE_HOOK_LIST_SIZE 4
+#define IDLE_THREAD_STACK_SIZE 128
 
 /* Inter-Thread communication */
 
@@ -38,6 +40,7 @@
 /* Memory Management */
 //使用内存池
 //#define RT_USING_MEMPOOL
+//#define RT_USING_MEMHEAP
 
 //使用小内存
 #define RT_USING_SMALL_MEM
@@ -48,6 +51,7 @@
 /* Kernel Device Object */
 #define RT_USING_MUTEX
 #define RT_USING_SEMAPHORE
+#define RT_USING_EVENT
 
 //支持设备模块
 #define RT_USING_DEVICE
@@ -79,7 +83,7 @@
 #define RT_USING_USER_MAIN
 
 // <o>the size of main thread<1-4086>
-#define RT_MAIN_THREAD_STACK_SIZE 512
+#define RT_MAIN_THREAD_STACK_SIZE 400
 
 //main线程优先级 10
 #define RT_MAIN_THREAD_PRIORITY 10
@@ -107,7 +111,7 @@
 
 #define FINSH_THREAD_PRIORITY 20
 
-#define FINSH_THREAD_STACK_SIZE 4096
+#define FINSH_THREAD_STACK_SIZE	800
 
 #define FINSH_CMD_SIZE 80
 
@@ -115,7 +119,7 @@
 
 #define FINSH_USING_MSH_DEFAULT
 
-#define FINSH_USING_MSH_ONLY
+//#define FINSH_USING_MSH_ONLY
 
 #define FINSH_ARG_MAX 10
 

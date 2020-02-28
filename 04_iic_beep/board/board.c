@@ -72,10 +72,8 @@ void rt_hw_board_init()
 	HAL_SYSTICK_Config(HAL_RCC_GetSysClockFreq() / RT_TICK_PER_SECOND);
 
 	/* hardware initial , eg. led lcd uart*/
-	/*LED_Init();*/
 	rt_hw_pin_init();
-	hw_i2c_init();
-	/*rt_hw_i2c_init();*/
+	/*hw_i2c_init();*/
 	uart_init(115200);	
 
 	/* Call components board initial (use INIT_BOARD_EXPORT()) */

@@ -1,0 +1,19 @@
+C_SOURCES += 	HALLIB/Src/stm32f4xx_hal_tim.c \
+		HALLIB/Src/stm32f4xx_hal_tim_ex.c \
+		HALLIB/Src/stm32f4xx_hal_rcc.c \
+		HALLIB/Src/stm32f4xx_hal_rcc_ex.c \
+		HALLIB/Src/stm32f4xx_hal_rtc.c \
+		HALLIB/Src/stm32f4xx_hal_flash.c \
+		HALLIB/Src/stm32f4xx_hal_flash_ex.c \
+		HALLIB/Src/stm32f4xx_hal_flash_ramfunc.c \
+		HALLIB/Src/stm32f4xx_hal_gpio.c \
+		HALLIB/Src/stm32f4xx_hal_dma.c \
+		HALLIB/Src/stm32f4xx_hal_pwr.c \
+		HALLIB/Src/stm32f4xx_hal_pwr_ex.c \
+		HALLIB/Src/stm32f4xx_hal_cortex.c \
+		HALLIB/Src/stm32f4xx_hal.c \
+		HALLIB/Src/stm32f4xx_hal_sdram.c \
+		HALLIB/Src/stm32f4xx_hal_sram.c \
+		HALLIB/Src/stm32f4xx_ll_fmc.c \
+		HALLIB/Src/stm32f4xx_hal_can.c \
+		HALLIB/Src/stm32f4xx_hal_uart.c \

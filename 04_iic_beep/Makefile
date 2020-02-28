@@ -152,7 +152,8 @@ CFLAGS += -MMD -MP -MF"$(@:%.o=%.d)"
 # LDFLAGS
 #######################################
 # link script
-LDSCRIPT = STM32F429IGTx_FLASH.ld
+#LDSCRIPT = STM32F429IGTx_FLASH.ld
+LDSCRIPT = board/linker_scripts/link.lds
 
 # libraries
 LIBS = -lc -lm -lnosys 

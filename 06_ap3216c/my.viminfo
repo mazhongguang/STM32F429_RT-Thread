@@ -1,0 +1,521 @@
+# 这个 viminfo 文件是由 Vim 8.2 所产生。
+# 如果想要自行修改请特别小心！
+
+# Viminfo version
+|1,4
+
+# 文件被写的时候 ‘encoding’ 的值
+*encoding=utf-8
+
+
+# hlsearch on (H) or off (h):
+~h
+# 上个 Search 图案：
+~MSle0~/ASM_SOURCES
+
+# 命令行 历史记录 (从新到旧)：
+:!python3 config_mk.py
+|2,0,1582957771,,"!python3 config_mk.py"
+:make
+|2,0,1582957715,,"make"
+:YcmDiags
+|2,0,1582810596,,"YcmDiags"
+:make clean
+|2,0,1582810388,,"make clean"
+:make 
+|2,0,1582773438,,"make "
+:make clea
+|2,0,1582562783,,"make clea"
+:q!
+|2,0,1582348777,,"q!"
+:q
+|2,0,1582007139,,"q"
+:YcmDebugInfo
+|2,0,1582002919,,"YcmDebugInfo"
+:YcmCompleter
+|2,0,1582002907,,"YcmCompleter"
+:version
+|2,0,1582002870,,"version"
+:PluginInstall
+|2,0,1581997391,,"PluginInstall"
+:PluginUpdate
+|2,0,1581996491,,"PluginUpdate"
+:w
+|2,0,1581478705,,"w"
+:!python3 test.py
+|2,0,1581313525,,"!python3 test.py"
+:!touch hal_src.mk
+|2,0,1581241620,,"!touch hal_src.mk"
+:!python test.py
+|2,0,1581235039,,"!python test.py"
+:YcmRestartServer
+|2,0,1580463785,,"YcmRestartServer"
+:x
+|2,0,1580378569,,"x"
+:set completeopt?
+|2,0,1580374695,,"set completeopt?"
+:h 'tags'
+|2,0,1580374186,,"h 'tags'"
+:'<,'>
+|2,0,1580305913,,"'<,'>"
+:mak clean
+|2,0,1580205227,,"mak clean"
+:YcmGenerateConfig
+|2,0,1580203662,,"YcmGenerateConfig"
+:YcmGenerateConfig --verbose
+|2,0,1579528364,,"YcmGenerateConfig --verbose"
+:YcmGenerateConfig --versioe
+|2,0,1579528308,,"YcmGenerateConfig --versioe"
+:wq
+|2,0,1579442531,,"wq"
+:YcmShowDetailedDiagnostic
+|2,0,1579437641,,"YcmShowDetailedDiagnostic"
+:YcmForceCompileAndDiagnostics
+|2,0,1579437582,,"YcmForceCompileAndDiagnostics"
+:PluginClean
+|2,0,1579354633,,"PluginClean"
+:CCerror
+|2,0,1579353866,,"CCerror"
+:YcmGenerateConfig --vebose
+|2,0,1579336537,,"YcmGenerateConfig --vebose"
+::
+|2,0,1579334696,,":"
+:qa
+|2,0,1579099289,,"qa"
+:PluginList
+|2,0,1578575372,,"PluginList"
+:colorscheme molokai
+|2,0,1578492488,,"colorscheme molokai"
+:colorscheme molokai1
+|2,0,1578232348,,"colorscheme molokai1"
+:colorscheme blackbeauty
+|2,0,1578232332,,"colorscheme blackbeauty"
+:colorscheme
+|2,0,1578229143,,"colorscheme"
+:hi
+|2,0,1578226453,,"hi"
+:colorscheme github
+|2,0,1578216426,,"colorscheme github"
+:colorscheme moria
+|2,0,1578216378,,"colorscheme moria"
+:colorscheme astroboy
+|2,0,1578216335,,"colorscheme astroboy"
+:colorscheme aqua
+|2,0,1578216316,,"colorscheme aqua"
+:colorscheme anotherdark
+|2,0,1578216303,,"colorscheme anotherdark"
+:colorscheme anokha
+|2,0,1578216295,,"colorscheme anokha"
+:colorscheme aiseered
+|2,0,1578216287,,"colorscheme aiseered"
+:colorscheme adrian
+|2,0,1578216278,,"colorscheme adrian"
+:colorscheme adaryn
+|2,0,1578216270,,"colorscheme adaryn"
+:colorscheme wombat256mod
+|2,0,1578216163,,"colorscheme wombat256mod"
+
+# 查找字符串 历史记录 (从新到旧)：
+?/*
+|2,1,1582577561,47,"*"
+?/rt_using_device
+|2,1,1582473549,47,"rt_using_device"
+?/rt_i2c_bi
+|2,1,1582444131,47,"rt_i2c_bi"
+?/rt_pin
+|2,1,1582297633,47,"rt_pin"
+?//
+|2,1,1582096029,47,"/"
+?/ASM_SOURCES
+|2,1,1581940784,47,"ASM_SOURCES"
+?/rt_semphore
+|2,1,1581911307,47,"rt_semphore"
+? \<I\>
+|2,1,1581479405,,"\\<I\\>"
+? \<TxMessage\>
+|2,1,1580564108,,"\\<TxMessage\\>"
+?/data
+|2,1,1580551788,47,"data"
+?/can_init
+|2,1,1580524302,47,"can_init"
+?/hal_tim_irqhandler
+|2,1,1580463374,47,"hal_tim_irqhandler"
+?/3
+|2,1,1580462101,47,"3"
+?/hal_module_enabled
+|2,1,1580378798,47,"hal_module_enabled"
+?/hal_can_module_enabled
+|2,1,1580300725,47,"hal_can_module_enabled"
+?/CanTx
+|2,1,1580180750,47,"CanTx"
+?/SDRAM_HandleTypeDef
+|2,1,1579939291,47,"SDRAM_HandleTypeDef"
+?/prefix
+|2,1,1579529355,47,"prefix"
+?/can
+|2,1,1578841945,47,"can"
+?/can_handletypedef
+|2,1,1578840331,47,"can_handletypedef"
+?/show_
+|2,1,1578494016,47,"show_"
+?/cpp_mem
+|2,1,1578493027,47,"cpp_mem"
+?/define
+|2,1,1578404413,47,"define"
+?/ki2c
+|2,1,1578324937,47,"ki2c"
+?/enum
+|2,1,1578323451,47,"enum"
+?/structure
+|2,1,1578232570,47,"structure"
+? \<17_i2c\>
+|2,1,1576919942,,"\\<17_i2c\\>"
+? \<15_lcd\>
+|2,1,1576074016,,"\\<15_lcd\\>"
+?/F
+|2,1,1575968348,47,"F"
+? download-to-tfcard.sh
+|2,1,1574777971,,"download-to-tfcard.sh"
+?/iomuxc_uar
+|2,1,1574608603,47,"iomuxc_uar"
+?/wait_queue_t
+|2,1,1574599303,47,"wait_queue_t"
+? \<dev\>
+|2,1,1573218068,,"\\<dev\\>"
+?/write_e
+|2,1,1572527979,47,"write_e"
+?/local_e
+|2,1,1572527956,47,"local_e"
+?/set
+|2,1,1564907770,47,"set"
+?/1
+|2,1,1564907258,47,"1"
+? \<default\>
+|2,1,1562406911,,"\\<default\\>"
+
+# 表达式 历史记录 (从新到旧)：
+
+# 输入行 历史记录 (从新到旧)：
+@/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/0_ledmmmm
+|2,3,1582088968,,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/0_ledmmmm"
+@/media/mazhongguang/F/GitHub/STM32F429_CANj
+|2,3,1580204063,,"/media/mazhongguang/F/GitHub/STM32F429_CANj"
+@y
+|2,3,1579354638,,"y"
+@/media/mazhongguang/DATA/GitHub/ALPHA/IMX6ULL/Board_Drivers/13_uart/
+|2,3,1575289043,,"/media/mazhongguang/DATA/GitHub/ALPHA/IMX6ULL/Board_Drivers/13_uart/"
+
+# Debug Line 历史记录 (从新到旧)：
+
+# 寄存器:
+"0	CHAR	0
+	 
+|3,0,0,0,1,0,1582964535," "
+""1	LINE	0
+	ap3216c_device_t ap3216c_init(const char *i2c_bus_name);
+	
+|3,1,1,1,2,0,1582964575,"ap3216c_device_t ap3216c_init(const char *i2c_bus_name);",""
+"2	LINE	0
+			rt_kprintf("ps_data = %#x \n", ps_data);
+|3,0,2,1,1,0,1582964253,"		rt_kprintf(\"ps_data = %#x \\n\", ps_data);"
+"3	LINE	0
+	#define AP3216C_I2C_ADDR 
+|3,0,3,1,1,0,1582960784,"#define AP3216C_I2C_ADDR "
+"4	LINE	0
+		const char *ap3216c_name = "i2c2";
+|3,0,4,1,1,0,1582959657,"	const char *ap3216c_name = \"i2c2\";"
+"5	LINE	0
+	/*rt_uint32_t remote_buf[INFRARED_BUFF_SIZE] = {0};*/
+|3,0,5,1,1,0,1582959653,"/*rt_uint32_t remote_buf[INFRARED_BUFF_SIZE] = {0};*/"
+"6	LINE	0
+	#define KEY0 PIN_KEY0
+|3,0,6,1,1,0,1582959585,"#define KEY0 PIN_KEY0"
+"7	LINE	0
+	#define LED_W PIN_LED0
+|3,0,7,1,1,0,1582959584,"#define LED_W PIN_LED0"
+"8	LINE	0
+	#define LED_G PIN_LED1
+|3,0,8,1,1,0,1582959584,"#define LED_G PIN_LED1"
+"9	LINE	0
+	#defin
+|3,0,9,1,1,0,1582959070,"#defin"
+"n	CHAR	0
+	w;
+|3,0,23,0,1,0,1581254661,"w;"
+"-	CHAR	0
+	 
+|3,0,36,0,1,0,1582964383," "
+
+# 文件标记:
+'0  142  19  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/hardware/ap3216c/ap3216c.h
+|4,48,142,19,1582964579,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/hardware/ap3216c/ap3216c.h"
+'1  1  7  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/NERD_tree_2
+|4,49,1,7,1582960522,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/NERD_tree_2"
+'2  1  0  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/NERD_tree_1
+|4,50,1,0,1582956116,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/NERD_tree_1"
+'3  1  0  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/NERD_tree_1
+|4,51,1,0,1582956116,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/NERD_tree_1"
+'4  10  0  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2
+|4,52,10,0,1582904696,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2"
+'5  10  0  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2
+|4,53,10,0,1582904696,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2"
+'6  1  0  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2
+|4,54,1,0,1582858741,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2"
+'7  11  0  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2
+|4,55,11,0,1582858741,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2"
+'8  1  0  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2
+|4,56,1,0,1582858741,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2"
+'9  11  0  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2
+|4,57,11,0,1582858741,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2"
+
+# 跳转列表 (从新到旧):
+-'  142  19  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/hardware/ap3216c/ap3216c.h
+|4,39,142,19,1582964579,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/hardware/ap3216c/ap3216c.h"
+-'  144  0  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/hardware/ap3216c/ap3216c.h
+|4,39,144,0,1582964578,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/hardware/ap3216c/ap3216c.h"
+-'  126  22  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/hardware/ap3216c/sensor_lsc_ap3216c.c
+|4,39,126,22,1582964557,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/hardware/ap3216c/sensor_lsc_ap3216c.c"
+-'  19  4  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/hardware/ap3216c/sensor_lsc_ap3216c.h
+|4,39,19,4,1582964551,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/hardware/ap3216c/sensor_lsc_ap3216c.h"
+-'  29  15  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/USER/main.c
+|4,39,29,15,1582964549,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/USER/main.c"
+-'  947  7  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/rt-thread/include/rtdef.h
+|4,39,947,7,1582964535,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/rt-thread/include/rtdef.h"
+-'  919  17  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/rt-thread/include/rtdef.h
+|4,39,919,17,1582964530,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/rt-thread/include/rtdef.h"
+-'  428  7  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/rt-thread/include/rtthread.h
+|4,39,428,7,1582964516,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/rt-thread/include/rtthread.h"
+-'  30  19  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/USER/main.c
+|4,39,30,19,1582964510,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/USER/main.c"
+-'  47  31  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/hardware/ap3216c/ap3216c.h
+|4,39,47,31,1582964501,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/hardware/ap3216c/ap3216c.h"
+-'  23  13  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/USER/main.c
+|4,39,23,13,1582964455,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/USER/main.c"
+-'  12  0  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/hardware/REMOTE/remote.h
+|4,39,12,0,1582964430,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/hardware/REMOTE/remote.h"
+-'  44  2  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/USER/main.c
+|4,39,44,2,1582964264,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/USER/main.c"
+-'  47  2  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/USER/main.c
+|4,39,47,2,1582964255,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/USER/main.c"
+-'  54  52  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/USER/main.c
+|4,39,54,52,1582964066,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/USER/main.c"
+-'  135  16  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/hardware/ap3216c/sensor_lsc_ap3216c.c
+|4,39,135,16,1582962215,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/hardware/ap3216c/sensor_lsc_ap3216c.c"
+-'  35  0  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/hardware/ap3216c/sensor_lsc_ap3216c.c
+|4,39,35,0,1582961168,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/hardware/ap3216c/sensor_lsc_ap3216c.c"
+-'  18  28  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/USER/main.c
+|4,39,18,28,1582960866,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/USER/main.c"
+-'  27  0  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/USER/main.c
+|4,39,27,0,1582960803,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/USER/main.c"
+-'  1  0  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/hardware/ap3216c/sensor_lsc_ap3216c.h
+|4,39,1,0,1582960782,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/hardware/ap3216c/sensor_lsc_ap3216c.h"
+-'  191  0  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/hardware/ap3216c/ap3216c.h
+|4,39,191,0,1582960751,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/hardware/ap3216c/ap3216c.h"
+-'  19  0  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/USER/main.c
+|4,39,19,0,1582960715,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/USER/main.c"
+-'  11  0  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/NERD_tree_1
+|4,39,11,0,1582960530,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/NERD_tree_1"
+-'  31  2  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/NERD_tree_1
+|4,39,31,2,1582960529,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/NERD_tree_1"
+-'  1  0  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/NERD_tree_1
+|4,39,1,0,1582960529,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/NERD_tree_1"
+-'  1  7  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/NERD_tree_2
+|4,39,1,7,1582960522,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/NERD_tree_2"
+-'  5  2  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/NERD_tree_1
+|4,39,5,2,1582956112,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/NERD_tree_1"
+-'  10  0  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2
+|4,39,10,0,1582904696,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2"
+-'  10  0  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2
+|4,39,10,0,1582904696,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2"
+-'  30  2  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2
+|4,39,30,2,1582873821,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2"
+-'  1  0  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2
+|4,39,1,0,1582873821,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2"
+-'  30  2  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2
+|4,39,30,2,1582873821,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2"
+-'  1  0  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2
+|4,39,1,0,1582873821,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2"
+-'  11  0  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2
+|4,39,11,0,1582858741,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2"
+-'  11  0  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2
+|4,39,11,0,1582858741,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2"
+-'  31  2  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2
+|4,39,31,2,1582856949,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2"
+-'  1  0  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2
+|4,39,1,0,1582856949,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2"
+-'  31  2  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2
+|4,39,31,2,1582856949,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2"
+-'  1  0  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2
+|4,39,1,0,1582856949,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2"
+-'  11  0  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2
+|4,39,11,0,1582818329,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2"
+-'  11  0  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2
+|4,39,11,0,1582818329,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2"
+-'  31  2  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2
+|4,39,31,2,1582815107,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2"
+-'  1  0  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2
+|4,39,1,0,1582815107,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2"
+-'  31  2  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2
+|4,39,31,2,1582815107,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2"
+-'  1  0  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2
+|4,39,1,0,1582815107,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2"
+-'  20  0  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2
+|4,39,20,0,1582814845,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2"
+-'  20  0  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2
+|4,39,20,0,1582814845,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2"
+-'  29  2  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2
+|4,39,29,2,1582814790,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2"
+-'  1  0  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2
+|4,39,1,0,1582814790,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2"
+-'  29  2  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2
+|4,39,29,2,1582814790,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2"
+-'  1  0  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2
+|4,39,1,0,1582814790,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/NERD_tree_2"
+-'  150  0  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/hardware/HAL_Drivers/drv_infrared.c
+|4,39,150,0,1582814669,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/hardware/HAL_Drivers/drv_infrared.c"
+-'  150  0  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/hardware/HAL_Drivers/drv_infrared.c
+|4,39,150,0,1582814669,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/hardware/HAL_Drivers/drv_infrared.c"
+-'  56  30  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/hardware/HAL_Drivers/drv_infrared.c
+|4,39,56,30,1582814033,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/hardware/HAL_Drivers/drv_infrared.c"
+-'  56  30  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/hardware/HAL_Drivers/drv_infrared.c
+|4,39,56,30,1582814033,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/hardware/HAL_Drivers/drv_infrared.c"
+-'  2  19  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/USER/main.c
+|4,39,2,19,1582813353,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/USER/main.c"
+-'  2  19  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/USER/main.c
+|4,39,2,19,1582813353,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/USER/main.c"
+-'  16  47  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/USER/main.c
+|4,39,16,47,1582813285,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/USER/main.c"
+-'  16  47  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/USER/main.c
+|4,39,16,47,1582813285,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/USER/main.c"
+-'  126  8  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/hardware/HAL_Drivers/drv_infrared.c
+|4,39,126,8,1582813240,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/hardware/HAL_Drivers/drv_infrared.c"
+-'  126  8  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/hardware/HAL_Drivers/drv_infrared.c
+|4,39,126,8,1582813240,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/hardware/HAL_Drivers/drv_infrared.c"
+-'  147  39  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/hardware/HAL_Drivers/drv_infrared.c
+|4,39,147,39,1582813182,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/hardware/HAL_Drivers/drv_infrared.c"
+-'  147  39  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/hardware/HAL_Drivers/drv_infrared.c
+|4,39,147,39,1582813182,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/hardware/HAL_Drivers/drv_infrared.c"
+-'  146  1  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/hardware/HAL_Drivers/drv_infrared.c
+|4,39,146,1,1582813023,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/hardware/HAL_Drivers/drv_infrared.c"
+-'  146  1  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/hardware/HAL_Drivers/drv_infrared.c
+|4,39,146,1,1582813023,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/hardware/HAL_Drivers/drv_infrared.c"
+-'  48  14  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/USER/main.c
+|4,39,48,14,1582812931,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/USER/main.c"
+-'  48  14  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/USER/main.c
+|4,39,48,14,1582812931,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/USER/main.c"
+-'  91  20  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/USER/main.c
+|4,39,91,20,1582812889,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/USER/main.c"
+-'  91  20  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/USER/main.c
+|4,39,91,20,1582812889,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/USER/main.c"
+-'  222  13  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/hardware/HAL_Drivers/drv_infrared.c
+|4,39,222,13,1582812869,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/hardware/HAL_Drivers/drv_infrared.c"
+-'  222  13  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/hardware/HAL_Drivers/drv_infrared.c
+|4,39,222,13,1582812869,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/hardware/HAL_Drivers/drv_infrared.c"
+-'  38  9  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/hardware/HAL_Drivers/drv_infrared.h
+|4,39,38,9,1582812499,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/hardware/HAL_Drivers/drv_infrared.h"
+-'  38  9  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/hardware/HAL_Drivers/drv_infrared.h
+|4,39,38,9,1582812499,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/hardware/HAL_Drivers/drv_infrared.h"
+-'  313  14  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/hardware/HAL_Drivers/drv_infrared.c
+|4,39,313,14,1582812496,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/hardware/HAL_Drivers/drv_infrared.c"
+-'  313  14  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/hardware/HAL_Drivers/drv_infrared.c
+|4,39,313,14,1582812496,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/hardware/HAL_Drivers/drv_infrared.c"
+-'  44  11  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/hardware/HAL_Drivers/drv_infrared.h
+|4,39,44,11,1582812491,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/hardware/HAL_Drivers/drv_infrared.h"
+-'  44  11  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/hardware/HAL_Drivers/drv_infrared.h
+|4,39,44,11,1582812491,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/hardware/HAL_Drivers/drv_infrared.h"
+-'  307  7  /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/hardware/HAL_Drivers/drv_infrared.c
+|4,39,307,7,1582812486,"/media/mazhongguang/F/GitHub/STM32F429_RT-Thread/05_remote/hardware/HAL_Drivers/drv_infrared.c"
+
+# 文件内的标记历史记录 (从新到旧):
+
+> /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/NERD_tree_1
+	*	1582960530	0
+	"	11	0
+	.	1	0
+	+	1	0
+
+> /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/USER/main.c
+	*	1582964547	0
+	"	29	15
+	^	23	24
+	.	23	1
+	+	61	0
+	+	60	0
+	+	35	24
+	+	35	19
+	+	22	0
+	+	23	35
+	+	27	31
+	+	18	30
+	+	19	25
+	+	19	0
+	+	23	0
+	+	26	44
+	+	29	44
+	+	27	38
+	+	23	31
+	+	26	12
+	+	27	12
+	+	23	1
+	+	16	30
+	+	19	0
+	+	18	28
+	+	38	1
+	+	45	31
+	+	35	2
+	+	24	0
+	+	23	35
+	+	24	0
+	+	25	0
+	+	34	19
+	+	35	2
+	+	35	0
+	+	49	29
+	+	53	66
+	+	56	0
+	+	59	0
+	+	30	44
+	+	54	52
+	+	47	0
+	+	46	0
+	+	44	0
+	+	23	1
+
+> /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/NERD_tree_2
+	*	1582964533	0
+	"	17	0
+	.	1	0
+	+	1	0
+
+> /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/-MiniBufExplorer-
+	*	1582964535	0
+	"	1	10
+	.	2	0
+	+	2	0
+
+> /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/hardware/ap3216c/ap3216c.h
+	*	1582964579	0
+	"	142	19
+	.	142	0
+	+	142	0
+
+> /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/hardware/ap3216c/sensor_lsc_ap3216c.h
+	*	1582964549	0
+	"	19	4
+
+> /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/hardware/REMOTE/remote.h
+	*	1582964428	0
+	"	12	0
+
+> /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/rt-thread/include/rtdef.h
+	*	1582964532	0
+	"	947	7
+	^	920	3
+
+> /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/hardware/ap3216c/sensor_lsc_ap3216c.c
+	*	1582964556	0
+	"	126	22
+
+> /media/mazhongguang/F/GitHub/STM32F429_RT-Thread/06_ap3216c/rt-thread/include/rtthread.h
+	*	1582964515	0
+	"	428	7

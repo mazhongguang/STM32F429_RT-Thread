@@ -1,0 +1,1515 @@
+ARM GAS  /tmp/cco3eprh.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.eabi_attribute 27, 1
+   3              		.eabi_attribute 28, 1
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.file	"ringbuffer.c"
+  14              		.text
+  15              	.Ltext0:
+  16              		.cfi_sections	.debug_frame
+  17              		.section	.text.rt_ringbuffer_init,"ax",%progbits
+  18              		.align	1
+  19              		.global	rt_ringbuffer_init
+  20              		.syntax unified
+  21              		.thumb
+  22              		.thumb_func
+  23              		.fpu fpv4-sp-d16
+  25              	rt_ringbuffer_init:
+  26              	.LFB20:
+  27              		.file 1 "rt-thread/components/drivers/src/ringbuffer.c"
+   1:rt-thread/components/drivers/src/ringbuffer.c **** /*
+   2:rt-thread/components/drivers/src/ringbuffer.c ****  * Copyright (c) 2006-2018, RT-Thread Development Team
+   3:rt-thread/components/drivers/src/ringbuffer.c ****  *
+   4:rt-thread/components/drivers/src/ringbuffer.c ****  * SPDX-License-Identifier: Apache-2.0
+   5:rt-thread/components/drivers/src/ringbuffer.c ****  *
+   6:rt-thread/components/drivers/src/ringbuffer.c ****  * Change Logs:
+   7:rt-thread/components/drivers/src/ringbuffer.c ****  * Date           Author       Notes
+   8:rt-thread/components/drivers/src/ringbuffer.c ****  * 2012-09-30     Bernard      first version.
+   9:rt-thread/components/drivers/src/ringbuffer.c ****  * 2013-05-08     Grissiom     reimplement
+  10:rt-thread/components/drivers/src/ringbuffer.c ****  * 2016-08-18     heyuanjie    add interface
+  11:rt-thread/components/drivers/src/ringbuffer.c ****  */
+  12:rt-thread/components/drivers/src/ringbuffer.c **** 
+  13:rt-thread/components/drivers/src/ringbuffer.c **** #include <rtthread.h>
+  14:rt-thread/components/drivers/src/ringbuffer.c **** #include <rtdevice.h>
+  15:rt-thread/components/drivers/src/ringbuffer.c **** #include <string.h>
+  16:rt-thread/components/drivers/src/ringbuffer.c **** 
+  17:rt-thread/components/drivers/src/ringbuffer.c **** rt_inline enum rt_ringbuffer_state rt_ringbuffer_status(struct rt_ringbuffer *rb)
+  18:rt-thread/components/drivers/src/ringbuffer.c **** {
+  19:rt-thread/components/drivers/src/ringbuffer.c ****     if (rb->read_index == rb->write_index)
+  20:rt-thread/components/drivers/src/ringbuffer.c ****     {
+  21:rt-thread/components/drivers/src/ringbuffer.c ****         if (rb->read_mirror == rb->write_mirror)
+  22:rt-thread/components/drivers/src/ringbuffer.c ****             return RT_RINGBUFFER_EMPTY;
+  23:rt-thread/components/drivers/src/ringbuffer.c ****         else
+  24:rt-thread/components/drivers/src/ringbuffer.c ****             return RT_RINGBUFFER_FULL;
+  25:rt-thread/components/drivers/src/ringbuffer.c ****     }
+  26:rt-thread/components/drivers/src/ringbuffer.c ****     return RT_RINGBUFFER_HALFFULL;
+  27:rt-thread/components/drivers/src/ringbuffer.c **** }
+  28:rt-thread/components/drivers/src/ringbuffer.c **** 
+  29:rt-thread/components/drivers/src/ringbuffer.c **** void rt_ringbuffer_init(struct rt_ringbuffer *rb,
+  30:rt-thread/components/drivers/src/ringbuffer.c ****                         rt_uint8_t           *pool,
+  31:rt-thread/components/drivers/src/ringbuffer.c ****                         rt_int16_t            size)
+ARM GAS  /tmp/cco3eprh.s 			page 2
+
+
+  32:rt-thread/components/drivers/src/ringbuffer.c **** {
+  28              		.loc 1 32 0
+  29              		.cfi_startproc
+  30              		@ args = 0, pretend = 0, frame = 0
+  31              		@ frame_needed = 0, uses_anonymous_args = 0
+  32              		@ link register save eliminated.
+  33              	.LVL0:
+  33:rt-thread/components/drivers/src/ringbuffer.c ****     RT_ASSERT(rb != RT_NULL);
+  34:rt-thread/components/drivers/src/ringbuffer.c ****     RT_ASSERT(size > 0);
+  35:rt-thread/components/drivers/src/ringbuffer.c **** 
+  36:rt-thread/components/drivers/src/ringbuffer.c ****     /* initialize read and write index */
+  37:rt-thread/components/drivers/src/ringbuffer.c ****     rb->read_mirror = rb->read_index = 0;
+  34              		.loc 1 37 0
+  35 0000 8388     		ldrh	r3, [r0, #4]
+  36 0002 6FF34F03 		bfc	r3, #1, #15
+  37 0006 8380     		strh	r3, [r0, #4]	@ movhi
+  38 0008 6FF30003 		bfc	r3, #0, #1
+  39 000c 0371     		strb	r3, [r0, #4]
+  38:rt-thread/components/drivers/src/ringbuffer.c ****     rb->write_mirror = rb->write_index = 0;
+  40              		.loc 1 38 0
+  41 000e C388     		ldrh	r3, [r0, #6]
+  42 0010 6FF34F03 		bfc	r3, #1, #15
+  43 0014 C380     		strh	r3, [r0, #6]	@ movhi
+  44 0016 6FF30003 		bfc	r3, #0, #1
+  45 001a 8371     		strb	r3, [r0, #6]
+  39:rt-thread/components/drivers/src/ringbuffer.c **** 
+  40:rt-thread/components/drivers/src/ringbuffer.c ****     /* set buffer pool and size */
+  41:rt-thread/components/drivers/src/ringbuffer.c ****     rb->buffer_ptr = pool;
+  46              		.loc 1 41 0
+  47 001c 0160     		str	r1, [r0]
+  42:rt-thread/components/drivers/src/ringbuffer.c ****     rb->buffer_size = RT_ALIGN_DOWN(size, RT_ALIGN_SIZE);
+  48              		.loc 1 42 0
+  49 001e 22F00302 		bic	r2, r2, #3
+  50              	.LVL1:
+  51 0022 0281     		strh	r2, [r0, #8]	@ movhi
+  52 0024 7047     		bx	lr
+  53              		.cfi_endproc
+  54              	.LFE20:
+  56              		.section	.text.rt_ringbuffer_putchar_force,"ax",%progbits
+  57              		.align	1
+  58              		.global	rt_ringbuffer_putchar_force
+  59              		.syntax unified
+  60              		.thumb
+  61              		.thumb_func
+  62              		.fpu fpv4-sp-d16
+  64              	rt_ringbuffer_putchar_force:
+  65              	.LFB25:
+  43:rt-thread/components/drivers/src/ringbuffer.c **** }
+  44:rt-thread/components/drivers/src/ringbuffer.c **** RTM_EXPORT(rt_ringbuffer_init);
+  45:rt-thread/components/drivers/src/ringbuffer.c **** 
+  46:rt-thread/components/drivers/src/ringbuffer.c **** /**
+  47:rt-thread/components/drivers/src/ringbuffer.c ****  * put a block of data into ring buffer
+  48:rt-thread/components/drivers/src/ringbuffer.c ****  */
+  49:rt-thread/components/drivers/src/ringbuffer.c **** rt_size_t rt_ringbuffer_put(struct rt_ringbuffer *rb,
+  50:rt-thread/components/drivers/src/ringbuffer.c ****                             const rt_uint8_t     *ptr,
+  51:rt-thread/components/drivers/src/ringbuffer.c ****                             rt_uint16_t           length)
+  52:rt-thread/components/drivers/src/ringbuffer.c **** {
+ARM GAS  /tmp/cco3eprh.s 			page 3
+
+
+  53:rt-thread/components/drivers/src/ringbuffer.c ****     rt_uint16_t size;
+  54:rt-thread/components/drivers/src/ringbuffer.c **** 
+  55:rt-thread/components/drivers/src/ringbuffer.c ****     RT_ASSERT(rb != RT_NULL);
+  56:rt-thread/components/drivers/src/ringbuffer.c **** 
+  57:rt-thread/components/drivers/src/ringbuffer.c ****     /* whether has enough space */
+  58:rt-thread/components/drivers/src/ringbuffer.c ****     size = rt_ringbuffer_space_len(rb);
+  59:rt-thread/components/drivers/src/ringbuffer.c **** 
+  60:rt-thread/components/drivers/src/ringbuffer.c ****     /* no space */
+  61:rt-thread/components/drivers/src/ringbuffer.c ****     if (size == 0)
+  62:rt-thread/components/drivers/src/ringbuffer.c ****         return 0;
+  63:rt-thread/components/drivers/src/ringbuffer.c **** 
+  64:rt-thread/components/drivers/src/ringbuffer.c ****     /* drop some data */
+  65:rt-thread/components/drivers/src/ringbuffer.c ****     if (size < length)
+  66:rt-thread/components/drivers/src/ringbuffer.c ****         length = size;
+  67:rt-thread/components/drivers/src/ringbuffer.c **** 
+  68:rt-thread/components/drivers/src/ringbuffer.c ****     if (rb->buffer_size - rb->write_index > length)
+  69:rt-thread/components/drivers/src/ringbuffer.c ****     {
+  70:rt-thread/components/drivers/src/ringbuffer.c ****         /* read_index - write_index = empty space */
+  71:rt-thread/components/drivers/src/ringbuffer.c ****         memcpy(&rb->buffer_ptr[rb->write_index], ptr, length);
+  72:rt-thread/components/drivers/src/ringbuffer.c ****         /* this should not cause overflow because there is enough space for
+  73:rt-thread/components/drivers/src/ringbuffer.c ****          * length of data in current mirror */
+  74:rt-thread/components/drivers/src/ringbuffer.c ****         rb->write_index += length;
+  75:rt-thread/components/drivers/src/ringbuffer.c ****         return length;
+  76:rt-thread/components/drivers/src/ringbuffer.c ****     }
+  77:rt-thread/components/drivers/src/ringbuffer.c **** 
+  78:rt-thread/components/drivers/src/ringbuffer.c ****     memcpy(&rb->buffer_ptr[rb->write_index],
+  79:rt-thread/components/drivers/src/ringbuffer.c ****            &ptr[0],
+  80:rt-thread/components/drivers/src/ringbuffer.c ****            rb->buffer_size - rb->write_index);
+  81:rt-thread/components/drivers/src/ringbuffer.c ****     memcpy(&rb->buffer_ptr[0],
+  82:rt-thread/components/drivers/src/ringbuffer.c ****            &ptr[rb->buffer_size - rb->write_index],
+  83:rt-thread/components/drivers/src/ringbuffer.c ****            length - (rb->buffer_size - rb->write_index));
+  84:rt-thread/components/drivers/src/ringbuffer.c **** 
+  85:rt-thread/components/drivers/src/ringbuffer.c ****     /* we are going into the other side of the mirror */
+  86:rt-thread/components/drivers/src/ringbuffer.c ****     rb->write_mirror = ~rb->write_mirror;
+  87:rt-thread/components/drivers/src/ringbuffer.c ****     rb->write_index = length - (rb->buffer_size - rb->write_index);
+  88:rt-thread/components/drivers/src/ringbuffer.c **** 
+  89:rt-thread/components/drivers/src/ringbuffer.c ****     return length;
+  90:rt-thread/components/drivers/src/ringbuffer.c **** }
+  91:rt-thread/components/drivers/src/ringbuffer.c **** RTM_EXPORT(rt_ringbuffer_put);
+  92:rt-thread/components/drivers/src/ringbuffer.c **** 
+  93:rt-thread/components/drivers/src/ringbuffer.c **** /**
+  94:rt-thread/components/drivers/src/ringbuffer.c ****  * put a block of data into ring buffer
+  95:rt-thread/components/drivers/src/ringbuffer.c ****  *
+  96:rt-thread/components/drivers/src/ringbuffer.c ****  * When the buffer is full, it will discard the old data.
+  97:rt-thread/components/drivers/src/ringbuffer.c ****  */
+  98:rt-thread/components/drivers/src/ringbuffer.c **** rt_size_t rt_ringbuffer_put_force(struct rt_ringbuffer *rb,
+  99:rt-thread/components/drivers/src/ringbuffer.c ****                             const rt_uint8_t     *ptr,
+ 100:rt-thread/components/drivers/src/ringbuffer.c ****                             rt_uint16_t           length)
+ 101:rt-thread/components/drivers/src/ringbuffer.c **** {
+ 102:rt-thread/components/drivers/src/ringbuffer.c ****     rt_uint16_t space_length;
+ 103:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 104:rt-thread/components/drivers/src/ringbuffer.c ****     RT_ASSERT(rb != RT_NULL);
+ 105:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 106:rt-thread/components/drivers/src/ringbuffer.c ****     space_length = rt_ringbuffer_space_len(rb);
+ 107:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 108:rt-thread/components/drivers/src/ringbuffer.c ****     if (length > rb->buffer_size)
+ 109:rt-thread/components/drivers/src/ringbuffer.c ****     {
+ARM GAS  /tmp/cco3eprh.s 			page 4
+
+
+ 110:rt-thread/components/drivers/src/ringbuffer.c ****         ptr = &ptr[length - rb->buffer_size];
+ 111:rt-thread/components/drivers/src/ringbuffer.c ****         length = rb->buffer_size;
+ 112:rt-thread/components/drivers/src/ringbuffer.c ****     }
+ 113:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 114:rt-thread/components/drivers/src/ringbuffer.c ****     if (rb->buffer_size - rb->write_index > length)
+ 115:rt-thread/components/drivers/src/ringbuffer.c ****     {
+ 116:rt-thread/components/drivers/src/ringbuffer.c ****         /* read_index - write_index = empty space */
+ 117:rt-thread/components/drivers/src/ringbuffer.c ****         memcpy(&rb->buffer_ptr[rb->write_index], ptr, length);
+ 118:rt-thread/components/drivers/src/ringbuffer.c ****         /* this should not cause overflow because there is enough space for
+ 119:rt-thread/components/drivers/src/ringbuffer.c ****          * length of data in current mirror */
+ 120:rt-thread/components/drivers/src/ringbuffer.c ****         rb->write_index += length;
+ 121:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 122:rt-thread/components/drivers/src/ringbuffer.c ****         if (length > space_length)
+ 123:rt-thread/components/drivers/src/ringbuffer.c ****             rb->read_index = rb->write_index;
+ 124:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 125:rt-thread/components/drivers/src/ringbuffer.c ****         return length;
+ 126:rt-thread/components/drivers/src/ringbuffer.c ****     }
+ 127:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 128:rt-thread/components/drivers/src/ringbuffer.c ****     memcpy(&rb->buffer_ptr[rb->write_index],
+ 129:rt-thread/components/drivers/src/ringbuffer.c ****            &ptr[0],
+ 130:rt-thread/components/drivers/src/ringbuffer.c ****            rb->buffer_size - rb->write_index);
+ 131:rt-thread/components/drivers/src/ringbuffer.c ****     memcpy(&rb->buffer_ptr[0],
+ 132:rt-thread/components/drivers/src/ringbuffer.c ****            &ptr[rb->buffer_size - rb->write_index],
+ 133:rt-thread/components/drivers/src/ringbuffer.c ****            length - (rb->buffer_size - rb->write_index));
+ 134:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 135:rt-thread/components/drivers/src/ringbuffer.c ****     /* we are going into the other side of the mirror */
+ 136:rt-thread/components/drivers/src/ringbuffer.c ****     rb->write_mirror = ~rb->write_mirror;
+ 137:rt-thread/components/drivers/src/ringbuffer.c ****     rb->write_index = length - (rb->buffer_size - rb->write_index);
+ 138:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 139:rt-thread/components/drivers/src/ringbuffer.c ****     if (length > space_length)
+ 140:rt-thread/components/drivers/src/ringbuffer.c ****     {
+ 141:rt-thread/components/drivers/src/ringbuffer.c ****         rb->read_mirror = ~rb->read_mirror;
+ 142:rt-thread/components/drivers/src/ringbuffer.c ****         rb->read_index = rb->write_index;
+ 143:rt-thread/components/drivers/src/ringbuffer.c ****     }
+ 144:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 145:rt-thread/components/drivers/src/ringbuffer.c ****     return length;
+ 146:rt-thread/components/drivers/src/ringbuffer.c **** }
+ 147:rt-thread/components/drivers/src/ringbuffer.c **** RTM_EXPORT(rt_ringbuffer_put_force);
+ 148:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 149:rt-thread/components/drivers/src/ringbuffer.c **** /**
+ 150:rt-thread/components/drivers/src/ringbuffer.c ****  *  get data from ring buffer
+ 151:rt-thread/components/drivers/src/ringbuffer.c ****  */
+ 152:rt-thread/components/drivers/src/ringbuffer.c **** rt_size_t rt_ringbuffer_get(struct rt_ringbuffer *rb,
+ 153:rt-thread/components/drivers/src/ringbuffer.c ****                             rt_uint8_t           *ptr,
+ 154:rt-thread/components/drivers/src/ringbuffer.c ****                             rt_uint16_t           length)
+ 155:rt-thread/components/drivers/src/ringbuffer.c **** {
+ 156:rt-thread/components/drivers/src/ringbuffer.c ****     rt_size_t size;
+ 157:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 158:rt-thread/components/drivers/src/ringbuffer.c ****     RT_ASSERT(rb != RT_NULL);
+ 159:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 160:rt-thread/components/drivers/src/ringbuffer.c ****     /* whether has enough data  */
+ 161:rt-thread/components/drivers/src/ringbuffer.c ****     size = rt_ringbuffer_data_len(rb);
+ 162:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 163:rt-thread/components/drivers/src/ringbuffer.c ****     /* no data */
+ 164:rt-thread/components/drivers/src/ringbuffer.c ****     if (size == 0)
+ 165:rt-thread/components/drivers/src/ringbuffer.c ****         return 0;
+ 166:rt-thread/components/drivers/src/ringbuffer.c **** 
+ARM GAS  /tmp/cco3eprh.s 			page 5
+
+
+ 167:rt-thread/components/drivers/src/ringbuffer.c ****     /* less data */
+ 168:rt-thread/components/drivers/src/ringbuffer.c ****     if (size < length)
+ 169:rt-thread/components/drivers/src/ringbuffer.c ****         length = size;
+ 170:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 171:rt-thread/components/drivers/src/ringbuffer.c ****     if (rb->buffer_size - rb->read_index > length)
+ 172:rt-thread/components/drivers/src/ringbuffer.c ****     {
+ 173:rt-thread/components/drivers/src/ringbuffer.c ****         /* copy all of data */
+ 174:rt-thread/components/drivers/src/ringbuffer.c ****         memcpy(ptr, &rb->buffer_ptr[rb->read_index], length);
+ 175:rt-thread/components/drivers/src/ringbuffer.c ****         /* this should not cause overflow because there is enough space for
+ 176:rt-thread/components/drivers/src/ringbuffer.c ****          * length of data in current mirror */
+ 177:rt-thread/components/drivers/src/ringbuffer.c ****         rb->read_index += length;
+ 178:rt-thread/components/drivers/src/ringbuffer.c ****         return length;
+ 179:rt-thread/components/drivers/src/ringbuffer.c ****     }
+ 180:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 181:rt-thread/components/drivers/src/ringbuffer.c ****     memcpy(&ptr[0],
+ 182:rt-thread/components/drivers/src/ringbuffer.c ****            &rb->buffer_ptr[rb->read_index],
+ 183:rt-thread/components/drivers/src/ringbuffer.c ****            rb->buffer_size - rb->read_index);
+ 184:rt-thread/components/drivers/src/ringbuffer.c ****     memcpy(&ptr[rb->buffer_size - rb->read_index],
+ 185:rt-thread/components/drivers/src/ringbuffer.c ****            &rb->buffer_ptr[0],
+ 186:rt-thread/components/drivers/src/ringbuffer.c ****            length - (rb->buffer_size - rb->read_index));
+ 187:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 188:rt-thread/components/drivers/src/ringbuffer.c ****     /* we are going into the other side of the mirror */
+ 189:rt-thread/components/drivers/src/ringbuffer.c ****     rb->read_mirror = ~rb->read_mirror;
+ 190:rt-thread/components/drivers/src/ringbuffer.c ****     rb->read_index = length - (rb->buffer_size - rb->read_index);
+ 191:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 192:rt-thread/components/drivers/src/ringbuffer.c ****     return length;
+ 193:rt-thread/components/drivers/src/ringbuffer.c **** }
+ 194:rt-thread/components/drivers/src/ringbuffer.c **** RTM_EXPORT(rt_ringbuffer_get);
+ 195:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 196:rt-thread/components/drivers/src/ringbuffer.c **** /**
+ 197:rt-thread/components/drivers/src/ringbuffer.c ****  * put a character into ring buffer
+ 198:rt-thread/components/drivers/src/ringbuffer.c ****  */
+ 199:rt-thread/components/drivers/src/ringbuffer.c **** rt_size_t rt_ringbuffer_putchar(struct rt_ringbuffer *rb, const rt_uint8_t ch)
+ 200:rt-thread/components/drivers/src/ringbuffer.c **** {
+ 201:rt-thread/components/drivers/src/ringbuffer.c ****     RT_ASSERT(rb != RT_NULL);
+ 202:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 203:rt-thread/components/drivers/src/ringbuffer.c ****     /* whether has enough space */
+ 204:rt-thread/components/drivers/src/ringbuffer.c ****     if (!rt_ringbuffer_space_len(rb))
+ 205:rt-thread/components/drivers/src/ringbuffer.c ****         return 0;
+ 206:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 207:rt-thread/components/drivers/src/ringbuffer.c ****     rb->buffer_ptr[rb->write_index] = ch;
+ 208:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 209:rt-thread/components/drivers/src/ringbuffer.c ****     /* flip mirror */
+ 210:rt-thread/components/drivers/src/ringbuffer.c ****     if (rb->write_index == rb->buffer_size-1)
+ 211:rt-thread/components/drivers/src/ringbuffer.c ****     {
+ 212:rt-thread/components/drivers/src/ringbuffer.c ****         rb->write_mirror = ~rb->write_mirror;
+ 213:rt-thread/components/drivers/src/ringbuffer.c ****         rb->write_index = 0;
+ 214:rt-thread/components/drivers/src/ringbuffer.c ****     }
+ 215:rt-thread/components/drivers/src/ringbuffer.c ****     else
+ 216:rt-thread/components/drivers/src/ringbuffer.c ****     {
+ 217:rt-thread/components/drivers/src/ringbuffer.c ****         rb->write_index++;
+ 218:rt-thread/components/drivers/src/ringbuffer.c ****     }
+ 219:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 220:rt-thread/components/drivers/src/ringbuffer.c ****     return 1;
+ 221:rt-thread/components/drivers/src/ringbuffer.c **** }
+ 222:rt-thread/components/drivers/src/ringbuffer.c **** RTM_EXPORT(rt_ringbuffer_putchar);
+ 223:rt-thread/components/drivers/src/ringbuffer.c **** 
+ARM GAS  /tmp/cco3eprh.s 			page 6
+
+
+ 224:rt-thread/components/drivers/src/ringbuffer.c **** /**
+ 225:rt-thread/components/drivers/src/ringbuffer.c ****  * put a character into ring buffer
+ 226:rt-thread/components/drivers/src/ringbuffer.c ****  *
+ 227:rt-thread/components/drivers/src/ringbuffer.c ****  * When the buffer is full, it will discard one old data.
+ 228:rt-thread/components/drivers/src/ringbuffer.c ****  */
+ 229:rt-thread/components/drivers/src/ringbuffer.c **** rt_size_t rt_ringbuffer_putchar_force(struct rt_ringbuffer *rb, const rt_uint8_t ch)
+ 230:rt-thread/components/drivers/src/ringbuffer.c **** {
+  66              		.loc 1 230 0
+  67              		.cfi_startproc
+  68              		@ args = 0, pretend = 0, frame = 0
+  69              		@ frame_needed = 0, uses_anonymous_args = 0
+  70              		@ link register save eliminated.
+  71              	.LVL2:
+  72 0000 10B4     		push	{r4}
+  73              	.LCFI0:
+  74              		.cfi_def_cfa_offset 4
+  75              		.cfi_offset 4, -4
+  76              	.LVL3:
+  77              	.LBB6:
+  78              	.LBB7:
+  19:rt-thread/components/drivers/src/ringbuffer.c ****     {
+  79              		.loc 1 19 0
+  80 0002 8288     		ldrh	r2, [r0, #4]
+  81 0004 C2F34E02 		ubfx	r2, r2, #1, #15
+  82 0008 C388     		ldrh	r3, [r0, #6]
+  83 000a C3F34E03 		ubfx	r3, r3, #1, #15
+  84 000e 9A42     		cmp	r2, r3
+  85 0010 17D0     		beq	.L9
+  26:rt-thread/components/drivers/src/ringbuffer.c **** }
+  86              		.loc 1 26 0
+  87 0012 0224     		movs	r4, #2
+  88              	.L3:
+  89              	.LVL4:
+  90              	.LBE7:
+  91              	.LBE6:
+ 231:rt-thread/components/drivers/src/ringbuffer.c ****     enum rt_ringbuffer_state old_state;
+ 232:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 233:rt-thread/components/drivers/src/ringbuffer.c ****     RT_ASSERT(rb != RT_NULL);
+ 234:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 235:rt-thread/components/drivers/src/ringbuffer.c ****     old_state = rt_ringbuffer_status(rb);
+ 236:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 237:rt-thread/components/drivers/src/ringbuffer.c ****     rb->buffer_ptr[rb->write_index] = ch;
+  92              		.loc 1 237 0
+  93 0014 0268     		ldr	r2, [r0]
+  94 0016 D154     		strb	r1, [r2, r3]
+ 238:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 239:rt-thread/components/drivers/src/ringbuffer.c ****     /* flip mirror */
+ 240:rt-thread/components/drivers/src/ringbuffer.c ****     if (rb->write_index == rb->buffer_size-1)
+  95              		.loc 1 240 0
+  96 0018 C388     		ldrh	r3, [r0, #6]
+  97 001a C3F34E03 		ubfx	r3, r3, #1, #15
+  98 001e B0F90820 		ldrsh	r2, [r0, #8]
+  99 0022 013A     		subs	r2, r2, #1
+ 100 0024 9342     		cmp	r3, r2
+ 101 0026 18D0     		beq	.L10
+ 241:rt-thread/components/drivers/src/ringbuffer.c ****     {
+ 242:rt-thread/components/drivers/src/ringbuffer.c ****         rb->write_mirror = ~rb->write_mirror;
+ARM GAS  /tmp/cco3eprh.s 			page 7
+
+
+ 243:rt-thread/components/drivers/src/ringbuffer.c ****         rb->write_index = 0;
+ 244:rt-thread/components/drivers/src/ringbuffer.c ****         if (old_state == RT_RINGBUFFER_FULL)
+ 245:rt-thread/components/drivers/src/ringbuffer.c ****         {
+ 246:rt-thread/components/drivers/src/ringbuffer.c ****             rb->read_mirror = ~rb->read_mirror;
+ 247:rt-thread/components/drivers/src/ringbuffer.c ****             rb->read_index = rb->write_index;
+ 248:rt-thread/components/drivers/src/ringbuffer.c ****         }
+ 249:rt-thread/components/drivers/src/ringbuffer.c ****     }
+ 250:rt-thread/components/drivers/src/ringbuffer.c ****     else
+ 251:rt-thread/components/drivers/src/ringbuffer.c ****     {
+ 252:rt-thread/components/drivers/src/ringbuffer.c ****         rb->write_index++;
+ 102              		.loc 1 252 0
+ 103 0028 0133     		adds	r3, r3, #1
+ 104 002a C3F30E03 		ubfx	r3, r3, #0, #15
+ 105 002e C288     		ldrh	r2, [r0, #6]
+ 106 0030 63F34F02 		bfi	r2, r3, #1, #15
+ 107 0034 C280     		strh	r2, [r0, #6]	@ movhi
+ 253:rt-thread/components/drivers/src/ringbuffer.c ****         if (old_state == RT_RINGBUFFER_FULL)
+ 108              		.loc 1 253 0
+ 109 0036 012C     		cmp	r4, #1
+ 110 0038 2AD0     		beq	.L11
+ 111              	.L5:
+ 254:rt-thread/components/drivers/src/ringbuffer.c ****             rb->read_index = rb->write_index;
+ 255:rt-thread/components/drivers/src/ringbuffer.c ****     }
+ 256:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 257:rt-thread/components/drivers/src/ringbuffer.c ****     return 1;
+ 258:rt-thread/components/drivers/src/ringbuffer.c **** }
+ 112              		.loc 1 258 0
+ 113 003a 0120     		movs	r0, #1
+ 114              	.LVL5:
+ 115 003c 5DF8044B 		ldr	r4, [sp], #4
+ 116              	.LCFI1:
+ 117              		.cfi_remember_state
+ 118              		.cfi_restore 4
+ 119              		.cfi_def_cfa_offset 0
+ 120 0040 7047     		bx	lr
+ 121              	.LVL6:
+ 122              	.L9:
+ 123              	.LCFI2:
+ 124              		.cfi_restore_state
+ 125              	.LBB9:
+ 126              	.LBB8:
+  21:rt-thread/components/drivers/src/ringbuffer.c ****             return RT_RINGBUFFER_EMPTY;
+ 127              		.loc 1 21 0
+ 128 0042 0479     		ldrb	r4, [r0, #4]	@ zero_extendqisi2
+ 129 0044 04F00104 		and	r4, r4, #1
+ 130 0048 8279     		ldrb	r2, [r0, #6]	@ zero_extendqisi2
+ 131 004a 02F00102 		and	r2, r2, #1
+ 132 004e 9442     		cmp	r4, r2
+ 133 0050 01D0     		beq	.L12
+  24:rt-thread/components/drivers/src/ringbuffer.c ****     }
+ 134              		.loc 1 24 0
+ 135 0052 0124     		movs	r4, #1
+ 136 0054 DEE7     		b	.L3
+ 137              	.L12:
+  22:rt-thread/components/drivers/src/ringbuffer.c ****         else
+ 138              		.loc 1 22 0
+ 139 0056 0024     		movs	r4, #0
+ARM GAS  /tmp/cco3eprh.s 			page 8
+
+
+ 140 0058 DCE7     		b	.L3
+ 141              	.LVL7:
+ 142              	.L10:
+ 143              	.LBE8:
+ 144              	.LBE9:
+ 242:rt-thread/components/drivers/src/ringbuffer.c ****         rb->write_index = 0;
+ 145              		.loc 1 242 0
+ 146 005a 8379     		ldrb	r3, [r0, #6]	@ zero_extendqisi2
+ 147 005c 03F00102 		and	r2, r3, #1
+ 148 0060 82F00102 		eor	r2, r2, #1
+ 149 0064 62F30003 		bfi	r3, r2, #0, #1
+ 150 0068 8371     		strb	r3, [r0, #6]
+ 243:rt-thread/components/drivers/src/ringbuffer.c ****         if (old_state == RT_RINGBUFFER_FULL)
+ 151              		.loc 1 243 0
+ 152 006a C388     		ldrh	r3, [r0, #6]
+ 153 006c 6FF34F03 		bfc	r3, #1, #15
+ 154 0070 C380     		strh	r3, [r0, #6]	@ movhi
+ 244:rt-thread/components/drivers/src/ringbuffer.c ****         {
+ 155              		.loc 1 244 0
+ 156 0072 012C     		cmp	r4, #1
+ 157 0074 E1D1     		bne	.L5
+ 246:rt-thread/components/drivers/src/ringbuffer.c ****             rb->read_index = rb->write_index;
+ 158              		.loc 1 246 0
+ 159 0076 0379     		ldrb	r3, [r0, #4]	@ zero_extendqisi2
+ 160 0078 03F00102 		and	r2, r3, #1
+ 161 007c 82F00102 		eor	r2, r2, #1
+ 162 0080 62F30003 		bfi	r3, r2, #0, #1
+ 163 0084 0371     		strb	r3, [r0, #4]
+ 247:rt-thread/components/drivers/src/ringbuffer.c ****         }
+ 164              		.loc 1 247 0
+ 165 0086 8388     		ldrh	r3, [r0, #4]
+ 166 0088 6FF34F03 		bfc	r3, #1, #15
+ 167 008c 8380     		strh	r3, [r0, #4]	@ movhi
+ 168 008e D4E7     		b	.L5
+ 169              	.L11:
+ 254:rt-thread/components/drivers/src/ringbuffer.c ****     }
+ 170              		.loc 1 254 0
+ 171 0090 8288     		ldrh	r2, [r0, #4]
+ 172 0092 63F34F02 		bfi	r2, r3, #1, #15
+ 173 0096 8280     		strh	r2, [r0, #4]	@ movhi
+ 174 0098 CFE7     		b	.L5
+ 175              		.cfi_endproc
+ 176              	.LFE25:
+ 178              		.section	.text.rt_ringbuffer_data_len,"ax",%progbits
+ 179              		.align	1
+ 180              		.global	rt_ringbuffer_data_len
+ 181              		.syntax unified
+ 182              		.thumb
+ 183              		.thumb_func
+ 184              		.fpu fpv4-sp-d16
+ 186              	rt_ringbuffer_data_len:
+ 187              	.LFB27:
+ 259:rt-thread/components/drivers/src/ringbuffer.c **** RTM_EXPORT(rt_ringbuffer_putchar_force);
+ 260:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 261:rt-thread/components/drivers/src/ringbuffer.c **** /**
+ 262:rt-thread/components/drivers/src/ringbuffer.c ****  * get a character from a ringbuffer
+ 263:rt-thread/components/drivers/src/ringbuffer.c ****  */
+ARM GAS  /tmp/cco3eprh.s 			page 9
+
+
+ 264:rt-thread/components/drivers/src/ringbuffer.c **** rt_size_t rt_ringbuffer_getchar(struct rt_ringbuffer *rb, rt_uint8_t *ch)
+ 265:rt-thread/components/drivers/src/ringbuffer.c **** {
+ 266:rt-thread/components/drivers/src/ringbuffer.c ****     RT_ASSERT(rb != RT_NULL);
+ 267:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 268:rt-thread/components/drivers/src/ringbuffer.c ****     /* ringbuffer is empty */
+ 269:rt-thread/components/drivers/src/ringbuffer.c ****     if (!rt_ringbuffer_data_len(rb))
+ 270:rt-thread/components/drivers/src/ringbuffer.c ****         return 0;
+ 271:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 272:rt-thread/components/drivers/src/ringbuffer.c ****     /* put character */
+ 273:rt-thread/components/drivers/src/ringbuffer.c ****     *ch = rb->buffer_ptr[rb->read_index];
+ 274:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 275:rt-thread/components/drivers/src/ringbuffer.c ****     if (rb->read_index == rb->buffer_size-1)
+ 276:rt-thread/components/drivers/src/ringbuffer.c ****     {
+ 277:rt-thread/components/drivers/src/ringbuffer.c ****         rb->read_mirror = ~rb->read_mirror;
+ 278:rt-thread/components/drivers/src/ringbuffer.c ****         rb->read_index = 0;
+ 279:rt-thread/components/drivers/src/ringbuffer.c ****     }
+ 280:rt-thread/components/drivers/src/ringbuffer.c ****     else
+ 281:rt-thread/components/drivers/src/ringbuffer.c ****     {
+ 282:rt-thread/components/drivers/src/ringbuffer.c ****         rb->read_index++;
+ 283:rt-thread/components/drivers/src/ringbuffer.c ****     }
+ 284:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 285:rt-thread/components/drivers/src/ringbuffer.c ****     return 1;
+ 286:rt-thread/components/drivers/src/ringbuffer.c **** }
+ 287:rt-thread/components/drivers/src/ringbuffer.c **** RTM_EXPORT(rt_ringbuffer_getchar);
+ 288:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 289:rt-thread/components/drivers/src/ringbuffer.c **** /** 
+ 290:rt-thread/components/drivers/src/ringbuffer.c ****  * get the size of data in rb 
+ 291:rt-thread/components/drivers/src/ringbuffer.c ****  */
+ 292:rt-thread/components/drivers/src/ringbuffer.c **** rt_size_t rt_ringbuffer_data_len(struct rt_ringbuffer *rb)
+ 293:rt-thread/components/drivers/src/ringbuffer.c **** {
+ 188              		.loc 1 293 0
+ 189              		.cfi_startproc
+ 190              		@ args = 0, pretend = 0, frame = 0
+ 191              		@ frame_needed = 0, uses_anonymous_args = 0
+ 192              		@ link register save eliminated.
+ 193              	.LVL8:
+ 194              	.LBB10:
+ 195              	.LBB11:
+  19:rt-thread/components/drivers/src/ringbuffer.c ****     {
+ 196              		.loc 1 19 0
+ 197 0000 8388     		ldrh	r3, [r0, #4]
+ 198 0002 C3F34E03 		ubfx	r3, r3, #1, #15
+ 199 0006 C288     		ldrh	r2, [r0, #6]
+ 200 0008 C2F34E02 		ubfx	r2, r2, #1, #15
+ 201 000c 9342     		cmp	r3, r2
+ 202 000e 06D0     		beq	.L34
+  26:rt-thread/components/drivers/src/ringbuffer.c **** }
+ 203              		.loc 1 26 0
+ 204 0010 0221     		movs	r1, #2
+ 205              	.LVL9:
+ 206              	.LBE11:
+ 207              	.LBE10:
+ 294:rt-thread/components/drivers/src/ringbuffer.c ****     switch (rt_ringbuffer_status(rb))
+ 208              		.loc 1 294 0
+ 209 0012 61B3     		cbz	r1, .L25
+ 210 0014 0129     		cmp	r1, #1
+ 211 0016 21D1     		bne	.L28
+ARM GAS  /tmp/cco3eprh.s 			page 10
+
+
+ 295:rt-thread/components/drivers/src/ringbuffer.c ****     {
+ 296:rt-thread/components/drivers/src/ringbuffer.c ****     case RT_RINGBUFFER_EMPTY:
+ 297:rt-thread/components/drivers/src/ringbuffer.c ****         return 0;
+ 298:rt-thread/components/drivers/src/ringbuffer.c ****     case RT_RINGBUFFER_FULL:
+ 299:rt-thread/components/drivers/src/ringbuffer.c ****         return rb->buffer_size;
+ 212              		.loc 1 299 0
+ 213 0018 B0F90800 		ldrsh	r0, [r0, #8]
+ 214              	.LVL10:
+ 215 001c 7047     		bx	lr
+ 216              	.LVL11:
+ 217              	.L34:
+ 293:rt-thread/components/drivers/src/ringbuffer.c ****     switch (rt_ringbuffer_status(rb))
+ 218              		.loc 1 293 0
+ 219 001e 10B4     		push	{r4}
+ 220              	.LCFI3:
+ 221              		.cfi_def_cfa_offset 4
+ 222              		.cfi_offset 4, -4
+ 223              	.LBB14:
+ 224              	.LBB12:
+  21:rt-thread/components/drivers/src/ringbuffer.c ****             return RT_RINGBUFFER_EMPTY;
+ 225              		.loc 1 21 0
+ 226 0020 0479     		ldrb	r4, [r0, #4]	@ zero_extendqisi2
+ 227 0022 04F00104 		and	r4, r4, #1
+ 228 0026 8179     		ldrb	r1, [r0, #6]	@ zero_extendqisi2
+ 229 0028 01F00101 		and	r1, r1, #1
+ 230 002c 8C42     		cmp	r4, r1
+ 231 002e 08D0     		beq	.L35
+  24:rt-thread/components/drivers/src/ringbuffer.c ****     }
+ 232              		.loc 1 24 0
+ 233 0030 0121     		movs	r1, #1
+ 234              	.L14:
+ 235              	.LVL12:
+ 236              	.LBE12:
+ 237              	.LBE14:
+ 294:rt-thread/components/drivers/src/ringbuffer.c ****     {
+ 238              		.loc 1 294 0
+ 239 0032 89B1     		cbz	r1, .L21
+ 240 0034 0129     		cmp	r1, #1
+ 241 0036 06D1     		bne	.L22
+ 242              		.loc 1 299 0
+ 243 0038 B0F90800 		ldrsh	r0, [r0, #8]
+ 244              	.LVL13:
+ 245              	.L13:
+ 300:rt-thread/components/drivers/src/ringbuffer.c ****     case RT_RINGBUFFER_HALFFULL:
+ 301:rt-thread/components/drivers/src/ringbuffer.c ****     default:
+ 302:rt-thread/components/drivers/src/ringbuffer.c ****         if (rb->write_index > rb->read_index)
+ 303:rt-thread/components/drivers/src/ringbuffer.c ****             return rb->write_index - rb->read_index;
+ 304:rt-thread/components/drivers/src/ringbuffer.c ****         else
+ 305:rt-thread/components/drivers/src/ringbuffer.c ****             return rb->buffer_size - (rb->read_index - rb->write_index);
+ 306:rt-thread/components/drivers/src/ringbuffer.c ****     };
+ 307:rt-thread/components/drivers/src/ringbuffer.c **** }
+ 246              		.loc 1 307 0
+ 247 003c 5DF8044B 		ldr	r4, [sp], #4
+ 248              	.LCFI4:
+ 249              		.cfi_remember_state
+ 250              		.cfi_restore 4
+ 251              		.cfi_def_cfa_offset 0
+ARM GAS  /tmp/cco3eprh.s 			page 11
+
+
+ 252 0040 7047     		bx	lr
+ 253              	.LVL14:
+ 254              	.L35:
+ 255              	.LCFI5:
+ 256              		.cfi_restore_state
+ 257              	.LBB15:
+ 258              	.LBB13:
+  22:rt-thread/components/drivers/src/ringbuffer.c ****         else
+ 259              		.loc 1 22 0
+ 260 0042 0021     		movs	r1, #0
+ 261 0044 F5E7     		b	.L14
+ 262              	.LVL15:
+ 263              	.L22:
+ 264              	.LBE13:
+ 265              	.LBE15:
+ 302:rt-thread/components/drivers/src/ringbuffer.c ****             return rb->write_index - rb->read_index;
+ 266              		.loc 1 302 0
+ 267 0046 9A42     		cmp	r2, r3
+ 268 0048 04DC     		bgt	.L36
+ 305:rt-thread/components/drivers/src/ringbuffer.c ****     };
+ 269              		.loc 1 305 0
+ 270 004a B0F90800 		ldrsh	r0, [r0, #8]
+ 271              	.LVL16:
+ 272 004e 9B1A     		subs	r3, r3, r2
+ 273 0050 C01A     		subs	r0, r0, r3
+ 274 0052 F3E7     		b	.L13
+ 275              	.LVL17:
+ 276              	.L36:
+ 303:rt-thread/components/drivers/src/ringbuffer.c ****         else
+ 277              		.loc 1 303 0
+ 278 0054 D01A     		subs	r0, r2, r3
+ 279              	.LVL18:
+ 280 0056 F1E7     		b	.L13
+ 281              	.LVL19:
+ 282              	.L21:
+ 297:rt-thread/components/drivers/src/ringbuffer.c ****     case RT_RINGBUFFER_FULL:
+ 283              		.loc 1 297 0
+ 284 0058 0020     		movs	r0, #0
+ 285              	.LVL20:
+ 286 005a EFE7     		b	.L13
+ 287              	.LVL21:
+ 288              	.L28:
+ 289              	.LCFI6:
+ 290              		.cfi_def_cfa_offset 0
+ 291              		.cfi_restore 4
+ 302:rt-thread/components/drivers/src/ringbuffer.c ****             return rb->write_index - rb->read_index;
+ 292              		.loc 1 302 0
+ 293 005c 9A42     		cmp	r2, r3
+ 294 005e 04DC     		bgt	.L37
+ 305:rt-thread/components/drivers/src/ringbuffer.c ****     };
+ 295              		.loc 1 305 0
+ 296 0060 B0F90800 		ldrsh	r0, [r0, #8]
+ 297              	.LVL22:
+ 298 0064 9B1A     		subs	r3, r3, r2
+ 299 0066 C01A     		subs	r0, r0, r3
+ 300 0068 7047     		bx	lr
+ 301              	.LVL23:
+ARM GAS  /tmp/cco3eprh.s 			page 12
+
+
+ 302              	.L37:
+ 303:rt-thread/components/drivers/src/ringbuffer.c ****         else
+ 303              		.loc 1 303 0
+ 304 006a D01A     		subs	r0, r2, r3
+ 305              	.LVL24:
+ 306 006c 7047     		bx	lr
+ 307              	.LVL25:
+ 308              	.L25:
+ 297:rt-thread/components/drivers/src/ringbuffer.c ****     case RT_RINGBUFFER_FULL:
+ 309              		.loc 1 297 0
+ 310 006e 0020     		movs	r0, #0
+ 311              	.LVL26:
+ 312 0070 7047     		bx	lr
+ 313              		.cfi_endproc
+ 314              	.LFE27:
+ 316              		.section	.text.rt_ringbuffer_put,"ax",%progbits
+ 317              		.align	1
+ 318              		.global	rt_ringbuffer_put
+ 319              		.syntax unified
+ 320              		.thumb
+ 321              		.thumb_func
+ 322              		.fpu fpv4-sp-d16
+ 324              	rt_ringbuffer_put:
+ 325              	.LFB21:
+  52:rt-thread/components/drivers/src/ringbuffer.c ****     rt_uint16_t size;
+ 326              		.loc 1 52 0
+ 327              		.cfi_startproc
+ 328              		@ args = 0, pretend = 0, frame = 0
+ 329              		@ frame_needed = 0, uses_anonymous_args = 0
+ 330              	.LVL27:
+ 331 0000 2DE9F041 		push	{r4, r5, r6, r7, r8, lr}
+ 332              	.LCFI7:
+ 333              		.cfi_def_cfa_offset 24
+ 334              		.cfi_offset 4, -24
+ 335              		.cfi_offset 5, -20
+ 336              		.cfi_offset 6, -16
+ 337              		.cfi_offset 7, -12
+ 338              		.cfi_offset 8, -8
+ 339              		.cfi_offset 14, -4
+ 340 0004 0646     		mov	r6, r0
+ 341 0006 0F46     		mov	r7, r1
+ 342 0008 9046     		mov	r8, r2
+  58:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 343              		.loc 1 58 0
+ 344 000a B0F90850 		ldrsh	r5, [r0, #8]
+ 345 000e ACB2     		uxth	r4, r5
+ 346 0010 FFF7FEFF 		bl	rt_ringbuffer_data_len
+ 347              	.LVL28:
+ 348 0014 80B2     		uxth	r0, r0
+ 349 0016 241A     		subs	r4, r4, r0
+ 350 0018 A4B2     		uxth	r4, r4
+ 351              	.LVL29:
+  61:rt-thread/components/drivers/src/ringbuffer.c ****         return 0;
+ 352              		.loc 1 61 0
+ 353 001a 002C     		cmp	r4, #0
+ 354 001c 3DD0     		beq	.L42
+  65:rt-thread/components/drivers/src/ringbuffer.c ****         length = size;
+ARM GAS  /tmp/cco3eprh.s 			page 13
+
+
+ 355              		.loc 1 65 0
+ 356 001e 4445     		cmp	r4, r8
+ 357 0020 00D3     		bcc	.L40
+ 358 0022 4446     		mov	r4, r8
+ 359              	.LVL30:
+ 360              	.L40:
+  68:rt-thread/components/drivers/src/ringbuffer.c ****     {
+ 361              		.loc 1 68 0
+ 362 0024 F388     		ldrh	r3, [r6, #6]
+ 363 0026 C3F34E03 		ubfx	r3, r3, #1, #15
+ 364 002a EA1A     		subs	r2, r5, r3
+ 365 002c A242     		cmp	r2, r4
+ 366 002e 24DC     		bgt	.L44
+  78:rt-thread/components/drivers/src/ringbuffer.c ****            &ptr[0],
+ 367              		.loc 1 78 0
+ 368 0030 3068     		ldr	r0, [r6]
+ 369              	.LVL31:
+ 370 0032 3946     		mov	r1, r7
+ 371 0034 1844     		add	r0, r0, r3
+ 372 0036 FFF7FEFF 		bl	memcpy
+ 373              	.LVL32:
+  82:rt-thread/components/drivers/src/ringbuffer.c ****            length - (rb->buffer_size - rb->write_index));
+ 374              		.loc 1 82 0
+ 375 003a B6F90810 		ldrsh	r1, [r6, #8]
+ 376 003e F388     		ldrh	r3, [r6, #6]
+ 377 0040 C3F34E03 		ubfx	r3, r3, #1, #15
+ 378 0044 C91A     		subs	r1, r1, r3
+  81:rt-thread/components/drivers/src/ringbuffer.c ****            &ptr[rb->buffer_size - rb->write_index],
+ 379              		.loc 1 81 0
+ 380 0046 621A     		subs	r2, r4, r1
+ 381 0048 3944     		add	r1, r1, r7
+ 382 004a 3068     		ldr	r0, [r6]
+ 383 004c FFF7FEFF 		bl	memcpy
+ 384              	.LVL33:
+  86:rt-thread/components/drivers/src/ringbuffer.c ****     rb->write_index = length - (rb->buffer_size - rb->write_index);
+ 385              		.loc 1 86 0
+ 386 0050 B379     		ldrb	r3, [r6, #6]	@ zero_extendqisi2
+ 387 0052 03F00102 		and	r2, r3, #1
+ 388 0056 82F00102 		eor	r2, r2, #1
+ 389 005a 62F30003 		bfi	r3, r2, #0, #1
+ 390 005e B371     		strb	r3, [r6, #6]
+  87:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 391              		.loc 1 87 0
+ 392 0060 F388     		ldrh	r3, [r6, #6]
+ 393 0062 C3F34E02 		ubfx	r2, r3, #1, #15
+ 394 0066 3189     		ldrh	r1, [r6, #8]
+ 395 0068 521A     		subs	r2, r2, r1
+ 396 006a 14FA82F2 		uxtah	r2, r4, r2
+ 397 006e 62F34F03 		bfi	r3, r2, #1, #15
+ 398 0072 F380     		strh	r3, [r6, #6]	@ movhi
+  89:rt-thread/components/drivers/src/ringbuffer.c **** }
+ 399              		.loc 1 89 0
+ 400 0074 2046     		mov	r0, r4
+ 401 0076 BDE8F081 		pop	{r4, r5, r6, r7, r8, pc}
+ 402              	.LVL34:
+ 403              	.L44:
+  71:rt-thread/components/drivers/src/ringbuffer.c ****         /* this should not cause overflow because there is enough space for
+ARM GAS  /tmp/cco3eprh.s 			page 14
+
+
+ 404              		.loc 1 71 0
+ 405 007a 3068     		ldr	r0, [r6]
+ 406              	.LVL35:
+ 407 007c 2246     		mov	r2, r4
+ 408 007e 3946     		mov	r1, r7
+ 409 0080 1844     		add	r0, r0, r3
+ 410 0082 FFF7FEFF 		bl	memcpy
+ 411              	.LVL36:
+  74:rt-thread/components/drivers/src/ringbuffer.c ****         return length;
+ 412              		.loc 1 74 0
+ 413 0086 F388     		ldrh	r3, [r6, #6]
+ 414 0088 C3F34E02 		ubfx	r2, r3, #1, #15
+ 415 008c 2244     		add	r2, r2, r4
+ 416 008e 62F34F03 		bfi	r3, r2, #1, #15
+ 417 0092 F380     		strh	r3, [r6, #6]	@ movhi
+  75:rt-thread/components/drivers/src/ringbuffer.c ****     }
+ 418              		.loc 1 75 0
+ 419 0094 2046     		mov	r0, r4
+ 420 0096 BDE8F081 		pop	{r4, r5, r6, r7, r8, pc}
+ 421              	.LVL37:
+ 422              	.L42:
+  62:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 423              		.loc 1 62 0
+ 424 009a 0020     		movs	r0, #0
+  90:rt-thread/components/drivers/src/ringbuffer.c **** RTM_EXPORT(rt_ringbuffer_put);
+ 425              		.loc 1 90 0
+ 426 009c BDE8F081 		pop	{r4, r5, r6, r7, r8, pc}
+ 427              		.cfi_endproc
+ 428              	.LFE21:
+ 430              		.section	.text.rt_ringbuffer_put_force,"ax",%progbits
+ 431              		.align	1
+ 432              		.global	rt_ringbuffer_put_force
+ 433              		.syntax unified
+ 434              		.thumb
+ 435              		.thumb_func
+ 436              		.fpu fpv4-sp-d16
+ 438              	rt_ringbuffer_put_force:
+ 439              	.LFB22:
+ 101:rt-thread/components/drivers/src/ringbuffer.c ****     rt_uint16_t space_length;
+ 440              		.loc 1 101 0
+ 441              		.cfi_startproc
+ 442              		@ args = 0, pretend = 0, frame = 0
+ 443              		@ frame_needed = 0, uses_anonymous_args = 0
+ 444              	.LVL38:
+ 445 0000 2DE9F843 		push	{r3, r4, r5, r6, r7, r8, r9, lr}
+ 446              	.LCFI8:
+ 447              		.cfi_def_cfa_offset 32
+ 448              		.cfi_offset 3, -32
+ 449              		.cfi_offset 4, -28
+ 450              		.cfi_offset 5, -24
+ 451              		.cfi_offset 6, -20
+ 452              		.cfi_offset 7, -16
+ 453              		.cfi_offset 8, -12
+ 454              		.cfi_offset 9, -8
+ 455              		.cfi_offset 14, -4
+ 456 0004 0546     		mov	r5, r0
+ 457 0006 8846     		mov	r8, r1
+ARM GAS  /tmp/cco3eprh.s 			page 15
+
+
+ 458 0008 1446     		mov	r4, r2
+ 106:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 459              		.loc 1 106 0
+ 460 000a B0F90860 		ldrsh	r6, [r0, #8]
+ 461 000e 1FFA86F9 		uxth	r9, r6
+ 462 0012 FFF7FEFF 		bl	rt_ringbuffer_data_len
+ 463              	.LVL39:
+ 464 0016 87B2     		uxth	r7, r0
+ 465 0018 A9EB0707 		sub	r7, r9, r7
+ 466 001c BFB2     		uxth	r7, r7
+ 467              	.LVL40:
+ 108:rt-thread/components/drivers/src/ringbuffer.c ****     {
+ 468              		.loc 1 108 0
+ 469 001e B442     		cmp	r4, r6
+ 470 0020 02DD     		ble	.L46
+ 110:rt-thread/components/drivers/src/ringbuffer.c ****         length = rb->buffer_size;
+ 471              		.loc 1 110 0
+ 472 0022 A41B     		subs	r4, r4, r6
+ 473 0024 A044     		add	r8, r8, r4
+ 474              	.LVL41:
+ 111:rt-thread/components/drivers/src/ringbuffer.c ****     }
+ 475              		.loc 1 111 0
+ 476 0026 4C46     		mov	r4, r9
+ 477              	.LVL42:
+ 478              	.L46:
+ 114:rt-thread/components/drivers/src/ringbuffer.c ****     {
+ 479              		.loc 1 114 0
+ 480 0028 EB88     		ldrh	r3, [r5, #6]
+ 481 002a C3F34E03 		ubfx	r3, r3, #1, #15
+ 482 002e F21A     		subs	r2, r6, r3
+ 483 0030 A242     		cmp	r2, r4
+ 484 0032 17DD     		ble	.L47
+ 117:rt-thread/components/drivers/src/ringbuffer.c ****         /* this should not cause overflow because there is enough space for
+ 485              		.loc 1 117 0
+ 486 0034 2868     		ldr	r0, [r5]
+ 487 0036 2246     		mov	r2, r4
+ 488 0038 4146     		mov	r1, r8
+ 489 003a 1844     		add	r0, r0, r3
+ 490 003c FFF7FEFF 		bl	memcpy
+ 491              	.LVL43:
+ 120:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 492              		.loc 1 120 0
+ 493 0040 EA88     		ldrh	r2, [r5, #6]
+ 494 0042 C2F34E03 		ubfx	r3, r2, #1, #15
+ 495 0046 2344     		add	r3, r3, r4
+ 496 0048 C3F30E03 		ubfx	r3, r3, #0, #15
+ 497 004c 63F34F02 		bfi	r2, r3, #1, #15
+ 498 0050 EA80     		strh	r2, [r5, #6]	@ movhi
+ 122:rt-thread/components/drivers/src/ringbuffer.c ****             rb->read_index = rb->write_index;
+ 499              		.loc 1 122 0
+ 500 0052 BC42     		cmp	r4, r7
+ 501 0054 3BD9     		bls	.L50
+ 123:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 502              		.loc 1 123 0
+ 503 0056 AA88     		ldrh	r2, [r5, #4]
+ 504 0058 63F34F02 		bfi	r2, r3, #1, #15
+ 505 005c AA80     		strh	r2, [r5, #4]	@ movhi
+ARM GAS  /tmp/cco3eprh.s 			page 16
+
+
+ 125:rt-thread/components/drivers/src/ringbuffer.c ****     }
+ 506              		.loc 1 125 0
+ 507 005e 2046     		mov	r0, r4
+ 508 0060 BDE8F883 		pop	{r3, r4, r5, r6, r7, r8, r9, pc}
+ 509              	.LVL44:
+ 510              	.L47:
+ 128:rt-thread/components/drivers/src/ringbuffer.c ****            &ptr[0],
+ 511              		.loc 1 128 0
+ 512 0064 2868     		ldr	r0, [r5]
+ 513 0066 4146     		mov	r1, r8
+ 514 0068 1844     		add	r0, r0, r3
+ 515 006a FFF7FEFF 		bl	memcpy
+ 516              	.LVL45:
+ 132:rt-thread/components/drivers/src/ringbuffer.c ****            length - (rb->buffer_size - rb->write_index));
+ 517              		.loc 1 132 0
+ 518 006e B5F90810 		ldrsh	r1, [r5, #8]
+ 519 0072 EB88     		ldrh	r3, [r5, #6]
+ 520 0074 C3F34E03 		ubfx	r3, r3, #1, #15
+ 521 0078 C91A     		subs	r1, r1, r3
+ 131:rt-thread/components/drivers/src/ringbuffer.c ****            &ptr[rb->buffer_size - rb->write_index],
+ 522              		.loc 1 131 0
+ 523 007a 621A     		subs	r2, r4, r1
+ 524 007c 4144     		add	r1, r1, r8
+ 525 007e 2868     		ldr	r0, [r5]
+ 526 0080 FFF7FEFF 		bl	memcpy
+ 527              	.LVL46:
+ 136:rt-thread/components/drivers/src/ringbuffer.c ****     rb->write_index = length - (rb->buffer_size - rb->write_index);
+ 528              		.loc 1 136 0
+ 529 0084 AB79     		ldrb	r3, [r5, #6]	@ zero_extendqisi2
+ 530 0086 03F00102 		and	r2, r3, #1
+ 531 008a 82F00102 		eor	r2, r2, #1
+ 532 008e 62F30003 		bfi	r3, r2, #0, #1
+ 533 0092 AB71     		strb	r3, [r5, #6]
+ 137:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 534              		.loc 1 137 0
+ 535 0094 EA88     		ldrh	r2, [r5, #6]
+ 536 0096 C2F34E03 		ubfx	r3, r2, #1, #15
+ 537 009a 2989     		ldrh	r1, [r5, #8]
+ 538 009c 5B1A     		subs	r3, r3, r1
+ 539 009e 14FA83F3 		uxtah	r3, r4, r3
+ 540 00a2 C3F30E03 		ubfx	r3, r3, #0, #15
+ 541 00a6 63F34F02 		bfi	r2, r3, #1, #15
+ 542 00aa EA80     		strh	r2, [r5, #6]	@ movhi
+ 139:rt-thread/components/drivers/src/ringbuffer.c ****     {
+ 543              		.loc 1 139 0
+ 544 00ac BC42     		cmp	r4, r7
+ 545 00ae 0BD9     		bls	.L49
+ 141:rt-thread/components/drivers/src/ringbuffer.c ****         rb->read_index = rb->write_index;
+ 546              		.loc 1 141 0
+ 547 00b0 2A79     		ldrb	r2, [r5, #4]	@ zero_extendqisi2
+ 548 00b2 02F00101 		and	r1, r2, #1
+ 549 00b6 81F00101 		eor	r1, r1, #1
+ 550 00ba 61F30002 		bfi	r2, r1, #0, #1
+ 551 00be 2A71     		strb	r2, [r5, #4]
+ 142:rt-thread/components/drivers/src/ringbuffer.c ****     }
+ 552              		.loc 1 142 0
+ 553 00c0 AA88     		ldrh	r2, [r5, #4]
+ARM GAS  /tmp/cco3eprh.s 			page 17
+
+
+ 554 00c2 63F34F02 		bfi	r2, r3, #1, #15
+ 555 00c6 AA80     		strh	r2, [r5, #4]	@ movhi
+ 556              	.L49:
+ 145:rt-thread/components/drivers/src/ringbuffer.c **** }
+ 557              		.loc 1 145 0
+ 558 00c8 2046     		mov	r0, r4
+ 559 00ca BDE8F883 		pop	{r3, r4, r5, r6, r7, r8, r9, pc}
+ 560              	.LVL47:
+ 561              	.L50:
+ 125:rt-thread/components/drivers/src/ringbuffer.c ****     }
+ 562              		.loc 1 125 0
+ 563 00ce 2046     		mov	r0, r4
+ 146:rt-thread/components/drivers/src/ringbuffer.c **** RTM_EXPORT(rt_ringbuffer_put_force);
+ 564              		.loc 1 146 0
+ 565 00d0 BDE8F883 		pop	{r3, r4, r5, r6, r7, r8, r9, pc}
+ 566              		.cfi_endproc
+ 567              	.LFE22:
+ 569              		.section	.text.rt_ringbuffer_get,"ax",%progbits
+ 570              		.align	1
+ 571              		.global	rt_ringbuffer_get
+ 572              		.syntax unified
+ 573              		.thumb
+ 574              		.thumb_func
+ 575              		.fpu fpv4-sp-d16
+ 577              	rt_ringbuffer_get:
+ 578              	.LFB23:
+ 155:rt-thread/components/drivers/src/ringbuffer.c ****     rt_size_t size;
+ 579              		.loc 1 155 0
+ 580              		.cfi_startproc
+ 581              		@ args = 0, pretend = 0, frame = 0
+ 582              		@ frame_needed = 0, uses_anonymous_args = 0
+ 583              	.LVL48:
+ 584 0000 70B5     		push	{r4, r5, r6, lr}
+ 585              	.LCFI9:
+ 586              		.cfi_def_cfa_offset 16
+ 587              		.cfi_offset 4, -16
+ 588              		.cfi_offset 5, -12
+ 589              		.cfi_offset 6, -8
+ 590              		.cfi_offset 14, -4
+ 591 0002 0446     		mov	r4, r0
+ 592 0004 0E46     		mov	r6, r1
+ 593 0006 1546     		mov	r5, r2
+ 161:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 594              		.loc 1 161 0
+ 595 0008 FFF7FEFF 		bl	rt_ringbuffer_data_len
+ 596              	.LVL49:
+ 164:rt-thread/components/drivers/src/ringbuffer.c ****         return 0;
+ 597              		.loc 1 164 0
+ 598 000c 0346     		mov	r3, r0
+ 599 000e 68B3     		cbz	r0, .L52
+ 168:rt-thread/components/drivers/src/ringbuffer.c ****         length = size;
+ 600              		.loc 1 168 0
+ 601 0010 A842     		cmp	r0, r5
+ 602 0012 00D2     		bcs	.L54
+ 169:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 603              		.loc 1 169 0
+ 604 0014 85B2     		uxth	r5, r0
+ARM GAS  /tmp/cco3eprh.s 			page 18
+
+
+ 605              	.LVL50:
+ 606              	.L54:
+ 171:rt-thread/components/drivers/src/ringbuffer.c ****     {
+ 607              		.loc 1 171 0
+ 608 0016 B4F90820 		ldrsh	r2, [r4, #8]
+ 609 001a A388     		ldrh	r3, [r4, #4]
+ 610 001c C3F34E03 		ubfx	r3, r3, #1, #15
+ 611 0020 D21A     		subs	r2, r2, r3
+ 612 0022 AA42     		cmp	r2, r5
+ 613 0024 24DC     		bgt	.L57
+ 182:rt-thread/components/drivers/src/ringbuffer.c ****            rb->buffer_size - rb->read_index);
+ 614              		.loc 1 182 0
+ 615 0026 2168     		ldr	r1, [r4]
+ 181:rt-thread/components/drivers/src/ringbuffer.c ****            &rb->buffer_ptr[rb->read_index],
+ 616              		.loc 1 181 0
+ 617 0028 1944     		add	r1, r1, r3
+ 618 002a 3046     		mov	r0, r6
+ 619              	.LVL51:
+ 620 002c FFF7FEFF 		bl	memcpy
+ 621              	.LVL52:
+ 184:rt-thread/components/drivers/src/ringbuffer.c ****            &rb->buffer_ptr[0],
+ 622              		.loc 1 184 0
+ 623 0030 B4F90800 		ldrsh	r0, [r4, #8]
+ 624 0034 A388     		ldrh	r3, [r4, #4]
+ 625 0036 C3F34E03 		ubfx	r3, r3, #1, #15
+ 626 003a C01A     		subs	r0, r0, r3
+ 627 003c 2A1A     		subs	r2, r5, r0
+ 628 003e 2168     		ldr	r1, [r4]
+ 629 0040 3044     		add	r0, r0, r6
+ 630 0042 FFF7FEFF 		bl	memcpy
+ 631              	.LVL53:
+ 189:rt-thread/components/drivers/src/ringbuffer.c ****     rb->read_index = length - (rb->buffer_size - rb->read_index);
+ 632              		.loc 1 189 0
+ 633 0046 2379     		ldrb	r3, [r4, #4]	@ zero_extendqisi2
+ 634 0048 03F00102 		and	r2, r3, #1
+ 635 004c 82F00102 		eor	r2, r2, #1
+ 636 0050 62F30003 		bfi	r3, r2, #0, #1
+ 637 0054 2371     		strb	r3, [r4, #4]
+ 190:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 638              		.loc 1 190 0
+ 639 0056 A388     		ldrh	r3, [r4, #4]
+ 640 0058 C3F34E02 		ubfx	r2, r3, #1, #15
+ 641 005c 2189     		ldrh	r1, [r4, #8]
+ 642 005e 521A     		subs	r2, r2, r1
+ 643 0060 15FA82F2 		uxtah	r2, r5, r2
+ 644 0064 62F34F03 		bfi	r3, r2, #1, #15
+ 645 0068 A380     		strh	r3, [r4, #4]	@ movhi
+ 192:rt-thread/components/drivers/src/ringbuffer.c **** }
+ 646              		.loc 1 192 0
+ 647 006a 2B46     		mov	r3, r5
+ 648              	.LVL54:
+ 649              	.L52:
+ 193:rt-thread/components/drivers/src/ringbuffer.c **** RTM_EXPORT(rt_ringbuffer_get);
+ 650              		.loc 1 193 0
+ 651 006c 1846     		mov	r0, r3
+ 652 006e 70BD     		pop	{r4, r5, r6, pc}
+ 653              	.LVL55:
+ARM GAS  /tmp/cco3eprh.s 			page 19
+
+
+ 654              	.L57:
+ 174:rt-thread/components/drivers/src/ringbuffer.c ****         /* this should not cause overflow because there is enough space for
+ 655              		.loc 1 174 0
+ 656 0070 2168     		ldr	r1, [r4]
+ 657 0072 2A46     		mov	r2, r5
+ 658 0074 1944     		add	r1, r1, r3
+ 659 0076 3046     		mov	r0, r6
+ 660              	.LVL56:
+ 661 0078 FFF7FEFF 		bl	memcpy
+ 662              	.LVL57:
+ 177:rt-thread/components/drivers/src/ringbuffer.c ****         return length;
+ 663              		.loc 1 177 0
+ 664 007c A388     		ldrh	r3, [r4, #4]
+ 665 007e C3F34E02 		ubfx	r2, r3, #1, #15
+ 666 0082 2A44     		add	r2, r2, r5
+ 667 0084 62F34F03 		bfi	r3, r2, #1, #15
+ 668 0088 A380     		strh	r3, [r4, #4]	@ movhi
+ 178:rt-thread/components/drivers/src/ringbuffer.c ****     }
+ 669              		.loc 1 178 0
+ 670 008a 2B46     		mov	r3, r5
+ 671 008c EEE7     		b	.L52
+ 672              		.cfi_endproc
+ 673              	.LFE23:
+ 675              		.section	.text.rt_ringbuffer_putchar,"ax",%progbits
+ 676              		.align	1
+ 677              		.global	rt_ringbuffer_putchar
+ 678              		.syntax unified
+ 679              		.thumb
+ 680              		.thumb_func
+ 681              		.fpu fpv4-sp-d16
+ 683              	rt_ringbuffer_putchar:
+ 684              	.LFB24:
+ 200:rt-thread/components/drivers/src/ringbuffer.c ****     RT_ASSERT(rb != RT_NULL);
+ 685              		.loc 1 200 0
+ 686              		.cfi_startproc
+ 687              		@ args = 0, pretend = 0, frame = 0
+ 688              		@ frame_needed = 0, uses_anonymous_args = 0
+ 689              	.LVL58:
+ 690 0000 70B5     		push	{r4, r5, r6, lr}
+ 691              	.LCFI10:
+ 692              		.cfi_def_cfa_offset 16
+ 693              		.cfi_offset 4, -16
+ 694              		.cfi_offset 5, -12
+ 695              		.cfi_offset 6, -8
+ 696              		.cfi_offset 14, -4
+ 697 0002 0446     		mov	r4, r0
+ 698 0004 0E46     		mov	r6, r1
+ 204:rt-thread/components/drivers/src/ringbuffer.c ****         return 0;
+ 699              		.loc 1 204 0
+ 700 0006 B0F90850 		ldrsh	r5, [r0, #8]
+ 701 000a FFF7FEFF 		bl	rt_ringbuffer_data_len
+ 702              	.LVL59:
+ 703 000e 8542     		cmp	r5, r0
+ 704 0010 21D0     		beq	.L61
+ 207:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 705              		.loc 1 207 0
+ 706 0012 2268     		ldr	r2, [r4]
+ARM GAS  /tmp/cco3eprh.s 			page 20
+
+
+ 707 0014 E388     		ldrh	r3, [r4, #6]
+ 708 0016 C3F34E03 		ubfx	r3, r3, #1, #15
+ 709 001a D654     		strb	r6, [r2, r3]
+ 210:rt-thread/components/drivers/src/ringbuffer.c ****     {
+ 710              		.loc 1 210 0
+ 711 001c E388     		ldrh	r3, [r4, #6]
+ 712 001e C3F34E03 		ubfx	r3, r3, #1, #15
+ 713 0022 B4F90820 		ldrsh	r2, [r4, #8]
+ 714 0026 013A     		subs	r2, r2, #1
+ 715 0028 9342     		cmp	r3, r2
+ 716 002a 06D0     		beq	.L63
+ 217:rt-thread/components/drivers/src/ringbuffer.c ****     }
+ 717              		.loc 1 217 0
+ 718 002c 0133     		adds	r3, r3, #1
+ 719 002e E288     		ldrh	r2, [r4, #6]
+ 720 0030 63F34F02 		bfi	r2, r3, #1, #15
+ 721 0034 E280     		strh	r2, [r4, #6]	@ movhi
+ 220:rt-thread/components/drivers/src/ringbuffer.c **** }
+ 722              		.loc 1 220 0
+ 723 0036 0120     		movs	r0, #1
+ 724 0038 70BD     		pop	{r4, r5, r6, pc}
+ 725              	.LVL60:
+ 726              	.L63:
+ 212:rt-thread/components/drivers/src/ringbuffer.c ****         rb->write_index = 0;
+ 727              		.loc 1 212 0
+ 728 003a A379     		ldrb	r3, [r4, #6]	@ zero_extendqisi2
+ 729 003c 03F00102 		and	r2, r3, #1
+ 730 0040 82F00102 		eor	r2, r2, #1
+ 731 0044 62F30003 		bfi	r3, r2, #0, #1
+ 732 0048 A371     		strb	r3, [r4, #6]
+ 213:rt-thread/components/drivers/src/ringbuffer.c ****     }
+ 733              		.loc 1 213 0
+ 734 004a E388     		ldrh	r3, [r4, #6]
+ 735 004c 6FF34F03 		bfc	r3, #1, #15
+ 736 0050 E380     		strh	r3, [r4, #6]	@ movhi
+ 220:rt-thread/components/drivers/src/ringbuffer.c **** }
+ 737              		.loc 1 220 0
+ 738 0052 0120     		movs	r0, #1
+ 739 0054 70BD     		pop	{r4, r5, r6, pc}
+ 740              	.LVL61:
+ 741              	.L61:
+ 205:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 742              		.loc 1 205 0
+ 743 0056 0020     		movs	r0, #0
+ 221:rt-thread/components/drivers/src/ringbuffer.c **** RTM_EXPORT(rt_ringbuffer_putchar);
+ 744              		.loc 1 221 0
+ 745 0058 70BD     		pop	{r4, r5, r6, pc}
+ 746              		.cfi_endproc
+ 747              	.LFE24:
+ 749              		.section	.text.rt_ringbuffer_getchar,"ax",%progbits
+ 750              		.align	1
+ 751              		.global	rt_ringbuffer_getchar
+ 752              		.syntax unified
+ 753              		.thumb
+ 754              		.thumb_func
+ 755              		.fpu fpv4-sp-d16
+ 757              	rt_ringbuffer_getchar:
+ARM GAS  /tmp/cco3eprh.s 			page 21
+
+
+ 758              	.LFB26:
+ 265:rt-thread/components/drivers/src/ringbuffer.c ****     RT_ASSERT(rb != RT_NULL);
+ 759              		.loc 1 265 0
+ 760              		.cfi_startproc
+ 761              		@ args = 0, pretend = 0, frame = 0
+ 762              		@ frame_needed = 0, uses_anonymous_args = 0
+ 763              	.LVL62:
+ 764 0000 38B5     		push	{r3, r4, r5, lr}
+ 765              	.LCFI11:
+ 766              		.cfi_def_cfa_offset 16
+ 767              		.cfi_offset 3, -16
+ 768              		.cfi_offset 4, -12
+ 769              		.cfi_offset 5, -8
+ 770              		.cfi_offset 14, -4
+ 771 0002 0446     		mov	r4, r0
+ 772 0004 0D46     		mov	r5, r1
+ 269:rt-thread/components/drivers/src/ringbuffer.c ****         return 0;
+ 773              		.loc 1 269 0
+ 774 0006 FFF7FEFF 		bl	rt_ringbuffer_data_len
+ 775              	.LVL63:
+ 776 000a 0346     		mov	r3, r0
+ 777 000c 98B1     		cbz	r0, .L64
+ 273:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 778              		.loc 1 273 0
+ 779 000e 2268     		ldr	r2, [r4]
+ 780 0010 A388     		ldrh	r3, [r4, #4]
+ 781 0012 C3F34E03 		ubfx	r3, r3, #1, #15
+ 782 0016 D35C     		ldrb	r3, [r2, r3]	@ zero_extendqisi2
+ 783 0018 2B70     		strb	r3, [r5]
+ 275:rt-thread/components/drivers/src/ringbuffer.c ****     {
+ 784              		.loc 1 275 0
+ 785 001a A388     		ldrh	r3, [r4, #4]
+ 786 001c C3F34E03 		ubfx	r3, r3, #1, #15
+ 787 0020 B4F90820 		ldrsh	r2, [r4, #8]
+ 788 0024 013A     		subs	r2, r2, #1
+ 789 0026 9342     		cmp	r3, r2
+ 790 0028 07D0     		beq	.L68
+ 282:rt-thread/components/drivers/src/ringbuffer.c ****     }
+ 791              		.loc 1 282 0
+ 792 002a 0133     		adds	r3, r3, #1
+ 793 002c A288     		ldrh	r2, [r4, #4]
+ 794 002e 63F34F02 		bfi	r2, r3, #1, #15
+ 795 0032 A280     		strh	r2, [r4, #4]	@ movhi
+ 285:rt-thread/components/drivers/src/ringbuffer.c **** }
+ 796              		.loc 1 285 0
+ 797 0034 0123     		movs	r3, #1
+ 798              	.L64:
+ 286:rt-thread/components/drivers/src/ringbuffer.c **** RTM_EXPORT(rt_ringbuffer_getchar);
+ 799              		.loc 1 286 0
+ 800 0036 1846     		mov	r0, r3
+ 801 0038 38BD     		pop	{r3, r4, r5, pc}
+ 802              	.LVL64:
+ 803              	.L68:
+ 277:rt-thread/components/drivers/src/ringbuffer.c ****         rb->read_index = 0;
+ 804              		.loc 1 277 0
+ 805 003a 2379     		ldrb	r3, [r4, #4]	@ zero_extendqisi2
+ 806 003c 03F00102 		and	r2, r3, #1
+ARM GAS  /tmp/cco3eprh.s 			page 22
+
+
+ 807 0040 82F00102 		eor	r2, r2, #1
+ 808 0044 62F30003 		bfi	r3, r2, #0, #1
+ 809 0048 2371     		strb	r3, [r4, #4]
+ 278:rt-thread/components/drivers/src/ringbuffer.c ****     }
+ 810              		.loc 1 278 0
+ 811 004a A388     		ldrh	r3, [r4, #4]
+ 812 004c 6FF34F03 		bfc	r3, #1, #15
+ 813 0050 A380     		strh	r3, [r4, #4]	@ movhi
+ 285:rt-thread/components/drivers/src/ringbuffer.c **** }
+ 814              		.loc 1 285 0
+ 815 0052 0123     		movs	r3, #1
+ 816 0054 EFE7     		b	.L64
+ 817              		.cfi_endproc
+ 818              	.LFE26:
+ 820              		.section	.text.rt_ringbuffer_reset,"ax",%progbits
+ 821              		.align	1
+ 822              		.global	rt_ringbuffer_reset
+ 823              		.syntax unified
+ 824              		.thumb
+ 825              		.thumb_func
+ 826              		.fpu fpv4-sp-d16
+ 828              	rt_ringbuffer_reset:
+ 829              	.LFB28:
+ 308:rt-thread/components/drivers/src/ringbuffer.c **** RTM_EXPORT(rt_ringbuffer_data_len);
+ 309:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 310:rt-thread/components/drivers/src/ringbuffer.c **** /** 
+ 311:rt-thread/components/drivers/src/ringbuffer.c ****  * empty the rb 
+ 312:rt-thread/components/drivers/src/ringbuffer.c ****  */
+ 313:rt-thread/components/drivers/src/ringbuffer.c **** void rt_ringbuffer_reset(struct rt_ringbuffer *rb)
+ 314:rt-thread/components/drivers/src/ringbuffer.c **** {
+ 830              		.loc 1 314 0
+ 831              		.cfi_startproc
+ 832              		@ args = 0, pretend = 0, frame = 0
+ 833              		@ frame_needed = 0, uses_anonymous_args = 0
+ 834              		@ link register save eliminated.
+ 835              	.LVL65:
+ 315:rt-thread/components/drivers/src/ringbuffer.c ****     RT_ASSERT(rb != RT_NULL);
+ 316:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 317:rt-thread/components/drivers/src/ringbuffer.c ****     rb->read_mirror = 0;
+ 836              		.loc 1 317 0
+ 837 0000 0379     		ldrb	r3, [r0, #4]	@ zero_extendqisi2
+ 838 0002 6FF30003 		bfc	r3, #0, #1
+ 839 0006 0371     		strb	r3, [r0, #4]
+ 318:rt-thread/components/drivers/src/ringbuffer.c ****     rb->read_index = 0;
+ 840              		.loc 1 318 0
+ 841 0008 8388     		ldrh	r3, [r0, #4]
+ 842 000a 6FF34F03 		bfc	r3, #1, #15
+ 843 000e 8380     		strh	r3, [r0, #4]	@ movhi
+ 319:rt-thread/components/drivers/src/ringbuffer.c ****     rb->write_mirror = 0;
+ 844              		.loc 1 319 0
+ 845 0010 8379     		ldrb	r3, [r0, #6]	@ zero_extendqisi2
+ 846 0012 6FF30003 		bfc	r3, #0, #1
+ 847 0016 8371     		strb	r3, [r0, #6]
+ 320:rt-thread/components/drivers/src/ringbuffer.c ****     rb->write_index = 0;
+ 848              		.loc 1 320 0
+ 849 0018 C388     		ldrh	r3, [r0, #6]
+ 850 001a 6FF34F03 		bfc	r3, #1, #15
+ARM GAS  /tmp/cco3eprh.s 			page 23
+
+
+ 851 001e C380     		strh	r3, [r0, #6]	@ movhi
+ 852 0020 7047     		bx	lr
+ 853              		.cfi_endproc
+ 854              	.LFE28:
+ 856              		.section	.text.rt_ringbuffer_create,"ax",%progbits
+ 857              		.align	1
+ 858              		.global	rt_ringbuffer_create
+ 859              		.syntax unified
+ 860              		.thumb
+ 861              		.thumb_func
+ 862              		.fpu fpv4-sp-d16
+ 864              	rt_ringbuffer_create:
+ 865              	.LFB29:
+ 321:rt-thread/components/drivers/src/ringbuffer.c **** }
+ 322:rt-thread/components/drivers/src/ringbuffer.c **** RTM_EXPORT(rt_ringbuffer_reset);
+ 323:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 324:rt-thread/components/drivers/src/ringbuffer.c **** #ifdef RT_USING_HEAP
+ 325:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 326:rt-thread/components/drivers/src/ringbuffer.c **** struct rt_ringbuffer* rt_ringbuffer_create(rt_uint16_t size)
+ 327:rt-thread/components/drivers/src/ringbuffer.c **** {
+ 866              		.loc 1 327 0
+ 867              		.cfi_startproc
+ 868              		@ args = 0, pretend = 0, frame = 0
+ 869              		@ frame_needed = 0, uses_anonymous_args = 0
+ 870              	.LVL66:
+ 871 0000 38B5     		push	{r3, r4, r5, lr}
+ 872              	.LCFI12:
+ 873              		.cfi_def_cfa_offset 16
+ 874              		.cfi_offset 3, -16
+ 875              		.cfi_offset 4, -12
+ 876              		.cfi_offset 5, -8
+ 877              		.cfi_offset 14, -4
+ 328:rt-thread/components/drivers/src/ringbuffer.c ****     struct rt_ringbuffer *rb;
+ 329:rt-thread/components/drivers/src/ringbuffer.c ****     rt_uint8_t *pool;
+ 330:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 331:rt-thread/components/drivers/src/ringbuffer.c **** 	RT_ASSERT(size > 0);
+ 332:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 333:rt-thread/components/drivers/src/ringbuffer.c ****     size = RT_ALIGN_DOWN(size, RT_ALIGN_SIZE);
+ 878              		.loc 1 333 0
+ 879 0002 20F00304 		bic	r4, r0, #3
+ 880              	.LVL67:
+ 334:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 335:rt-thread/components/drivers/src/ringbuffer.c ****     rb = (struct rt_ringbuffer *)rt_malloc(sizeof(struct rt_ringbuffer));
+ 881              		.loc 1 335 0
+ 882 0006 0C20     		movs	r0, #12
+ 883 0008 FFF7FEFF 		bl	rt_malloc
+ 884              	.LVL68:
+ 336:rt-thread/components/drivers/src/ringbuffer.c ****     if (rb == RT_NULL)
+ 885              		.loc 1 336 0
+ 886 000c 0546     		mov	r5, r0
+ 887 000e 48B1     		cbz	r0, .L70
+ 888 0010 A4B2     		uxth	r4, r4
+ 337:rt-thread/components/drivers/src/ringbuffer.c ****         goto exit;
+ 338:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 339:rt-thread/components/drivers/src/ringbuffer.c ****     pool = (rt_uint8_t *)rt_malloc(size);
+ 889              		.loc 1 339 0
+ 890 0012 2046     		mov	r0, r4
+ARM GAS  /tmp/cco3eprh.s 			page 24
+
+
+ 891              	.LVL69:
+ 892 0014 FFF7FEFF 		bl	rt_malloc
+ 893              	.LVL70:
+ 340:rt-thread/components/drivers/src/ringbuffer.c ****     if (pool == RT_NULL)
+ 894              		.loc 1 340 0
+ 895 0018 0146     		mov	r1, r0
+ 896 001a 28B1     		cbz	r0, .L74
+ 341:rt-thread/components/drivers/src/ringbuffer.c ****     {
+ 342:rt-thread/components/drivers/src/ringbuffer.c ****         rt_free(rb);
+ 343:rt-thread/components/drivers/src/ringbuffer.c ****         rb = RT_NULL;
+ 344:rt-thread/components/drivers/src/ringbuffer.c ****         goto exit;
+ 345:rt-thread/components/drivers/src/ringbuffer.c ****     }
+ 346:rt-thread/components/drivers/src/ringbuffer.c ****     rt_ringbuffer_init(rb, pool, size);
+ 897              		.loc 1 346 0
+ 898 001c 22B2     		sxth	r2, r4
+ 899 001e 2846     		mov	r0, r5
+ 900              	.LVL71:
+ 901 0020 FFF7FEFF 		bl	rt_ringbuffer_init
+ 902              	.LVL72:
+ 903              	.L71:
+ 904              	.L70:
+ 347:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 348:rt-thread/components/drivers/src/ringbuffer.c **** exit:
+ 349:rt-thread/components/drivers/src/ringbuffer.c ****     return rb;
+ 350:rt-thread/components/drivers/src/ringbuffer.c **** }
+ 905              		.loc 1 350 0
+ 906 0024 2846     		mov	r0, r5
+ 907 0026 38BD     		pop	{r3, r4, r5, pc}
+ 908              	.LVL73:
+ 909              	.L74:
+ 342:rt-thread/components/drivers/src/ringbuffer.c ****         rb = RT_NULL;
+ 910              		.loc 1 342 0
+ 911 0028 2846     		mov	r0, r5
+ 912              	.LVL74:
+ 913 002a FFF7FEFF 		bl	rt_free
+ 914              	.LVL75:
+ 343:rt-thread/components/drivers/src/ringbuffer.c ****         goto exit;
+ 915              		.loc 1 343 0
+ 916 002e 0025     		movs	r5, #0
+ 344:rt-thread/components/drivers/src/ringbuffer.c ****     }
+ 917              		.loc 1 344 0
+ 918 0030 F8E7     		b	.L70
+ 919              		.cfi_endproc
+ 920              	.LFE29:
+ 922              		.section	.text.rt_ringbuffer_destroy,"ax",%progbits
+ 923              		.align	1
+ 924              		.global	rt_ringbuffer_destroy
+ 925              		.syntax unified
+ 926              		.thumb
+ 927              		.thumb_func
+ 928              		.fpu fpv4-sp-d16
+ 930              	rt_ringbuffer_destroy:
+ 931              	.LFB30:
+ 351:rt-thread/components/drivers/src/ringbuffer.c **** RTM_EXPORT(rt_ringbuffer_create);
+ 352:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 353:rt-thread/components/drivers/src/ringbuffer.c **** void rt_ringbuffer_destroy(struct rt_ringbuffer *rb)
+ 354:rt-thread/components/drivers/src/ringbuffer.c **** {
+ARM GAS  /tmp/cco3eprh.s 			page 25
+
+
+ 932              		.loc 1 354 0
+ 933              		.cfi_startproc
+ 934              		@ args = 0, pretend = 0, frame = 0
+ 935              		@ frame_needed = 0, uses_anonymous_args = 0
+ 936              	.LVL76:
+ 937 0000 10B5     		push	{r4, lr}
+ 938              	.LCFI13:
+ 939              		.cfi_def_cfa_offset 8
+ 940              		.cfi_offset 4, -8
+ 941              		.cfi_offset 14, -4
+ 942 0002 0446     		mov	r4, r0
+ 355:rt-thread/components/drivers/src/ringbuffer.c ****     RT_ASSERT(rb != RT_NULL);
+ 356:rt-thread/components/drivers/src/ringbuffer.c **** 
+ 357:rt-thread/components/drivers/src/ringbuffer.c ****     rt_free(rb->buffer_ptr);
+ 943              		.loc 1 357 0
+ 944 0004 0068     		ldr	r0, [r0]
+ 945              	.LVL77:
+ 946 0006 FFF7FEFF 		bl	rt_free
+ 947              	.LVL78:
+ 358:rt-thread/components/drivers/src/ringbuffer.c ****     rt_free(rb);
+ 948              		.loc 1 358 0
+ 949 000a 2046     		mov	r0, r4
+ 950 000c FFF7FEFF 		bl	rt_free
+ 951              	.LVL79:
+ 952 0010 10BD     		pop	{r4, pc}
+ 953              		.cfi_endproc
+ 954              	.LFE30:
+ 956              		.text
+ 957              	.Letext0:
+ 958              		.file 2 "rt-thread/include/rtdef.h"
+ 959              		.file 3 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/lock.h"
+ 960              		.file 4 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_types.h"
+ 961              		.file 5 "/opt/gcc-arm-none-eabi-6-2017-q2-update/lib/gcc/arm-none-eabi/6.3.1/include/stddef.h"
+ 962              		.file 6 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/reent.h"
+ 963              		.file 7 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/time.h"
+ 964              		.file 8 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/errno.h"
+ 965              		.file 9 "rt-thread/components/finsh/finsh_api.h"
+ 966              		.file 10 "rt-thread/components/drivers/include/ipc/ringbuffer.h"
+ 967              		.file 11 "rt-thread/include/rtthread.h"
+ARM GAS  /tmp/cco3eprh.s 			page 26
+
+
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 ringbuffer.c
+     /tmp/cco3eprh.s:18     .text.rt_ringbuffer_init:0000000000000000 $t
+     /tmp/cco3eprh.s:25     .text.rt_ringbuffer_init:0000000000000000 rt_ringbuffer_init
+     /tmp/cco3eprh.s:57     .text.rt_ringbuffer_putchar_force:0000000000000000 $t
+     /tmp/cco3eprh.s:64     .text.rt_ringbuffer_putchar_force:0000000000000000 rt_ringbuffer_putchar_force
+     /tmp/cco3eprh.s:179    .text.rt_ringbuffer_data_len:0000000000000000 $t
+     /tmp/cco3eprh.s:186    .text.rt_ringbuffer_data_len:0000000000000000 rt_ringbuffer_data_len
+     /tmp/cco3eprh.s:317    .text.rt_ringbuffer_put:0000000000000000 $t
+     /tmp/cco3eprh.s:324    .text.rt_ringbuffer_put:0000000000000000 rt_ringbuffer_put
+     /tmp/cco3eprh.s:431    .text.rt_ringbuffer_put_force:0000000000000000 $t
+     /tmp/cco3eprh.s:438    .text.rt_ringbuffer_put_force:0000000000000000 rt_ringbuffer_put_force
+     /tmp/cco3eprh.s:570    .text.rt_ringbuffer_get:0000000000000000 $t
+     /tmp/cco3eprh.s:577    .text.rt_ringbuffer_get:0000000000000000 rt_ringbuffer_get
+     /tmp/cco3eprh.s:676    .text.rt_ringbuffer_putchar:0000000000000000 $t
+     /tmp/cco3eprh.s:683    .text.rt_ringbuffer_putchar:0000000000000000 rt_ringbuffer_putchar
+     /tmp/cco3eprh.s:750    .text.rt_ringbuffer_getchar:0000000000000000 $t
+     /tmp/cco3eprh.s:757    .text.rt_ringbuffer_getchar:0000000000000000 rt_ringbuffer_getchar
+     /tmp/cco3eprh.s:821    .text.rt_ringbuffer_reset:0000000000000000 $t
+     /tmp/cco3eprh.s:828    .text.rt_ringbuffer_reset:0000000000000000 rt_ringbuffer_reset
+     /tmp/cco3eprh.s:857    .text.rt_ringbuffer_create:0000000000000000 $t
+     /tmp/cco3eprh.s:864    .text.rt_ringbuffer_create:0000000000000000 rt_ringbuffer_create
+     /tmp/cco3eprh.s:923    .text.rt_ringbuffer_destroy:0000000000000000 $t
+     /tmp/cco3eprh.s:930    .text.rt_ringbuffer_destroy:0000000000000000 rt_ringbuffer_destroy
+                     .debug_frame:0000000000000010 $d
+
+UNDEFINED SYMBOLS
+memcpy
+rt_malloc
+rt_free

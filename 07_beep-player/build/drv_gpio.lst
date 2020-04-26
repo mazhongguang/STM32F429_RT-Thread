@@ -1,0 +1,3230 @@
+ARM GAS  /tmp/ccdBCU3g.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.eabi_attribute 27, 1
+   3              		.eabi_attribute 28, 1
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.file	"drv_gpio.c"
+  14              		.text
+  15              	.Ltext0:
+  16              		.cfi_sections	.debug_frame
+  17              		.section	.text.get_pin,"ax",%progbits
+  18              		.align	1
+  19              		.syntax unified
+  20              		.thumb
+  21              		.thumb_func
+  22              		.fpu fpv4-sp-d16
+  24              	get_pin:
+  25              	.LFB138:
+  26              		.file 1 "hardware/HAL_Drivers/drv_gpio.c"
+   1:hardware/HAL_Drivers/drv_gpio.c **** /*
+   2:hardware/HAL_Drivers/drv_gpio.c ****  * Copyright (c) 2006-2018, RT-Thread Development Team
+   3:hardware/HAL_Drivers/drv_gpio.c ****  *
+   4:hardware/HAL_Drivers/drv_gpio.c ****  * SPDX-License-Identifier: Apache-2.0
+   5:hardware/HAL_Drivers/drv_gpio.c ****  *
+   6:hardware/HAL_Drivers/drv_gpio.c ****  * Change Logs:
+   7:hardware/HAL_Drivers/drv_gpio.c ****  * Date           Author            Notes
+   8:hardware/HAL_Drivers/drv_gpio.c ****  * 2018-11-06     balanceTWK        first version
+   9:hardware/HAL_Drivers/drv_gpio.c ****  * 2019-04-23     WillianChan       Fix GPIO serial number disorder
+  10:hardware/HAL_Drivers/drv_gpio.c ****  */
+  11:hardware/HAL_Drivers/drv_gpio.c **** 
+  12:hardware/HAL_Drivers/drv_gpio.c **** #include <board.h>
+  13:hardware/HAL_Drivers/drv_gpio.c **** #include "drv_gpio.h"
+  14:hardware/HAL_Drivers/drv_gpio.c **** 
+  15:hardware/HAL_Drivers/drv_gpio.c **** #ifdef RT_USING_PIN
+  16:hardware/HAL_Drivers/drv_gpio.c **** 
+  17:hardware/HAL_Drivers/drv_gpio.c **** static const struct pin_index pins[] = 
+  18:hardware/HAL_Drivers/drv_gpio.c **** {
+  19:hardware/HAL_Drivers/drv_gpio.c **** #if defined(GPIOA)
+  20:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(0 ,  A, 0 ),
+  21:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(1 ,  A, 1 ),
+  22:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(2 ,  A, 2 ),
+  23:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(3 ,  A, 3 ),
+  24:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(4 ,  A, 4 ),
+  25:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(5 ,  A, 5 ),
+  26:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(6 ,  A, 6 ),
+  27:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(7 ,  A, 7 ),
+  28:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(8 ,  A, 8 ),
+  29:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(9 ,  A, 9 ),
+  30:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(10,  A, 10),
+  31:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(11,  A, 11),
+  32:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(12,  A, 12),
+ARM GAS  /tmp/ccdBCU3g.s 			page 2
+
+
+  33:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(13,  A, 13),
+  34:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(14,  A, 14),
+  35:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(15,  A, 15),
+  36:hardware/HAL_Drivers/drv_gpio.c **** #if defined(GPIOB)
+  37:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(16,  B, 0),
+  38:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(17,  B, 1),
+  39:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(18,  B, 2),
+  40:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(19,  B, 3),
+  41:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(20,  B, 4),
+  42:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(21,  B, 5),
+  43:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(22,  B, 6),
+  44:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(23,  B, 7),
+  45:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(24,  B, 8),
+  46:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(25,  B, 9),
+  47:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(26,  B, 10),
+  48:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(27,  B, 11),
+  49:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(28,  B, 12),
+  50:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(29,  B, 13),
+  51:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(30,  B, 14),
+  52:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(31,  B, 15),
+  53:hardware/HAL_Drivers/drv_gpio.c **** #if defined(GPIOC)
+  54:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(32,  C, 0),
+  55:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(33,  C, 1),
+  56:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(34,  C, 2),
+  57:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(35,  C, 3),
+  58:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(36,  C, 4),
+  59:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(37,  C, 5),
+  60:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(38,  C, 6),
+  61:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(39,  C, 7),
+  62:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(40,  C, 8),
+  63:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(41,  C, 9),
+  64:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(42,  C, 10),
+  65:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(43,  C, 11),
+  66:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(44,  C, 12),
+  67:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(45,  C, 13),
+  68:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(46,  C, 14),
+  69:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(47,  C, 15),
+  70:hardware/HAL_Drivers/drv_gpio.c **** #if defined(GPIOD)
+  71:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(48,  D, 0),
+  72:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(49,  D, 1),
+  73:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(50,  D, 2),
+  74:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(51,  D, 3),
+  75:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(52,  D, 4),
+  76:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(53,  D, 5),
+  77:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(54,  D, 6),
+  78:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(55,  D, 7),
+  79:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(56,  D, 8),
+  80:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(57,  D, 9),
+  81:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(58,  D, 10),
+  82:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(59,  D, 11),
+  83:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(60,  D, 12),
+  84:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(61,  D, 13),
+  85:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(62,  D, 14),
+  86:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(63,  D, 15),
+  87:hardware/HAL_Drivers/drv_gpio.c **** #if defined(GPIOE)
+  88:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(64,  E, 0),
+  89:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(65,  E, 1),
+ARM GAS  /tmp/ccdBCU3g.s 			page 3
+
+
+  90:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(66,  E, 2),
+  91:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(67,  E, 3),
+  92:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(68,  E, 4),
+  93:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(69,  E, 5),
+  94:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(70,  E, 6),
+  95:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(71,  E, 7),
+  96:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(72,  E, 8),
+  97:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(73,  E, 9),
+  98:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(74,  E, 10),
+  99:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(75,  E, 11),
+ 100:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(76,  E, 12),
+ 101:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(77,  E, 13),
+ 102:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(78,  E, 14),
+ 103:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(79,  E, 15),
+ 104:hardware/HAL_Drivers/drv_gpio.c **** #if defined(GPIOF)
+ 105:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(80,  F, 0),
+ 106:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(81,  F, 1),
+ 107:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(82,  F, 2),
+ 108:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(83,  F, 3),
+ 109:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(84,  F, 4),
+ 110:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(85,  F, 5),
+ 111:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(86,  F, 6),
+ 112:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(87,  F, 7),
+ 113:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(88,  F, 8),
+ 114:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(89,  F, 9),
+ 115:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(90,  F, 10),
+ 116:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(91,  F, 11),
+ 117:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(92,  F, 12),
+ 118:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(93,  F, 13),
+ 119:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(94,  F, 14),
+ 120:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(95,  F, 15),
+ 121:hardware/HAL_Drivers/drv_gpio.c **** #if defined(GPIOG)
+ 122:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(96,  G, 0),
+ 123:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(97,  G, 1),
+ 124:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(98,  G, 2),
+ 125:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(99,  G, 3),
+ 126:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(100, G, 4),
+ 127:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(101, G, 5),
+ 128:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(102, G, 6),
+ 129:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(103, G, 7),
+ 130:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(104, G, 8),
+ 131:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(105, G, 9),
+ 132:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(106, G, 10),
+ 133:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(107, G, 11),
+ 134:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(108, G, 12),
+ 135:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(109, G, 13),
+ 136:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(110, G, 14),
+ 137:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(111, G, 15),
+ 138:hardware/HAL_Drivers/drv_gpio.c **** #if defined(GPIOH)
+ 139:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(112, H, 0),
+ 140:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(113, H, 1),
+ 141:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(114, H, 2),
+ 142:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(115, H, 3),
+ 143:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(116, H, 4),
+ 144:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(117, H, 5),
+ 145:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(118, H, 6),
+ 146:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(119, H, 7),
+ARM GAS  /tmp/ccdBCU3g.s 			page 4
+
+
+ 147:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(120, H, 8),
+ 148:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(121, H, 9),
+ 149:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(122, H, 10),
+ 150:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(123, H, 11),
+ 151:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(124, H, 12),
+ 152:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(125, H, 13),
+ 153:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(126, H, 14),
+ 154:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(127, H, 15),
+ 155:hardware/HAL_Drivers/drv_gpio.c **** #if defined(GPIOI)
+ 156:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(128, I, 0),
+ 157:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(129, I, 1),
+ 158:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(130, I, 2),
+ 159:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(131, I, 3),
+ 160:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(132, I, 4),
+ 161:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(133, I, 5),
+ 162:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(134, I, 6),
+ 163:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(135, I, 7),
+ 164:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(136, I, 8),
+ 165:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(137, I, 9),
+ 166:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(138, I, 10),
+ 167:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(139, I, 11),
+ 168:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(140, I, 12),
+ 169:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(141, I, 13),
+ 170:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(142, I, 14),
+ 171:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(143, I, 15),
+ 172:hardware/HAL_Drivers/drv_gpio.c **** #if defined(GPIOJ)
+ 173:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(144, J, 0),
+ 174:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(145, J, 1),
+ 175:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(146, J, 2),
+ 176:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(147, J, 3),
+ 177:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(148, J, 4),
+ 178:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(149, J, 5),
+ 179:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(150, J, 6),
+ 180:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(151, J, 7),
+ 181:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(152, J, 8),
+ 182:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(153, J, 9),
+ 183:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(154, J, 10),
+ 184:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(155, J, 11),
+ 185:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(156, J, 12),
+ 186:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(157, J, 13),
+ 187:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(158, J, 14),
+ 188:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(159, J, 15),
+ 189:hardware/HAL_Drivers/drv_gpio.c **** #if defined(GPIOK)
+ 190:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(160, K, 0),
+ 191:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(161, K, 1),
+ 192:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(162, K, 2),
+ 193:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(163, K, 3),
+ 194:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(164, K, 4),
+ 195:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(165, K, 5),
+ 196:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(166, K, 6),
+ 197:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(167, K, 7),
+ 198:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(168, K, 8),
+ 199:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(169, K, 9),
+ 200:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(170, K, 10),
+ 201:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(171, K, 11),
+ 202:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(172, K, 12),
+ 203:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(173, K, 13),
+ARM GAS  /tmp/ccdBCU3g.s 			page 5
+
+
+ 204:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(174, K, 14),
+ 205:hardware/HAL_Drivers/drv_gpio.c ****     __STM32_PIN(175, K, 15),
+ 206:hardware/HAL_Drivers/drv_gpio.c **** #endif /* defined(GPIOK) */
+ 207:hardware/HAL_Drivers/drv_gpio.c **** #endif /* defined(GPIOJ) */
+ 208:hardware/HAL_Drivers/drv_gpio.c **** #endif /* defined(GPIOI) */
+ 209:hardware/HAL_Drivers/drv_gpio.c **** #endif /* defined(GPIOH) */
+ 210:hardware/HAL_Drivers/drv_gpio.c **** #endif /* defined(GPIOG) */
+ 211:hardware/HAL_Drivers/drv_gpio.c **** #endif /* defined(GPIOF) */
+ 212:hardware/HAL_Drivers/drv_gpio.c **** #endif /* defined(GPIOE) */
+ 213:hardware/HAL_Drivers/drv_gpio.c **** #endif /* defined(GPIOD) */
+ 214:hardware/HAL_Drivers/drv_gpio.c **** #endif /* defined(GPIOC) */
+ 215:hardware/HAL_Drivers/drv_gpio.c **** #endif /* defined(GPIOB) */
+ 216:hardware/HAL_Drivers/drv_gpio.c **** #endif /* defined(GPIOA) */
+ 217:hardware/HAL_Drivers/drv_gpio.c **** };
+ 218:hardware/HAL_Drivers/drv_gpio.c **** 
+ 219:hardware/HAL_Drivers/drv_gpio.c **** static const struct pin_irq_map pin_irq_map[] =
+ 220:hardware/HAL_Drivers/drv_gpio.c **** {
+ 221:hardware/HAL_Drivers/drv_gpio.c **** #if defined(SOC_SERIES_STM32F0) || defined(SOC_SERIES_STM32L0) || defined(SOC_SERIES_STM32G0)
+ 222:hardware/HAL_Drivers/drv_gpio.c ****     {GPIO_PIN_0, EXTI0_1_IRQn},
+ 223:hardware/HAL_Drivers/drv_gpio.c ****     {GPIO_PIN_1, EXTI0_1_IRQn},
+ 224:hardware/HAL_Drivers/drv_gpio.c ****     {GPIO_PIN_2, EXTI2_3_IRQn},
+ 225:hardware/HAL_Drivers/drv_gpio.c ****     {GPIO_PIN_3, EXTI2_3_IRQn},
+ 226:hardware/HAL_Drivers/drv_gpio.c ****     {GPIO_PIN_4, EXTI4_15_IRQn},
+ 227:hardware/HAL_Drivers/drv_gpio.c ****     {GPIO_PIN_5, EXTI4_15_IRQn},
+ 228:hardware/HAL_Drivers/drv_gpio.c ****     {GPIO_PIN_6, EXTI4_15_IRQn},
+ 229:hardware/HAL_Drivers/drv_gpio.c ****     {GPIO_PIN_7, EXTI4_15_IRQn},
+ 230:hardware/HAL_Drivers/drv_gpio.c ****     {GPIO_PIN_8, EXTI4_15_IRQn},
+ 231:hardware/HAL_Drivers/drv_gpio.c ****     {GPIO_PIN_9, EXTI4_15_IRQn},
+ 232:hardware/HAL_Drivers/drv_gpio.c ****     {GPIO_PIN_10, EXTI4_15_IRQn},
+ 233:hardware/HAL_Drivers/drv_gpio.c ****     {GPIO_PIN_11, EXTI4_15_IRQn},
+ 234:hardware/HAL_Drivers/drv_gpio.c ****     {GPIO_PIN_12, EXTI4_15_IRQn},
+ 235:hardware/HAL_Drivers/drv_gpio.c ****     {GPIO_PIN_13, EXTI4_15_IRQn},
+ 236:hardware/HAL_Drivers/drv_gpio.c ****     {GPIO_PIN_14, EXTI4_15_IRQn},
+ 237:hardware/HAL_Drivers/drv_gpio.c ****     {GPIO_PIN_15, EXTI4_15_IRQn}, 
+ 238:hardware/HAL_Drivers/drv_gpio.c **** #else
+ 239:hardware/HAL_Drivers/drv_gpio.c ****     {GPIO_PIN_0, EXTI0_IRQn},
+ 240:hardware/HAL_Drivers/drv_gpio.c ****     {GPIO_PIN_1, EXTI1_IRQn},
+ 241:hardware/HAL_Drivers/drv_gpio.c ****     {GPIO_PIN_2, EXTI2_IRQn},
+ 242:hardware/HAL_Drivers/drv_gpio.c ****     {GPIO_PIN_3, EXTI3_IRQn},
+ 243:hardware/HAL_Drivers/drv_gpio.c ****     {GPIO_PIN_4, EXTI4_IRQn},
+ 244:hardware/HAL_Drivers/drv_gpio.c ****     {GPIO_PIN_5, EXTI9_5_IRQn},
+ 245:hardware/HAL_Drivers/drv_gpio.c ****     {GPIO_PIN_6, EXTI9_5_IRQn},
+ 246:hardware/HAL_Drivers/drv_gpio.c ****     {GPIO_PIN_7, EXTI9_5_IRQn},
+ 247:hardware/HAL_Drivers/drv_gpio.c ****     {GPIO_PIN_8, EXTI9_5_IRQn},
+ 248:hardware/HAL_Drivers/drv_gpio.c ****     {GPIO_PIN_9, EXTI9_5_IRQn},
+ 249:hardware/HAL_Drivers/drv_gpio.c ****     {GPIO_PIN_10, EXTI15_10_IRQn},
+ 250:hardware/HAL_Drivers/drv_gpio.c ****     {GPIO_PIN_11, EXTI15_10_IRQn},
+ 251:hardware/HAL_Drivers/drv_gpio.c ****     {GPIO_PIN_12, EXTI15_10_IRQn},
+ 252:hardware/HAL_Drivers/drv_gpio.c ****     {GPIO_PIN_13, EXTI15_10_IRQn},
+ 253:hardware/HAL_Drivers/drv_gpio.c ****     {GPIO_PIN_14, EXTI15_10_IRQn},
+ 254:hardware/HAL_Drivers/drv_gpio.c ****     {GPIO_PIN_15, EXTI15_10_IRQn},
+ 255:hardware/HAL_Drivers/drv_gpio.c **** #endif
+ 256:hardware/HAL_Drivers/drv_gpio.c **** };
+ 257:hardware/HAL_Drivers/drv_gpio.c **** 
+ 258:hardware/HAL_Drivers/drv_gpio.c **** static struct rt_pin_irq_hdr pin_irq_hdr_tab[] =
+ 259:hardware/HAL_Drivers/drv_gpio.c **** {
+ 260:hardware/HAL_Drivers/drv_gpio.c ****     {-1, 0, RT_NULL, RT_NULL},
+ARM GAS  /tmp/ccdBCU3g.s 			page 6
+
+
+ 261:hardware/HAL_Drivers/drv_gpio.c ****     {-1, 0, RT_NULL, RT_NULL},
+ 262:hardware/HAL_Drivers/drv_gpio.c ****     {-1, 0, RT_NULL, RT_NULL},
+ 263:hardware/HAL_Drivers/drv_gpio.c ****     {-1, 0, RT_NULL, RT_NULL},
+ 264:hardware/HAL_Drivers/drv_gpio.c ****     {-1, 0, RT_NULL, RT_NULL},
+ 265:hardware/HAL_Drivers/drv_gpio.c ****     {-1, 0, RT_NULL, RT_NULL},
+ 266:hardware/HAL_Drivers/drv_gpio.c ****     {-1, 0, RT_NULL, RT_NULL},
+ 267:hardware/HAL_Drivers/drv_gpio.c ****     {-1, 0, RT_NULL, RT_NULL},
+ 268:hardware/HAL_Drivers/drv_gpio.c ****     {-1, 0, RT_NULL, RT_NULL},
+ 269:hardware/HAL_Drivers/drv_gpio.c ****     {-1, 0, RT_NULL, RT_NULL},
+ 270:hardware/HAL_Drivers/drv_gpio.c ****     {-1, 0, RT_NULL, RT_NULL},
+ 271:hardware/HAL_Drivers/drv_gpio.c ****     {-1, 0, RT_NULL, RT_NULL},
+ 272:hardware/HAL_Drivers/drv_gpio.c ****     {-1, 0, RT_NULL, RT_NULL},
+ 273:hardware/HAL_Drivers/drv_gpio.c ****     {-1, 0, RT_NULL, RT_NULL},
+ 274:hardware/HAL_Drivers/drv_gpio.c ****     {-1, 0, RT_NULL, RT_NULL},
+ 275:hardware/HAL_Drivers/drv_gpio.c ****     {-1, 0, RT_NULL, RT_NULL},
+ 276:hardware/HAL_Drivers/drv_gpio.c **** };
+ 277:hardware/HAL_Drivers/drv_gpio.c **** static uint32_t pin_irq_enable_mask=0;
+ 278:hardware/HAL_Drivers/drv_gpio.c **** 
+ 279:hardware/HAL_Drivers/drv_gpio.c **** #define ITEM_NUM(items) sizeof(items) / sizeof(items[0])
+ 280:hardware/HAL_Drivers/drv_gpio.c **** static const struct pin_index *get_pin(uint8_t pin)
+ 281:hardware/HAL_Drivers/drv_gpio.c **** {
+  27              		.loc 1 281 0
+  28              		.cfi_startproc
+  29              		@ args = 0, pretend = 0, frame = 0
+  30              		@ frame_needed = 0, uses_anonymous_args = 0
+  31              		@ link register save eliminated.
+  32              	.LVL0:
+ 282:hardware/HAL_Drivers/drv_gpio.c ****     const struct pin_index *index;
+ 283:hardware/HAL_Drivers/drv_gpio.c **** 
+ 284:hardware/HAL_Drivers/drv_gpio.c ****     if (pin < ITEM_NUM(pins))
+  33              		.loc 1 284 0
+  34 0000 AF28     		cmp	r0, #175
+  35 0002 0ED8     		bhi	.L3
+ 281:hardware/HAL_Drivers/drv_gpio.c ****     const struct pin_index *index;
+  36              		.loc 1 281 0
+  37 0004 10B4     		push	{r4}
+  38              	.LCFI0:
+  39              		.cfi_def_cfa_offset 4
+  40              		.cfi_offset 4, -4
+ 285:hardware/HAL_Drivers/drv_gpio.c ****     {
+ 286:hardware/HAL_Drivers/drv_gpio.c ****         index = &pins[pin];
+  41              		.loc 1 286 0
+  42 0006 094C     		ldr	r4, .L10
+  43 0008 4300     		lsls	r3, r0, #1
+  44 000a 1918     		adds	r1, r3, r0
+  45 000c 8A00     		lsls	r2, r1, #2
+  46 000e 1146     		mov	r1, r2
+  47 0010 2244     		add	r2, r2, r4
+  48              	.LVL1:
+ 287:hardware/HAL_Drivers/drv_gpio.c ****         if (index->index == -1)
+  49              		.loc 1 287 0
+  50 0012 6358     		ldr	r3, [r4, r1]
+  51 0014 B3F1FF3F 		cmp	r3, #-1
+  52 0018 06D0     		beq	.L9
+  53              	.LVL2:
+  54              	.L1:
+ 288:hardware/HAL_Drivers/drv_gpio.c ****             index = RT_NULL;
+ARM GAS  /tmp/ccdBCU3g.s 			page 7
+
+
+ 289:hardware/HAL_Drivers/drv_gpio.c ****     }
+ 290:hardware/HAL_Drivers/drv_gpio.c ****     else
+ 291:hardware/HAL_Drivers/drv_gpio.c ****     {
+ 292:hardware/HAL_Drivers/drv_gpio.c ****         index = RT_NULL;
+ 293:hardware/HAL_Drivers/drv_gpio.c ****     }
+ 294:hardware/HAL_Drivers/drv_gpio.c **** 
+ 295:hardware/HAL_Drivers/drv_gpio.c ****     return index;
+ 296:hardware/HAL_Drivers/drv_gpio.c **** };
+  55              		.loc 1 296 0
+  56 001a 1046     		mov	r0, r2
+  57              	.LVL3:
+  58 001c 5DF8044B 		ldr	r4, [sp], #4
+  59              	.LCFI1:
+  60              		.cfi_restore 4
+  61              		.cfi_def_cfa_offset 0
+  62 0020 7047     		bx	lr
+  63              	.LVL4:
+  64              	.L3:
+ 292:hardware/HAL_Drivers/drv_gpio.c ****     }
+  65              		.loc 1 292 0
+  66 0022 0022     		movs	r2, #0
+  67              		.loc 1 296 0
+  68 0024 1046     		mov	r0, r2
+  69              	.LVL5:
+  70 0026 7047     		bx	lr
+  71              	.LVL6:
+  72              	.L9:
+  73              	.LCFI2:
+  74              		.cfi_def_cfa_offset 4
+  75              		.cfi_offset 4, -4
+ 288:hardware/HAL_Drivers/drv_gpio.c ****             index = RT_NULL;
+  76              		.loc 1 288 0
+  77 0028 0022     		movs	r2, #0
+  78              	.LVL7:
+ 295:hardware/HAL_Drivers/drv_gpio.c **** };
+  79              		.loc 1 295 0
+  80 002a F6E7     		b	.L1
+  81              	.L11:
+  82              		.align	2
+  83              	.L10:
+  84 002c 00000000 		.word	.LANCHOR0
+  85              		.cfi_endproc
+  86              	.LFE138:
+  88              		.section	.text.stm32_pin_dettach_irq,"ax",%progbits
+  89              		.align	1
+  90              		.syntax unified
+  91              		.thumb
+  92              		.thumb_func
+  93              		.fpu fpv4-sp-d16
+  95              	stm32_pin_dettach_irq:
+  96              	.LFB145:
+ 297:hardware/HAL_Drivers/drv_gpio.c **** 
+ 298:hardware/HAL_Drivers/drv_gpio.c **** static void stm32_pin_write(rt_device_t dev, rt_base_t pin, rt_base_t value)
+ 299:hardware/HAL_Drivers/drv_gpio.c **** {
+ 300:hardware/HAL_Drivers/drv_gpio.c ****     const struct pin_index *index;
+ 301:hardware/HAL_Drivers/drv_gpio.c **** 
+ 302:hardware/HAL_Drivers/drv_gpio.c ****     index = get_pin(pin);
+ARM GAS  /tmp/ccdBCU3g.s 			page 8
+
+
+ 303:hardware/HAL_Drivers/drv_gpio.c ****     if (index == RT_NULL)
+ 304:hardware/HAL_Drivers/drv_gpio.c ****     {
+ 305:hardware/HAL_Drivers/drv_gpio.c ****         return;
+ 306:hardware/HAL_Drivers/drv_gpio.c ****     }
+ 307:hardware/HAL_Drivers/drv_gpio.c **** 
+ 308:hardware/HAL_Drivers/drv_gpio.c ****     HAL_GPIO_WritePin(index->gpio, index->pin, (GPIO_PinState)value);
+ 309:hardware/HAL_Drivers/drv_gpio.c **** }
+ 310:hardware/HAL_Drivers/drv_gpio.c **** 
+ 311:hardware/HAL_Drivers/drv_gpio.c **** static int stm32_pin_read(rt_device_t dev, rt_base_t pin)
+ 312:hardware/HAL_Drivers/drv_gpio.c **** {
+ 313:hardware/HAL_Drivers/drv_gpio.c ****     int value;
+ 314:hardware/HAL_Drivers/drv_gpio.c ****     const struct pin_index *index;
+ 315:hardware/HAL_Drivers/drv_gpio.c **** 
+ 316:hardware/HAL_Drivers/drv_gpio.c ****     value = PIN_LOW;
+ 317:hardware/HAL_Drivers/drv_gpio.c **** 
+ 318:hardware/HAL_Drivers/drv_gpio.c ****     index = get_pin(pin);
+ 319:hardware/HAL_Drivers/drv_gpio.c ****     if (index == RT_NULL)
+ 320:hardware/HAL_Drivers/drv_gpio.c ****     {
+ 321:hardware/HAL_Drivers/drv_gpio.c ****         return value;
+ 322:hardware/HAL_Drivers/drv_gpio.c ****     }
+ 323:hardware/HAL_Drivers/drv_gpio.c **** 
+ 324:hardware/HAL_Drivers/drv_gpio.c ****     value = HAL_GPIO_ReadPin(index->gpio, index->pin);
+ 325:hardware/HAL_Drivers/drv_gpio.c **** 
+ 326:hardware/HAL_Drivers/drv_gpio.c ****     return value;
+ 327:hardware/HAL_Drivers/drv_gpio.c **** }
+ 328:hardware/HAL_Drivers/drv_gpio.c **** 
+ 329:hardware/HAL_Drivers/drv_gpio.c **** static void stm32_pin_mode(rt_device_t dev, rt_base_t pin, rt_base_t mode)
+ 330:hardware/HAL_Drivers/drv_gpio.c **** {
+ 331:hardware/HAL_Drivers/drv_gpio.c ****     const struct pin_index *index;
+ 332:hardware/HAL_Drivers/drv_gpio.c ****     GPIO_InitTypeDef GPIO_InitStruct;
+ 333:hardware/HAL_Drivers/drv_gpio.c **** 
+ 334:hardware/HAL_Drivers/drv_gpio.c ****     index = get_pin(pin);
+ 335:hardware/HAL_Drivers/drv_gpio.c ****     if (index == RT_NULL)
+ 336:hardware/HAL_Drivers/drv_gpio.c ****     {
+ 337:hardware/HAL_Drivers/drv_gpio.c ****         return;
+ 338:hardware/HAL_Drivers/drv_gpio.c ****     }
+ 339:hardware/HAL_Drivers/drv_gpio.c **** 
+ 340:hardware/HAL_Drivers/drv_gpio.c ****     /* Configure GPIO_InitStructure */
+ 341:hardware/HAL_Drivers/drv_gpio.c ****     GPIO_InitStruct.Pin = index->pin;
+ 342:hardware/HAL_Drivers/drv_gpio.c ****     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+ 343:hardware/HAL_Drivers/drv_gpio.c ****     GPIO_InitStruct.Pull = GPIO_NOPULL;
+ 344:hardware/HAL_Drivers/drv_gpio.c ****     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+ 345:hardware/HAL_Drivers/drv_gpio.c **** 
+ 346:hardware/HAL_Drivers/drv_gpio.c ****     if (mode == PIN_MODE_OUTPUT)
+ 347:hardware/HAL_Drivers/drv_gpio.c ****     {
+ 348:hardware/HAL_Drivers/drv_gpio.c ****         /* output setting */
+ 349:hardware/HAL_Drivers/drv_gpio.c ****         GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+ 350:hardware/HAL_Drivers/drv_gpio.c ****         GPIO_InitStruct.Pull = GPIO_NOPULL;
+ 351:hardware/HAL_Drivers/drv_gpio.c ****     }
+ 352:hardware/HAL_Drivers/drv_gpio.c ****     else if (mode == PIN_MODE_INPUT)
+ 353:hardware/HAL_Drivers/drv_gpio.c ****     {
+ 354:hardware/HAL_Drivers/drv_gpio.c ****         /* input setting: not pull. */
+ 355:hardware/HAL_Drivers/drv_gpio.c ****         GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+ 356:hardware/HAL_Drivers/drv_gpio.c ****         GPIO_InitStruct.Pull = GPIO_NOPULL;
+ 357:hardware/HAL_Drivers/drv_gpio.c ****     }
+ 358:hardware/HAL_Drivers/drv_gpio.c ****     else if (mode == PIN_MODE_INPUT_PULLUP)
+ 359:hardware/HAL_Drivers/drv_gpio.c ****     {
+ARM GAS  /tmp/ccdBCU3g.s 			page 9
+
+
+ 360:hardware/HAL_Drivers/drv_gpio.c ****         /* input setting: pull up. */
+ 361:hardware/HAL_Drivers/drv_gpio.c ****         GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+ 362:hardware/HAL_Drivers/drv_gpio.c ****         GPIO_InitStruct.Pull = GPIO_PULLUP;
+ 363:hardware/HAL_Drivers/drv_gpio.c ****     }
+ 364:hardware/HAL_Drivers/drv_gpio.c ****     else if (mode == PIN_MODE_INPUT_PULLDOWN)
+ 365:hardware/HAL_Drivers/drv_gpio.c ****     {
+ 366:hardware/HAL_Drivers/drv_gpio.c ****         /* input setting: pull down. */
+ 367:hardware/HAL_Drivers/drv_gpio.c ****         GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+ 368:hardware/HAL_Drivers/drv_gpio.c ****         GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+ 369:hardware/HAL_Drivers/drv_gpio.c ****     }
+ 370:hardware/HAL_Drivers/drv_gpio.c ****     else if (mode == PIN_MODE_OUTPUT_OD)
+ 371:hardware/HAL_Drivers/drv_gpio.c ****     {
+ 372:hardware/HAL_Drivers/drv_gpio.c ****         /* output setting: od. */
+ 373:hardware/HAL_Drivers/drv_gpio.c ****         GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
+ 374:hardware/HAL_Drivers/drv_gpio.c ****         GPIO_InitStruct.Pull = GPIO_NOPULL;
+ 375:hardware/HAL_Drivers/drv_gpio.c ****     }
+ 376:hardware/HAL_Drivers/drv_gpio.c **** 
+ 377:hardware/HAL_Drivers/drv_gpio.c ****     HAL_GPIO_Init(index->gpio, &GPIO_InitStruct);
+ 378:hardware/HAL_Drivers/drv_gpio.c **** }
+ 379:hardware/HAL_Drivers/drv_gpio.c **** 
+ 380:hardware/HAL_Drivers/drv_gpio.c **** rt_inline rt_int32_t bit2bitno(rt_uint32_t bit)
+ 381:hardware/HAL_Drivers/drv_gpio.c **** {
+ 382:hardware/HAL_Drivers/drv_gpio.c ****     int i;
+ 383:hardware/HAL_Drivers/drv_gpio.c ****     for (i = 0; i < 32; i++)
+ 384:hardware/HAL_Drivers/drv_gpio.c ****     {
+ 385:hardware/HAL_Drivers/drv_gpio.c ****         if ((0x01 << i) == bit)
+ 386:hardware/HAL_Drivers/drv_gpio.c ****         {
+ 387:hardware/HAL_Drivers/drv_gpio.c ****             return i;
+ 388:hardware/HAL_Drivers/drv_gpio.c ****         }
+ 389:hardware/HAL_Drivers/drv_gpio.c ****     }
+ 390:hardware/HAL_Drivers/drv_gpio.c ****     return -1;
+ 391:hardware/HAL_Drivers/drv_gpio.c **** }
+ 392:hardware/HAL_Drivers/drv_gpio.c **** 
+ 393:hardware/HAL_Drivers/drv_gpio.c **** rt_inline const struct pin_irq_map *get_pin_irq_map(uint32_t pinbit)
+ 394:hardware/HAL_Drivers/drv_gpio.c **** {
+ 395:hardware/HAL_Drivers/drv_gpio.c ****     rt_int32_t mapindex = bit2bitno(pinbit);
+ 396:hardware/HAL_Drivers/drv_gpio.c ****     if (mapindex < 0 || mapindex >= ITEM_NUM(pin_irq_map))
+ 397:hardware/HAL_Drivers/drv_gpio.c ****     {
+ 398:hardware/HAL_Drivers/drv_gpio.c ****         return RT_NULL;
+ 399:hardware/HAL_Drivers/drv_gpio.c ****     }
+ 400:hardware/HAL_Drivers/drv_gpio.c ****     return &pin_irq_map[mapindex];
+ 401:hardware/HAL_Drivers/drv_gpio.c **** };
+ 402:hardware/HAL_Drivers/drv_gpio.c **** 
+ 403:hardware/HAL_Drivers/drv_gpio.c **** static rt_err_t stm32_pin_attach_irq(struct rt_device *device, rt_int32_t pin,
+ 404:hardware/HAL_Drivers/drv_gpio.c ****                                      rt_uint32_t mode, void (*hdr)(void *args), void *args)
+ 405:hardware/HAL_Drivers/drv_gpio.c **** {
+ 406:hardware/HAL_Drivers/drv_gpio.c ****     const struct pin_index *index;
+ 407:hardware/HAL_Drivers/drv_gpio.c ****     rt_base_t level;
+ 408:hardware/HAL_Drivers/drv_gpio.c ****     rt_int32_t irqindex = -1;
+ 409:hardware/HAL_Drivers/drv_gpio.c **** 
+ 410:hardware/HAL_Drivers/drv_gpio.c ****     index = get_pin(pin);
+ 411:hardware/HAL_Drivers/drv_gpio.c ****     if (index == RT_NULL)
+ 412:hardware/HAL_Drivers/drv_gpio.c ****     {
+ 413:hardware/HAL_Drivers/drv_gpio.c ****         return RT_ENOSYS;
+ 414:hardware/HAL_Drivers/drv_gpio.c ****     }
+ 415:hardware/HAL_Drivers/drv_gpio.c ****     irqindex = bit2bitno(index->pin);
+ 416:hardware/HAL_Drivers/drv_gpio.c ****     if (irqindex < 0 || irqindex >= ITEM_NUM(pin_irq_map))
+ARM GAS  /tmp/ccdBCU3g.s 			page 10
+
+
+ 417:hardware/HAL_Drivers/drv_gpio.c ****     {
+ 418:hardware/HAL_Drivers/drv_gpio.c ****         return RT_ENOSYS;
+ 419:hardware/HAL_Drivers/drv_gpio.c ****     }
+ 420:hardware/HAL_Drivers/drv_gpio.c **** 
+ 421:hardware/HAL_Drivers/drv_gpio.c ****     level = rt_hw_interrupt_disable();
+ 422:hardware/HAL_Drivers/drv_gpio.c ****     if (pin_irq_hdr_tab[irqindex].pin == pin &&
+ 423:hardware/HAL_Drivers/drv_gpio.c ****             pin_irq_hdr_tab[irqindex].hdr == hdr &&
+ 424:hardware/HAL_Drivers/drv_gpio.c ****             pin_irq_hdr_tab[irqindex].mode == mode &&
+ 425:hardware/HAL_Drivers/drv_gpio.c ****             pin_irq_hdr_tab[irqindex].args == args)
+ 426:hardware/HAL_Drivers/drv_gpio.c ****     {
+ 427:hardware/HAL_Drivers/drv_gpio.c ****         rt_hw_interrupt_enable(level);
+ 428:hardware/HAL_Drivers/drv_gpio.c ****         return RT_EOK;
+ 429:hardware/HAL_Drivers/drv_gpio.c ****     }
+ 430:hardware/HAL_Drivers/drv_gpio.c ****     if (pin_irq_hdr_tab[irqindex].pin != -1)
+ 431:hardware/HAL_Drivers/drv_gpio.c ****     {
+ 432:hardware/HAL_Drivers/drv_gpio.c ****         rt_hw_interrupt_enable(level);
+ 433:hardware/HAL_Drivers/drv_gpio.c ****         return RT_EBUSY;
+ 434:hardware/HAL_Drivers/drv_gpio.c ****     }
+ 435:hardware/HAL_Drivers/drv_gpio.c ****     pin_irq_hdr_tab[irqindex].pin = pin;
+ 436:hardware/HAL_Drivers/drv_gpio.c ****     pin_irq_hdr_tab[irqindex].hdr = hdr;
+ 437:hardware/HAL_Drivers/drv_gpio.c ****     pin_irq_hdr_tab[irqindex].mode = mode;
+ 438:hardware/HAL_Drivers/drv_gpio.c ****     pin_irq_hdr_tab[irqindex].args = args;
+ 439:hardware/HAL_Drivers/drv_gpio.c ****     rt_hw_interrupt_enable(level);
+ 440:hardware/HAL_Drivers/drv_gpio.c **** 
+ 441:hardware/HAL_Drivers/drv_gpio.c ****     return RT_EOK;
+ 442:hardware/HAL_Drivers/drv_gpio.c **** }
+ 443:hardware/HAL_Drivers/drv_gpio.c **** 
+ 444:hardware/HAL_Drivers/drv_gpio.c **** static rt_err_t stm32_pin_dettach_irq(struct rt_device *device, rt_int32_t pin)
+ 445:hardware/HAL_Drivers/drv_gpio.c **** {
+  97              		.loc 1 445 0
+  98              		.cfi_startproc
+  99              		@ args = 0, pretend = 0, frame = 0
+ 100              		@ frame_needed = 0, uses_anonymous_args = 0
+ 101              	.LVL8:
+ 102 0000 70B5     		push	{r4, r5, r6, lr}
+ 103              	.LCFI3:
+ 104              		.cfi_def_cfa_offset 16
+ 105              		.cfi_offset 4, -16
+ 106              		.cfi_offset 5, -12
+ 107              		.cfi_offset 6, -8
+ 108              		.cfi_offset 14, -4
+ 109              	.LVL9:
+ 446:hardware/HAL_Drivers/drv_gpio.c ****     const struct pin_index *index;
+ 447:hardware/HAL_Drivers/drv_gpio.c ****     rt_base_t level;
+ 448:hardware/HAL_Drivers/drv_gpio.c ****     rt_int32_t irqindex = -1;
+ 449:hardware/HAL_Drivers/drv_gpio.c **** 
+ 450:hardware/HAL_Drivers/drv_gpio.c ****     index = get_pin(pin);
+ 110              		.loc 1 450 0
+ 111 0002 C8B2     		uxtb	r0, r1
+ 112              	.LVL10:
+ 113 0004 FFF7FEFF 		bl	get_pin
+ 114              	.LVL11:
+ 451:hardware/HAL_Drivers/drv_gpio.c ****     if (index == RT_NULL)
+ 115              		.loc 1 451 0
+ 116 0008 68B3     		cbz	r0, .L18
+ 452:hardware/HAL_Drivers/drv_gpio.c ****     {
+ 453:hardware/HAL_Drivers/drv_gpio.c ****         return RT_ENOSYS;
+ARM GAS  /tmp/ccdBCU3g.s 			page 11
+
+
+ 454:hardware/HAL_Drivers/drv_gpio.c ****     }
+ 455:hardware/HAL_Drivers/drv_gpio.c ****     irqindex = bit2bitno(index->pin);
+ 117              		.loc 1 455 0
+ 118 000a 8268     		ldr	r2, [r0, #8]
+ 119              	.LVL12:
+ 120              	.LBB24:
+ 121              	.LBB25:
+ 383:hardware/HAL_Drivers/drv_gpio.c ****     {
+ 122              		.loc 1 383 0
+ 123 000c 0024     		movs	r4, #0
+ 124              	.LVL13:
+ 125              	.L14:
+ 126 000e 1F2C     		cmp	r4, #31
+ 127 0010 05DC     		bgt	.L21
+ 385:hardware/HAL_Drivers/drv_gpio.c ****         {
+ 128              		.loc 1 385 0
+ 129 0012 0123     		movs	r3, #1
+ 130 0014 A340     		lsls	r3, r3, r4
+ 131 0016 9A42     		cmp	r2, r3
+ 132 0018 03D0     		beq	.L15
+ 383:hardware/HAL_Drivers/drv_gpio.c ****     {
+ 133              		.loc 1 383 0
+ 134 001a 0134     		adds	r4, r4, #1
+ 135              	.LVL14:
+ 136 001c F7E7     		b	.L14
+ 137              	.L21:
+ 390:hardware/HAL_Drivers/drv_gpio.c **** }
+ 138              		.loc 1 390 0
+ 139 001e 4FF0FF34 		mov	r4, #-1
+ 140              	.LVL15:
+ 141              	.L15:
+ 142              	.LBE25:
+ 143              	.LBE24:
+ 456:hardware/HAL_Drivers/drv_gpio.c ****     if (irqindex < 0 || irqindex >= ITEM_NUM(pin_irq_map))
+ 144              		.loc 1 456 0
+ 145 0022 0F2C     		cmp	r4, #15
+ 146 0024 01D9     		bls	.L22
+ 457:hardware/HAL_Drivers/drv_gpio.c ****     {
+ 458:hardware/HAL_Drivers/drv_gpio.c ****         return RT_ENOSYS;
+ 147              		.loc 1 458 0
+ 148 0026 0620     		movs	r0, #6
+ 149              	.LVL16:
+ 459:hardware/HAL_Drivers/drv_gpio.c ****     }
+ 460:hardware/HAL_Drivers/drv_gpio.c **** 
+ 461:hardware/HAL_Drivers/drv_gpio.c ****     level = rt_hw_interrupt_disable();
+ 462:hardware/HAL_Drivers/drv_gpio.c ****     if (pin_irq_hdr_tab[irqindex].pin == -1)
+ 463:hardware/HAL_Drivers/drv_gpio.c ****     {
+ 464:hardware/HAL_Drivers/drv_gpio.c ****         rt_hw_interrupt_enable(level);
+ 465:hardware/HAL_Drivers/drv_gpio.c ****         return RT_EOK;
+ 466:hardware/HAL_Drivers/drv_gpio.c ****     }
+ 467:hardware/HAL_Drivers/drv_gpio.c ****     pin_irq_hdr_tab[irqindex].pin = -1;
+ 468:hardware/HAL_Drivers/drv_gpio.c ****     pin_irq_hdr_tab[irqindex].hdr = RT_NULL;
+ 469:hardware/HAL_Drivers/drv_gpio.c ****     pin_irq_hdr_tab[irqindex].mode = 0;
+ 470:hardware/HAL_Drivers/drv_gpio.c ****     pin_irq_hdr_tab[irqindex].args = RT_NULL;
+ 471:hardware/HAL_Drivers/drv_gpio.c ****     rt_hw_interrupt_enable(level);
+ 472:hardware/HAL_Drivers/drv_gpio.c **** 
+ 473:hardware/HAL_Drivers/drv_gpio.c ****     return RT_EOK;
+ARM GAS  /tmp/ccdBCU3g.s 			page 12
+
+
+ 474:hardware/HAL_Drivers/drv_gpio.c **** }
+ 150              		.loc 1 474 0
+ 151 0028 70BD     		pop	{r4, r5, r6, pc}
+ 152              	.LVL17:
+ 153              	.L22:
+ 461:hardware/HAL_Drivers/drv_gpio.c ****     if (pin_irq_hdr_tab[irqindex].pin == -1)
+ 154              		.loc 1 461 0
+ 155 002a FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 156              	.LVL18:
+ 462:hardware/HAL_Drivers/drv_gpio.c ****     {
+ 157              		.loc 1 462 0
+ 158 002e 04EB4402 		add	r2, r4, r4, lsl #1
+ 159 0032 9300     		lsls	r3, r2, #2
+ 160 0034 0D4A     		ldr	r2, .L24
+ 161 0036 D35E     		ldrsh	r3, [r2, r3]
+ 162 0038 B3F1FF3F 		cmp	r3, #-1
+ 163 003c 0FD0     		beq	.L23
+ 467:hardware/HAL_Drivers/drv_gpio.c ****     pin_irq_hdr_tab[irqindex].hdr = RT_NULL;
+ 164              		.loc 1 467 0
+ 165 003e 0B4B     		ldr	r3, .L24
+ 166 0040 6200     		lsls	r2, r4, #1
+ 167 0042 1519     		adds	r5, r2, r4
+ 168 0044 A900     		lsls	r1, r5, #2
+ 169 0046 5E18     		adds	r6, r3, r1
+ 170 0048 4FF6FF75 		movw	r5, #65535
+ 171 004c 5D52     		strh	r5, [r3, r1]	@ movhi
+ 468:hardware/HAL_Drivers/drv_gpio.c ****     pin_irq_hdr_tab[irqindex].mode = 0;
+ 172              		.loc 1 468 0
+ 173 004e 0025     		movs	r5, #0
+ 174 0050 7560     		str	r5, [r6, #4]
+ 469:hardware/HAL_Drivers/drv_gpio.c ****     pin_irq_hdr_tab[irqindex].args = RT_NULL;
+ 175              		.loc 1 469 0
+ 176 0052 7580     		strh	r5, [r6, #2]	@ movhi
+ 470:hardware/HAL_Drivers/drv_gpio.c ****     rt_hw_interrupt_enable(level);
+ 177              		.loc 1 470 0
+ 178 0054 B560     		str	r5, [r6, #8]
+ 471:hardware/HAL_Drivers/drv_gpio.c **** 
+ 179              		.loc 1 471 0
+ 180 0056 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 181              	.LVL19:
+ 473:hardware/HAL_Drivers/drv_gpio.c **** }
+ 182              		.loc 1 473 0
+ 183 005a 2846     		mov	r0, r5
+ 184 005c 70BD     		pop	{r4, r5, r6, pc}
+ 185              	.LVL20:
+ 186              	.L23:
+ 187              	.LBB26:
+ 464:hardware/HAL_Drivers/drv_gpio.c ****         return RT_EOK;
+ 188              		.loc 1 464 0
+ 189 005e FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 190              	.LVL21:
+ 465:hardware/HAL_Drivers/drv_gpio.c ****     }
+ 191              		.loc 1 465 0
+ 192 0062 0020     		movs	r0, #0
+ 193 0064 70BD     		pop	{r4, r5, r6, pc}
+ 194              	.LVL22:
+ 195              	.L18:
+ARM GAS  /tmp/ccdBCU3g.s 			page 13
+
+
+ 196              	.LBE26:
+ 453:hardware/HAL_Drivers/drv_gpio.c ****     }
+ 197              		.loc 1 453 0
+ 198 0066 0620     		movs	r0, #6
+ 199              	.LVL23:
+ 200 0068 70BD     		pop	{r4, r5, r6, pc}
+ 201              	.L25:
+ 202 006a 00BF     		.align	2
+ 203              	.L24:
+ 204 006c 00000000 		.word	.LANCHOR1
+ 205              		.cfi_endproc
+ 206              	.LFE145:
+ 208              		.section	.text.stm32_pin_attach_irq,"ax",%progbits
+ 209              		.align	1
+ 210              		.syntax unified
+ 211              		.thumb
+ 212              		.thumb_func
+ 213              		.fpu fpv4-sp-d16
+ 215              	stm32_pin_attach_irq:
+ 216              	.LFB144:
+ 405:hardware/HAL_Drivers/drv_gpio.c ****     const struct pin_index *index;
+ 217              		.loc 1 405 0
+ 218              		.cfi_startproc
+ 219              		@ args = 4, pretend = 0, frame = 0
+ 220              		@ frame_needed = 0, uses_anonymous_args = 0
+ 221              	.LVL24:
+ 222 0000 F8B5     		push	{r3, r4, r5, r6, r7, lr}
+ 223              	.LCFI4:
+ 224              		.cfi_def_cfa_offset 24
+ 225              		.cfi_offset 3, -24
+ 226              		.cfi_offset 4, -20
+ 227              		.cfi_offset 5, -16
+ 228              		.cfi_offset 6, -12
+ 229              		.cfi_offset 7, -8
+ 230              		.cfi_offset 14, -4
+ 231 0002 0D46     		mov	r5, r1
+ 232 0004 1746     		mov	r7, r2
+ 233 0006 1E46     		mov	r6, r3
+ 234              	.LVL25:
+ 410:hardware/HAL_Drivers/drv_gpio.c ****     if (index == RT_NULL)
+ 235              		.loc 1 410 0
+ 236 0008 C8B2     		uxtb	r0, r1
+ 237              	.LVL26:
+ 238 000a FFF7FEFF 		bl	get_pin
+ 239              	.LVL27:
+ 411:hardware/HAL_Drivers/drv_gpio.c ****     {
+ 240              		.loc 1 411 0
+ 241 000e 0028     		cmp	r0, #0
+ 242 0010 4AD0     		beq	.L33
+ 415:hardware/HAL_Drivers/drv_gpio.c ****     if (irqindex < 0 || irqindex >= ITEM_NUM(pin_irq_map))
+ 243              		.loc 1 415 0
+ 244 0012 8268     		ldr	r2, [r0, #8]
+ 245              	.LVL28:
+ 246              	.LBB27:
+ 247              	.LBB28:
+ 383:hardware/HAL_Drivers/drv_gpio.c ****     {
+ 248              		.loc 1 383 0
+ARM GAS  /tmp/ccdBCU3g.s 			page 14
+
+
+ 249 0014 0024     		movs	r4, #0
+ 250              	.LVL29:
+ 251              	.L28:
+ 252 0016 1F2C     		cmp	r4, #31
+ 253 0018 05DC     		bgt	.L36
+ 385:hardware/HAL_Drivers/drv_gpio.c ****         {
+ 254              		.loc 1 385 0
+ 255 001a 0123     		movs	r3, #1
+ 256 001c A340     		lsls	r3, r3, r4
+ 257 001e 9A42     		cmp	r2, r3
+ 258 0020 03D0     		beq	.L29
+ 383:hardware/HAL_Drivers/drv_gpio.c ****     {
+ 259              		.loc 1 383 0
+ 260 0022 0134     		adds	r4, r4, #1
+ 261              	.LVL30:
+ 262 0024 F7E7     		b	.L28
+ 263              	.L36:
+ 390:hardware/HAL_Drivers/drv_gpio.c **** }
+ 264              		.loc 1 390 0
+ 265 0026 4FF0FF34 		mov	r4, #-1
+ 266              	.LVL31:
+ 267              	.L29:
+ 268              	.LBE28:
+ 269              	.LBE27:
+ 416:hardware/HAL_Drivers/drv_gpio.c ****     {
+ 270              		.loc 1 416 0
+ 271 002a 0F2C     		cmp	r4, #15
+ 272 002c 01D9     		bls	.L37
+ 418:hardware/HAL_Drivers/drv_gpio.c ****     }
+ 273              		.loc 1 418 0
+ 274 002e 0620     		movs	r0, #6
+ 275              	.LVL32:
+ 442:hardware/HAL_Drivers/drv_gpio.c **** 
+ 276              		.loc 1 442 0
+ 277 0030 F8BD     		pop	{r3, r4, r5, r6, r7, pc}
+ 278              	.LVL33:
+ 279              	.L37:
+ 421:hardware/HAL_Drivers/drv_gpio.c ****     if (pin_irq_hdr_tab[irqindex].pin == pin &&
+ 280              		.loc 1 421 0
+ 281 0032 FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 282              	.LVL34:
+ 422:hardware/HAL_Drivers/drv_gpio.c ****             pin_irq_hdr_tab[irqindex].hdr == hdr &&
+ 283              		.loc 1 422 0
+ 284 0036 04EB4402 		add	r2, r4, r4, lsl #1
+ 285 003a 9300     		lsls	r3, r2, #2
+ 286 003c 1B4A     		ldr	r2, .L39
+ 287 003e D35E     		ldrsh	r3, [r2, r3]
+ 288 0040 9D42     		cmp	r5, r3
+ 289 0042 06D0     		beq	.L38
+ 290              	.L31:
+ 430:hardware/HAL_Drivers/drv_gpio.c ****     {
+ 291              		.loc 1 430 0
+ 292 0044 B3F1FF3F 		cmp	r3, #-1
+ 293 0048 1AD0     		beq	.L32
+ 294              	.LBB29:
+ 432:hardware/HAL_Drivers/drv_gpio.c ****         return RT_EBUSY;
+ 295              		.loc 1 432 0
+ARM GAS  /tmp/ccdBCU3g.s 			page 15
+
+
+ 296 004a FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 297              	.LVL35:
+ 433:hardware/HAL_Drivers/drv_gpio.c ****     }
+ 298              		.loc 1 433 0
+ 299 004e 0720     		movs	r0, #7
+ 300 0050 F8BD     		pop	{r3, r4, r5, r6, r7, pc}
+ 301              	.LVL36:
+ 302              	.L38:
+ 303              	.LBE29:
+ 423:hardware/HAL_Drivers/drv_gpio.c ****             pin_irq_hdr_tab[irqindex].mode == mode &&
+ 304              		.loc 1 423 0 discriminator 1
+ 305 0052 04EB4402 		add	r2, r4, r4, lsl #1
+ 306 0056 9100     		lsls	r1, r2, #2
+ 307 0058 144A     		ldr	r2, .L39
+ 308 005a 0A44     		add	r2, r2, r1
+ 309 005c 5268     		ldr	r2, [r2, #4]
+ 422:hardware/HAL_Drivers/drv_gpio.c ****             pin_irq_hdr_tab[irqindex].hdr == hdr &&
+ 310              		.loc 1 422 0 discriminator 1
+ 311 005e B242     		cmp	r2, r6
+ 312 0060 F0D1     		bne	.L31
+ 424:hardware/HAL_Drivers/drv_gpio.c ****             pin_irq_hdr_tab[irqindex].args == args)
+ 313              		.loc 1 424 0
+ 314 0062 124A     		ldr	r2, .L39
+ 315 0064 0A44     		add	r2, r2, r1
+ 316 0066 5288     		ldrh	r2, [r2, #2]
+ 423:hardware/HAL_Drivers/drv_gpio.c ****             pin_irq_hdr_tab[irqindex].mode == mode &&
+ 317              		.loc 1 423 0
+ 318 0068 BA42     		cmp	r2, r7
+ 319 006a EBD1     		bne	.L31
+ 425:hardware/HAL_Drivers/drv_gpio.c ****     {
+ 320              		.loc 1 425 0
+ 321 006c 0F4A     		ldr	r2, .L39
+ 322 006e 0A44     		add	r2, r2, r1
+ 323 0070 9268     		ldr	r2, [r2, #8]
+ 424:hardware/HAL_Drivers/drv_gpio.c ****             pin_irq_hdr_tab[irqindex].args == args)
+ 324              		.loc 1 424 0
+ 325 0072 0699     		ldr	r1, [sp, #24]
+ 326 0074 8A42     		cmp	r2, r1
+ 327 0076 E5D1     		bne	.L31
+ 328              	.LBB30:
+ 427:hardware/HAL_Drivers/drv_gpio.c ****         return RT_EOK;
+ 329              		.loc 1 427 0
+ 330 0078 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 331              	.LVL37:
+ 428:hardware/HAL_Drivers/drv_gpio.c ****     }
+ 332              		.loc 1 428 0
+ 333 007c 0020     		movs	r0, #0
+ 334 007e F8BD     		pop	{r3, r4, r5, r6, r7, pc}
+ 335              	.LVL38:
+ 336              	.L32:
+ 337              	.LBE30:
+ 435:hardware/HAL_Drivers/drv_gpio.c ****     pin_irq_hdr_tab[irqindex].hdr = hdr;
+ 338              		.loc 1 435 0
+ 339 0080 0A4B     		ldr	r3, .L39
+ 340 0082 6200     		lsls	r2, r4, #1
+ 341 0084 02EB040E 		add	lr, r2, r4
+ 342 0088 4FEA8E01 		lsl	r1, lr, #2
+ARM GAS  /tmp/ccdBCU3g.s 			page 16
+
+
+ 343 008c 03EB010E 		add	lr, r3, r1
+ 344 0090 5D52     		strh	r5, [r3, r1]	@ movhi
+ 436:hardware/HAL_Drivers/drv_gpio.c ****     pin_irq_hdr_tab[irqindex].mode = mode;
+ 345              		.loc 1 436 0
+ 346 0092 CEF80460 		str	r6, [lr, #4]
+ 437:hardware/HAL_Drivers/drv_gpio.c ****     pin_irq_hdr_tab[irqindex].args = args;
+ 347              		.loc 1 437 0
+ 348 0096 AEF80270 		strh	r7, [lr, #2]	@ movhi
+ 438:hardware/HAL_Drivers/drv_gpio.c ****     rt_hw_interrupt_enable(level);
+ 349              		.loc 1 438 0
+ 350 009a 069A     		ldr	r2, [sp, #24]
+ 351 009c CEF80820 		str	r2, [lr, #8]
+ 439:hardware/HAL_Drivers/drv_gpio.c **** 
+ 352              		.loc 1 439 0
+ 353 00a0 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 354              	.LVL39:
+ 441:hardware/HAL_Drivers/drv_gpio.c **** }
+ 355              		.loc 1 441 0
+ 356 00a4 0020     		movs	r0, #0
+ 357 00a6 F8BD     		pop	{r3, r4, r5, r6, r7, pc}
+ 358              	.LVL40:
+ 359              	.L33:
+ 413:hardware/HAL_Drivers/drv_gpio.c ****     }
+ 360              		.loc 1 413 0
+ 361 00a8 0620     		movs	r0, #6
+ 362              	.LVL41:
+ 363 00aa F8BD     		pop	{r3, r4, r5, r6, r7, pc}
+ 364              	.LVL42:
+ 365              	.L40:
+ 366              		.align	2
+ 367              	.L39:
+ 368 00ac 00000000 		.word	.LANCHOR1
+ 369              		.cfi_endproc
+ 370              	.LFE144:
+ 372              		.section	.text.stm32_pin_mode,"ax",%progbits
+ 373              		.align	1
+ 374              		.syntax unified
+ 375              		.thumb
+ 376              		.thumb_func
+ 377              		.fpu fpv4-sp-d16
+ 379              	stm32_pin_mode:
+ 380              	.LFB141:
+ 330:hardware/HAL_Drivers/drv_gpio.c ****     const struct pin_index *index;
+ 381              		.loc 1 330 0
+ 382              		.cfi_startproc
+ 383              		@ args = 0, pretend = 0, frame = 24
+ 384              		@ frame_needed = 0, uses_anonymous_args = 0
+ 385              	.LVL43:
+ 386 0000 10B5     		push	{r4, lr}
+ 387              	.LCFI5:
+ 388              		.cfi_def_cfa_offset 8
+ 389              		.cfi_offset 4, -8
+ 390              		.cfi_offset 14, -4
+ 391 0002 86B0     		sub	sp, sp, #24
+ 392              	.LCFI6:
+ 393              		.cfi_def_cfa_offset 32
+ 394 0004 1446     		mov	r4, r2
+ARM GAS  /tmp/ccdBCU3g.s 			page 17
+
+
+ 334:hardware/HAL_Drivers/drv_gpio.c ****     if (index == RT_NULL)
+ 395              		.loc 1 334 0
+ 396 0006 C8B2     		uxtb	r0, r1
+ 397              	.LVL44:
+ 398 0008 FFF7FEFF 		bl	get_pin
+ 399              	.LVL45:
+ 335:hardware/HAL_Drivers/drv_gpio.c ****     {
+ 400              		.loc 1 335 0
+ 401 000c D0B1     		cbz	r0, .L41
+ 402 000e 0346     		mov	r3, r0
+ 341:hardware/HAL_Drivers/drv_gpio.c ****     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+ 403              		.loc 1 341 0
+ 404 0010 8268     		ldr	r2, [r0, #8]
+ 405 0012 0192     		str	r2, [sp, #4]
+ 342:hardware/HAL_Drivers/drv_gpio.c ****     GPIO_InitStruct.Pull = GPIO_NOPULL;
+ 406              		.loc 1 342 0
+ 407 0014 0122     		movs	r2, #1
+ 408 0016 0292     		str	r2, [sp, #8]
+ 343:hardware/HAL_Drivers/drv_gpio.c ****     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+ 409              		.loc 1 343 0
+ 410 0018 0022     		movs	r2, #0
+ 411 001a 0392     		str	r2, [sp, #12]
+ 344:hardware/HAL_Drivers/drv_gpio.c **** 
+ 412              		.loc 1 344 0
+ 413 001c 0222     		movs	r2, #2
+ 414 001e 0492     		str	r2, [sp, #16]
+ 346:hardware/HAL_Drivers/drv_gpio.c ****     {
+ 415              		.loc 1 346 0
+ 416 0020 64B1     		cbz	r4, .L43
+ 352:hardware/HAL_Drivers/drv_gpio.c ****     {
+ 417              		.loc 1 352 0
+ 418 0022 012C     		cmp	r4, #1
+ 419 0024 08D0     		beq	.L49
+ 358:hardware/HAL_Drivers/drv_gpio.c ****     {
+ 420              		.loc 1 358 0
+ 421 0026 022C     		cmp	r4, #2
+ 422 0028 0ED0     		beq	.L50
+ 364:hardware/HAL_Drivers/drv_gpio.c ****     {
+ 423              		.loc 1 364 0
+ 424 002a 032C     		cmp	r4, #3
+ 425 002c 11D0     		beq	.L51
+ 370:hardware/HAL_Drivers/drv_gpio.c ****     {
+ 426              		.loc 1 370 0
+ 427 002e 042C     		cmp	r4, #4
+ 428 0030 04D1     		bne	.L43
+ 373:hardware/HAL_Drivers/drv_gpio.c ****         GPIO_InitStruct.Pull = GPIO_NOPULL;
+ 429              		.loc 1 373 0
+ 430 0032 1122     		movs	r2, #17
+ 431 0034 0292     		str	r2, [sp, #8]
+ 432 0036 01E0     		b	.L43
+ 433              	.L49:
+ 355:hardware/HAL_Drivers/drv_gpio.c ****         GPIO_InitStruct.Pull = GPIO_NOPULL;
+ 434              		.loc 1 355 0
+ 435 0038 0022     		movs	r2, #0
+ 436 003a 0292     		str	r2, [sp, #8]
+ 437              	.L43:
+ 377:hardware/HAL_Drivers/drv_gpio.c **** }
+ARM GAS  /tmp/ccdBCU3g.s 			page 18
+
+
+ 438              		.loc 1 377 0
+ 439 003c 01A9     		add	r1, sp, #4
+ 440 003e 5868     		ldr	r0, [r3, #4]
+ 441              	.LVL46:
+ 442 0040 FFF7FEFF 		bl	HAL_GPIO_Init
+ 443              	.LVL47:
+ 444              	.L41:
+ 378:hardware/HAL_Drivers/drv_gpio.c **** 
+ 445              		.loc 1 378 0
+ 446 0044 06B0     		add	sp, sp, #24
+ 447              	.LCFI7:
+ 448              		.cfi_remember_state
+ 449              		.cfi_def_cfa_offset 8
+ 450              		@ sp needed
+ 451 0046 10BD     		pop	{r4, pc}
+ 452              	.LVL48:
+ 453              	.L50:
+ 454              	.LCFI8:
+ 455              		.cfi_restore_state
+ 361:hardware/HAL_Drivers/drv_gpio.c ****         GPIO_InitStruct.Pull = GPIO_PULLUP;
+ 456              		.loc 1 361 0
+ 457 0048 0022     		movs	r2, #0
+ 458 004a 0292     		str	r2, [sp, #8]
+ 362:hardware/HAL_Drivers/drv_gpio.c ****     }
+ 459              		.loc 1 362 0
+ 460 004c 0122     		movs	r2, #1
+ 461 004e 0392     		str	r2, [sp, #12]
+ 462 0050 F4E7     		b	.L43
+ 463              	.L51:
+ 367:hardware/HAL_Drivers/drv_gpio.c ****         GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+ 464              		.loc 1 367 0
+ 465 0052 0022     		movs	r2, #0
+ 466 0054 0292     		str	r2, [sp, #8]
+ 368:hardware/HAL_Drivers/drv_gpio.c ****     }
+ 467              		.loc 1 368 0
+ 468 0056 0222     		movs	r2, #2
+ 469 0058 0392     		str	r2, [sp, #12]
+ 470 005a EFE7     		b	.L43
+ 471              		.cfi_endproc
+ 472              	.LFE141:
+ 474              		.section	.text.stm32_pin_irq_enable,"ax",%progbits
+ 475              		.align	1
+ 476              		.syntax unified
+ 477              		.thumb
+ 478              		.thumb_func
+ 479              		.fpu fpv4-sp-d16
+ 481              	stm32_pin_irq_enable:
+ 482              	.LFB146:
+ 475:hardware/HAL_Drivers/drv_gpio.c **** 
+ 476:hardware/HAL_Drivers/drv_gpio.c **** static rt_err_t stm32_pin_irq_enable(struct rt_device *device, rt_base_t pin,
+ 477:hardware/HAL_Drivers/drv_gpio.c ****                                      rt_uint32_t enabled)
+ 478:hardware/HAL_Drivers/drv_gpio.c **** {
+ 483              		.loc 1 478 0
+ 484              		.cfi_startproc
+ 485              		@ args = 0, pretend = 0, frame = 24
+ 486              		@ frame_needed = 0, uses_anonymous_args = 0
+ 487              	.LVL49:
+ARM GAS  /tmp/ccdBCU3g.s 			page 19
+
+
+ 488 0000 F0B5     		push	{r4, r5, r6, r7, lr}
+ 489              	.LCFI9:
+ 490              		.cfi_def_cfa_offset 20
+ 491              		.cfi_offset 4, -20
+ 492              		.cfi_offset 5, -16
+ 493              		.cfi_offset 6, -12
+ 494              		.cfi_offset 7, -8
+ 495              		.cfi_offset 14, -4
+ 496 0002 87B0     		sub	sp, sp, #28
+ 497              	.LCFI10:
+ 498              		.cfi_def_cfa_offset 48
+ 499 0004 1446     		mov	r4, r2
+ 500              	.LVL50:
+ 479:hardware/HAL_Drivers/drv_gpio.c ****     const struct pin_index *index;
+ 480:hardware/HAL_Drivers/drv_gpio.c ****     const struct pin_irq_map *irqmap;
+ 481:hardware/HAL_Drivers/drv_gpio.c ****     rt_base_t level;
+ 482:hardware/HAL_Drivers/drv_gpio.c ****     rt_int32_t irqindex = -1;
+ 483:hardware/HAL_Drivers/drv_gpio.c ****     GPIO_InitTypeDef GPIO_InitStruct;
+ 484:hardware/HAL_Drivers/drv_gpio.c **** 
+ 485:hardware/HAL_Drivers/drv_gpio.c ****     index = get_pin(pin);
+ 501              		.loc 1 485 0
+ 502 0006 C8B2     		uxtb	r0, r1
+ 503              	.LVL51:
+ 504 0008 FFF7FEFF 		bl	get_pin
+ 505              	.LVL52:
+ 486:hardware/HAL_Drivers/drv_gpio.c ****     if (index == RT_NULL)
+ 506              		.loc 1 486 0
+ 507 000c 0028     		cmp	r0, #0
+ 508 000e 00F0A880 		beq	.L70
+ 509 0012 0546     		mov	r5, r0
+ 487:hardware/HAL_Drivers/drv_gpio.c ****     {
+ 488:hardware/HAL_Drivers/drv_gpio.c ****         return RT_ENOSYS;
+ 489:hardware/HAL_Drivers/drv_gpio.c ****     }
+ 490:hardware/HAL_Drivers/drv_gpio.c **** 
+ 491:hardware/HAL_Drivers/drv_gpio.c ****     if (enabled == PIN_IRQ_ENABLE)
+ 510              		.loc 1 491 0
+ 511 0014 012C     		cmp	r4, #1
+ 512 0016 0CD0     		beq	.L76
+ 492:hardware/HAL_Drivers/drv_gpio.c ****     {
+ 493:hardware/HAL_Drivers/drv_gpio.c ****         irqindex = bit2bitno(index->pin);
+ 494:hardware/HAL_Drivers/drv_gpio.c ****         if (irqindex < 0 || irqindex >= ITEM_NUM(pin_irq_map))
+ 495:hardware/HAL_Drivers/drv_gpio.c ****         {
+ 496:hardware/HAL_Drivers/drv_gpio.c ****             return RT_ENOSYS;
+ 497:hardware/HAL_Drivers/drv_gpio.c ****         }
+ 498:hardware/HAL_Drivers/drv_gpio.c **** 
+ 499:hardware/HAL_Drivers/drv_gpio.c ****         level = rt_hw_interrupt_disable();
+ 500:hardware/HAL_Drivers/drv_gpio.c **** 
+ 501:hardware/HAL_Drivers/drv_gpio.c ****         if (pin_irq_hdr_tab[irqindex].pin == -1)
+ 502:hardware/HAL_Drivers/drv_gpio.c ****         {
+ 503:hardware/HAL_Drivers/drv_gpio.c ****             rt_hw_interrupt_enable(level);
+ 504:hardware/HAL_Drivers/drv_gpio.c ****             return RT_ENOSYS;
+ 505:hardware/HAL_Drivers/drv_gpio.c ****         }
+ 506:hardware/HAL_Drivers/drv_gpio.c **** 
+ 507:hardware/HAL_Drivers/drv_gpio.c ****         irqmap = &pin_irq_map[irqindex];
+ 508:hardware/HAL_Drivers/drv_gpio.c **** 
+ 509:hardware/HAL_Drivers/drv_gpio.c ****         /* Configure GPIO_InitStructure */
+ 510:hardware/HAL_Drivers/drv_gpio.c ****         GPIO_InitStruct.Pin = index->pin;        
+ARM GAS  /tmp/ccdBCU3g.s 			page 20
+
+
+ 511:hardware/HAL_Drivers/drv_gpio.c ****         GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+ 512:hardware/HAL_Drivers/drv_gpio.c ****         switch (pin_irq_hdr_tab[irqindex].mode)
+ 513:hardware/HAL_Drivers/drv_gpio.c ****         {
+ 514:hardware/HAL_Drivers/drv_gpio.c ****         case PIN_IRQ_MODE_RISING:
+ 515:hardware/HAL_Drivers/drv_gpio.c ****             GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+ 516:hardware/HAL_Drivers/drv_gpio.c ****             GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+ 517:hardware/HAL_Drivers/drv_gpio.c ****             break;
+ 518:hardware/HAL_Drivers/drv_gpio.c ****         case PIN_IRQ_MODE_FALLING:
+ 519:hardware/HAL_Drivers/drv_gpio.c ****             GPIO_InitStruct.Pull = GPIO_PULLUP;
+ 520:hardware/HAL_Drivers/drv_gpio.c ****             GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+ 521:hardware/HAL_Drivers/drv_gpio.c ****             break;
+ 522:hardware/HAL_Drivers/drv_gpio.c ****         case PIN_IRQ_MODE_RISING_FALLING:
+ 523:hardware/HAL_Drivers/drv_gpio.c ****             GPIO_InitStruct.Pull = GPIO_NOPULL;
+ 524:hardware/HAL_Drivers/drv_gpio.c ****             GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
+ 525:hardware/HAL_Drivers/drv_gpio.c ****             break;
+ 526:hardware/HAL_Drivers/drv_gpio.c ****         }
+ 527:hardware/HAL_Drivers/drv_gpio.c ****         HAL_GPIO_Init(index->gpio, &GPIO_InitStruct);
+ 528:hardware/HAL_Drivers/drv_gpio.c **** 
+ 529:hardware/HAL_Drivers/drv_gpio.c ****         HAL_NVIC_SetPriority(irqmap->irqno, 5, 0);
+ 530:hardware/HAL_Drivers/drv_gpio.c ****         HAL_NVIC_EnableIRQ(irqmap->irqno);
+ 531:hardware/HAL_Drivers/drv_gpio.c ****         pin_irq_enable_mask |= irqmap->pinbit;
+ 532:hardware/HAL_Drivers/drv_gpio.c **** 
+ 533:hardware/HAL_Drivers/drv_gpio.c ****         rt_hw_interrupt_enable(level);
+ 534:hardware/HAL_Drivers/drv_gpio.c ****     }
+ 535:hardware/HAL_Drivers/drv_gpio.c ****     else if (enabled == PIN_IRQ_DISABLE)
+ 513              		.loc 1 535 0
+ 514 0018 002C     		cmp	r4, #0
+ 515 001a 40F0A480 		bne	.L72
+ 516              	.LBB31:
+ 536:hardware/HAL_Drivers/drv_gpio.c ****     {
+ 537:hardware/HAL_Drivers/drv_gpio.c ****         irqmap = get_pin_irq_map(index->pin);
+ 517              		.loc 1 537 0
+ 518 001e 8168     		ldr	r1, [r0, #8]
+ 519              	.LVL53:
+ 520              	.LBB32:
+ 521              	.LBB33:
+ 522              	.LBB34:
+ 523              	.LBB35:
+ 383:hardware/HAL_Drivers/drv_gpio.c ****     {
+ 524              		.loc 1 383 0
+ 525 0020 0023     		movs	r3, #0
+ 526              	.LVL54:
+ 527              	.L63:
+ 528 0022 1F2B     		cmp	r3, #31
+ 529 0024 5EDC     		bgt	.L77
+ 385:hardware/HAL_Drivers/drv_gpio.c ****         {
+ 530              		.loc 1 385 0
+ 531 0026 0122     		movs	r2, #1
+ 532 0028 9A40     		lsls	r2, r2, r3
+ 533 002a 9142     		cmp	r1, r2
+ 534 002c 5CD0     		beq	.L64
+ 383:hardware/HAL_Drivers/drv_gpio.c ****     {
+ 535              		.loc 1 383 0
+ 536 002e 0133     		adds	r3, r3, #1
+ 537              	.LVL55:
+ 538 0030 F7E7     		b	.L63
+ 539              	.LVL56:
+ARM GAS  /tmp/ccdBCU3g.s 			page 21
+
+
+ 540              	.L76:
+ 541              	.LBE35:
+ 542              	.LBE34:
+ 543              	.LBE33:
+ 544              	.LBE32:
+ 545              	.LBE31:
+ 546              	.LBB42:
+ 493:hardware/HAL_Drivers/drv_gpio.c ****         if (irqindex < 0 || irqindex >= ITEM_NUM(pin_irq_map))
+ 547              		.loc 1 493 0
+ 548 0032 8268     		ldr	r2, [r0, #8]
+ 549              	.LVL57:
+ 550              	.LBB43:
+ 551              	.LBB44:
+ 383:hardware/HAL_Drivers/drv_gpio.c ****     {
+ 552              		.loc 1 383 0
+ 553 0034 0024     		movs	r4, #0
+ 554              	.LVL58:
+ 555              	.L55:
+ 556 0036 1F2C     		cmp	r4, #31
+ 557 0038 05DC     		bgt	.L78
+ 385:hardware/HAL_Drivers/drv_gpio.c ****         {
+ 558              		.loc 1 385 0
+ 559 003a 0123     		movs	r3, #1
+ 560 003c A340     		lsls	r3, r3, r4
+ 561 003e 9342     		cmp	r3, r2
+ 562 0040 03D0     		beq	.L56
+ 383:hardware/HAL_Drivers/drv_gpio.c ****     {
+ 563              		.loc 1 383 0
+ 564 0042 0134     		adds	r4, r4, #1
+ 565              	.LVL59:
+ 566 0044 F7E7     		b	.L55
+ 567              	.L78:
+ 390:hardware/HAL_Drivers/drv_gpio.c **** }
+ 568              		.loc 1 390 0
+ 569 0046 4FF0FF34 		mov	r4, #-1
+ 570              	.LVL60:
+ 571              	.L56:
+ 572              	.LBE44:
+ 573              	.LBE43:
+ 494:hardware/HAL_Drivers/drv_gpio.c ****         {
+ 574              		.loc 1 494 0
+ 575 004a 0F2C     		cmp	r4, #15
+ 576 004c 01D9     		bls	.L79
+ 496:hardware/HAL_Drivers/drv_gpio.c ****         }
+ 577              		.loc 1 496 0
+ 578 004e 0620     		movs	r0, #6
+ 579              	.LVL61:
+ 580 0050 6BE0     		b	.L52
+ 581              	.LVL62:
+ 582              	.L79:
+ 499:hardware/HAL_Drivers/drv_gpio.c **** 
+ 583              		.loc 1 499 0
+ 584 0052 FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 585              	.LVL63:
+ 586 0056 0646     		mov	r6, r0
+ 587              	.LVL64:
+ 501:hardware/HAL_Drivers/drv_gpio.c ****         {
+ARM GAS  /tmp/ccdBCU3g.s 			page 22
+
+
+ 588              		.loc 1 501 0
+ 589 0058 04EB4402 		add	r2, r4, r4, lsl #1
+ 590 005c 9300     		lsls	r3, r2, #2
+ 591 005e 444A     		ldr	r2, .L82
+ 592 0060 D35E     		ldrsh	r3, [r2, r3]
+ 593 0062 B3F1FF3F 		cmp	r3, #-1
+ 594 0066 2AD0     		beq	.L80
+ 595              	.LVL65:
+ 510:hardware/HAL_Drivers/drv_gpio.c ****         GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+ 596              		.loc 1 510 0
+ 597 0068 AB68     		ldr	r3, [r5, #8]
+ 598 006a 0193     		str	r3, [sp, #4]
+ 511:hardware/HAL_Drivers/drv_gpio.c ****         switch (pin_irq_hdr_tab[irqindex].mode)
+ 599              		.loc 1 511 0
+ 600 006c 0223     		movs	r3, #2
+ 601 006e 0493     		str	r3, [sp, #16]
+ 512:hardware/HAL_Drivers/drv_gpio.c ****         {
+ 602              		.loc 1 512 0
+ 603 0070 04EB4403 		add	r3, r4, r4, lsl #1
+ 604 0074 9A00     		lsls	r2, r3, #2
+ 605 0076 3E4B     		ldr	r3, .L82
+ 606 0078 1344     		add	r3, r3, r2
+ 607 007a 5B88     		ldrh	r3, [r3, #2]
+ 608 007c 012B     		cmp	r3, #1
+ 609 007e 27D0     		beq	.L60
+ 610 0080 0BB3     		cbz	r3, .L61
+ 611 0082 022B     		cmp	r3, #2
+ 612 0084 29D0     		beq	.L62
+ 613              	.L59:
+ 527:hardware/HAL_Drivers/drv_gpio.c **** 
+ 614              		.loc 1 527 0
+ 615 0086 01A9     		add	r1, sp, #4
+ 616 0088 6868     		ldr	r0, [r5, #4]
+ 617              	.LVL66:
+ 618 008a FFF7FEFF 		bl	HAL_GPIO_Init
+ 619              	.LVL67:
+ 529:hardware/HAL_Drivers/drv_gpio.c ****         HAL_NVIC_EnableIRQ(irqmap->irqno);
+ 620              		.loc 1 529 0
+ 621 008e 394D     		ldr	r5, .L82+4
+ 622              	.LVL68:
+ 623 0090 05EB8403 		add	r3, r5, r4, lsl #2
+ 624 0094 93F90270 		ldrsb	r7, [r3, #2]
+ 625 0098 0022     		movs	r2, #0
+ 626 009a 0521     		movs	r1, #5
+ 627 009c 3846     		mov	r0, r7
+ 628 009e FFF7FEFF 		bl	HAL_NVIC_SetPriority
+ 629              	.LVL69:
+ 530:hardware/HAL_Drivers/drv_gpio.c ****         pin_irq_enable_mask |= irqmap->pinbit;
+ 630              		.loc 1 530 0
+ 631 00a2 3846     		mov	r0, r7
+ 632 00a4 FFF7FEFF 		bl	HAL_NVIC_EnableIRQ
+ 633              	.LVL70:
+ 531:hardware/HAL_Drivers/drv_gpio.c **** 
+ 634              		.loc 1 531 0
+ 635 00a8 35F82410 		ldrh	r1, [r5, r4, lsl #2]
+ 636 00ac 324A     		ldr	r2, .L82+8
+ 637 00ae 1368     		ldr	r3, [r2]
+ARM GAS  /tmp/ccdBCU3g.s 			page 23
+
+
+ 638 00b0 0B43     		orrs	r3, r3, r1
+ 639 00b2 1360     		str	r3, [r2]
+ 533:hardware/HAL_Drivers/drv_gpio.c ****     }
+ 640              		.loc 1 533 0
+ 641 00b4 3046     		mov	r0, r6
+ 642 00b6 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 643              	.LVL71:
+ 644              	.LBE42:
+ 538:hardware/HAL_Drivers/drv_gpio.c ****         if (irqmap == RT_NULL)
+ 539:hardware/HAL_Drivers/drv_gpio.c ****         {
+ 540:hardware/HAL_Drivers/drv_gpio.c ****             return RT_ENOSYS;
+ 541:hardware/HAL_Drivers/drv_gpio.c ****         }
+ 542:hardware/HAL_Drivers/drv_gpio.c **** 
+ 543:hardware/HAL_Drivers/drv_gpio.c ****         level = rt_hw_interrupt_disable();
+ 544:hardware/HAL_Drivers/drv_gpio.c **** 
+ 545:hardware/HAL_Drivers/drv_gpio.c ****         HAL_GPIO_DeInit(index->gpio, index->pin);
+ 546:hardware/HAL_Drivers/drv_gpio.c **** 
+ 547:hardware/HAL_Drivers/drv_gpio.c ****         pin_irq_enable_mask &= ~irqmap->pinbit;
+ 548:hardware/HAL_Drivers/drv_gpio.c **** #if defined(SOC_SERIES_STM32F0) || defined(SOC_SERIES_STM32G0)
+ 549:hardware/HAL_Drivers/drv_gpio.c ****         if (( irqmap->pinbit>=GPIO_PIN_0 )&&( irqmap->pinbit<=GPIO_PIN_1 ))
+ 550:hardware/HAL_Drivers/drv_gpio.c ****         {
+ 551:hardware/HAL_Drivers/drv_gpio.c ****             if(!(pin_irq_enable_mask&(GPIO_PIN_0|GPIO_PIN_1)))
+ 552:hardware/HAL_Drivers/drv_gpio.c ****             {    
+ 553:hardware/HAL_Drivers/drv_gpio.c ****                 HAL_NVIC_DisableIRQ(irqmap->irqno);
+ 554:hardware/HAL_Drivers/drv_gpio.c ****             }
+ 555:hardware/HAL_Drivers/drv_gpio.c ****         }
+ 556:hardware/HAL_Drivers/drv_gpio.c ****         else if (( irqmap->pinbit>=GPIO_PIN_2 )&&( irqmap->pinbit<=GPIO_PIN_3 ))
+ 557:hardware/HAL_Drivers/drv_gpio.c ****         {
+ 558:hardware/HAL_Drivers/drv_gpio.c ****             if(!(pin_irq_enable_mask&(GPIO_PIN_2|GPIO_PIN_3)))
+ 559:hardware/HAL_Drivers/drv_gpio.c ****             {    
+ 560:hardware/HAL_Drivers/drv_gpio.c ****                 HAL_NVIC_DisableIRQ(irqmap->irqno);
+ 561:hardware/HAL_Drivers/drv_gpio.c ****             }
+ 562:hardware/HAL_Drivers/drv_gpio.c ****         }
+ 563:hardware/HAL_Drivers/drv_gpio.c ****         else if (( irqmap->pinbit>=GPIO_PIN_4 )&&( irqmap->pinbit<=GPIO_PIN_15 ))
+ 564:hardware/HAL_Drivers/drv_gpio.c ****         {
+ 565:hardware/HAL_Drivers/drv_gpio.c ****             if(!(pin_irq_enable_mask&(GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7|GPIO_PIN_8|GPIO_P
+ 566:hardware/HAL_Drivers/drv_gpio.c ****                                       GPIO_PIN_10|GPIO_PIN_11|GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14|G
+ 567:hardware/HAL_Drivers/drv_gpio.c ****             {    
+ 568:hardware/HAL_Drivers/drv_gpio.c ****                 HAL_NVIC_DisableIRQ(irqmap->irqno);
+ 569:hardware/HAL_Drivers/drv_gpio.c ****             }
+ 570:hardware/HAL_Drivers/drv_gpio.c ****         }    
+ 571:hardware/HAL_Drivers/drv_gpio.c ****         else
+ 572:hardware/HAL_Drivers/drv_gpio.c ****         {
+ 573:hardware/HAL_Drivers/drv_gpio.c ****             HAL_NVIC_DisableIRQ(irqmap->irqno);
+ 574:hardware/HAL_Drivers/drv_gpio.c ****         }         
+ 575:hardware/HAL_Drivers/drv_gpio.c **** #else      
+ 576:hardware/HAL_Drivers/drv_gpio.c ****         if (( irqmap->pinbit>=GPIO_PIN_5 )&&( irqmap->pinbit<=GPIO_PIN_9 ))
+ 577:hardware/HAL_Drivers/drv_gpio.c ****         {
+ 578:hardware/HAL_Drivers/drv_gpio.c ****             if(!(pin_irq_enable_mask&(GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7|GPIO_PIN_8|GPIO_PIN_9)))
+ 579:hardware/HAL_Drivers/drv_gpio.c ****             {    
+ 580:hardware/HAL_Drivers/drv_gpio.c ****                 HAL_NVIC_DisableIRQ(irqmap->irqno);
+ 581:hardware/HAL_Drivers/drv_gpio.c ****             }
+ 582:hardware/HAL_Drivers/drv_gpio.c ****         }
+ 583:hardware/HAL_Drivers/drv_gpio.c ****         else if (( irqmap->pinbit>=GPIO_PIN_10 )&&( irqmap->pinbit<=GPIO_PIN_15 ))
+ 584:hardware/HAL_Drivers/drv_gpio.c ****         {
+ 585:hardware/HAL_Drivers/drv_gpio.c ****             if(!(pin_irq_enable_mask&(GPIO_PIN_10|GPIO_PIN_11|GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14|G
+ 586:hardware/HAL_Drivers/drv_gpio.c ****             {    
+ARM GAS  /tmp/ccdBCU3g.s 			page 24
+
+
+ 587:hardware/HAL_Drivers/drv_gpio.c ****                 HAL_NVIC_DisableIRQ(irqmap->irqno);
+ 588:hardware/HAL_Drivers/drv_gpio.c ****             }
+ 589:hardware/HAL_Drivers/drv_gpio.c ****         }
+ 590:hardware/HAL_Drivers/drv_gpio.c ****         else
+ 591:hardware/HAL_Drivers/drv_gpio.c ****         {
+ 592:hardware/HAL_Drivers/drv_gpio.c ****             HAL_NVIC_DisableIRQ(irqmap->irqno);
+ 593:hardware/HAL_Drivers/drv_gpio.c ****         }        
+ 594:hardware/HAL_Drivers/drv_gpio.c **** #endif          
+ 595:hardware/HAL_Drivers/drv_gpio.c ****         rt_hw_interrupt_enable(level);  
+ 596:hardware/HAL_Drivers/drv_gpio.c ****     }
+ 597:hardware/HAL_Drivers/drv_gpio.c ****     else
+ 598:hardware/HAL_Drivers/drv_gpio.c ****     {
+ 599:hardware/HAL_Drivers/drv_gpio.c ****         return -RT_ENOSYS;
+ 600:hardware/HAL_Drivers/drv_gpio.c ****     }
+ 601:hardware/HAL_Drivers/drv_gpio.c **** 
+ 602:hardware/HAL_Drivers/drv_gpio.c ****     return RT_EOK;
+ 645              		.loc 1 602 0
+ 646 00ba 0020     		movs	r0, #0
+ 647 00bc 35E0     		b	.L52
+ 648              	.LVL72:
+ 649              	.L80:
+ 650              	.LBB46:
+ 651              	.LBB45:
+ 503:hardware/HAL_Drivers/drv_gpio.c ****             return RT_ENOSYS;
+ 652              		.loc 1 503 0
+ 653 00be FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 654              	.LVL73:
+ 504:hardware/HAL_Drivers/drv_gpio.c ****         }
+ 655              		.loc 1 504 0
+ 656 00c2 0620     		movs	r0, #6
+ 657 00c4 31E0     		b	.L52
+ 658              	.LVL74:
+ 659              	.L61:
+ 660              	.LBE45:
+ 515:hardware/HAL_Drivers/drv_gpio.c ****             GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+ 661              		.loc 1 515 0
+ 662 00c6 0223     		movs	r3, #2
+ 663 00c8 0393     		str	r3, [sp, #12]
+ 516:hardware/HAL_Drivers/drv_gpio.c ****             break;
+ 664              		.loc 1 516 0
+ 665 00ca 2C4B     		ldr	r3, .L82+12
+ 666 00cc 0293     		str	r3, [sp, #8]
+ 517:hardware/HAL_Drivers/drv_gpio.c ****         case PIN_IRQ_MODE_FALLING:
+ 667              		.loc 1 517 0
+ 668 00ce DAE7     		b	.L59
+ 669              	.L60:
+ 519:hardware/HAL_Drivers/drv_gpio.c ****             GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+ 670              		.loc 1 519 0
+ 671 00d0 0123     		movs	r3, #1
+ 672 00d2 0393     		str	r3, [sp, #12]
+ 520:hardware/HAL_Drivers/drv_gpio.c ****             break;
+ 673              		.loc 1 520 0
+ 674 00d4 2A4B     		ldr	r3, .L82+16
+ 675 00d6 0293     		str	r3, [sp, #8]
+ 521:hardware/HAL_Drivers/drv_gpio.c ****         case PIN_IRQ_MODE_RISING_FALLING:
+ 676              		.loc 1 521 0
+ 677 00d8 D5E7     		b	.L59
+ARM GAS  /tmp/ccdBCU3g.s 			page 25
+
+
+ 678              	.L62:
+ 523:hardware/HAL_Drivers/drv_gpio.c ****             GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
+ 679              		.loc 1 523 0
+ 680 00da 0023     		movs	r3, #0
+ 681 00dc 0393     		str	r3, [sp, #12]
+ 524:hardware/HAL_Drivers/drv_gpio.c ****             break;
+ 682              		.loc 1 524 0
+ 683 00de 294B     		ldr	r3, .L82+20
+ 684 00e0 0293     		str	r3, [sp, #8]
+ 525:hardware/HAL_Drivers/drv_gpio.c ****         }
+ 685              		.loc 1 525 0
+ 686 00e2 D0E7     		b	.L59
+ 687              	.LVL75:
+ 688              	.L77:
+ 689              	.LBE46:
+ 690              	.LBB47:
+ 691              	.LBB40:
+ 692              	.LBB38:
+ 693              	.LBB37:
+ 694              	.LBB36:
+ 390:hardware/HAL_Drivers/drv_gpio.c **** }
+ 695              		.loc 1 390 0
+ 696 00e4 4FF0FF33 		mov	r3, #-1
+ 697              	.LVL76:
+ 698              	.L64:
+ 699              	.LBE36:
+ 700              	.LBE37:
+ 396:hardware/HAL_Drivers/drv_gpio.c ****     {
+ 701              		.loc 1 396 0
+ 702 00e8 0F2B     		cmp	r3, #15
+ 703 00ea 20D8     		bhi	.L73
+ 400:hardware/HAL_Drivers/drv_gpio.c **** };
+ 704              		.loc 1 400 0
+ 705 00ec 214C     		ldr	r4, .L82+4
+ 706              	.LVL77:
+ 707 00ee 04EB8304 		add	r4, r4, r3, lsl #2
+ 708              	.L66:
+ 709              	.LVL78:
+ 710              	.LBE38:
+ 711              	.LBE40:
+ 538:hardware/HAL_Drivers/drv_gpio.c ****         {
+ 712              		.loc 1 538 0
+ 713 00f2 002C     		cmp	r4, #0
+ 714 00f4 3AD0     		beq	.L74
+ 543:hardware/HAL_Drivers/drv_gpio.c **** 
+ 715              		.loc 1 543 0
+ 716 00f6 FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 717              	.LVL79:
+ 718 00fa 0646     		mov	r6, r0
+ 719              	.LVL80:
+ 545:hardware/HAL_Drivers/drv_gpio.c **** 
+ 720              		.loc 1 545 0
+ 721 00fc A968     		ldr	r1, [r5, #8]
+ 722 00fe 6868     		ldr	r0, [r5, #4]
+ 723              	.LVL81:
+ 724 0100 FFF7FEFF 		bl	HAL_GPIO_DeInit
+ 725              	.LVL82:
+ARM GAS  /tmp/ccdBCU3g.s 			page 26
+
+
+ 547:hardware/HAL_Drivers/drv_gpio.c **** #if defined(SOC_SERIES_STM32F0) || defined(SOC_SERIES_STM32G0)
+ 726              		.loc 1 547 0
+ 727 0104 2388     		ldrh	r3, [r4]
+ 728 0106 1C49     		ldr	r1, .L82+8
+ 729 0108 0A68     		ldr	r2, [r1]
+ 730 010a 22EA0302 		bic	r2, r2, r3
+ 731 010e 0A60     		str	r2, [r1]
+ 576:hardware/HAL_Drivers/drv_gpio.c ****         {
+ 732              		.loc 1 576 0
+ 733 0110 A3F12001 		sub	r1, r3, #32
+ 734 0114 89B2     		uxth	r1, r1
+ 735 0116 B1F5F07F 		cmp	r1, #480
+ 736 011a 0FD8     		bhi	.L67
+ 578:hardware/HAL_Drivers/drv_gpio.c ****             {    
+ 737              		.loc 1 578 0
+ 738 011c 12F4787F 		tst	r2, #992
+ 739 0120 07D0     		beq	.L81
+ 740              	.L68:
+ 595:hardware/HAL_Drivers/drv_gpio.c ****     }
+ 741              		.loc 1 595 0
+ 742 0122 3046     		mov	r0, r6
+ 743 0124 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 744              	.LVL83:
+ 745              	.LBE47:
+ 746              		.loc 1 602 0
+ 747 0128 0020     		movs	r0, #0
+ 748              	.LVL84:
+ 749              	.L52:
+ 603:hardware/HAL_Drivers/drv_gpio.c **** }
+ 750              		.loc 1 603 0
+ 751 012a 07B0     		add	sp, sp, #28
+ 752              	.LCFI11:
+ 753              		.cfi_remember_state
+ 754              		.cfi_def_cfa_offset 20
+ 755              		@ sp needed
+ 756 012c F0BD     		pop	{r4, r5, r6, r7, pc}
+ 757              	.LVL85:
+ 758              	.L73:
+ 759              	.LCFI12:
+ 760              		.cfi_restore_state
+ 761              	.LBB48:
+ 762              	.LBB41:
+ 763              	.LBB39:
+ 398:hardware/HAL_Drivers/drv_gpio.c ****     }
+ 764              		.loc 1 398 0
+ 765 012e 0024     		movs	r4, #0
+ 766              	.LVL86:
+ 767 0130 DFE7     		b	.L66
+ 768              	.LVL87:
+ 769              	.L81:
+ 770              	.LBE39:
+ 771              	.LBE41:
+ 580:hardware/HAL_Drivers/drv_gpio.c ****             }
+ 772              		.loc 1 580 0
+ 773 0132 94F90200 		ldrsb	r0, [r4, #2]
+ 774 0136 FFF7FEFF 		bl	HAL_NVIC_DisableIRQ
+ 775              	.LVL88:
+ARM GAS  /tmp/ccdBCU3g.s 			page 27
+
+
+ 776 013a F2E7     		b	.L68
+ 777              	.L67:
+ 583:hardware/HAL_Drivers/drv_gpio.c ****         {
+ 778              		.loc 1 583 0
+ 779 013c A3F58063 		sub	r3, r3, #1024
+ 780 0140 9BB2     		uxth	r3, r3
+ 781 0142 B3F5F84F 		cmp	r3, #31744
+ 782 0146 07D8     		bhi	.L69
+ 585:hardware/HAL_Drivers/drv_gpio.c ****             {    
+ 783              		.loc 1 585 0
+ 784 0148 12F47C4F 		tst	r2, #64512
+ 785 014c E9D1     		bne	.L68
+ 587:hardware/HAL_Drivers/drv_gpio.c ****             }
+ 786              		.loc 1 587 0
+ 787 014e 94F90200 		ldrsb	r0, [r4, #2]
+ 788 0152 FFF7FEFF 		bl	HAL_NVIC_DisableIRQ
+ 789              	.LVL89:
+ 790 0156 E4E7     		b	.L68
+ 791              	.L69:
+ 592:hardware/HAL_Drivers/drv_gpio.c ****         }        
+ 792              		.loc 1 592 0
+ 793 0158 94F90200 		ldrsb	r0, [r4, #2]
+ 794 015c FFF7FEFF 		bl	HAL_NVIC_DisableIRQ
+ 795              	.LVL90:
+ 796 0160 DFE7     		b	.L68
+ 797              	.LVL91:
+ 798              	.L70:
+ 799              	.LBE48:
+ 488:hardware/HAL_Drivers/drv_gpio.c ****     }
+ 800              		.loc 1 488 0
+ 801 0162 0620     		movs	r0, #6
+ 802              	.LVL92:
+ 803 0164 E1E7     		b	.L52
+ 804              	.LVL93:
+ 805              	.L72:
+ 599:hardware/HAL_Drivers/drv_gpio.c ****     }
+ 806              		.loc 1 599 0
+ 807 0166 6FF00500 		mvn	r0, #5
+ 808              	.LVL94:
+ 809 016a DEE7     		b	.L52
+ 810              	.LVL95:
+ 811              	.L74:
+ 812              	.LBB49:
+ 540:hardware/HAL_Drivers/drv_gpio.c ****         }
+ 813              		.loc 1 540 0
+ 814 016c 0620     		movs	r0, #6
+ 815              	.LVL96:
+ 816 016e DCE7     		b	.L52
+ 817              	.L83:
+ 818              		.align	2
+ 819              	.L82:
+ 820 0170 00000000 		.word	.LANCHOR1
+ 821 0174 00000000 		.word	.LANCHOR2
+ 822 0178 00000000 		.word	.LANCHOR3
+ 823 017c 00001110 		.word	269549568
+ 824 0180 00002110 		.word	270598144
+ 825 0184 00003110 		.word	271646720
+ARM GAS  /tmp/ccdBCU3g.s 			page 28
+
+
+ 826              	.LBE49:
+ 827              		.cfi_endproc
+ 828              	.LFE146:
+ 830              		.section	.text.stm32_pin_read,"ax",%progbits
+ 831              		.align	1
+ 832              		.syntax unified
+ 833              		.thumb
+ 834              		.thumb_func
+ 835              		.fpu fpv4-sp-d16
+ 837              	stm32_pin_read:
+ 838              	.LFB140:
+ 312:hardware/HAL_Drivers/drv_gpio.c ****     int value;
+ 839              		.loc 1 312 0
+ 840              		.cfi_startproc
+ 841              		@ args = 0, pretend = 0, frame = 0
+ 842              		@ frame_needed = 0, uses_anonymous_args = 0
+ 843              	.LVL97:
+ 844 0000 08B5     		push	{r3, lr}
+ 845              	.LCFI13:
+ 846              		.cfi_def_cfa_offset 8
+ 847              		.cfi_offset 3, -8
+ 848              		.cfi_offset 14, -4
+ 849              	.LVL98:
+ 318:hardware/HAL_Drivers/drv_gpio.c ****     if (index == RT_NULL)
+ 850              		.loc 1 318 0
+ 851 0002 C8B2     		uxtb	r0, r1
+ 852              	.LVL99:
+ 853 0004 FFF7FEFF 		bl	get_pin
+ 854              	.LVL100:
+ 319:hardware/HAL_Drivers/drv_gpio.c ****     {
+ 855              		.loc 1 319 0
+ 856 0008 20B1     		cbz	r0, .L86
+ 324:hardware/HAL_Drivers/drv_gpio.c **** 
+ 857              		.loc 1 324 0
+ 858 000a 0189     		ldrh	r1, [r0, #8]
+ 859 000c 4068     		ldr	r0, [r0, #4]
+ 860              	.LVL101:
+ 861 000e FFF7FEFF 		bl	HAL_GPIO_ReadPin
+ 862              	.LVL102:
+ 326:hardware/HAL_Drivers/drv_gpio.c **** }
+ 863              		.loc 1 326 0
+ 864 0012 08BD     		pop	{r3, pc}
+ 865              	.LVL103:
+ 866              	.L86:
+ 321:hardware/HAL_Drivers/drv_gpio.c ****     }
+ 867              		.loc 1 321 0
+ 868 0014 0020     		movs	r0, #0
+ 869              	.LVL104:
+ 327:hardware/HAL_Drivers/drv_gpio.c **** 
+ 870              		.loc 1 327 0
+ 871 0016 08BD     		pop	{r3, pc}
+ 872              		.cfi_endproc
+ 873              	.LFE140:
+ 875              		.section	.text.stm32_pin_write,"ax",%progbits
+ 876              		.align	1
+ 877              		.syntax unified
+ 878              		.thumb
+ARM GAS  /tmp/ccdBCU3g.s 			page 29
+
+
+ 879              		.thumb_func
+ 880              		.fpu fpv4-sp-d16
+ 882              	stm32_pin_write:
+ 883              	.LFB139:
+ 299:hardware/HAL_Drivers/drv_gpio.c ****     const struct pin_index *index;
+ 884              		.loc 1 299 0
+ 885              		.cfi_startproc
+ 886              		@ args = 0, pretend = 0, frame = 0
+ 887              		@ frame_needed = 0, uses_anonymous_args = 0
+ 888              	.LVL105:
+ 889 0000 10B5     		push	{r4, lr}
+ 890              	.LCFI14:
+ 891              		.cfi_def_cfa_offset 8
+ 892              		.cfi_offset 4, -8
+ 893              		.cfi_offset 14, -4
+ 894 0002 1446     		mov	r4, r2
+ 302:hardware/HAL_Drivers/drv_gpio.c ****     if (index == RT_NULL)
+ 895              		.loc 1 302 0
+ 896 0004 C8B2     		uxtb	r0, r1
+ 897              	.LVL106:
+ 898 0006 FFF7FEFF 		bl	get_pin
+ 899              	.LVL107:
+ 303:hardware/HAL_Drivers/drv_gpio.c ****     {
+ 900              		.loc 1 303 0
+ 901 000a 20B1     		cbz	r0, .L88
+ 308:hardware/HAL_Drivers/drv_gpio.c **** }
+ 902              		.loc 1 308 0
+ 903 000c E2B2     		uxtb	r2, r4
+ 904 000e 0189     		ldrh	r1, [r0, #8]
+ 905 0010 4068     		ldr	r0, [r0, #4]
+ 906              	.LVL108:
+ 907 0012 FFF7FEFF 		bl	HAL_GPIO_WritePin
+ 908              	.LVL109:
+ 909              	.L88:
+ 910 0016 10BD     		pop	{r4, pc}
+ 911              		.cfi_endproc
+ 912              	.LFE139:
+ 914              		.section	.text.HAL_GPIO_EXTI_Callback,"ax",%progbits
+ 915              		.align	1
+ 916              		.global	HAL_GPIO_EXTI_Callback
+ 917              		.syntax unified
+ 918              		.thumb
+ 919              		.thumb_func
+ 920              		.fpu fpv4-sp-d16
+ 922              	HAL_GPIO_EXTI_Callback:
+ 923              	.LFB148:
+ 604:hardware/HAL_Drivers/drv_gpio.c **** const static struct rt_pin_ops _stm32_pin_ops =
+ 605:hardware/HAL_Drivers/drv_gpio.c **** {
+ 606:hardware/HAL_Drivers/drv_gpio.c ****     stm32_pin_mode,
+ 607:hardware/HAL_Drivers/drv_gpio.c ****     stm32_pin_write,
+ 608:hardware/HAL_Drivers/drv_gpio.c ****     stm32_pin_read,
+ 609:hardware/HAL_Drivers/drv_gpio.c ****     stm32_pin_attach_irq,
+ 610:hardware/HAL_Drivers/drv_gpio.c ****     stm32_pin_dettach_irq,
+ 611:hardware/HAL_Drivers/drv_gpio.c ****     stm32_pin_irq_enable,
+ 612:hardware/HAL_Drivers/drv_gpio.c **** };
+ 613:hardware/HAL_Drivers/drv_gpio.c **** 
+ 614:hardware/HAL_Drivers/drv_gpio.c **** rt_inline void pin_irq_hdr(int irqno)
+ARM GAS  /tmp/ccdBCU3g.s 			page 30
+
+
+ 615:hardware/HAL_Drivers/drv_gpio.c **** {
+ 616:hardware/HAL_Drivers/drv_gpio.c ****     if (pin_irq_hdr_tab[irqno].hdr)
+ 617:hardware/HAL_Drivers/drv_gpio.c ****     {
+ 618:hardware/HAL_Drivers/drv_gpio.c ****         pin_irq_hdr_tab[irqno].hdr(pin_irq_hdr_tab[irqno].args);
+ 619:hardware/HAL_Drivers/drv_gpio.c ****     }
+ 620:hardware/HAL_Drivers/drv_gpio.c **** }
+ 621:hardware/HAL_Drivers/drv_gpio.c **** 
+ 622:hardware/HAL_Drivers/drv_gpio.c **** #if defined(SOC_SERIES_STM32G0)
+ 623:hardware/HAL_Drivers/drv_gpio.c **** void HAL_GPIO_EXTI_Rising_Callback(uint16_t GPIO_Pin)
+ 624:hardware/HAL_Drivers/drv_gpio.c **** {
+ 625:hardware/HAL_Drivers/drv_gpio.c ****     pin_irq_hdr(bit2bitno(GPIO_Pin));
+ 626:hardware/HAL_Drivers/drv_gpio.c **** }
+ 627:hardware/HAL_Drivers/drv_gpio.c **** 
+ 628:hardware/HAL_Drivers/drv_gpio.c **** void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
+ 629:hardware/HAL_Drivers/drv_gpio.c **** {
+ 630:hardware/HAL_Drivers/drv_gpio.c ****     pin_irq_hdr(bit2bitno(GPIO_Pin));
+ 631:hardware/HAL_Drivers/drv_gpio.c **** }
+ 632:hardware/HAL_Drivers/drv_gpio.c **** #else
+ 633:hardware/HAL_Drivers/drv_gpio.c **** void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+ 634:hardware/HAL_Drivers/drv_gpio.c **** {
+ 924              		.loc 1 634 0
+ 925              		.cfi_startproc
+ 926              		@ args = 0, pretend = 0, frame = 0
+ 927              		@ frame_needed = 0, uses_anonymous_args = 0
+ 928              	.LVL110:
+ 929 0000 08B5     		push	{r3, lr}
+ 930              	.LCFI15:
+ 931              		.cfi_def_cfa_offset 8
+ 932              		.cfi_offset 3, -8
+ 933              		.cfi_offset 14, -4
+ 934              	.LVL111:
+ 935              	.LBB50:
+ 936              	.LBB51:
+ 383:hardware/HAL_Drivers/drv_gpio.c ****     {
+ 937              		.loc 1 383 0
+ 938 0002 0023     		movs	r3, #0
+ 939              	.LVL112:
+ 940              	.L92:
+ 941 0004 1F2B     		cmp	r3, #31
+ 942 0006 05DC     		bgt	.L97
+ 385:hardware/HAL_Drivers/drv_gpio.c ****         {
+ 943              		.loc 1 385 0
+ 944 0008 0122     		movs	r2, #1
+ 945 000a 9A40     		lsls	r2, r2, r3
+ 946 000c 9042     		cmp	r0, r2
+ 947 000e 03D0     		beq	.L93
+ 383:hardware/HAL_Drivers/drv_gpio.c ****     {
+ 948              		.loc 1 383 0
+ 949 0010 0133     		adds	r3, r3, #1
+ 950              	.LVL113:
+ 951 0012 F7E7     		b	.L92
+ 952              	.L97:
+ 390:hardware/HAL_Drivers/drv_gpio.c **** }
+ 953              		.loc 1 390 0
+ 954 0014 4FF0FF33 		mov	r3, #-1
+ 955              	.LVL114:
+ 956              	.L93:
+ARM GAS  /tmp/ccdBCU3g.s 			page 31
+
+
+ 957              	.LBE51:
+ 958              	.LBE50:
+ 959              	.LBB52:
+ 960              	.LBB53:
+ 616:hardware/HAL_Drivers/drv_gpio.c ****     {
+ 961              		.loc 1 616 0
+ 962 0018 03EB4302 		add	r2, r3, r3, lsl #1
+ 963 001c 9100     		lsls	r1, r2, #2
+ 964 001e 044A     		ldr	r2, .L98
+ 965 0020 0A44     		add	r2, r2, r1
+ 966 0022 5268     		ldr	r2, [r2, #4]
+ 967 0024 1AB1     		cbz	r2, .L91
+ 618:hardware/HAL_Drivers/drv_gpio.c ****     }
+ 968              		.loc 1 618 0
+ 969 0026 024B     		ldr	r3, .L98
+ 970 0028 0B44     		add	r3, r3, r1
+ 971 002a 9868     		ldr	r0, [r3, #8]
+ 972              	.LVL115:
+ 973 002c 9047     		blx	r2
+ 974              	.LVL116:
+ 975              	.L91:
+ 976 002e 08BD     		pop	{r3, pc}
+ 977              	.L99:
+ 978              		.align	2
+ 979              	.L98:
+ 980 0030 00000000 		.word	.LANCHOR1
+ 981              	.LBE53:
+ 982              	.LBE52:
+ 983              		.cfi_endproc
+ 984              	.LFE148:
+ 986              		.section	.text.EXTI0_IRQHandler,"ax",%progbits
+ 987              		.align	1
+ 988              		.global	EXTI0_IRQHandler
+ 989              		.syntax unified
+ 990              		.thumb
+ 991              		.thumb_func
+ 992              		.fpu fpv4-sp-d16
+ 994              	EXTI0_IRQHandler:
+ 995              	.LFB149:
+ 635:hardware/HAL_Drivers/drv_gpio.c ****     pin_irq_hdr(bit2bitno(GPIO_Pin));
+ 636:hardware/HAL_Drivers/drv_gpio.c **** }
+ 637:hardware/HAL_Drivers/drv_gpio.c **** #endif
+ 638:hardware/HAL_Drivers/drv_gpio.c **** 
+ 639:hardware/HAL_Drivers/drv_gpio.c **** #if defined(SOC_SERIES_STM32F0) || defined(SOC_SERIES_STM32G0) || defined(SOC_SERIES_STM32L0)
+ 640:hardware/HAL_Drivers/drv_gpio.c **** void EXTI0_1_IRQHandler(void)
+ 641:hardware/HAL_Drivers/drv_gpio.c **** {
+ 642:hardware/HAL_Drivers/drv_gpio.c ****     rt_interrupt_enter();
+ 643:hardware/HAL_Drivers/drv_gpio.c ****     HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_0);
+ 644:hardware/HAL_Drivers/drv_gpio.c ****     HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_1);
+ 645:hardware/HAL_Drivers/drv_gpio.c ****     rt_interrupt_leave();
+ 646:hardware/HAL_Drivers/drv_gpio.c **** }
+ 647:hardware/HAL_Drivers/drv_gpio.c **** 
+ 648:hardware/HAL_Drivers/drv_gpio.c **** void EXTI2_3_IRQHandler(void)
+ 649:hardware/HAL_Drivers/drv_gpio.c **** {
+ 650:hardware/HAL_Drivers/drv_gpio.c ****     rt_interrupt_enter();
+ 651:hardware/HAL_Drivers/drv_gpio.c ****     HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_2);
+ 652:hardware/HAL_Drivers/drv_gpio.c ****     HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_3);
+ARM GAS  /tmp/ccdBCU3g.s 			page 32
+
+
+ 653:hardware/HAL_Drivers/drv_gpio.c ****     rt_interrupt_leave();
+ 654:hardware/HAL_Drivers/drv_gpio.c **** }
+ 655:hardware/HAL_Drivers/drv_gpio.c **** void EXTI4_15_IRQHandler(void)
+ 656:hardware/HAL_Drivers/drv_gpio.c **** {
+ 657:hardware/HAL_Drivers/drv_gpio.c ****     rt_interrupt_enter();
+ 658:hardware/HAL_Drivers/drv_gpio.c ****     HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_4);
+ 659:hardware/HAL_Drivers/drv_gpio.c ****     HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_5);
+ 660:hardware/HAL_Drivers/drv_gpio.c ****     HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_6);
+ 661:hardware/HAL_Drivers/drv_gpio.c ****     HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_7);
+ 662:hardware/HAL_Drivers/drv_gpio.c ****     HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_8);
+ 663:hardware/HAL_Drivers/drv_gpio.c ****     HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_9);
+ 664:hardware/HAL_Drivers/drv_gpio.c ****     HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_10);
+ 665:hardware/HAL_Drivers/drv_gpio.c ****     HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_11);
+ 666:hardware/HAL_Drivers/drv_gpio.c ****     HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_12);
+ 667:hardware/HAL_Drivers/drv_gpio.c ****     HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_13);
+ 668:hardware/HAL_Drivers/drv_gpio.c ****     HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_14);
+ 669:hardware/HAL_Drivers/drv_gpio.c ****     HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_15);
+ 670:hardware/HAL_Drivers/drv_gpio.c ****     rt_interrupt_leave();
+ 671:hardware/HAL_Drivers/drv_gpio.c **** }
+ 672:hardware/HAL_Drivers/drv_gpio.c **** 
+ 673:hardware/HAL_Drivers/drv_gpio.c **** #else
+ 674:hardware/HAL_Drivers/drv_gpio.c **** 
+ 675:hardware/HAL_Drivers/drv_gpio.c **** void EXTI0_IRQHandler(void)
+ 676:hardware/HAL_Drivers/drv_gpio.c **** {
+ 996              		.loc 1 676 0
+ 997              		.cfi_startproc
+ 998              		@ args = 0, pretend = 0, frame = 0
+ 999              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1000 0000 08B5     		push	{r3, lr}
+ 1001              	.LCFI16:
+ 1002              		.cfi_def_cfa_offset 8
+ 1003              		.cfi_offset 3, -8
+ 1004              		.cfi_offset 14, -4
+ 677:hardware/HAL_Drivers/drv_gpio.c ****     rt_interrupt_enter();
+ 1005              		.loc 1 677 0
+ 1006 0002 FFF7FEFF 		bl	rt_interrupt_enter
+ 1007              	.LVL117:
+ 678:hardware/HAL_Drivers/drv_gpio.c ****     HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_0);
+ 1008              		.loc 1 678 0
+ 1009 0006 0120     		movs	r0, #1
+ 1010 0008 FFF7FEFF 		bl	HAL_GPIO_EXTI_IRQHandler
+ 1011              	.LVL118:
+ 679:hardware/HAL_Drivers/drv_gpio.c ****     rt_interrupt_leave();
+ 1012              		.loc 1 679 0
+ 1013 000c FFF7FEFF 		bl	rt_interrupt_leave
+ 1014              	.LVL119:
+ 1015 0010 08BD     		pop	{r3, pc}
+ 1016              		.cfi_endproc
+ 1017              	.LFE149:
+ 1019              		.section	.text.EXTI1_IRQHandler,"ax",%progbits
+ 1020              		.align	1
+ 1021              		.global	EXTI1_IRQHandler
+ 1022              		.syntax unified
+ 1023              		.thumb
+ 1024              		.thumb_func
+ 1025              		.fpu fpv4-sp-d16
+ 1027              	EXTI1_IRQHandler:
+ARM GAS  /tmp/ccdBCU3g.s 			page 33
+
+
+ 1028              	.LFB150:
+ 680:hardware/HAL_Drivers/drv_gpio.c **** }
+ 681:hardware/HAL_Drivers/drv_gpio.c **** 
+ 682:hardware/HAL_Drivers/drv_gpio.c **** void EXTI1_IRQHandler(void)
+ 683:hardware/HAL_Drivers/drv_gpio.c **** {
+ 1029              		.loc 1 683 0
+ 1030              		.cfi_startproc
+ 1031              		@ args = 0, pretend = 0, frame = 0
+ 1032              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1033 0000 08B5     		push	{r3, lr}
+ 1034              	.LCFI17:
+ 1035              		.cfi_def_cfa_offset 8
+ 1036              		.cfi_offset 3, -8
+ 1037              		.cfi_offset 14, -4
+ 684:hardware/HAL_Drivers/drv_gpio.c ****     rt_interrupt_enter();
+ 1038              		.loc 1 684 0
+ 1039 0002 FFF7FEFF 		bl	rt_interrupt_enter
+ 1040              	.LVL120:
+ 685:hardware/HAL_Drivers/drv_gpio.c ****     HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_1);
+ 1041              		.loc 1 685 0
+ 1042 0006 0220     		movs	r0, #2
+ 1043 0008 FFF7FEFF 		bl	HAL_GPIO_EXTI_IRQHandler
+ 1044              	.LVL121:
+ 686:hardware/HAL_Drivers/drv_gpio.c ****     rt_interrupt_leave();
+ 1045              		.loc 1 686 0
+ 1046 000c FFF7FEFF 		bl	rt_interrupt_leave
+ 1047              	.LVL122:
+ 1048 0010 08BD     		pop	{r3, pc}
+ 1049              		.cfi_endproc
+ 1050              	.LFE150:
+ 1052              		.section	.text.EXTI2_IRQHandler,"ax",%progbits
+ 1053              		.align	1
+ 1054              		.global	EXTI2_IRQHandler
+ 1055              		.syntax unified
+ 1056              		.thumb
+ 1057              		.thumb_func
+ 1058              		.fpu fpv4-sp-d16
+ 1060              	EXTI2_IRQHandler:
+ 1061              	.LFB151:
+ 687:hardware/HAL_Drivers/drv_gpio.c **** }
+ 688:hardware/HAL_Drivers/drv_gpio.c **** 
+ 689:hardware/HAL_Drivers/drv_gpio.c **** void EXTI2_IRQHandler(void)
+ 690:hardware/HAL_Drivers/drv_gpio.c **** {
+ 1062              		.loc 1 690 0
+ 1063              		.cfi_startproc
+ 1064              		@ args = 0, pretend = 0, frame = 0
+ 1065              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1066 0000 08B5     		push	{r3, lr}
+ 1067              	.LCFI18:
+ 1068              		.cfi_def_cfa_offset 8
+ 1069              		.cfi_offset 3, -8
+ 1070              		.cfi_offset 14, -4
+ 691:hardware/HAL_Drivers/drv_gpio.c ****     rt_interrupt_enter();
+ 1071              		.loc 1 691 0
+ 1072 0002 FFF7FEFF 		bl	rt_interrupt_enter
+ 1073              	.LVL123:
+ 692:hardware/HAL_Drivers/drv_gpio.c ****     HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_2);
+ARM GAS  /tmp/ccdBCU3g.s 			page 34
+
+
+ 1074              		.loc 1 692 0
+ 1075 0006 0420     		movs	r0, #4
+ 1076 0008 FFF7FEFF 		bl	HAL_GPIO_EXTI_IRQHandler
+ 1077              	.LVL124:
+ 693:hardware/HAL_Drivers/drv_gpio.c ****     rt_interrupt_leave();
+ 1078              		.loc 1 693 0
+ 1079 000c FFF7FEFF 		bl	rt_interrupt_leave
+ 1080              	.LVL125:
+ 1081 0010 08BD     		pop	{r3, pc}
+ 1082              		.cfi_endproc
+ 1083              	.LFE151:
+ 1085              		.section	.text.EXTI3_IRQHandler,"ax",%progbits
+ 1086              		.align	1
+ 1087              		.global	EXTI3_IRQHandler
+ 1088              		.syntax unified
+ 1089              		.thumb
+ 1090              		.thumb_func
+ 1091              		.fpu fpv4-sp-d16
+ 1093              	EXTI3_IRQHandler:
+ 1094              	.LFB152:
+ 694:hardware/HAL_Drivers/drv_gpio.c **** }
+ 695:hardware/HAL_Drivers/drv_gpio.c **** 
+ 696:hardware/HAL_Drivers/drv_gpio.c **** void EXTI3_IRQHandler(void)
+ 697:hardware/HAL_Drivers/drv_gpio.c **** {
+ 1095              		.loc 1 697 0
+ 1096              		.cfi_startproc
+ 1097              		@ args = 0, pretend = 0, frame = 0
+ 1098              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1099 0000 08B5     		push	{r3, lr}
+ 1100              	.LCFI19:
+ 1101              		.cfi_def_cfa_offset 8
+ 1102              		.cfi_offset 3, -8
+ 1103              		.cfi_offset 14, -4
+ 698:hardware/HAL_Drivers/drv_gpio.c ****     rt_interrupt_enter();
+ 1104              		.loc 1 698 0
+ 1105 0002 FFF7FEFF 		bl	rt_interrupt_enter
+ 1106              	.LVL126:
+ 699:hardware/HAL_Drivers/drv_gpio.c ****     HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_3);
+ 1107              		.loc 1 699 0
+ 1108 0006 0820     		movs	r0, #8
+ 1109 0008 FFF7FEFF 		bl	HAL_GPIO_EXTI_IRQHandler
+ 1110              	.LVL127:
+ 700:hardware/HAL_Drivers/drv_gpio.c ****     rt_interrupt_leave();
+ 1111              		.loc 1 700 0
+ 1112 000c FFF7FEFF 		bl	rt_interrupt_leave
+ 1113              	.LVL128:
+ 1114 0010 08BD     		pop	{r3, pc}
+ 1115              		.cfi_endproc
+ 1116              	.LFE152:
+ 1118              		.section	.text.EXTI4_IRQHandler,"ax",%progbits
+ 1119              		.align	1
+ 1120              		.global	EXTI4_IRQHandler
+ 1121              		.syntax unified
+ 1122              		.thumb
+ 1123              		.thumb_func
+ 1124              		.fpu fpv4-sp-d16
+ 1126              	EXTI4_IRQHandler:
+ARM GAS  /tmp/ccdBCU3g.s 			page 35
+
+
+ 1127              	.LFB153:
+ 701:hardware/HAL_Drivers/drv_gpio.c **** }
+ 702:hardware/HAL_Drivers/drv_gpio.c **** 
+ 703:hardware/HAL_Drivers/drv_gpio.c **** void EXTI4_IRQHandler(void)
+ 704:hardware/HAL_Drivers/drv_gpio.c **** {
+ 1128              		.loc 1 704 0
+ 1129              		.cfi_startproc
+ 1130              		@ args = 0, pretend = 0, frame = 0
+ 1131              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1132 0000 08B5     		push	{r3, lr}
+ 1133              	.LCFI20:
+ 1134              		.cfi_def_cfa_offset 8
+ 1135              		.cfi_offset 3, -8
+ 1136              		.cfi_offset 14, -4
+ 705:hardware/HAL_Drivers/drv_gpio.c ****     rt_interrupt_enter();
+ 1137              		.loc 1 705 0
+ 1138 0002 FFF7FEFF 		bl	rt_interrupt_enter
+ 1139              	.LVL129:
+ 706:hardware/HAL_Drivers/drv_gpio.c ****     HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_4);
+ 1140              		.loc 1 706 0
+ 1141 0006 1020     		movs	r0, #16
+ 1142 0008 FFF7FEFF 		bl	HAL_GPIO_EXTI_IRQHandler
+ 1143              	.LVL130:
+ 707:hardware/HAL_Drivers/drv_gpio.c ****     rt_interrupt_leave();
+ 1144              		.loc 1 707 0
+ 1145 000c FFF7FEFF 		bl	rt_interrupt_leave
+ 1146              	.LVL131:
+ 1147 0010 08BD     		pop	{r3, pc}
+ 1148              		.cfi_endproc
+ 1149              	.LFE153:
+ 1151              		.section	.text.EXTI9_5_IRQHandler,"ax",%progbits
+ 1152              		.align	1
+ 1153              		.global	EXTI9_5_IRQHandler
+ 1154              		.syntax unified
+ 1155              		.thumb
+ 1156              		.thumb_func
+ 1157              		.fpu fpv4-sp-d16
+ 1159              	EXTI9_5_IRQHandler:
+ 1160              	.LFB154:
+ 708:hardware/HAL_Drivers/drv_gpio.c **** }
+ 709:hardware/HAL_Drivers/drv_gpio.c **** 
+ 710:hardware/HAL_Drivers/drv_gpio.c **** void EXTI9_5_IRQHandler(void)
+ 711:hardware/HAL_Drivers/drv_gpio.c **** {
+ 1161              		.loc 1 711 0
+ 1162              		.cfi_startproc
+ 1163              		@ args = 0, pretend = 0, frame = 0
+ 1164              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1165 0000 08B5     		push	{r3, lr}
+ 1166              	.LCFI21:
+ 1167              		.cfi_def_cfa_offset 8
+ 1168              		.cfi_offset 3, -8
+ 1169              		.cfi_offset 14, -4
+ 712:hardware/HAL_Drivers/drv_gpio.c ****     rt_interrupt_enter();
+ 1170              		.loc 1 712 0
+ 1171 0002 FFF7FEFF 		bl	rt_interrupt_enter
+ 1172              	.LVL132:
+ 713:hardware/HAL_Drivers/drv_gpio.c ****     HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_5);
+ARM GAS  /tmp/ccdBCU3g.s 			page 36
+
+
+ 1173              		.loc 1 713 0
+ 1174 0006 2020     		movs	r0, #32
+ 1175 0008 FFF7FEFF 		bl	HAL_GPIO_EXTI_IRQHandler
+ 1176              	.LVL133:
+ 714:hardware/HAL_Drivers/drv_gpio.c ****     HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_6);
+ 1177              		.loc 1 714 0
+ 1178 000c 4020     		movs	r0, #64
+ 1179 000e FFF7FEFF 		bl	HAL_GPIO_EXTI_IRQHandler
+ 1180              	.LVL134:
+ 715:hardware/HAL_Drivers/drv_gpio.c ****     HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_7);
+ 1181              		.loc 1 715 0
+ 1182 0012 8020     		movs	r0, #128
+ 1183 0014 FFF7FEFF 		bl	HAL_GPIO_EXTI_IRQHandler
+ 1184              	.LVL135:
+ 716:hardware/HAL_Drivers/drv_gpio.c ****     HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_8);
+ 1185              		.loc 1 716 0
+ 1186 0018 4FF48070 		mov	r0, #256
+ 1187 001c FFF7FEFF 		bl	HAL_GPIO_EXTI_IRQHandler
+ 1188              	.LVL136:
+ 717:hardware/HAL_Drivers/drv_gpio.c ****     HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_9);
+ 1189              		.loc 1 717 0
+ 1190 0020 4FF40070 		mov	r0, #512
+ 1191 0024 FFF7FEFF 		bl	HAL_GPIO_EXTI_IRQHandler
+ 1192              	.LVL137:
+ 718:hardware/HAL_Drivers/drv_gpio.c ****     rt_interrupt_leave();
+ 1193              		.loc 1 718 0
+ 1194 0028 FFF7FEFF 		bl	rt_interrupt_leave
+ 1195              	.LVL138:
+ 1196 002c 08BD     		pop	{r3, pc}
+ 1197              		.cfi_endproc
+ 1198              	.LFE154:
+ 1200              		.section	.text.EXTI15_10_IRQHandler,"ax",%progbits
+ 1201              		.align	1
+ 1202              		.global	EXTI15_10_IRQHandler
+ 1203              		.syntax unified
+ 1204              		.thumb
+ 1205              		.thumb_func
+ 1206              		.fpu fpv4-sp-d16
+ 1208              	EXTI15_10_IRQHandler:
+ 1209              	.LFB155:
+ 719:hardware/HAL_Drivers/drv_gpio.c **** }
+ 720:hardware/HAL_Drivers/drv_gpio.c **** 
+ 721:hardware/HAL_Drivers/drv_gpio.c **** void EXTI15_10_IRQHandler(void)
+ 722:hardware/HAL_Drivers/drv_gpio.c **** {
+ 1210              		.loc 1 722 0
+ 1211              		.cfi_startproc
+ 1212              		@ args = 0, pretend = 0, frame = 0
+ 1213              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1214 0000 08B5     		push	{r3, lr}
+ 1215              	.LCFI22:
+ 1216              		.cfi_def_cfa_offset 8
+ 1217              		.cfi_offset 3, -8
+ 1218              		.cfi_offset 14, -4
+ 723:hardware/HAL_Drivers/drv_gpio.c ****     rt_interrupt_enter();
+ 1219              		.loc 1 723 0
+ 1220 0002 FFF7FEFF 		bl	rt_interrupt_enter
+ 1221              	.LVL139:
+ARM GAS  /tmp/ccdBCU3g.s 			page 37
+
+
+ 724:hardware/HAL_Drivers/drv_gpio.c ****     HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_10);
+ 1222              		.loc 1 724 0
+ 1223 0006 4FF48060 		mov	r0, #1024
+ 1224 000a FFF7FEFF 		bl	HAL_GPIO_EXTI_IRQHandler
+ 1225              	.LVL140:
+ 725:hardware/HAL_Drivers/drv_gpio.c ****     HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_11);
+ 1226              		.loc 1 725 0
+ 1227 000e 4FF40060 		mov	r0, #2048
+ 1228 0012 FFF7FEFF 		bl	HAL_GPIO_EXTI_IRQHandler
+ 1229              	.LVL141:
+ 726:hardware/HAL_Drivers/drv_gpio.c ****     HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_12);
+ 1230              		.loc 1 726 0
+ 1231 0016 4FF48050 		mov	r0, #4096
+ 1232 001a FFF7FEFF 		bl	HAL_GPIO_EXTI_IRQHandler
+ 1233              	.LVL142:
+ 727:hardware/HAL_Drivers/drv_gpio.c ****     HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_13);
+ 1234              		.loc 1 727 0
+ 1235 001e 4FF40050 		mov	r0, #8192
+ 1236 0022 FFF7FEFF 		bl	HAL_GPIO_EXTI_IRQHandler
+ 1237              	.LVL143:
+ 728:hardware/HAL_Drivers/drv_gpio.c ****     HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_14);
+ 1238              		.loc 1 728 0
+ 1239 0026 4FF48040 		mov	r0, #16384
+ 1240 002a FFF7FEFF 		bl	HAL_GPIO_EXTI_IRQHandler
+ 1241              	.LVL144:
+ 729:hardware/HAL_Drivers/drv_gpio.c ****     HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_15);
+ 1242              		.loc 1 729 0
+ 1243 002e 4FF40040 		mov	r0, #32768
+ 1244 0032 FFF7FEFF 		bl	HAL_GPIO_EXTI_IRQHandler
+ 1245              	.LVL145:
+ 730:hardware/HAL_Drivers/drv_gpio.c ****     rt_interrupt_leave();
+ 1246              		.loc 1 730 0
+ 1247 0036 FFF7FEFF 		bl	rt_interrupt_leave
+ 1248              	.LVL146:
+ 1249 003a 08BD     		pop	{r3, pc}
+ 1250              		.cfi_endproc
+ 1251              	.LFE155:
+ 1253              		.section	.text.rt_hw_pin_init,"ax",%progbits
+ 1254              		.align	1
+ 1255              		.global	rt_hw_pin_init
+ 1256              		.syntax unified
+ 1257              		.thumb
+ 1258              		.thumb_func
+ 1259              		.fpu fpv4-sp-d16
+ 1261              	rt_hw_pin_init:
+ 1262              	.LFB156:
+ 731:hardware/HAL_Drivers/drv_gpio.c **** }
+ 732:hardware/HAL_Drivers/drv_gpio.c **** #endif
+ 733:hardware/HAL_Drivers/drv_gpio.c **** 
+ 734:hardware/HAL_Drivers/drv_gpio.c **** int rt_hw_pin_init(void)
+ 735:hardware/HAL_Drivers/drv_gpio.c **** {
+ 1263              		.loc 1 735 0
+ 1264              		.cfi_startproc
+ 1265              		@ args = 0, pretend = 0, frame = 48
+ 1266              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1267 0000 00B5     		push	{lr}
+ 1268              	.LCFI23:
+ARM GAS  /tmp/ccdBCU3g.s 			page 38
+
+
+ 1269              		.cfi_def_cfa_offset 4
+ 1270              		.cfi_offset 14, -4
+ 1271 0002 8DB0     		sub	sp, sp, #52
+ 1272              	.LCFI24:
+ 1273              		.cfi_def_cfa_offset 56
+ 1274              	.LBB54:
+ 736:hardware/HAL_Drivers/drv_gpio.c **** #if defined(__HAL_RCC_GPIOA_CLK_ENABLE)
+ 737:hardware/HAL_Drivers/drv_gpio.c ****     __HAL_RCC_GPIOA_CLK_ENABLE();
+ 1275              		.loc 1 737 0
+ 1276 0004 0022     		movs	r2, #0
+ 1277 0006 0192     		str	r2, [sp, #4]
+ 1278 0008 3A4B     		ldr	r3, .L116
+ 1279 000a 196B     		ldr	r1, [r3, #48]
+ 1280 000c 41F00101 		orr	r1, r1, #1
+ 1281 0010 1963     		str	r1, [r3, #48]
+ 1282 0012 196B     		ldr	r1, [r3, #48]
+ 1283 0014 01F00101 		and	r1, r1, #1
+ 1284 0018 0191     		str	r1, [sp, #4]
+ 1285 001a 0199     		ldr	r1, [sp, #4]
+ 1286              	.LBE54:
+ 1287              	.LBB55:
+ 738:hardware/HAL_Drivers/drv_gpio.c **** #endif
+ 739:hardware/HAL_Drivers/drv_gpio.c ****     
+ 740:hardware/HAL_Drivers/drv_gpio.c **** #if defined(__HAL_RCC_GPIOB_CLK_ENABLE)
+ 741:hardware/HAL_Drivers/drv_gpio.c ****     __HAL_RCC_GPIOB_CLK_ENABLE();
+ 1288              		.loc 1 741 0
+ 1289 001c 0292     		str	r2, [sp, #8]
+ 1290 001e 196B     		ldr	r1, [r3, #48]
+ 1291 0020 41F00201 		orr	r1, r1, #2
+ 1292 0024 1963     		str	r1, [r3, #48]
+ 1293 0026 196B     		ldr	r1, [r3, #48]
+ 1294 0028 01F00201 		and	r1, r1, #2
+ 1295 002c 0291     		str	r1, [sp, #8]
+ 1296 002e 0299     		ldr	r1, [sp, #8]
+ 1297              	.LBE55:
+ 1298              	.LBB56:
+ 742:hardware/HAL_Drivers/drv_gpio.c **** #endif
+ 743:hardware/HAL_Drivers/drv_gpio.c ****     
+ 744:hardware/HAL_Drivers/drv_gpio.c **** #if defined(__HAL_RCC_GPIOC_CLK_ENABLE)
+ 745:hardware/HAL_Drivers/drv_gpio.c ****     __HAL_RCC_GPIOC_CLK_ENABLE();
+ 1299              		.loc 1 745 0
+ 1300 0030 0392     		str	r2, [sp, #12]
+ 1301 0032 196B     		ldr	r1, [r3, #48]
+ 1302 0034 41F00401 		orr	r1, r1, #4
+ 1303 0038 1963     		str	r1, [r3, #48]
+ 1304 003a 196B     		ldr	r1, [r3, #48]
+ 1305 003c 01F00401 		and	r1, r1, #4
+ 1306 0040 0391     		str	r1, [sp, #12]
+ 1307 0042 0399     		ldr	r1, [sp, #12]
+ 1308              	.LBE56:
+ 1309              	.LBB57:
+ 746:hardware/HAL_Drivers/drv_gpio.c **** #endif
+ 747:hardware/HAL_Drivers/drv_gpio.c ****     
+ 748:hardware/HAL_Drivers/drv_gpio.c **** #if defined(__HAL_RCC_GPIOD_CLK_ENABLE)
+ 749:hardware/HAL_Drivers/drv_gpio.c ****     __HAL_RCC_GPIOD_CLK_ENABLE();
+ 1310              		.loc 1 749 0
+ 1311 0044 0492     		str	r2, [sp, #16]
+ARM GAS  /tmp/ccdBCU3g.s 			page 39
+
+
+ 1312 0046 196B     		ldr	r1, [r3, #48]
+ 1313 0048 41F00801 		orr	r1, r1, #8
+ 1314 004c 1963     		str	r1, [r3, #48]
+ 1315 004e 196B     		ldr	r1, [r3, #48]
+ 1316 0050 01F00801 		and	r1, r1, #8
+ 1317 0054 0491     		str	r1, [sp, #16]
+ 1318 0056 0499     		ldr	r1, [sp, #16]
+ 1319              	.LBE57:
+ 1320              	.LBB58:
+ 750:hardware/HAL_Drivers/drv_gpio.c **** #endif
+ 751:hardware/HAL_Drivers/drv_gpio.c **** 
+ 752:hardware/HAL_Drivers/drv_gpio.c **** #if defined(__HAL_RCC_GPIOE_CLK_ENABLE)
+ 753:hardware/HAL_Drivers/drv_gpio.c ****     __HAL_RCC_GPIOE_CLK_ENABLE();
+ 1321              		.loc 1 753 0
+ 1322 0058 0592     		str	r2, [sp, #20]
+ 1323 005a 196B     		ldr	r1, [r3, #48]
+ 1324 005c 41F01001 		orr	r1, r1, #16
+ 1325 0060 1963     		str	r1, [r3, #48]
+ 1326 0062 196B     		ldr	r1, [r3, #48]
+ 1327 0064 01F01001 		and	r1, r1, #16
+ 1328 0068 0591     		str	r1, [sp, #20]
+ 1329 006a 0599     		ldr	r1, [sp, #20]
+ 1330              	.LBE58:
+ 1331              	.LBB59:
+ 754:hardware/HAL_Drivers/drv_gpio.c **** #endif
+ 755:hardware/HAL_Drivers/drv_gpio.c **** 
+ 756:hardware/HAL_Drivers/drv_gpio.c **** #if defined(__HAL_RCC_GPIOF_CLK_ENABLE)
+ 757:hardware/HAL_Drivers/drv_gpio.c ****     __HAL_RCC_GPIOF_CLK_ENABLE();
+ 1332              		.loc 1 757 0
+ 1333 006c 0692     		str	r2, [sp, #24]
+ 1334 006e 196B     		ldr	r1, [r3, #48]
+ 1335 0070 41F02001 		orr	r1, r1, #32
+ 1336 0074 1963     		str	r1, [r3, #48]
+ 1337 0076 196B     		ldr	r1, [r3, #48]
+ 1338 0078 01F02001 		and	r1, r1, #32
+ 1339 007c 0691     		str	r1, [sp, #24]
+ 1340 007e 0699     		ldr	r1, [sp, #24]
+ 1341              	.LBE59:
+ 1342              	.LBB60:
+ 758:hardware/HAL_Drivers/drv_gpio.c **** #endif
+ 759:hardware/HAL_Drivers/drv_gpio.c **** 
+ 760:hardware/HAL_Drivers/drv_gpio.c **** #if defined(__HAL_RCC_GPIOG_CLK_ENABLE)
+ 761:hardware/HAL_Drivers/drv_gpio.c ****     #ifdef SOC_SERIES_STM32L4
+ 762:hardware/HAL_Drivers/drv_gpio.c ****         HAL_PWREx_EnableVddIO2();
+ 763:hardware/HAL_Drivers/drv_gpio.c ****     #endif
+ 764:hardware/HAL_Drivers/drv_gpio.c ****     __HAL_RCC_GPIOG_CLK_ENABLE();
+ 1343              		.loc 1 764 0
+ 1344 0080 0792     		str	r2, [sp, #28]
+ 1345 0082 196B     		ldr	r1, [r3, #48]
+ 1346 0084 41F04001 		orr	r1, r1, #64
+ 1347 0088 1963     		str	r1, [r3, #48]
+ 1348 008a 196B     		ldr	r1, [r3, #48]
+ 1349 008c 01F04001 		and	r1, r1, #64
+ 1350 0090 0791     		str	r1, [sp, #28]
+ 1351 0092 0799     		ldr	r1, [sp, #28]
+ 1352              	.LBE60:
+ 1353              	.LBB61:
+ARM GAS  /tmp/ccdBCU3g.s 			page 40
+
+
+ 765:hardware/HAL_Drivers/drv_gpio.c **** #endif
+ 766:hardware/HAL_Drivers/drv_gpio.c **** 
+ 767:hardware/HAL_Drivers/drv_gpio.c **** #if defined(__HAL_RCC_GPIOH_CLK_ENABLE)
+ 768:hardware/HAL_Drivers/drv_gpio.c ****     __HAL_RCC_GPIOH_CLK_ENABLE();
+ 1354              		.loc 1 768 0
+ 1355 0094 0892     		str	r2, [sp, #32]
+ 1356 0096 196B     		ldr	r1, [r3, #48]
+ 1357 0098 41F08001 		orr	r1, r1, #128
+ 1358 009c 1963     		str	r1, [r3, #48]
+ 1359 009e 196B     		ldr	r1, [r3, #48]
+ 1360 00a0 01F08001 		and	r1, r1, #128
+ 1361 00a4 0891     		str	r1, [sp, #32]
+ 1362 00a6 0899     		ldr	r1, [sp, #32]
+ 1363              	.LBE61:
+ 1364              	.LBB62:
+ 769:hardware/HAL_Drivers/drv_gpio.c **** #endif
+ 770:hardware/HAL_Drivers/drv_gpio.c **** 
+ 771:hardware/HAL_Drivers/drv_gpio.c **** #if defined(__HAL_RCC_GPIOI_CLK_ENABLE)
+ 772:hardware/HAL_Drivers/drv_gpio.c ****     __HAL_RCC_GPIOI_CLK_ENABLE();
+ 1365              		.loc 1 772 0
+ 1366 00a8 0992     		str	r2, [sp, #36]
+ 1367 00aa 196B     		ldr	r1, [r3, #48]
+ 1368 00ac 41F48071 		orr	r1, r1, #256
+ 1369 00b0 1963     		str	r1, [r3, #48]
+ 1370 00b2 196B     		ldr	r1, [r3, #48]
+ 1371 00b4 01F48071 		and	r1, r1, #256
+ 1372 00b8 0991     		str	r1, [sp, #36]
+ 1373 00ba 0999     		ldr	r1, [sp, #36]
+ 1374              	.LBE62:
+ 1375              	.LBB63:
+ 773:hardware/HAL_Drivers/drv_gpio.c **** #endif
+ 774:hardware/HAL_Drivers/drv_gpio.c **** 
+ 775:hardware/HAL_Drivers/drv_gpio.c **** #if defined(__HAL_RCC_GPIOJ_CLK_ENABLE)
+ 776:hardware/HAL_Drivers/drv_gpio.c ****     __HAL_RCC_GPIOJ_CLK_ENABLE();
+ 1376              		.loc 1 776 0
+ 1377 00bc 0A92     		str	r2, [sp, #40]
+ 1378 00be 196B     		ldr	r1, [r3, #48]
+ 1379 00c0 41F40071 		orr	r1, r1, #512
+ 1380 00c4 1963     		str	r1, [r3, #48]
+ 1381 00c6 196B     		ldr	r1, [r3, #48]
+ 1382 00c8 01F40071 		and	r1, r1, #512
+ 1383 00cc 0A91     		str	r1, [sp, #40]
+ 1384 00ce 0A99     		ldr	r1, [sp, #40]
+ 1385              	.LBE63:
+ 1386              	.LBB64:
+ 777:hardware/HAL_Drivers/drv_gpio.c **** #endif
+ 778:hardware/HAL_Drivers/drv_gpio.c **** 
+ 779:hardware/HAL_Drivers/drv_gpio.c **** #if defined(__HAL_RCC_GPIOK_CLK_ENABLE)
+ 780:hardware/HAL_Drivers/drv_gpio.c ****     __HAL_RCC_GPIOK_CLK_ENABLE();
+ 1387              		.loc 1 780 0
+ 1388 00d0 0B92     		str	r2, [sp, #44]
+ 1389 00d2 196B     		ldr	r1, [r3, #48]
+ 1390 00d4 41F48061 		orr	r1, r1, #1024
+ 1391 00d8 1963     		str	r1, [r3, #48]
+ 1392 00da 1B6B     		ldr	r3, [r3, #48]
+ 1393 00dc 03F48063 		and	r3, r3, #1024
+ 1394 00e0 0B93     		str	r3, [sp, #44]
+ARM GAS  /tmp/ccdBCU3g.s 			page 41
+
+
+ 1395 00e2 0B9B     		ldr	r3, [sp, #44]
+ 1396              	.LBE64:
+ 781:hardware/HAL_Drivers/drv_gpio.c **** #endif
+ 782:hardware/HAL_Drivers/drv_gpio.c **** 
+ 783:hardware/HAL_Drivers/drv_gpio.c ****     return rt_device_pin_register("pin", &_stm32_pin_ops, RT_NULL);
+ 1397              		.loc 1 783 0
+ 1398 00e4 0449     		ldr	r1, .L116+4
+ 1399 00e6 0548     		ldr	r0, .L116+8
+ 1400 00e8 FFF7FEFF 		bl	rt_device_pin_register
+ 1401              	.LVL147:
+ 784:hardware/HAL_Drivers/drv_gpio.c **** }
+ 1402              		.loc 1 784 0
+ 1403 00ec 0DB0     		add	sp, sp, #52
+ 1404              	.LCFI25:
+ 1405              		.cfi_def_cfa_offset 4
+ 1406              		@ sp needed
+ 1407 00ee 5DF804FB 		ldr	pc, [sp], #4
+ 1408              	.L117:
+ 1409 00f2 00BF     		.align	2
+ 1410              	.L116:
+ 1411 00f4 00380240 		.word	1073887232
+ 1412 00f8 00000000 		.word	.LANCHOR4
+ 1413 00fc 00000000 		.word	.LC0
+ 1414              		.cfi_endproc
+ 1415              	.LFE156:
+ 1417              		.section	.bss.pin_irq_enable_mask,"aw",%nobits
+ 1418              		.align	2
+ 1419              		.set	.LANCHOR3,. + 0
+ 1422              	pin_irq_enable_mask:
+ 1423 0000 00000000 		.space	4
+ 1424              		.section	.data.pin_irq_hdr_tab,"aw",%progbits
+ 1425              		.align	2
+ 1426              		.set	.LANCHOR1,. + 0
+ 1429              	pin_irq_hdr_tab:
+ 1430 0000 FFFF     		.short	-1
+ 1431 0002 0000     		.short	0
+ 1432 0004 00000000 		.word	0
+ 1433 0008 00000000 		.word	0
+ 1434 000c FFFF     		.short	-1
+ 1435 000e 0000     		.short	0
+ 1436 0010 00000000 		.word	0
+ 1437 0014 00000000 		.word	0
+ 1438 0018 FFFF     		.short	-1
+ 1439 001a 0000     		.short	0
+ 1440 001c 00000000 		.word	0
+ 1441 0020 00000000 		.word	0
+ 1442 0024 FFFF     		.short	-1
+ 1443 0026 0000     		.short	0
+ 1444 0028 00000000 		.word	0
+ 1445 002c 00000000 		.word	0
+ 1446 0030 FFFF     		.short	-1
+ 1447 0032 0000     		.short	0
+ 1448 0034 00000000 		.word	0
+ 1449 0038 00000000 		.word	0
+ 1450 003c FFFF     		.short	-1
+ 1451 003e 0000     		.short	0
+ 1452 0040 00000000 		.word	0
+ARM GAS  /tmp/ccdBCU3g.s 			page 42
+
+
+ 1453 0044 00000000 		.word	0
+ 1454 0048 FFFF     		.short	-1
+ 1455 004a 0000     		.short	0
+ 1456 004c 00000000 		.word	0
+ 1457 0050 00000000 		.word	0
+ 1458 0054 FFFF     		.short	-1
+ 1459 0056 0000     		.short	0
+ 1460 0058 00000000 		.word	0
+ 1461 005c 00000000 		.word	0
+ 1462 0060 FFFF     		.short	-1
+ 1463 0062 0000     		.short	0
+ 1464 0064 00000000 		.word	0
+ 1465 0068 00000000 		.word	0
+ 1466 006c FFFF     		.short	-1
+ 1467 006e 0000     		.short	0
+ 1468 0070 00000000 		.word	0
+ 1469 0074 00000000 		.word	0
+ 1470 0078 FFFF     		.short	-1
+ 1471 007a 0000     		.short	0
+ 1472 007c 00000000 		.word	0
+ 1473 0080 00000000 		.word	0
+ 1474 0084 FFFF     		.short	-1
+ 1475 0086 0000     		.short	0
+ 1476 0088 00000000 		.word	0
+ 1477 008c 00000000 		.word	0
+ 1478 0090 FFFF     		.short	-1
+ 1479 0092 0000     		.short	0
+ 1480 0094 00000000 		.word	0
+ 1481 0098 00000000 		.word	0
+ 1482 009c FFFF     		.short	-1
+ 1483 009e 0000     		.short	0
+ 1484 00a0 00000000 		.word	0
+ 1485 00a4 00000000 		.word	0
+ 1486 00a8 FFFF     		.short	-1
+ 1487 00aa 0000     		.short	0
+ 1488 00ac 00000000 		.word	0
+ 1489 00b0 00000000 		.word	0
+ 1490 00b4 FFFF     		.short	-1
+ 1491 00b6 0000     		.short	0
+ 1492 00b8 00000000 		.word	0
+ 1493 00bc 00000000 		.word	0
+ 1494              		.section	.rodata._stm32_pin_ops,"a",%progbits
+ 1495              		.align	2
+ 1496              		.set	.LANCHOR4,. + 0
+ 1499              	_stm32_pin_ops:
+ 1500 0000 00000000 		.word	stm32_pin_mode
+ 1501 0004 00000000 		.word	stm32_pin_write
+ 1502 0008 00000000 		.word	stm32_pin_read
+ 1503 000c 00000000 		.word	stm32_pin_attach_irq
+ 1504 0010 00000000 		.word	stm32_pin_dettach_irq
+ 1505 0014 00000000 		.word	stm32_pin_irq_enable
+ 1506              		.section	.rodata.pin_irq_map,"a",%progbits
+ 1507              		.align	2
+ 1508              		.set	.LANCHOR2,. + 0
+ 1511              	pin_irq_map:
+ 1512 0000 0100     		.short	1
+ 1513 0002 06       		.byte	6
+ARM GAS  /tmp/ccdBCU3g.s 			page 43
+
+
+ 1514 0003 00       		.space	1
+ 1515 0004 0200     		.short	2
+ 1516 0006 07       		.byte	7
+ 1517 0007 00       		.space	1
+ 1518 0008 0400     		.short	4
+ 1519 000a 08       		.byte	8
+ 1520 000b 00       		.space	1
+ 1521 000c 0800     		.short	8
+ 1522 000e 09       		.byte	9
+ 1523 000f 00       		.space	1
+ 1524 0010 1000     		.short	16
+ 1525 0012 0A       		.byte	10
+ 1526 0013 00       		.space	1
+ 1527 0014 2000     		.short	32
+ 1528 0016 17       		.byte	23
+ 1529 0017 00       		.space	1
+ 1530 0018 4000     		.short	64
+ 1531 001a 17       		.byte	23
+ 1532 001b 00       		.space	1
+ 1533 001c 8000     		.short	128
+ 1534 001e 17       		.byte	23
+ 1535 001f 00       		.space	1
+ 1536 0020 0001     		.short	256
+ 1537 0022 17       		.byte	23
+ 1538 0023 00       		.space	1
+ 1539 0024 0002     		.short	512
+ 1540 0026 17       		.byte	23
+ 1541 0027 00       		.space	1
+ 1542 0028 0004     		.short	1024
+ 1543 002a 28       		.byte	40
+ 1544 002b 00       		.space	1
+ 1545 002c 0008     		.short	2048
+ 1546 002e 28       		.byte	40
+ 1547 002f 00       		.space	1
+ 1548 0030 0010     		.short	4096
+ 1549 0032 28       		.byte	40
+ 1550 0033 00       		.space	1
+ 1551 0034 0020     		.short	8192
+ 1552 0036 28       		.byte	40
+ 1553 0037 00       		.space	1
+ 1554 0038 0040     		.short	16384
+ 1555 003a 28       		.byte	40
+ 1556 003b 00       		.space	1
+ 1557 003c 0080     		.short	-32768
+ 1558 003e 28       		.byte	40
+ 1559 003f 00       		.space	1
+ 1560              		.section	.rodata.pins,"a",%progbits
+ 1561              		.align	2
+ 1562              		.set	.LANCHOR0,. + 0
+ 1565              	pins:
+ 1566 0000 00000000 		.word	0
+ 1567 0004 00000240 		.word	1073872896
+ 1568 0008 01000000 		.word	1
+ 1569 000c 01000000 		.word	1
+ 1570 0010 00000240 		.word	1073872896
+ 1571 0014 02000000 		.word	2
+ 1572 0018 02000000 		.word	2
+ARM GAS  /tmp/ccdBCU3g.s 			page 44
+
+
+ 1573 001c 00000240 		.word	1073872896
+ 1574 0020 04000000 		.word	4
+ 1575 0024 03000000 		.word	3
+ 1576 0028 00000240 		.word	1073872896
+ 1577 002c 08000000 		.word	8
+ 1578 0030 04000000 		.word	4
+ 1579 0034 00000240 		.word	1073872896
+ 1580 0038 10000000 		.word	16
+ 1581 003c 05000000 		.word	5
+ 1582 0040 00000240 		.word	1073872896
+ 1583 0044 20000000 		.word	32
+ 1584 0048 06000000 		.word	6
+ 1585 004c 00000240 		.word	1073872896
+ 1586 0050 40000000 		.word	64
+ 1587 0054 07000000 		.word	7
+ 1588 0058 00000240 		.word	1073872896
+ 1589 005c 80000000 		.word	128
+ 1590 0060 08000000 		.word	8
+ 1591 0064 00000240 		.word	1073872896
+ 1592 0068 00010000 		.word	256
+ 1593 006c 09000000 		.word	9
+ 1594 0070 00000240 		.word	1073872896
+ 1595 0074 00020000 		.word	512
+ 1596 0078 0A000000 		.word	10
+ 1597 007c 00000240 		.word	1073872896
+ 1598 0080 00040000 		.word	1024
+ 1599 0084 0B000000 		.word	11
+ 1600 0088 00000240 		.word	1073872896
+ 1601 008c 00080000 		.word	2048
+ 1602 0090 0C000000 		.word	12
+ 1603 0094 00000240 		.word	1073872896
+ 1604 0098 00100000 		.word	4096
+ 1605 009c 0D000000 		.word	13
+ 1606 00a0 00000240 		.word	1073872896
+ 1607 00a4 00200000 		.word	8192
+ 1608 00a8 0E000000 		.word	14
+ 1609 00ac 00000240 		.word	1073872896
+ 1610 00b0 00400000 		.word	16384
+ 1611 00b4 0F000000 		.word	15
+ 1612 00b8 00000240 		.word	1073872896
+ 1613 00bc 00800000 		.word	32768
+ 1614 00c0 10000000 		.word	16
+ 1615 00c4 00040240 		.word	1073873920
+ 1616 00c8 01000000 		.word	1
+ 1617 00cc 11000000 		.word	17
+ 1618 00d0 00040240 		.word	1073873920
+ 1619 00d4 02000000 		.word	2
+ 1620 00d8 12000000 		.word	18
+ 1621 00dc 00040240 		.word	1073873920
+ 1622 00e0 04000000 		.word	4
+ 1623 00e4 13000000 		.word	19
+ 1624 00e8 00040240 		.word	1073873920
+ 1625 00ec 08000000 		.word	8
+ 1626 00f0 14000000 		.word	20
+ 1627 00f4 00040240 		.word	1073873920
+ 1628 00f8 10000000 		.word	16
+ 1629 00fc 15000000 		.word	21
+ARM GAS  /tmp/ccdBCU3g.s 			page 45
+
+
+ 1630 0100 00040240 		.word	1073873920
+ 1631 0104 20000000 		.word	32
+ 1632 0108 16000000 		.word	22
+ 1633 010c 00040240 		.word	1073873920
+ 1634 0110 40000000 		.word	64
+ 1635 0114 17000000 		.word	23
+ 1636 0118 00040240 		.word	1073873920
+ 1637 011c 80000000 		.word	128
+ 1638 0120 18000000 		.word	24
+ 1639 0124 00040240 		.word	1073873920
+ 1640 0128 00010000 		.word	256
+ 1641 012c 19000000 		.word	25
+ 1642 0130 00040240 		.word	1073873920
+ 1643 0134 00020000 		.word	512
+ 1644 0138 1A000000 		.word	26
+ 1645 013c 00040240 		.word	1073873920
+ 1646 0140 00040000 		.word	1024
+ 1647 0144 1B000000 		.word	27
+ 1648 0148 00040240 		.word	1073873920
+ 1649 014c 00080000 		.word	2048
+ 1650 0150 1C000000 		.word	28
+ 1651 0154 00040240 		.word	1073873920
+ 1652 0158 00100000 		.word	4096
+ 1653 015c 1D000000 		.word	29
+ 1654 0160 00040240 		.word	1073873920
+ 1655 0164 00200000 		.word	8192
+ 1656 0168 1E000000 		.word	30
+ 1657 016c 00040240 		.word	1073873920
+ 1658 0170 00400000 		.word	16384
+ 1659 0174 1F000000 		.word	31
+ 1660 0178 00040240 		.word	1073873920
+ 1661 017c 00800000 		.word	32768
+ 1662 0180 20000000 		.word	32
+ 1663 0184 00080240 		.word	1073874944
+ 1664 0188 01000000 		.word	1
+ 1665 018c 21000000 		.word	33
+ 1666 0190 00080240 		.word	1073874944
+ 1667 0194 02000000 		.word	2
+ 1668 0198 22000000 		.word	34
+ 1669 019c 00080240 		.word	1073874944
+ 1670 01a0 04000000 		.word	4
+ 1671 01a4 23000000 		.word	35
+ 1672 01a8 00080240 		.word	1073874944
+ 1673 01ac 08000000 		.word	8
+ 1674 01b0 24000000 		.word	36
+ 1675 01b4 00080240 		.word	1073874944
+ 1676 01b8 10000000 		.word	16
+ 1677 01bc 25000000 		.word	37
+ 1678 01c0 00080240 		.word	1073874944
+ 1679 01c4 20000000 		.word	32
+ 1680 01c8 26000000 		.word	38
+ 1681 01cc 00080240 		.word	1073874944
+ 1682 01d0 40000000 		.word	64
+ 1683 01d4 27000000 		.word	39
+ 1684 01d8 00080240 		.word	1073874944
+ 1685 01dc 80000000 		.word	128
+ 1686 01e0 28000000 		.word	40
+ARM GAS  /tmp/ccdBCU3g.s 			page 46
+
+
+ 1687 01e4 00080240 		.word	1073874944
+ 1688 01e8 00010000 		.word	256
+ 1689 01ec 29000000 		.word	41
+ 1690 01f0 00080240 		.word	1073874944
+ 1691 01f4 00020000 		.word	512
+ 1692 01f8 2A000000 		.word	42
+ 1693 01fc 00080240 		.word	1073874944
+ 1694 0200 00040000 		.word	1024
+ 1695 0204 2B000000 		.word	43
+ 1696 0208 00080240 		.word	1073874944
+ 1697 020c 00080000 		.word	2048
+ 1698 0210 2C000000 		.word	44
+ 1699 0214 00080240 		.word	1073874944
+ 1700 0218 00100000 		.word	4096
+ 1701 021c 2D000000 		.word	45
+ 1702 0220 00080240 		.word	1073874944
+ 1703 0224 00200000 		.word	8192
+ 1704 0228 2E000000 		.word	46
+ 1705 022c 00080240 		.word	1073874944
+ 1706 0230 00400000 		.word	16384
+ 1707 0234 2F000000 		.word	47
+ 1708 0238 00080240 		.word	1073874944
+ 1709 023c 00800000 		.word	32768
+ 1710 0240 30000000 		.word	48
+ 1711 0244 000C0240 		.word	1073875968
+ 1712 0248 01000000 		.word	1
+ 1713 024c 31000000 		.word	49
+ 1714 0250 000C0240 		.word	1073875968
+ 1715 0254 02000000 		.word	2
+ 1716 0258 32000000 		.word	50
+ 1717 025c 000C0240 		.word	1073875968
+ 1718 0260 04000000 		.word	4
+ 1719 0264 33000000 		.word	51
+ 1720 0268 000C0240 		.word	1073875968
+ 1721 026c 08000000 		.word	8
+ 1722 0270 34000000 		.word	52
+ 1723 0274 000C0240 		.word	1073875968
+ 1724 0278 10000000 		.word	16
+ 1725 027c 35000000 		.word	53
+ 1726 0280 000C0240 		.word	1073875968
+ 1727 0284 20000000 		.word	32
+ 1728 0288 36000000 		.word	54
+ 1729 028c 000C0240 		.word	1073875968
+ 1730 0290 40000000 		.word	64
+ 1731 0294 37000000 		.word	55
+ 1732 0298 000C0240 		.word	1073875968
+ 1733 029c 80000000 		.word	128
+ 1734 02a0 38000000 		.word	56
+ 1735 02a4 000C0240 		.word	1073875968
+ 1736 02a8 00010000 		.word	256
+ 1737 02ac 39000000 		.word	57
+ 1738 02b0 000C0240 		.word	1073875968
+ 1739 02b4 00020000 		.word	512
+ 1740 02b8 3A000000 		.word	58
+ 1741 02bc 000C0240 		.word	1073875968
+ 1742 02c0 00040000 		.word	1024
+ 1743 02c4 3B000000 		.word	59
+ARM GAS  /tmp/ccdBCU3g.s 			page 47
+
+
+ 1744 02c8 000C0240 		.word	1073875968
+ 1745 02cc 00080000 		.word	2048
+ 1746 02d0 3C000000 		.word	60
+ 1747 02d4 000C0240 		.word	1073875968
+ 1748 02d8 00100000 		.word	4096
+ 1749 02dc 3D000000 		.word	61
+ 1750 02e0 000C0240 		.word	1073875968
+ 1751 02e4 00200000 		.word	8192
+ 1752 02e8 3E000000 		.word	62
+ 1753 02ec 000C0240 		.word	1073875968
+ 1754 02f0 00400000 		.word	16384
+ 1755 02f4 3F000000 		.word	63
+ 1756 02f8 000C0240 		.word	1073875968
+ 1757 02fc 00800000 		.word	32768
+ 1758 0300 40000000 		.word	64
+ 1759 0304 00100240 		.word	1073876992
+ 1760 0308 01000000 		.word	1
+ 1761 030c 41000000 		.word	65
+ 1762 0310 00100240 		.word	1073876992
+ 1763 0314 02000000 		.word	2
+ 1764 0318 42000000 		.word	66
+ 1765 031c 00100240 		.word	1073876992
+ 1766 0320 04000000 		.word	4
+ 1767 0324 43000000 		.word	67
+ 1768 0328 00100240 		.word	1073876992
+ 1769 032c 08000000 		.word	8
+ 1770 0330 44000000 		.word	68
+ 1771 0334 00100240 		.word	1073876992
+ 1772 0338 10000000 		.word	16
+ 1773 033c 45000000 		.word	69
+ 1774 0340 00100240 		.word	1073876992
+ 1775 0344 20000000 		.word	32
+ 1776 0348 46000000 		.word	70
+ 1777 034c 00100240 		.word	1073876992
+ 1778 0350 40000000 		.word	64
+ 1779 0354 47000000 		.word	71
+ 1780 0358 00100240 		.word	1073876992
+ 1781 035c 80000000 		.word	128
+ 1782 0360 48000000 		.word	72
+ 1783 0364 00100240 		.word	1073876992
+ 1784 0368 00010000 		.word	256
+ 1785 036c 49000000 		.word	73
+ 1786 0370 00100240 		.word	1073876992
+ 1787 0374 00020000 		.word	512
+ 1788 0378 4A000000 		.word	74
+ 1789 037c 00100240 		.word	1073876992
+ 1790 0380 00040000 		.word	1024
+ 1791 0384 4B000000 		.word	75
+ 1792 0388 00100240 		.word	1073876992
+ 1793 038c 00080000 		.word	2048
+ 1794 0390 4C000000 		.word	76
+ 1795 0394 00100240 		.word	1073876992
+ 1796 0398 00100000 		.word	4096
+ 1797 039c 4D000000 		.word	77
+ 1798 03a0 00100240 		.word	1073876992
+ 1799 03a4 00200000 		.word	8192
+ 1800 03a8 4E000000 		.word	78
+ARM GAS  /tmp/ccdBCU3g.s 			page 48
+
+
+ 1801 03ac 00100240 		.word	1073876992
+ 1802 03b0 00400000 		.word	16384
+ 1803 03b4 4F000000 		.word	79
+ 1804 03b8 00100240 		.word	1073876992
+ 1805 03bc 00800000 		.word	32768
+ 1806 03c0 50000000 		.word	80
+ 1807 03c4 00140240 		.word	1073878016
+ 1808 03c8 01000000 		.word	1
+ 1809 03cc 51000000 		.word	81
+ 1810 03d0 00140240 		.word	1073878016
+ 1811 03d4 02000000 		.word	2
+ 1812 03d8 52000000 		.word	82
+ 1813 03dc 00140240 		.word	1073878016
+ 1814 03e0 04000000 		.word	4
+ 1815 03e4 53000000 		.word	83
+ 1816 03e8 00140240 		.word	1073878016
+ 1817 03ec 08000000 		.word	8
+ 1818 03f0 54000000 		.word	84
+ 1819 03f4 00140240 		.word	1073878016
+ 1820 03f8 10000000 		.word	16
+ 1821 03fc 55000000 		.word	85
+ 1822 0400 00140240 		.word	1073878016
+ 1823 0404 20000000 		.word	32
+ 1824 0408 56000000 		.word	86
+ 1825 040c 00140240 		.word	1073878016
+ 1826 0410 40000000 		.word	64
+ 1827 0414 57000000 		.word	87
+ 1828 0418 00140240 		.word	1073878016
+ 1829 041c 80000000 		.word	128
+ 1830 0420 58000000 		.word	88
+ 1831 0424 00140240 		.word	1073878016
+ 1832 0428 00010000 		.word	256
+ 1833 042c 59000000 		.word	89
+ 1834 0430 00140240 		.word	1073878016
+ 1835 0434 00020000 		.word	512
+ 1836 0438 5A000000 		.word	90
+ 1837 043c 00140240 		.word	1073878016
+ 1838 0440 00040000 		.word	1024
+ 1839 0444 5B000000 		.word	91
+ 1840 0448 00140240 		.word	1073878016
+ 1841 044c 00080000 		.word	2048
+ 1842 0450 5C000000 		.word	92
+ 1843 0454 00140240 		.word	1073878016
+ 1844 0458 00100000 		.word	4096
+ 1845 045c 5D000000 		.word	93
+ 1846 0460 00140240 		.word	1073878016
+ 1847 0464 00200000 		.word	8192
+ 1848 0468 5E000000 		.word	94
+ 1849 046c 00140240 		.word	1073878016
+ 1850 0470 00400000 		.word	16384
+ 1851 0474 5F000000 		.word	95
+ 1852 0478 00140240 		.word	1073878016
+ 1853 047c 00800000 		.word	32768
+ 1854 0480 60000000 		.word	96
+ 1855 0484 00180240 		.word	1073879040
+ 1856 0488 01000000 		.word	1
+ 1857 048c 61000000 		.word	97
+ARM GAS  /tmp/ccdBCU3g.s 			page 49
+
+
+ 1858 0490 00180240 		.word	1073879040
+ 1859 0494 02000000 		.word	2
+ 1860 0498 62000000 		.word	98
+ 1861 049c 00180240 		.word	1073879040
+ 1862 04a0 04000000 		.word	4
+ 1863 04a4 63000000 		.word	99
+ 1864 04a8 00180240 		.word	1073879040
+ 1865 04ac 08000000 		.word	8
+ 1866 04b0 64000000 		.word	100
+ 1867 04b4 00180240 		.word	1073879040
+ 1868 04b8 10000000 		.word	16
+ 1869 04bc 65000000 		.word	101
+ 1870 04c0 00180240 		.word	1073879040
+ 1871 04c4 20000000 		.word	32
+ 1872 04c8 66000000 		.word	102
+ 1873 04cc 00180240 		.word	1073879040
+ 1874 04d0 40000000 		.word	64
+ 1875 04d4 67000000 		.word	103
+ 1876 04d8 00180240 		.word	1073879040
+ 1877 04dc 80000000 		.word	128
+ 1878 04e0 68000000 		.word	104
+ 1879 04e4 00180240 		.word	1073879040
+ 1880 04e8 00010000 		.word	256
+ 1881 04ec 69000000 		.word	105
+ 1882 04f0 00180240 		.word	1073879040
+ 1883 04f4 00020000 		.word	512
+ 1884 04f8 6A000000 		.word	106
+ 1885 04fc 00180240 		.word	1073879040
+ 1886 0500 00040000 		.word	1024
+ 1887 0504 6B000000 		.word	107
+ 1888 0508 00180240 		.word	1073879040
+ 1889 050c 00080000 		.word	2048
+ 1890 0510 6C000000 		.word	108
+ 1891 0514 00180240 		.word	1073879040
+ 1892 0518 00100000 		.word	4096
+ 1893 051c 6D000000 		.word	109
+ 1894 0520 00180240 		.word	1073879040
+ 1895 0524 00200000 		.word	8192
+ 1896 0528 6E000000 		.word	110
+ 1897 052c 00180240 		.word	1073879040
+ 1898 0530 00400000 		.word	16384
+ 1899 0534 6F000000 		.word	111
+ 1900 0538 00180240 		.word	1073879040
+ 1901 053c 00800000 		.word	32768
+ 1902 0540 70000000 		.word	112
+ 1903 0544 001C0240 		.word	1073880064
+ 1904 0548 01000000 		.word	1
+ 1905 054c 71000000 		.word	113
+ 1906 0550 001C0240 		.word	1073880064
+ 1907 0554 02000000 		.word	2
+ 1908 0558 72000000 		.word	114
+ 1909 055c 001C0240 		.word	1073880064
+ 1910 0560 04000000 		.word	4
+ 1911 0564 73000000 		.word	115
+ 1912 0568 001C0240 		.word	1073880064
+ 1913 056c 08000000 		.word	8
+ 1914 0570 74000000 		.word	116
+ARM GAS  /tmp/ccdBCU3g.s 			page 50
+
+
+ 1915 0574 001C0240 		.word	1073880064
+ 1916 0578 10000000 		.word	16
+ 1917 057c 75000000 		.word	117
+ 1918 0580 001C0240 		.word	1073880064
+ 1919 0584 20000000 		.word	32
+ 1920 0588 76000000 		.word	118
+ 1921 058c 001C0240 		.word	1073880064
+ 1922 0590 40000000 		.word	64
+ 1923 0594 77000000 		.word	119
+ 1924 0598 001C0240 		.word	1073880064
+ 1925 059c 80000000 		.word	128
+ 1926 05a0 78000000 		.word	120
+ 1927 05a4 001C0240 		.word	1073880064
+ 1928 05a8 00010000 		.word	256
+ 1929 05ac 79000000 		.word	121
+ 1930 05b0 001C0240 		.word	1073880064
+ 1931 05b4 00020000 		.word	512
+ 1932 05b8 7A000000 		.word	122
+ 1933 05bc 001C0240 		.word	1073880064
+ 1934 05c0 00040000 		.word	1024
+ 1935 05c4 7B000000 		.word	123
+ 1936 05c8 001C0240 		.word	1073880064
+ 1937 05cc 00080000 		.word	2048
+ 1938 05d0 7C000000 		.word	124
+ 1939 05d4 001C0240 		.word	1073880064
+ 1940 05d8 00100000 		.word	4096
+ 1941 05dc 7D000000 		.word	125
+ 1942 05e0 001C0240 		.word	1073880064
+ 1943 05e4 00200000 		.word	8192
+ 1944 05e8 7E000000 		.word	126
+ 1945 05ec 001C0240 		.word	1073880064
+ 1946 05f0 00400000 		.word	16384
+ 1947 05f4 7F000000 		.word	127
+ 1948 05f8 001C0240 		.word	1073880064
+ 1949 05fc 00800000 		.word	32768
+ 1950 0600 80000000 		.word	128
+ 1951 0604 00200240 		.word	1073881088
+ 1952 0608 01000000 		.word	1
+ 1953 060c 81000000 		.word	129
+ 1954 0610 00200240 		.word	1073881088
+ 1955 0614 02000000 		.word	2
+ 1956 0618 82000000 		.word	130
+ 1957 061c 00200240 		.word	1073881088
+ 1958 0620 04000000 		.word	4
+ 1959 0624 83000000 		.word	131
+ 1960 0628 00200240 		.word	1073881088
+ 1961 062c 08000000 		.word	8
+ 1962 0630 84000000 		.word	132
+ 1963 0634 00200240 		.word	1073881088
+ 1964 0638 10000000 		.word	16
+ 1965 063c 85000000 		.word	133
+ 1966 0640 00200240 		.word	1073881088
+ 1967 0644 20000000 		.word	32
+ 1968 0648 86000000 		.word	134
+ 1969 064c 00200240 		.word	1073881088
+ 1970 0650 40000000 		.word	64
+ 1971 0654 87000000 		.word	135
+ARM GAS  /tmp/ccdBCU3g.s 			page 51
+
+
+ 1972 0658 00200240 		.word	1073881088
+ 1973 065c 80000000 		.word	128
+ 1974 0660 88000000 		.word	136
+ 1975 0664 00200240 		.word	1073881088
+ 1976 0668 00010000 		.word	256
+ 1977 066c 89000000 		.word	137
+ 1978 0670 00200240 		.word	1073881088
+ 1979 0674 00020000 		.word	512
+ 1980 0678 8A000000 		.word	138
+ 1981 067c 00200240 		.word	1073881088
+ 1982 0680 00040000 		.word	1024
+ 1983 0684 8B000000 		.word	139
+ 1984 0688 00200240 		.word	1073881088
+ 1985 068c 00080000 		.word	2048
+ 1986 0690 8C000000 		.word	140
+ 1987 0694 00200240 		.word	1073881088
+ 1988 0698 00100000 		.word	4096
+ 1989 069c 8D000000 		.word	141
+ 1990 06a0 00200240 		.word	1073881088
+ 1991 06a4 00200000 		.word	8192
+ 1992 06a8 8E000000 		.word	142
+ 1993 06ac 00200240 		.word	1073881088
+ 1994 06b0 00400000 		.word	16384
+ 1995 06b4 8F000000 		.word	143
+ 1996 06b8 00200240 		.word	1073881088
+ 1997 06bc 00800000 		.word	32768
+ 1998 06c0 90000000 		.word	144
+ 1999 06c4 00240240 		.word	1073882112
+ 2000 06c8 01000000 		.word	1
+ 2001 06cc 91000000 		.word	145
+ 2002 06d0 00240240 		.word	1073882112
+ 2003 06d4 02000000 		.word	2
+ 2004 06d8 92000000 		.word	146
+ 2005 06dc 00240240 		.word	1073882112
+ 2006 06e0 04000000 		.word	4
+ 2007 06e4 93000000 		.word	147
+ 2008 06e8 00240240 		.word	1073882112
+ 2009 06ec 08000000 		.word	8
+ 2010 06f0 94000000 		.word	148
+ 2011 06f4 00240240 		.word	1073882112
+ 2012 06f8 10000000 		.word	16
+ 2013 06fc 95000000 		.word	149
+ 2014 0700 00240240 		.word	1073882112
+ 2015 0704 20000000 		.word	32
+ 2016 0708 96000000 		.word	150
+ 2017 070c 00240240 		.word	1073882112
+ 2018 0710 40000000 		.word	64
+ 2019 0714 97000000 		.word	151
+ 2020 0718 00240240 		.word	1073882112
+ 2021 071c 80000000 		.word	128
+ 2022 0720 98000000 		.word	152
+ 2023 0724 00240240 		.word	1073882112
+ 2024 0728 00010000 		.word	256
+ 2025 072c 99000000 		.word	153
+ 2026 0730 00240240 		.word	1073882112
+ 2027 0734 00020000 		.word	512
+ 2028 0738 9A000000 		.word	154
+ARM GAS  /tmp/ccdBCU3g.s 			page 52
+
+
+ 2029 073c 00240240 		.word	1073882112
+ 2030 0740 00040000 		.word	1024
+ 2031 0744 9B000000 		.word	155
+ 2032 0748 00240240 		.word	1073882112
+ 2033 074c 00080000 		.word	2048
+ 2034 0750 9C000000 		.word	156
+ 2035 0754 00240240 		.word	1073882112
+ 2036 0758 00100000 		.word	4096
+ 2037 075c 9D000000 		.word	157
+ 2038 0760 00240240 		.word	1073882112
+ 2039 0764 00200000 		.word	8192
+ 2040 0768 9E000000 		.word	158
+ 2041 076c 00240240 		.word	1073882112
+ 2042 0770 00400000 		.word	16384
+ 2043 0774 9F000000 		.word	159
+ 2044 0778 00240240 		.word	1073882112
+ 2045 077c 00800000 		.word	32768
+ 2046 0780 A0000000 		.word	160
+ 2047 0784 00280240 		.word	1073883136
+ 2048 0788 01000000 		.word	1
+ 2049 078c A1000000 		.word	161
+ 2050 0790 00280240 		.word	1073883136
+ 2051 0794 02000000 		.word	2
+ 2052 0798 A2000000 		.word	162
+ 2053 079c 00280240 		.word	1073883136
+ 2054 07a0 04000000 		.word	4
+ 2055 07a4 A3000000 		.word	163
+ 2056 07a8 00280240 		.word	1073883136
+ 2057 07ac 08000000 		.word	8
+ 2058 07b0 A4000000 		.word	164
+ 2059 07b4 00280240 		.word	1073883136
+ 2060 07b8 10000000 		.word	16
+ 2061 07bc A5000000 		.word	165
+ 2062 07c0 00280240 		.word	1073883136
+ 2063 07c4 20000000 		.word	32
+ 2064 07c8 A6000000 		.word	166
+ 2065 07cc 00280240 		.word	1073883136
+ 2066 07d0 40000000 		.word	64
+ 2067 07d4 A7000000 		.word	167
+ 2068 07d8 00280240 		.word	1073883136
+ 2069 07dc 80000000 		.word	128
+ 2070 07e0 A8000000 		.word	168
+ 2071 07e4 00280240 		.word	1073883136
+ 2072 07e8 00010000 		.word	256
+ 2073 07ec A9000000 		.word	169
+ 2074 07f0 00280240 		.word	1073883136
+ 2075 07f4 00020000 		.word	512
+ 2076 07f8 AA000000 		.word	170
+ 2077 07fc 00280240 		.word	1073883136
+ 2078 0800 00040000 		.word	1024
+ 2079 0804 AB000000 		.word	171
+ 2080 0808 00280240 		.word	1073883136
+ 2081 080c 00080000 		.word	2048
+ 2082 0810 AC000000 		.word	172
+ 2083 0814 00280240 		.word	1073883136
+ 2084 0818 00100000 		.word	4096
+ 2085 081c AD000000 		.word	173
+ARM GAS  /tmp/ccdBCU3g.s 			page 53
+
+
+ 2086 0820 00280240 		.word	1073883136
+ 2087 0824 00200000 		.word	8192
+ 2088 0828 AE000000 		.word	174
+ 2089 082c 00280240 		.word	1073883136
+ 2090 0830 00400000 		.word	16384
+ 2091 0834 AF000000 		.word	175
+ 2092 0838 00280240 		.word	1073883136
+ 2093 083c 00800000 		.word	32768
+ 2094              		.section	.rodata.rt_hw_pin_init.str1.4,"aMS",%progbits,1
+ 2095              		.align	2
+ 2096              	.LC0:
+ 2097 0000 70696E00 		.ascii	"pin\000"
+ 2098              		.text
+ 2099              	.Letext0:
+ 2100              		.file 2 "rt-thread/include/rtdef.h"
+ 2101              		.file 3 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/machine/_default_types.h"
+ 2102              		.file 4 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/lock.h"
+ 2103              		.file 5 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_types.h"
+ 2104              		.file 6 "/opt/gcc-arm-none-eabi-6-2017-q2-update/lib/gcc/arm-none-eabi/6.3.1/include/stddef.h"
+ 2105              		.file 7 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/reent.h"
+ 2106              		.file 8 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_stdint.h"
+ 2107              		.file 9 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/time.h"
+ 2108              		.file 10 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/errno.h"
+ 2109              		.file 11 "rt-thread/components/finsh/finsh_api.h"
+ 2110              		.file 12 "USER/stm32f429xx.h"
+ 2111              		.file 13 "CORE/core_cm4.h"
+ 2112              		.file 14 "USER/system_stm32f4xx.h"
+ 2113              		.file 15 "HALLIB/Inc/stm32f4xx_hal_gpio.h"
+ 2114              		.file 16 "HALLIB/Inc/stm32f4xx_hal.h"
+ 2115              		.file 17 "hardware/HAL_Drivers/drv_gpio.h"
+ 2116              		.file 18 "rt-thread/components/drivers/include/drivers/pin.h"
+ 2117              		.file 19 "board/board.h"
+ 2118              		.file 20 "rt-thread/include/rtthread.h"
+ 2119              		.file 21 "HALLIB/Inc/stm32f4xx_hal_cortex.h"
+ARM GAS  /tmp/ccdBCU3g.s 			page 54
+
+
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 drv_gpio.c
+     /tmp/ccdBCU3g.s:18     .text.get_pin:0000000000000000 $t
+     /tmp/ccdBCU3g.s:24     .text.get_pin:0000000000000000 get_pin
+     /tmp/ccdBCU3g.s:84     .text.get_pin:000000000000002c $d
+     /tmp/ccdBCU3g.s:89     .text.stm32_pin_dettach_irq:0000000000000000 $t
+     /tmp/ccdBCU3g.s:95     .text.stm32_pin_dettach_irq:0000000000000000 stm32_pin_dettach_irq
+     /tmp/ccdBCU3g.s:204    .text.stm32_pin_dettach_irq:000000000000006c $d
+     /tmp/ccdBCU3g.s:209    .text.stm32_pin_attach_irq:0000000000000000 $t
+     /tmp/ccdBCU3g.s:215    .text.stm32_pin_attach_irq:0000000000000000 stm32_pin_attach_irq
+     /tmp/ccdBCU3g.s:368    .text.stm32_pin_attach_irq:00000000000000ac $d
+     /tmp/ccdBCU3g.s:373    .text.stm32_pin_mode:0000000000000000 $t
+     /tmp/ccdBCU3g.s:379    .text.stm32_pin_mode:0000000000000000 stm32_pin_mode
+     /tmp/ccdBCU3g.s:475    .text.stm32_pin_irq_enable:0000000000000000 $t
+     /tmp/ccdBCU3g.s:481    .text.stm32_pin_irq_enable:0000000000000000 stm32_pin_irq_enable
+     /tmp/ccdBCU3g.s:820    .text.stm32_pin_irq_enable:0000000000000170 $d
+     /tmp/ccdBCU3g.s:831    .text.stm32_pin_read:0000000000000000 $t
+     /tmp/ccdBCU3g.s:837    .text.stm32_pin_read:0000000000000000 stm32_pin_read
+     /tmp/ccdBCU3g.s:876    .text.stm32_pin_write:0000000000000000 $t
+     /tmp/ccdBCU3g.s:882    .text.stm32_pin_write:0000000000000000 stm32_pin_write
+     /tmp/ccdBCU3g.s:915    .text.HAL_GPIO_EXTI_Callback:0000000000000000 $t
+     /tmp/ccdBCU3g.s:922    .text.HAL_GPIO_EXTI_Callback:0000000000000000 HAL_GPIO_EXTI_Callback
+     /tmp/ccdBCU3g.s:980    .text.HAL_GPIO_EXTI_Callback:0000000000000030 $d
+     /tmp/ccdBCU3g.s:987    .text.EXTI0_IRQHandler:0000000000000000 $t
+     /tmp/ccdBCU3g.s:994    .text.EXTI0_IRQHandler:0000000000000000 EXTI0_IRQHandler
+     /tmp/ccdBCU3g.s:1020   .text.EXTI1_IRQHandler:0000000000000000 $t
+     /tmp/ccdBCU3g.s:1027   .text.EXTI1_IRQHandler:0000000000000000 EXTI1_IRQHandler
+     /tmp/ccdBCU3g.s:1053   .text.EXTI2_IRQHandler:0000000000000000 $t
+     /tmp/ccdBCU3g.s:1060   .text.EXTI2_IRQHandler:0000000000000000 EXTI2_IRQHandler
+     /tmp/ccdBCU3g.s:1086   .text.EXTI3_IRQHandler:0000000000000000 $t
+     /tmp/ccdBCU3g.s:1093   .text.EXTI3_IRQHandler:0000000000000000 EXTI3_IRQHandler
+     /tmp/ccdBCU3g.s:1119   .text.EXTI4_IRQHandler:0000000000000000 $t
+     /tmp/ccdBCU3g.s:1126   .text.EXTI4_IRQHandler:0000000000000000 EXTI4_IRQHandler
+     /tmp/ccdBCU3g.s:1152   .text.EXTI9_5_IRQHandler:0000000000000000 $t
+     /tmp/ccdBCU3g.s:1159   .text.EXTI9_5_IRQHandler:0000000000000000 EXTI9_5_IRQHandler
+     /tmp/ccdBCU3g.s:1201   .text.EXTI15_10_IRQHandler:0000000000000000 $t
+     /tmp/ccdBCU3g.s:1208   .text.EXTI15_10_IRQHandler:0000000000000000 EXTI15_10_IRQHandler
+     /tmp/ccdBCU3g.s:1254   .text.rt_hw_pin_init:0000000000000000 $t
+     /tmp/ccdBCU3g.s:1261   .text.rt_hw_pin_init:0000000000000000 rt_hw_pin_init
+     /tmp/ccdBCU3g.s:1411   .text.rt_hw_pin_init:00000000000000f4 $d
+     /tmp/ccdBCU3g.s:1418   .bss.pin_irq_enable_mask:0000000000000000 $d
+     /tmp/ccdBCU3g.s:1422   .bss.pin_irq_enable_mask:0000000000000000 pin_irq_enable_mask
+     /tmp/ccdBCU3g.s:1425   .data.pin_irq_hdr_tab:0000000000000000 $d
+     /tmp/ccdBCU3g.s:1429   .data.pin_irq_hdr_tab:0000000000000000 pin_irq_hdr_tab
+     /tmp/ccdBCU3g.s:1495   .rodata._stm32_pin_ops:0000000000000000 $d
+     /tmp/ccdBCU3g.s:1499   .rodata._stm32_pin_ops:0000000000000000 _stm32_pin_ops
+     /tmp/ccdBCU3g.s:1507   .rodata.pin_irq_map:0000000000000000 $d
+     /tmp/ccdBCU3g.s:1511   .rodata.pin_irq_map:0000000000000000 pin_irq_map
+     /tmp/ccdBCU3g.s:1561   .rodata.pins:0000000000000000 $d
+     /tmp/ccdBCU3g.s:1565   .rodata.pins:0000000000000000 pins
+     /tmp/ccdBCU3g.s:2095   .rodata.rt_hw_pin_init.str1.4:0000000000000000 $d
+                     .debug_frame:0000000000000010 $d
+
+UNDEFINED SYMBOLS
+rt_hw_interrupt_disable
+rt_hw_interrupt_enable
+HAL_GPIO_Init
+ARM GAS  /tmp/ccdBCU3g.s 			page 55
+
+
+HAL_NVIC_SetPriority
+HAL_NVIC_EnableIRQ
+HAL_GPIO_DeInit
+HAL_NVIC_DisableIRQ
+HAL_GPIO_ReadPin
+HAL_GPIO_WritePin
+rt_interrupt_enter
+HAL_GPIO_EXTI_IRQHandler
+rt_interrupt_leave
+rt_device_pin_register

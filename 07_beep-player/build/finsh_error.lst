@@ -1,0 +1,342 @@
+ARM GAS  /tmp/ccNiTMxV.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.eabi_attribute 27, 1
+   3              		.eabi_attribute 28, 1
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.file	"finsh_error.c"
+  14              		.text
+  15              	.Ltext0:
+  16              		.cfi_sections	.debug_frame
+  17              		.section	.text.finsh_error_init,"ax",%progbits
+  18              		.align	1
+  19              		.global	finsh_error_init
+  20              		.syntax unified
+  21              		.thumb
+  22              		.thumb_func
+  23              		.fpu fpv4-sp-d16
+  25              	finsh_error_init:
+  26              	.LFB16:
+  27              		.file 1 "rt-thread/components/finsh/finsh_error.c"
+   1:rt-thread/components/finsh/finsh_error.c **** /*
+   2:rt-thread/components/finsh/finsh_error.c ****  * Copyright (c) 2006-2018, RT-Thread Development Team
+   3:rt-thread/components/finsh/finsh_error.c ****  *
+   4:rt-thread/components/finsh/finsh_error.c ****  * SPDX-License-Identifier: Apache-2.0
+   5:rt-thread/components/finsh/finsh_error.c ****  *
+   6:rt-thread/components/finsh/finsh_error.c ****  * Change Logs:
+   7:rt-thread/components/finsh/finsh_error.c ****  * Date           Author       Notes
+   8:rt-thread/components/finsh/finsh_error.c ****  * 2010-03-22     Bernard      first version
+   9:rt-thread/components/finsh/finsh_error.c ****  */
+  10:rt-thread/components/finsh/finsh_error.c **** #include "finsh_error.h"
+  11:rt-thread/components/finsh/finsh_error.c **** 
+  12:rt-thread/components/finsh/finsh_error.c **** uint8_t global_errno;
+  13:rt-thread/components/finsh/finsh_error.c **** 
+  14:rt-thread/components/finsh/finsh_error.c **** static const char * finsh_error_string_table[] =
+  15:rt-thread/components/finsh/finsh_error.c **** {
+  16:rt-thread/components/finsh/finsh_error.c ****     "No error",
+  17:rt-thread/components/finsh/finsh_error.c ****     "Invalid token",
+  18:rt-thread/components/finsh/finsh_error.c ****     "Expect a type",
+  19:rt-thread/components/finsh/finsh_error.c ****     "Unknown type",
+  20:rt-thread/components/finsh/finsh_error.c ****     "Variable exist",
+  21:rt-thread/components/finsh/finsh_error.c ****     "Expect a operater",
+  22:rt-thread/components/finsh/finsh_error.c ****     "Memory full",
+  23:rt-thread/components/finsh/finsh_error.c ****     "Unknown operator",
+  24:rt-thread/components/finsh/finsh_error.c ****     "Unknown node",
+  25:rt-thread/components/finsh/finsh_error.c ****     "Expect a character",
+  26:rt-thread/components/finsh/finsh_error.c ****     "Unexpect end",
+  27:rt-thread/components/finsh/finsh_error.c ****     "Unknown token",
+  28:rt-thread/components/finsh/finsh_error.c ****     "Float not supported",
+  29:rt-thread/components/finsh/finsh_error.c ****     "Unknown symbol",
+  30:rt-thread/components/finsh/finsh_error.c ****     "Null node"
+  31:rt-thread/components/finsh/finsh_error.c **** };
+ARM GAS  /tmp/ccNiTMxV.s 			page 2
+
+
+  32:rt-thread/components/finsh/finsh_error.c **** 
+  33:rt-thread/components/finsh/finsh_error.c **** int finsh_error_init()
+  34:rt-thread/components/finsh/finsh_error.c **** {
+  28              		.loc 1 34 0
+  29              		.cfi_startproc
+  30              		@ args = 0, pretend = 0, frame = 0
+  31              		@ frame_needed = 0, uses_anonymous_args = 0
+  32              		@ link register save eliminated.
+  35:rt-thread/components/finsh/finsh_error.c ****     global_errno = FINSH_ERROR_OK;
+  33              		.loc 1 35 0
+  34 0000 0020     		movs	r0, #0
+  35 0002 014B     		ldr	r3, .L2
+  36 0004 1870     		strb	r0, [r3]
+  36:rt-thread/components/finsh/finsh_error.c **** 
+  37:rt-thread/components/finsh/finsh_error.c ****     return 0;
+  38:rt-thread/components/finsh/finsh_error.c **** }
+  37              		.loc 1 38 0
+  38 0006 7047     		bx	lr
+  39              	.L3:
+  40              		.align	2
+  41              	.L2:
+  42 0008 00000000 		.word	global_errno
+  43              		.cfi_endproc
+  44              	.LFE16:
+  46              		.section	.text.finsh_error_set,"ax",%progbits
+  47              		.align	1
+  48              		.global	finsh_error_set
+  49              		.syntax unified
+  50              		.thumb
+  51              		.thumb_func
+  52              		.fpu fpv4-sp-d16
+  54              	finsh_error_set:
+  55              	.LFB17:
+  39:rt-thread/components/finsh/finsh_error.c **** 
+  40:rt-thread/components/finsh/finsh_error.c **** int finsh_error_set(uint8_t type)
+  41:rt-thread/components/finsh/finsh_error.c **** {
+  56              		.loc 1 41 0
+  57              		.cfi_startproc
+  58              		@ args = 0, pretend = 0, frame = 0
+  59              		@ frame_needed = 0, uses_anonymous_args = 0
+  60              		@ link register save eliminated.
+  61              	.LVL0:
+  42:rt-thread/components/finsh/finsh_error.c ****     global_errno = type;
+  62              		.loc 1 42 0
+  63 0000 014B     		ldr	r3, .L5
+  64 0002 1870     		strb	r0, [r3]
+  43:rt-thread/components/finsh/finsh_error.c **** 
+  44:rt-thread/components/finsh/finsh_error.c ****     return 0;
+  45:rt-thread/components/finsh/finsh_error.c **** }
+  65              		.loc 1 45 0
+  66 0004 0020     		movs	r0, #0
+  67              	.LVL1:
+  68 0006 7047     		bx	lr
+  69              	.L6:
+  70              		.align	2
+  71              	.L5:
+  72 0008 00000000 		.word	global_errno
+ARM GAS  /tmp/ccNiTMxV.s 			page 3
+
+
+  73              		.cfi_endproc
+  74              	.LFE17:
+  76              		.section	.text.finsh_errno,"ax",%progbits
+  77              		.align	1
+  78              		.global	finsh_errno
+  79              		.syntax unified
+  80              		.thumb
+  81              		.thumb_func
+  82              		.fpu fpv4-sp-d16
+  84              	finsh_errno:
+  85              	.LFB18:
+  46:rt-thread/components/finsh/finsh_error.c **** 
+  47:rt-thread/components/finsh/finsh_error.c **** uint8_t finsh_errno()
+  48:rt-thread/components/finsh/finsh_error.c **** {
+  86              		.loc 1 48 0
+  87              		.cfi_startproc
+  88              		@ args = 0, pretend = 0, frame = 0
+  89              		@ frame_needed = 0, uses_anonymous_args = 0
+  90              		@ link register save eliminated.
+  49:rt-thread/components/finsh/finsh_error.c ****     return global_errno;
+  50:rt-thread/components/finsh/finsh_error.c **** }
+  91              		.loc 1 50 0
+  92 0000 014B     		ldr	r3, .L8
+  93 0002 1878     		ldrb	r0, [r3]	@ zero_extendqisi2
+  94 0004 7047     		bx	lr
+  95              	.L9:
+  96 0006 00BF     		.align	2
+  97              	.L8:
+  98 0008 00000000 		.word	global_errno
+  99              		.cfi_endproc
+ 100              	.LFE18:
+ 102              		.section	.text.finsh_error_string,"ax",%progbits
+ 103              		.align	1
+ 104              		.global	finsh_error_string
+ 105              		.syntax unified
+ 106              		.thumb
+ 107              		.thumb_func
+ 108              		.fpu fpv4-sp-d16
+ 110              	finsh_error_string:
+ 111              	.LFB19:
+  51:rt-thread/components/finsh/finsh_error.c **** 
+  52:rt-thread/components/finsh/finsh_error.c **** const char* finsh_error_string(uint8_t type)
+  53:rt-thread/components/finsh/finsh_error.c **** {
+ 112              		.loc 1 53 0
+ 113              		.cfi_startproc
+ 114              		@ args = 0, pretend = 0, frame = 0
+ 115              		@ frame_needed = 0, uses_anonymous_args = 0
+ 116              		@ link register save eliminated.
+ 117              	.LVL2:
+  54:rt-thread/components/finsh/finsh_error.c ****     return finsh_error_string_table[type];
+  55:rt-thread/components/finsh/finsh_error.c **** }
+ 118              		.loc 1 55 0
+ 119 0000 014B     		ldr	r3, .L11
+ 120 0002 53F82000 		ldr	r0, [r3, r0, lsl #2]
+ 121              	.LVL3:
+ 122 0006 7047     		bx	lr
+ 123              	.L12:
+ARM GAS  /tmp/ccNiTMxV.s 			page 4
+
+
+ 124              		.align	2
+ 125              	.L11:
+ 126 0008 00000000 		.word	.LANCHOR0
+ 127              		.cfi_endproc
+ 128              	.LFE19:
+ 130              		.comm	global_errno,1,1
+ 131              		.section	.rodata.finsh_error_string_table,"a",%progbits
+ 132              		.align	2
+ 133              		.set	.LANCHOR0,. + 0
+ 136              	finsh_error_string_table:
+ 137 0000 00000000 		.word	.LC0
+ 138 0004 0C000000 		.word	.LC1
+ 139 0008 1C000000 		.word	.LC2
+ 140 000c 2C000000 		.word	.LC3
+ 141 0010 3C000000 		.word	.LC4
+ 142 0014 4C000000 		.word	.LC5
+ 143 0018 60000000 		.word	.LC6
+ 144 001c 6C000000 		.word	.LC7
+ 145 0020 80000000 		.word	.LC8
+ 146 0024 90000000 		.word	.LC9
+ 147 0028 A4000000 		.word	.LC10
+ 148 002c B4000000 		.word	.LC11
+ 149 0030 C4000000 		.word	.LC12
+ 150 0034 D8000000 		.word	.LC13
+ 151 0038 E8000000 		.word	.LC14
+ 152              		.section	.rodata.str1.4,"aMS",%progbits,1
+ 153              		.align	2
+ 154              	.LC0:
+ 155 0000 4E6F2065 		.ascii	"No error\000"
+ 155      72726F72 
+ 155      00
+ 156 0009 000000   		.space	3
+ 157              	.LC1:
+ 158 000c 496E7661 		.ascii	"Invalid token\000"
+ 158      6C696420 
+ 158      746F6B65 
+ 158      6E00
+ 159 001a 0000     		.space	2
+ 160              	.LC2:
+ 161 001c 45787065 		.ascii	"Expect a type\000"
+ 161      63742061 
+ 161      20747970 
+ 161      6500
+ 162 002a 0000     		.space	2
+ 163              	.LC3:
+ 164 002c 556E6B6E 		.ascii	"Unknown type\000"
+ 164      6F776E20 
+ 164      74797065 
+ 164      00
+ 165 0039 000000   		.space	3
+ 166              	.LC4:
+ 167 003c 56617269 		.ascii	"Variable exist\000"
+ 167      61626C65 
+ 167      20657869 
+ 167      737400
+ 168 004b 00       		.space	1
+ 169              	.LC5:
+ARM GAS  /tmp/ccNiTMxV.s 			page 5
+
+
+ 170 004c 45787065 		.ascii	"Expect a operater\000"
+ 170      63742061 
+ 170      206F7065 
+ 170      72617465 
+ 170      7200
+ 171 005e 0000     		.space	2
+ 172              	.LC6:
+ 173 0060 4D656D6F 		.ascii	"Memory full\000"
+ 173      72792066 
+ 173      756C6C00 
+ 174              	.LC7:
+ 175 006c 556E6B6E 		.ascii	"Unknown operator\000"
+ 175      6F776E20 
+ 175      6F706572 
+ 175      61746F72 
+ 175      00
+ 176 007d 000000   		.space	3
+ 177              	.LC8:
+ 178 0080 556E6B6E 		.ascii	"Unknown node\000"
+ 178      6F776E20 
+ 178      6E6F6465 
+ 178      00
+ 179 008d 000000   		.space	3
+ 180              	.LC9:
+ 181 0090 45787065 		.ascii	"Expect a character\000"
+ 181      63742061 
+ 181      20636861 
+ 181      72616374 
+ 181      657200
+ 182 00a3 00       		.space	1
+ 183              	.LC10:
+ 184 00a4 556E6578 		.ascii	"Unexpect end\000"
+ 184      70656374 
+ 184      20656E64 
+ 184      00
+ 185 00b1 000000   		.space	3
+ 186              	.LC11:
+ 187 00b4 556E6B6E 		.ascii	"Unknown token\000"
+ 187      6F776E20 
+ 187      746F6B65 
+ 187      6E00
+ 188 00c2 0000     		.space	2
+ 189              	.LC12:
+ 190 00c4 466C6F61 		.ascii	"Float not supported\000"
+ 190      74206E6F 
+ 190      74207375 
+ 190      70706F72 
+ 190      74656400 
+ 191              	.LC13:
+ 192 00d8 556E6B6E 		.ascii	"Unknown symbol\000"
+ 192      6F776E20 
+ 192      73796D62 
+ 192      6F6C00
+ 193 00e7 00       		.space	1
+ 194              	.LC14:
+ 195 00e8 4E756C6C 		.ascii	"Null node\000"
+ 195      206E6F64 
+ARM GAS  /tmp/ccNiTMxV.s 			page 6
+
+
+ 195      6500
+ 196              		.text
+ 197              	.Letext0:
+ 198              		.file 2 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/machine/_default_types.h"
+ 199              		.file 3 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/lock.h"
+ 200              		.file 4 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_types.h"
+ 201              		.file 5 "/opt/gcc-arm-none-eabi-6-2017-q2-update/lib/gcc/arm-none-eabi/6.3.1/include/stddef.h"
+ 202              		.file 6 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/reent.h"
+ 203              		.file 7 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_stdint.h"
+ 204              		.file 8 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/time.h"
+ 205              		.file 9 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/errno.h"
+ 206              		.file 10 "rt-thread/components/finsh/finsh_api.h"
+ 207              		.file 11 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/ctype.h"
+ 208              		.file 12 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/stdlib.h"
+ 209              		.file 13 "rt-thread/components/finsh/finsh.h"
+ARM GAS  /tmp/ccNiTMxV.s 			page 7
+
+
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 finsh_error.c
+     /tmp/ccNiTMxV.s:18     .text.finsh_error_init:0000000000000000 $t
+     /tmp/ccNiTMxV.s:25     .text.finsh_error_init:0000000000000000 finsh_error_init
+     /tmp/ccNiTMxV.s:42     .text.finsh_error_init:0000000000000008 $d
+                            *COM*:0000000000000001 global_errno
+     /tmp/ccNiTMxV.s:47     .text.finsh_error_set:0000000000000000 $t
+     /tmp/ccNiTMxV.s:54     .text.finsh_error_set:0000000000000000 finsh_error_set
+     /tmp/ccNiTMxV.s:72     .text.finsh_error_set:0000000000000008 $d
+     /tmp/ccNiTMxV.s:77     .text.finsh_errno:0000000000000000 $t
+     /tmp/ccNiTMxV.s:84     .text.finsh_errno:0000000000000000 finsh_errno
+     /tmp/ccNiTMxV.s:98     .text.finsh_errno:0000000000000008 $d
+     /tmp/ccNiTMxV.s:103    .text.finsh_error_string:0000000000000000 $t
+     /tmp/ccNiTMxV.s:110    .text.finsh_error_string:0000000000000000 finsh_error_string
+     /tmp/ccNiTMxV.s:126    .text.finsh_error_string:0000000000000008 $d
+     /tmp/ccNiTMxV.s:132    .rodata.finsh_error_string_table:0000000000000000 $d
+     /tmp/ccNiTMxV.s:136    .rodata.finsh_error_string_table:0000000000000000 finsh_error_string_table
+     /tmp/ccNiTMxV.s:153    .rodata.str1.4:0000000000000000 $d
+                     .debug_frame:0000000000000010 $d
+
+NO UNDEFINED SYMBOLS

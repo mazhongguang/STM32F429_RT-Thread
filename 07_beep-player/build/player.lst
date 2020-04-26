@@ -1,0 +1,1465 @@
+ARM GAS  /tmp/ccTFMFft.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.eabi_attribute 27, 1
+   3              		.eabi_attribute 28, 1
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.file	"player.c"
+  14              		.text
+  15              	.Ltext0:
+  16              		.cfi_sections	.debug_frame
+  17              		.section	.text.player_play,"ax",%progbits
+  18              		.align	1
+  19              		.global	player_play
+  20              		.syntax unified
+  21              		.thumb
+  22              		.thumb_func
+  23              		.fpu fpv4-sp-d16
+  25              	player_play:
+  26              	.LFB138:
+  27              		.file 1 "hardware/player/player.c"
+   1:hardware/player/player.c **** #include <rthw.h>
+   2:hardware/player/player.c **** #include <stdint.h>
+   3:hardware/player/player.c **** #include <sys/types.h>
+   4:hardware/player/player.c **** #include "led.h"
+   5:hardware/player/player.c **** #include "player.h" 
+   6:hardware/player/player.c **** #include "rtdef.h"
+   7:hardware/player/player.c **** #include "rtthread.h"
+   8:hardware/player/player.c **** #include "lcd.h"
+   9:hardware/player/player.c **** 
+  10:hardware/player/player.c **** int player_play(player_t player)
+  11:hardware/player/player.c **** {
+  28              		.loc 1 11 0
+  29              		.cfi_startproc
+  30              		@ args = 0, pretend = 0, frame = 0
+  31              		@ frame_needed = 0, uses_anonymous_args = 0
+  32              	.LVL0:
+  12:hardware/player/player.c **** 	rt_uint32_t level;
+  13:hardware/player/player.c **** 
+  14:hardware/player/player.c **** 	if (player->status != PLAYER_RUNNING)
+  33              		.loc 1 14 0
+  34 0000 0378     		ldrb	r3, [r0]	@ zero_extendqisi2
+  35 0002 0BB9     		cbnz	r3, .L7
+  15:hardware/player/player.c **** 	{
+  16:hardware/player/player.c **** 		/* disable interrupt */
+  17:hardware/player/player.c **** 		level = rt_hw_interrupt_disable();
+  18:hardware/player/player.c **** 
+  19:hardware/player/player.c **** 		/* set play status to playing */
+  20:hardware/player/player.c **** 		player->status = PLAYER_RUNNING;
+  21:hardware/player/player.c **** 
+  22:hardware/player/player.c **** 		/* enable interrupt */
+  23:hardware/player/player.c **** 		rt_hw_interrupt_enable(level);
+ARM GAS  /tmp/ccTFMFft.s 			page 2
+
+
+  24:hardware/player/player.c **** 
+  25:hardware/player/player.c **** 		/* release sem to play's thread start play */
+  26:hardware/player/player.c **** 		rt_sem_release(player->sem_play);
+  27:hardware/player/player.c **** 	}
+  28:hardware/player/player.c **** 
+  29:hardware/player/player.c **** 	return 0;
+  30:hardware/player/player.c **** }
+  36              		.loc 1 30 0
+  37 0004 0020     		movs	r0, #0
+  38              	.LVL1:
+  39 0006 7047     		bx	lr
+  40              	.LVL2:
+  41              	.L7:
+  11:hardware/player/player.c **** 	rt_uint32_t level;
+  42              		.loc 1 11 0
+  43 0008 10B5     		push	{r4, lr}
+  44              	.LCFI0:
+  45              		.cfi_def_cfa_offset 8
+  46              		.cfi_offset 4, -8
+  47              		.cfi_offset 14, -4
+  48 000a 0446     		mov	r4, r0
+  17:hardware/player/player.c **** 
+  49              		.loc 1 17 0
+  50 000c FFF7FEFF 		bl	rt_hw_interrupt_disable
+  51              	.LVL3:
+  20:hardware/player/player.c **** 
+  52              		.loc 1 20 0
+  53 0010 0023     		movs	r3, #0
+  54 0012 2370     		strb	r3, [r4]
+  23:hardware/player/player.c **** 
+  55              		.loc 1 23 0
+  56 0014 FFF7FEFF 		bl	rt_hw_interrupt_enable
+  57              	.LVL4:
+  26:hardware/player/player.c **** 	}
+  58              		.loc 1 26 0
+  59 0018 206B     		ldr	r0, [r4, #48]
+  60 001a FFF7FEFF 		bl	rt_sem_release
+  61              	.LVL5:
+  62              		.loc 1 30 0
+  63 001e 0020     		movs	r0, #0
+  64 0020 10BD     		pop	{r4, pc}
+  65              		.cfi_endproc
+  66              	.LFE138:
+  68              		.section	.text.player_stop,"ax",%progbits
+  69              		.align	1
+  70              		.global	player_stop
+  71              		.syntax unified
+  72              		.thumb
+  73              		.thumb_func
+  74              		.fpu fpv4-sp-d16
+  76              	player_stop:
+  77              	.LFB139:
+  31:hardware/player/player.c **** 
+  32:hardware/player/player.c **** int player_stop(player_t player)
+  33:hardware/player/player.c **** {
+  78              		.loc 1 33 0
+  79              		.cfi_startproc
+ARM GAS  /tmp/ccTFMFft.s 			page 3
+
+
+  80              		@ args = 0, pretend = 0, frame = 0
+  81              		@ frame_needed = 0, uses_anonymous_args = 0
+  82              	.LVL6:
+  34:hardware/player/player.c **** 	rt_uint32_t level;
+  35:hardware/player/player.c **** 
+  36:hardware/player/player.c **** 	if (player->status == PLAYER_RUNNING)
+  83              		.loc 1 36 0
+  84 0000 0378     		ldrb	r3, [r0]	@ zero_extendqisi2
+  85 0002 0BB1     		cbz	r3, .L14
+  37:hardware/player/player.c **** 	{
+  38:hardware/player/player.c **** 		/* disable interrupt */
+  39:hardware/player/player.c **** 		level = rt_hw_interrupt_disable();
+  40:hardware/player/player.c **** 
+  41:hardware/player/player.c **** 		/* set play status to stop */
+  42:hardware/player/player.c **** 		player->status = PLAYER_STOP;
+  43:hardware/player/player.c **** 
+  44:hardware/player/player.c **** 		/* enable interrupt */
+  45:hardware/player/player.c **** 		rt_hw_interrupt_enable(level);
+  46:hardware/player/player.c **** 	}
+  47:hardware/player/player.c **** 
+  48:hardware/player/player.c **** 	return 0;
+  49:hardware/player/player.c **** }
+  86              		.loc 1 49 0
+  87 0004 0020     		movs	r0, #0
+  88              	.LVL7:
+  89 0006 7047     		bx	lr
+  90              	.LVL8:
+  91              	.L14:
+  33:hardware/player/player.c **** 	rt_uint32_t level;
+  92              		.loc 1 33 0
+  93 0008 10B5     		push	{r4, lr}
+  94              	.LCFI1:
+  95              		.cfi_def_cfa_offset 8
+  96              		.cfi_offset 4, -8
+  97              		.cfi_offset 14, -4
+  98 000a 0446     		mov	r4, r0
+  39:hardware/player/player.c **** 
+  99              		.loc 1 39 0
+ 100 000c FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 101              	.LVL9:
+  42:hardware/player/player.c **** 
+ 102              		.loc 1 42 0
+ 103 0010 0123     		movs	r3, #1
+ 104 0012 2370     		strb	r3, [r4]
+  45:hardware/player/player.c **** 	}
+ 105              		.loc 1 45 0
+ 106 0014 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 107              	.LVL10:
+ 108              		.loc 1 49 0
+ 109 0018 0020     		movs	r0, #0
+ 110 001a 10BD     		pop	{r4, pc}
+ 111              		.cfi_endproc
+ 112              	.LFE139:
+ 114              		.section	.text.player_last,"ax",%progbits
+ 115              		.align	1
+ 116              		.global	player_last
+ 117              		.syntax unified
+ARM GAS  /tmp/ccTFMFft.s 			page 4
+
+
+ 118              		.thumb
+ 119              		.thumb_func
+ 120              		.fpu fpv4-sp-d16
+ 122              	player_last:
+ 123              	.LFB140:
+  50:hardware/player/player.c **** 
+  51:hardware/player/player.c **** int player_last(player_t player)
+  52:hardware/player/player.c **** {
+ 124              		.loc 1 52 0
+ 125              		.cfi_startproc
+ 126              		@ args = 0, pretend = 0, frame = 0
+ 127              		@ frame_needed = 0, uses_anonymous_args = 0
+ 128              	.LVL11:
+ 129 0000 70B5     		push	{r4, r5, r6, lr}
+ 130              	.LCFI2:
+ 131              		.cfi_def_cfa_offset 16
+ 132              		.cfi_offset 4, -16
+ 133              		.cfi_offset 5, -12
+ 134              		.cfi_offset 6, -8
+ 135              		.cfi_offset 14, -4
+ 136 0002 0446     		mov	r4, r0
+  53:hardware/player/player.c **** 	uint16_t len;
+  54:hardware/player/player.c **** 	rt_uint32_t level;
+  55:hardware/player/player.c **** 
+  56:hardware/player/player.c **** 	/* disable interrupt */
+  57:hardware/player/player.c **** 	level = rt_hw_interrupt_disable();
+ 137              		.loc 1 57 0
+ 138 0004 FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 139              	.LVL12:
+  58:hardware/player/player.c **** 
+  59:hardware/player/player.c **** 	/* current playing song's number to decrease one */
+  60:hardware/player/player.c **** 	if (player->song_current > 1)
+ 140              		.loc 1 60 0
+ 141 0008 A378     		ldrb	r3, [r4, #2]	@ zero_extendqisi2
+ 142 000a 012B     		cmp	r3, #1
+ 143 000c 18D9     		bls	.L16
+  61:hardware/player/player.c **** 	{
+  62:hardware/player/player.c **** 		player->song_current --;
+ 144              		.loc 1 62 0
+ 145 000e 013B     		subs	r3, r3, #1
+ 146 0010 A370     		strb	r3, [r4, #2]
+ 147              	.L17:
+  63:hardware/player/player.c **** 	}
+  64:hardware/player/player.c **** 	else
+  65:hardware/player/player.c **** 	{
+  66:hardware/player/player.c **** 		player->song_current = player->song_num;
+  67:hardware/player/player.c **** 	}
+  68:hardware/player/player.c **** 
+  69:hardware/player/player.c **** 	/* update player current playing song's played time and total time */
+  70:hardware/player/player.c **** 	player->song_time_pass = 0;
+ 148              		.loc 1 70 0
+ 149 0012 0023     		movs	r3, #0
+ 150 0014 A380     		strh	r3, [r4, #4]	@ movhi
+  71:hardware/player/player.c **** 	
+  72:hardware/player/player.c **** 	/* enable interrupt */
+  73:hardware/player/player.c **** 	rt_hw_interrupt_enable(level);
+ 151              		.loc 1 73 0
+ARM GAS  /tmp/ccTFMFft.s 			page 5
+
+
+ 152 0016 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 153              	.LVL13:
+  74:hardware/player/player.c **** 
+  75:hardware/player/player.c **** 	player->decode->control(player->song_sheet[player->song_current - 1], DECODE_OPS_CMD_GET_LEN, len)
+ 154              		.loc 1 75 0
+ 155 001a E36B     		ldr	r3, [r4, #60]
+ 156 001c 5E68     		ldr	r6, [r3, #4]
+ 157 001e A378     		ldrb	r3, [r4, #2]	@ zero_extendqisi2
+ 158 0020 0133     		adds	r3, r3, #1
+ 159 0022 0025     		movs	r5, #0
+ 160 0024 2A46     		mov	r2, r5
+ 161 0026 0121     		movs	r1, #1
+ 162 0028 54F82300 		ldr	r0, [r4, r3, lsl #2]
+ 163 002c B047     		blx	r6
+ 164              	.LVL14:
+  76:hardware/player/player.c **** 
+  77:hardware/player/player.c **** 	/* disable interrupt */
+  78:hardware/player/player.c **** 	level = rt_hw_interrupt_disable();
+ 165              		.loc 1 78 0
+ 166 002e FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 167              	.LVL15:
+  79:hardware/player/player.c **** 
+  80:hardware/player/player.c **** 	player->song_time_all = len;
+ 168              		.loc 1 80 0
+ 169 0032 E580     		strh	r5, [r4, #6]	@ movhi
+  81:hardware/player/player.c **** 
+  82:hardware/player/player.c **** 	/* enable interrupt */
+  83:hardware/player/player.c **** 	rt_hw_interrupt_enable(level);
+ 170              		.loc 1 83 0
+ 171 0034 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 172              	.LVL16:
+  84:hardware/player/player.c **** 
+  85:hardware/player/player.c **** 	if (player->status != PLAYER_RUNNING)
+ 173              		.loc 1 85 0
+ 174 0038 2378     		ldrb	r3, [r4]	@ zero_extendqisi2
+ 175 003a 23B9     		cbnz	r3, .L20
+ 176              	.L18:
+  86:hardware/player/player.c **** 	{
+  87:hardware/player/player.c **** 		player_play(player);
+  88:hardware/player/player.c **** 	}
+  89:hardware/player/player.c **** 
+  90:hardware/player/player.c **** 	return 0;
+  91:hardware/player/player.c **** }
+ 177              		.loc 1 91 0
+ 178 003c 0020     		movs	r0, #0
+ 179 003e 70BD     		pop	{r4, r5, r6, pc}
+ 180              	.LVL17:
+ 181              	.L16:
+  66:hardware/player/player.c **** 	}
+ 182              		.loc 1 66 0
+ 183 0040 E378     		ldrb	r3, [r4, #3]	@ zero_extendqisi2
+ 184 0042 A370     		strb	r3, [r4, #2]
+ 185 0044 E5E7     		b	.L17
+ 186              	.LVL18:
+ 187              	.L20:
+  87:hardware/player/player.c **** 	}
+ 188              		.loc 1 87 0
+ARM GAS  /tmp/ccTFMFft.s 			page 6
+
+
+ 189 0046 2046     		mov	r0, r4
+ 190 0048 FFF7FEFF 		bl	player_play
+ 191              	.LVL19:
+ 192 004c F6E7     		b	.L18
+ 193              		.cfi_endproc
+ 194              	.LFE140:
+ 196              		.section	.text.player_next,"ax",%progbits
+ 197              		.align	1
+ 198              		.global	player_next
+ 199              		.syntax unified
+ 200              		.thumb
+ 201              		.thumb_func
+ 202              		.fpu fpv4-sp-d16
+ 204              	player_next:
+ 205              	.LFB141:
+  92:hardware/player/player.c **** 	
+  93:hardware/player/player.c **** int player_next(player_t player)
+  94:hardware/player/player.c **** {
+ 206              		.loc 1 94 0
+ 207              		.cfi_startproc
+ 208              		@ args = 0, pretend = 0, frame = 8
+ 209              		@ frame_needed = 0, uses_anonymous_args = 0
+ 210              	.LVL20:
+ 211 0000 30B5     		push	{r4, r5, lr}
+ 212              	.LCFI3:
+ 213              		.cfi_def_cfa_offset 12
+ 214              		.cfi_offset 4, -12
+ 215              		.cfi_offset 5, -8
+ 216              		.cfi_offset 14, -4
+ 217 0002 83B0     		sub	sp, sp, #12
+ 218              	.LCFI4:
+ 219              		.cfi_def_cfa_offset 24
+ 220 0004 0446     		mov	r4, r0
+  95:hardware/player/player.c **** 	uint16_t len;
+  96:hardware/player/player.c **** 	rt_uint32_t level;
+  97:hardware/player/player.c **** 
+  98:hardware/player/player.c **** 	/* disable interrupt */
+  99:hardware/player/player.c **** 	level = rt_hw_interrupt_disable();
+ 221              		.loc 1 99 0
+ 222 0006 FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 223              	.LVL21:
+ 100:hardware/player/player.c **** 
+ 101:hardware/player/player.c **** 	/* current playing song's number to add one */
+ 102:hardware/player/player.c **** 	if (player->song_current < player->song_num)
+ 224              		.loc 1 102 0
+ 225 000a A378     		ldrb	r3, [r4, #2]	@ zero_extendqisi2
+ 226 000c E278     		ldrb	r2, [r4, #3]	@ zero_extendqisi2
+ 227 000e 9342     		cmp	r3, r2
+ 228 0010 1BD2     		bcs	.L22
+ 103:hardware/player/player.c **** 	{
+ 104:hardware/player/player.c **** 		player->song_current ++; 
+ 229              		.loc 1 104 0
+ 230 0012 0133     		adds	r3, r3, #1
+ 231 0014 A370     		strb	r3, [r4, #2]
+ 232              	.L23:
+ 105:hardware/player/player.c **** 	}
+ 106:hardware/player/player.c **** 	else
+ARM GAS  /tmp/ccTFMFft.s 			page 7
+
+
+ 107:hardware/player/player.c **** 	{
+ 108:hardware/player/player.c **** 		player->song_current = 1;
+ 109:hardware/player/player.c **** 	}
+ 110:hardware/player/player.c **** 
+ 111:hardware/player/player.c **** 	/* update player current playing song's played time and total time */
+ 112:hardware/player/player.c **** 	player->song_time_pass = 0;
+ 233              		.loc 1 112 0
+ 234 0016 0023     		movs	r3, #0
+ 235 0018 A380     		strh	r3, [r4, #4]	@ movhi
+ 113:hardware/player/player.c **** 	
+ 114:hardware/player/player.c **** 	/* enable interrupt */
+ 115:hardware/player/player.c **** 	rt_hw_interrupt_enable(level);
+ 236              		.loc 1 115 0
+ 237 001a FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 238              	.LVL22:
+ 116:hardware/player/player.c **** 
+ 117:hardware/player/player.c **** 	player->decode->control(player->song_sheet[player->song_current - 1], DECODE_OPS_CMD_GET_LEN, &len
+ 239              		.loc 1 117 0
+ 240 001e E36B     		ldr	r3, [r4, #60]
+ 241 0020 5D68     		ldr	r5, [r3, #4]
+ 242 0022 A378     		ldrb	r3, [r4, #2]	@ zero_extendqisi2
+ 243 0024 0133     		adds	r3, r3, #1
+ 244 0026 0DF10602 		add	r2, sp, #6
+ 245 002a 0121     		movs	r1, #1
+ 246 002c 54F82300 		ldr	r0, [r4, r3, lsl #2]
+ 247 0030 A847     		blx	r5
+ 248              	.LVL23:
+ 118:hardware/player/player.c **** 
+ 119:hardware/player/player.c **** 	/* disable interrupt */
+ 120:hardware/player/player.c **** 	level = rt_hw_interrupt_disable();
+ 249              		.loc 1 120 0
+ 250 0032 FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 251              	.LVL24:
+ 121:hardware/player/player.c **** 
+ 122:hardware/player/player.c **** 	player->song_time_all = len;
+ 252              		.loc 1 122 0
+ 253 0036 BDF80630 		ldrh	r3, [sp, #6]
+ 254 003a E380     		strh	r3, [r4, #6]	@ movhi
+ 123:hardware/player/player.c **** 
+ 124:hardware/player/player.c **** 	/* enable interrupt */
+ 125:hardware/player/player.c **** 	rt_hw_interrupt_enable(level);
+ 255              		.loc 1 125 0
+ 256 003c FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 257              	.LVL25:
+ 126:hardware/player/player.c **** 
+ 127:hardware/player/player.c **** 	if (player->status != PLAYER_RUNNING)
+ 258              		.loc 1 127 0
+ 259 0040 2378     		ldrb	r3, [r4]	@ zero_extendqisi2
+ 260 0042 2BB9     		cbnz	r3, .L26
+ 261              	.L24:
+ 128:hardware/player/player.c **** 	{
+ 129:hardware/player/player.c **** 		player_play(player);
+ 130:hardware/player/player.c **** 	}
+ 131:hardware/player/player.c **** 
+ 132:hardware/player/player.c **** 	return 0;
+ 133:hardware/player/player.c **** }
+ 262              		.loc 1 133 0
+ARM GAS  /tmp/ccTFMFft.s 			page 8
+
+
+ 263 0044 0020     		movs	r0, #0
+ 264 0046 03B0     		add	sp, sp, #12
+ 265              	.LCFI5:
+ 266              		.cfi_remember_state
+ 267              		.cfi_def_cfa_offset 12
+ 268              		@ sp needed
+ 269 0048 30BD     		pop	{r4, r5, pc}
+ 270              	.LVL26:
+ 271              	.L22:
+ 272              	.LCFI6:
+ 273              		.cfi_restore_state
+ 108:hardware/player/player.c **** 	}
+ 274              		.loc 1 108 0
+ 275 004a 0123     		movs	r3, #1
+ 276 004c A370     		strb	r3, [r4, #2]
+ 277 004e E2E7     		b	.L23
+ 278              	.LVL27:
+ 279              	.L26:
+ 129:hardware/player/player.c **** 	}
+ 280              		.loc 1 129 0
+ 281 0050 2046     		mov	r0, r4
+ 282 0052 FFF7FEFF 		bl	player_play
+ 283              	.LVL28:
+ 284 0056 F5E7     		b	.L24
+ 285              		.cfi_endproc
+ 286              	.LFE141:
+ 288              		.section	.text.player_control,"ax",%progbits
+ 289              		.align	1
+ 290              		.global	player_control
+ 291              		.syntax unified
+ 292              		.thumb
+ 293              		.thumb_func
+ 294              		.fpu fpv4-sp-d16
+ 296              	player_control:
+ 297              	.LFB142:
+ 134:hardware/player/player.c **** 
+ 135:hardware/player/player.c **** int player_control(player_t player, int cmd, void *arg)
+ 136:hardware/player/player.c **** {
+ 298              		.loc 1 136 0
+ 299              		.cfi_startproc
+ 300              		@ args = 0, pretend = 0, frame = 0
+ 301              		@ frame_needed = 0, uses_anonymous_args = 0
+ 302              	.LVL29:
+ 303 0000 38B5     		push	{r3, r4, r5, lr}
+ 304              	.LCFI7:
+ 305              		.cfi_def_cfa_offset 16
+ 306              		.cfi_offset 3, -16
+ 307              		.cfi_offset 4, -12
+ 308              		.cfi_offset 5, -8
+ 309              		.cfi_offset 14, -4
+ 310 0002 0446     		mov	r4, r0
+ 311 0004 1546     		mov	r5, r2
+ 137:hardware/player/player.c **** 	rt_uint32_t level;
+ 138:hardware/player/player.c **** 
+ 139:hardware/player/player.c **** 	switch (cmd)
+ 312              		.loc 1 139 0
+ 313 0006 0629     		cmp	r1, #6
+ARM GAS  /tmp/ccTFMFft.s 			page 9
+
+
+ 314 0008 07D8     		bhi	.L28
+ 315 000a DFE801F0 		tbb	[pc, r1]
+ 316              	.L30:
+ 317 000e 04       		.byte	(.L29-.L30)/2
+ 318 000f 08       		.byte	(.L31-.L30)/2
+ 319 0010 0B       		.byte	(.L32-.L30)/2
+ 320 0011 0E       		.byte	(.L33-.L30)/2
+ 321 0012 11       		.byte	(.L34-.L30)/2
+ 322 0013 1D       		.byte	(.L35-.L30)/2
+ 323 0014 20       		.byte	(.L36-.L30)/2
+ 324 0015 00       		.p2align 1
+ 325              	.L29:
+ 140:hardware/player/player.c **** 	{
+ 141:hardware/player/player.c **** 		case PLAYER_CMD_PLAY:
+ 142:hardware/player/player.c **** 			player_play(player);
+ 326              		.loc 1 142 0
+ 327 0016 FFF7FEFF 		bl	player_play
+ 328              	.LVL30:
+ 329              	.L28:
+ 143:hardware/player/player.c **** 			break;
+ 144:hardware/player/player.c **** 		case PLAYER_CMD_STOP:
+ 145:hardware/player/player.c **** 			player_stop(player);
+ 146:hardware/player/player.c **** 			break;
+ 147:hardware/player/player.c **** 		case PLAYER_CMD_LAST:
+ 148:hardware/player/player.c **** 			player_last(player);
+ 149:hardware/player/player.c **** 			break;
+ 150:hardware/player/player.c **** 		case PLAYER_CMD_NEXT:
+ 151:hardware/player/player.c **** 			player_next(player);
+ 152:hardware/player/player.c **** 			break;
+ 153:hardware/player/player.c **** 		case PLAYER_CMD_SET_VOL:
+ 154:hardware/player/player.c **** 			/* disable interrupt */
+ 155:hardware/player/player.c **** 			level = rt_hw_interrupt_disable();
+ 156:hardware/player/player.c **** 			player->volume = *(uint8_t *)arg;
+ 157:hardware/player/player.c **** 			/* enable interrupt */
+ 158:hardware/player/player.c **** 			rt_hw_interrupt_enable(level);
+ 159:hardware/player/player.c **** 			player->audio->control(AUDIO_OPS_CMD_SET_VOL, &player->volume); 
+ 160:hardware/player/player.c **** 			break;
+ 161:hardware/player/player.c **** 		case PLAYER_CMD_GET_VOL:
+ 162:hardware/player/player.c **** 			*(uint8_t *)arg = player->volume;
+ 163:hardware/player/player.c **** 			break;
+ 164:hardware/player/player.c **** 		case PLAYER_CMD_GET_STATUS:
+ 165:hardware/player/player.c **** 			*(uint8_t *)arg = player->status;
+ 166:hardware/player/player.c **** 			break;
+ 167:hardware/player/player.c **** 	}
+ 168:hardware/player/player.c **** 	return 0;
+ 169:hardware/player/player.c **** }
+ 330              		.loc 1 169 0
+ 331 001a 0020     		movs	r0, #0
+ 332 001c 38BD     		pop	{r3, r4, r5, pc}
+ 333              	.LVL31:
+ 334              	.L31:
+ 145:hardware/player/player.c **** 			break;
+ 335              		.loc 1 145 0
+ 336 001e FFF7FEFF 		bl	player_stop
+ 337              	.LVL32:
+ 146:hardware/player/player.c **** 		case PLAYER_CMD_LAST:
+ 338              		.loc 1 146 0
+ARM GAS  /tmp/ccTFMFft.s 			page 10
+
+
+ 339 0022 FAE7     		b	.L28
+ 340              	.LVL33:
+ 341              	.L32:
+ 148:hardware/player/player.c **** 			break;
+ 342              		.loc 1 148 0
+ 343 0024 FFF7FEFF 		bl	player_last
+ 344              	.LVL34:
+ 149:hardware/player/player.c **** 		case PLAYER_CMD_NEXT:
+ 345              		.loc 1 149 0
+ 346 0028 F7E7     		b	.L28
+ 347              	.LVL35:
+ 348              	.L33:
+ 151:hardware/player/player.c **** 			break;
+ 349              		.loc 1 151 0
+ 350 002a FFF7FEFF 		bl	player_next
+ 351              	.LVL36:
+ 152:hardware/player/player.c **** 		case PLAYER_CMD_SET_VOL:
+ 352              		.loc 1 152 0
+ 353 002e F4E7     		b	.L28
+ 354              	.LVL37:
+ 355              	.L34:
+ 155:hardware/player/player.c **** 			player->volume = *(uint8_t *)arg;
+ 356              		.loc 1 155 0
+ 357 0030 FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 358              	.LVL38:
+ 156:hardware/player/player.c **** 			/* enable interrupt */
+ 359              		.loc 1 156 0
+ 360 0034 2B78     		ldrb	r3, [r5]	@ zero_extendqisi2
+ 361 0036 6370     		strb	r3, [r4, #1]
+ 158:hardware/player/player.c **** 			player->audio->control(AUDIO_OPS_CMD_SET_VOL, &player->volume); 
+ 362              		.loc 1 158 0
+ 363 0038 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 364              	.LVL39:
+ 159:hardware/player/player.c **** 			break;
+ 365              		.loc 1 159 0
+ 366 003c A36B     		ldr	r3, [r4, #56]
+ 367 003e DB68     		ldr	r3, [r3, #12]
+ 368 0040 611C     		adds	r1, r4, #1
+ 369 0042 0020     		movs	r0, #0
+ 370 0044 9847     		blx	r3
+ 371              	.LVL40:
+ 160:hardware/player/player.c **** 		case PLAYER_CMD_GET_VOL:
+ 372              		.loc 1 160 0
+ 373 0046 E8E7     		b	.L28
+ 374              	.LVL41:
+ 375              	.L35:
+ 162:hardware/player/player.c **** 			break;
+ 376              		.loc 1 162 0
+ 377 0048 4378     		ldrb	r3, [r0, #1]	@ zero_extendqisi2
+ 378 004a 1370     		strb	r3, [r2]
+ 163:hardware/player/player.c **** 		case PLAYER_CMD_GET_STATUS:
+ 379              		.loc 1 163 0
+ 380 004c E5E7     		b	.L28
+ 381              	.L36:
+ 165:hardware/player/player.c **** 			break;
+ 382              		.loc 1 165 0
+ 383 004e 0378     		ldrb	r3, [r0]	@ zero_extendqisi2
+ARM GAS  /tmp/ccTFMFft.s 			page 11
+
+
+ 384 0050 1370     		strb	r3, [r2]
+ 166:hardware/player/player.c **** 	}
+ 385              		.loc 1 166 0
+ 386 0052 E2E7     		b	.L28
+ 387              		.cfi_endproc
+ 388              	.LFE142:
+ 390              		.section	.text.player_add_song,"ax",%progbits
+ 391              		.align	1
+ 392              		.global	player_add_song
+ 393              		.syntax unified
+ 394              		.thumb
+ 395              		.thumb_func
+ 396              		.fpu fpv4-sp-d16
+ 398              	player_add_song:
+ 399              	.LFB143:
+ 170:hardware/player/player.c **** 
+ 171:hardware/player/player.c **** int player_add_song(player_t player, void *song)
+ 172:hardware/player/player.c **** {
+ 400              		.loc 1 172 0
+ 401              		.cfi_startproc
+ 402              		@ args = 0, pretend = 0, frame = 0
+ 403              		@ frame_needed = 0, uses_anonymous_args = 0
+ 404              	.LVL42:
+ 405 0000 38B5     		push	{r3, r4, r5, lr}
+ 406              	.LCFI8:
+ 407              		.cfi_def_cfa_offset 16
+ 408              		.cfi_offset 3, -16
+ 409              		.cfi_offset 4, -12
+ 410              		.cfi_offset 5, -8
+ 411              		.cfi_offset 14, -4
+ 173:hardware/player/player.c **** 	rt_uint32_t level;
+ 174:hardware/player/player.c **** 
+ 175:hardware/player/player.c **** 	if (player->song_num == PLAYER_SONG_NUM_MAX)
+ 412              		.loc 1 175 0
+ 413 0002 C378     		ldrb	r3, [r0, #3]	@ zero_extendqisi2
+ 414 0004 0A2B     		cmp	r3, #10
+ 415 0006 0DD0     		beq	.L40
+ 416 0008 0D46     		mov	r5, r1
+ 417 000a 0446     		mov	r4, r0
+ 176:hardware/player/player.c **** 	{
+ 177:hardware/player/player.c **** 		return -1;
+ 178:hardware/player/player.c **** 	}
+ 179:hardware/player/player.c **** 
+ 180:hardware/player/player.c **** 	/* disable interrupt */
+ 181:hardware/player/player.c **** 	level = rt_hw_interrupt_disable();
+ 418              		.loc 1 181 0
+ 419 000c FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 420              	.LVL43:
+ 182:hardware/player/player.c **** 
+ 183:hardware/player/player.c **** 	player->song_sheet[player->song_num] = song;
+ 421              		.loc 1 183 0
+ 422 0010 E378     		ldrb	r3, [r4, #3]	@ zero_extendqisi2
+ 423 0012 9A1C     		adds	r2, r3, #2
+ 424 0014 44F82250 		str	r5, [r4, r2, lsl #2]
+ 184:hardware/player/player.c **** 	player->song_num ++;
+ 425              		.loc 1 184 0
+ 426 0018 0133     		adds	r3, r3, #1
+ARM GAS  /tmp/ccTFMFft.s 			page 12
+
+
+ 427 001a E370     		strb	r3, [r4, #3]
+ 185:hardware/player/player.c **** 
+ 186:hardware/player/player.c **** 	/* enable interrupt */
+ 187:hardware/player/player.c **** 	rt_hw_interrupt_enable(level);
+ 428              		.loc 1 187 0
+ 429 001c FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 430              	.LVL44:
+ 188:hardware/player/player.c **** 
+ 189:hardware/player/player.c **** 	return 0;
+ 431              		.loc 1 189 0
+ 432 0020 0020     		movs	r0, #0
+ 433 0022 38BD     		pop	{r3, r4, r5, pc}
+ 434              	.LVL45:
+ 435              	.L40:
+ 177:hardware/player/player.c **** 	}
+ 436              		.loc 1 177 0
+ 437 0024 4FF0FF30 		mov	r0, #-1
+ 438              	.LVL46:
+ 190:hardware/player/player.c **** }
+ 439              		.loc 1 190 0
+ 440 0028 38BD     		pop	{r3, r4, r5, pc}
+ 441              		.cfi_endproc
+ 442              	.LFE143:
+ 444              		.section	.text.player_show,"ax",%progbits
+ 445              		.align	1
+ 446              		.global	player_show
+ 447              		.syntax unified
+ 448              		.thumb
+ 449              		.thumb_func
+ 450              		.fpu fpv4-sp-d16
+ 452              	player_show:
+ 453              	.LFB144:
+ 191:hardware/player/player.c **** 
+ 192:hardware/player/player.c **** int player_show(player_t player)
+ 193:hardware/player/player.c **** {
+ 454              		.loc 1 193 0
+ 455              		.cfi_startproc
+ 456              		@ args = 0, pretend = 0, frame = 24
+ 457              		@ frame_needed = 0, uses_anonymous_args = 0
+ 458              	.LVL47:
+ 459 0000 F0B5     		push	{r4, r5, r6, r7, lr}
+ 460              	.LCFI9:
+ 461              		.cfi_def_cfa_offset 20
+ 462              		.cfi_offset 4, -20
+ 463              		.cfi_offset 5, -16
+ 464              		.cfi_offset 6, -12
+ 465              		.cfi_offset 7, -8
+ 466              		.cfi_offset 14, -4
+ 467 0002 89B0     		sub	sp, sp, #36
+ 468              	.LCFI10:
+ 469              		.cfi_def_cfa_offset 56
+ 470 0004 0546     		mov	r5, r0
+ 194:hardware/player/player.c **** 	char name[PLAYER_SONG_NAME_LEN_MAX + 1];
+ 195:hardware/player/player.c **** 	uint8_t i;
+ 196:hardware/player/player.c **** 	uint16_t percent;
+ 197:hardware/player/player.c **** 	uint32_t tmp_color;
+ 198:hardware/player/player.c **** 
+ARM GAS  /tmp/ccTFMFft.s 			page 13
+
+
+ 199:hardware/player/player.c **** 	/*rt_kprintf("******************  Beep Player ********************\n");*/
+ 200:hardware/player/player.c **** 	LCD_ShowString(0, 0, 239, 24, 24, "*** beep player ***");	
+ 471              		.loc 1 200 0
+ 472 0006 3C4B     		ldr	r3, .L49
+ 473 0008 0193     		str	r3, [sp, #4]
+ 474 000a 1823     		movs	r3, #24
+ 475 000c 0093     		str	r3, [sp]
+ 476 000e EF22     		movs	r2, #239
+ 477 0010 0021     		movs	r1, #0
+ 478 0012 0846     		mov	r0, r1
+ 479              	.LVL48:
+ 480 0014 FFF7FEFF 		bl	LCD_ShowString
+ 481              	.LVL49:
+ 201:hardware/player/player.c **** 
+ 202:hardware/player/player.c **** 	/* print song list */
+ 203:hardware/player/player.c **** 	for (i = 0; i < player->song_num; i++)
+ 482              		.loc 1 203 0
+ 483 0018 0024     		movs	r4, #0
+ 484 001a 09E0     		b	.L43
+ 485              	.LVL50:
+ 486              	.L44:
+ 204:hardware/player/player.c **** 	{
+ 205:hardware/player/player.c **** 		player->decode->control(player->song_sheet[i], DECODE_OPS_CMD_GET_NAME, name);
+ 487              		.loc 1 205 0 discriminator 3
+ 488 001c EB6B     		ldr	r3, [r5, #60]
+ 489 001e 5B68     		ldr	r3, [r3, #4]
+ 490 0020 A01C     		adds	r0, r4, #2
+ 491 0022 02AA     		add	r2, sp, #8
+ 492 0024 0021     		movs	r1, #0
+ 493 0026 55F82000 		ldr	r0, [r5, r0, lsl #2]
+ 494 002a 9847     		blx	r3
+ 495              	.LVL51:
+ 203:hardware/player/player.c **** 	{
+ 496              		.loc 1 203 0 discriminator 3
+ 497 002c 0134     		adds	r4, r4, #1
+ 498              	.LVL52:
+ 499 002e E4B2     		uxtb	r4, r4
+ 500              	.LVL53:
+ 501              	.L43:
+ 203:hardware/player/player.c **** 	{
+ 502              		.loc 1 203 0 is_stmt 0 discriminator 1
+ 503 0030 EB78     		ldrb	r3, [r5, #3]	@ zero_extendqisi2
+ 504 0032 9C42     		cmp	r4, r3
+ 505 0034 F2D3     		bcc	.L44
+ 206:hardware/player/player.c **** 		/*rt_kprintf("%02d. %s\n", i + 1, name);*/
+ 207:hardware/player/player.c **** 		/*LCD_ShowxNum(0, 30 + i * 32, i + 1, 2, 32, 0);*/
+ 208:hardware/player/player.c **** 		/*LCD_ShowString(62, 30 + i * 32, 80, 32, 32, name);*/
+ 209:hardware/player/player.c **** 	}
+ 210:hardware/player/player.c **** 
+ 211:hardware/player/player.c **** 	/* print current play status */
+ 212:hardware/player/player.c **** 	if (player->status == PLAYER_RUNNING)
+ 506              		.loc 1 212 0 is_stmt 1
+ 507 0036 2B78     		ldrb	r3, [r5]	@ zero_extendqisi2
+ 508 0038 002B     		cmp	r3, #0
+ 509 003a 53D0     		beq	.L48
+ 213:hardware/player/player.c **** 	{
+ 214:hardware/player/player.c **** 		/*rt_kprintf("--->  正在播放：");*/
+ARM GAS  /tmp/ccTFMFft.s 			page 14
+
+
+ 215:hardware/player/player.c **** 		LCD_ShowString(0, 158, 224, 32, 32, "-----> playing");
+ 216:hardware/player/player.c **** 	}
+ 217:hardware/player/player.c **** 	else
+ 218:hardware/player/player.c **** 	{
+ 219:hardware/player/player.c **** 		/*rt_kprintf("---|| 暂停播放：");*/
+ 220:hardware/player/player.c **** 		LCD_ShowString(0, 158, 224, 32, 32, "-----|| pause ");
+ 510              		.loc 1 220 0
+ 511 003c 2F4B     		ldr	r3, .L49+4
+ 512 003e 0193     		str	r3, [sp, #4]
+ 513 0040 2023     		movs	r3, #32
+ 514 0042 0093     		str	r3, [sp]
+ 515 0044 E022     		movs	r2, #224
+ 516 0046 9E21     		movs	r1, #158
+ 517 0048 0020     		movs	r0, #0
+ 518 004a FFF7FEFF 		bl	LCD_ShowString
+ 519              	.LVL54:
+ 520              	.L46:
+ 221:hardware/player/player.c **** 	}
+ 222:hardware/player/player.c **** 
+ 223:hardware/player/player.c **** 	/* print current playing song */
+ 224:hardware/player/player.c **** 	player->decode->control(player->song_sheet[player->song_current - 1], DECODE_OPS_CMD_GET_NAME, nam
+ 521              		.loc 1 224 0
+ 522 004e EB6B     		ldr	r3, [r5, #60]
+ 523 0050 5E68     		ldr	r6, [r3, #4]
+ 524 0052 AB78     		ldrb	r3, [r5, #2]	@ zero_extendqisi2
+ 525 0054 02AC     		add	r4, sp, #8
+ 526              	.LVL55:
+ 527 0056 0133     		adds	r3, r3, #1
+ 528 0058 2246     		mov	r2, r4
+ 529 005a 0021     		movs	r1, #0
+ 530 005c 55F82300 		ldr	r0, [r5, r3, lsl #2]
+ 531 0060 B047     		blx	r6
+ 532              	.LVL56:
+ 225:hardware/player/player.c **** 	/*rt_kprintf("%s", name);*/
+ 226:hardware/player/player.c **** 	/*rt_kprintf("  ---\n");*/
+ 227:hardware/player/player.c **** 	LCD_ShowString(0, 190, 100, 32, 32, name);
+ 533              		.loc 1 227 0
+ 534 0062 0194     		str	r4, [sp, #4]
+ 535 0064 2024     		movs	r4, #32
+ 536 0066 0094     		str	r4, [sp]
+ 537 0068 2346     		mov	r3, r4
+ 538 006a 6422     		movs	r2, #100
+ 539 006c BE21     		movs	r1, #190
+ 540 006e 0020     		movs	r0, #0
+ 541 0070 FFF7FEFF 		bl	LCD_ShowString
+ 542              	.LVL57:
+ 228:hardware/player/player.c **** 	LCD_ShowString(0, 222, 160, 32, 32, "-------------");
+ 543              		.loc 1 228 0
+ 544 0074 224B     		ldr	r3, .L49+8
+ 545 0076 0193     		str	r3, [sp, #4]
+ 546 0078 0094     		str	r4, [sp]
+ 547 007a 2346     		mov	r3, r4
+ 548 007c A022     		movs	r2, #160
+ 549 007e DE21     		movs	r1, #222
+ 550 0080 0020     		movs	r0, #0
+ 551 0082 FFF7FEFF 		bl	LCD_ShowString
+ 552              	.LVL58:
+ARM GAS  /tmp/ccTFMFft.s 			page 15
+
+
+ 229:hardware/player/player.c **** 
+ 230:hardware/player/player.c **** 	/* print playing progress */
+ 231:hardware/player/player.c **** 	percent = player->song_time_pass * 100 / player->song_time_all;
+ 553              		.loc 1 231 0
+ 554 0086 AB88     		ldrh	r3, [r5, #4]
+ 555 0088 6426     		movs	r6, #100
+ 556 008a 06FB03F6 		mul	r6, r6, r3
+ 557 008e EB88     		ldrh	r3, [r5, #6]
+ 558 0090 96FBF3F6 		sdiv	r6, r6, r3
+ 559              	.LVL59:
+ 232:hardware/player/player.c **** 
+ 233:hardware/player/player.c **** 	/*rt_kprintf("播放进度：%02d%%  音量大小：%02d%%\n", percent, player->volume);*/
+ 234:hardware/player/player.c **** 	LCD_ShowString(0, 254, 192, 32, 32, "playing:   %");
+ 560              		.loc 1 234 0
+ 561 0094 1B4B     		ldr	r3, .L49+12
+ 562 0096 0193     		str	r3, [sp, #4]
+ 563 0098 0094     		str	r4, [sp]
+ 564 009a 2346     		mov	r3, r4
+ 565 009c C022     		movs	r2, #192
+ 566 009e FE21     		movs	r1, #254
+ 567 00a0 0020     		movs	r0, #0
+ 568 00a2 FFF7FEFF 		bl	LCD_ShowString
+ 569              	.LVL60:
+ 235:hardware/player/player.c **** 	LCD_ShowxNum(128, 254, percent, 3, 32, 0); 
+ 570              		.loc 1 235 0
+ 571 00a6 0027     		movs	r7, #0
+ 572 00a8 0197     		str	r7, [sp, #4]
+ 573 00aa 0094     		str	r4, [sp]
+ 574 00ac 0323     		movs	r3, #3
+ 575 00ae B2B2     		uxth	r2, r6
+ 576 00b0 FE21     		movs	r1, #254
+ 577 00b2 8020     		movs	r0, #128
+ 578 00b4 FFF7FEFF 		bl	LCD_ShowxNum
+ 579              	.LVL61:
+ 236:hardware/player/player.c **** 	LCD_ShowString(0, 286, 128, 32, 32, "vol:   %");
+ 580              		.loc 1 236 0
+ 581 00b8 134B     		ldr	r3, .L49+16
+ 582 00ba 0193     		str	r3, [sp, #4]
+ 583 00bc 0094     		str	r4, [sp]
+ 584 00be 2346     		mov	r3, r4
+ 585 00c0 8022     		movs	r2, #128
+ 586 00c2 4FF48F71 		mov	r1, #286
+ 587 00c6 3846     		mov	r0, r7
+ 588 00c8 FFF7FEFF 		bl	LCD_ShowString
+ 589              	.LVL62:
+ 237:hardware/player/player.c **** 	LCD_ShowxNum(64, 286, player->volume, 3, 32, 0);
+ 590              		.loc 1 237 0
+ 591 00cc 6A78     		ldrb	r2, [r5, #1]	@ zero_extendqisi2
+ 592 00ce 0197     		str	r7, [sp, #4]
+ 593 00d0 0094     		str	r4, [sp]
+ 594 00d2 0323     		movs	r3, #3
+ 595 00d4 4FF48F71 		mov	r1, #286
+ 596 00d8 4020     		movs	r0, #64
+ 597 00da FFF7FEFF 		bl	LCD_ShowxNum
+ 598              	.LVL63:
+ 238:hardware/player/player.c **** 
+ 239:hardware/player/player.c **** 	/*rt_kprintf("*********************************\n");*/
+ARM GAS  /tmp/ccTFMFft.s 			page 16
+
+
+ 240:hardware/player/player.c **** 	/*LCD_ShowString(0, 318, 240, 32, 32, "**********");*/
+ 241:hardware/player/player.c **** 
+ 242:hardware/player/player.c **** 	return 0;
+ 243:hardware/player/player.c **** }
+ 599              		.loc 1 243 0
+ 600 00de 3846     		mov	r0, r7
+ 601 00e0 09B0     		add	sp, sp, #36
+ 602              	.LCFI11:
+ 603              		.cfi_remember_state
+ 604              		.cfi_def_cfa_offset 20
+ 605              		@ sp needed
+ 606 00e2 F0BD     		pop	{r4, r5, r6, r7, pc}
+ 607              	.LVL64:
+ 608              	.L48:
+ 609              	.LCFI12:
+ 610              		.cfi_restore_state
+ 215:hardware/player/player.c **** 	}
+ 611              		.loc 1 215 0
+ 612 00e4 094B     		ldr	r3, .L49+20
+ 613 00e6 0193     		str	r3, [sp, #4]
+ 614 00e8 2023     		movs	r3, #32
+ 615 00ea 0093     		str	r3, [sp]
+ 616 00ec E022     		movs	r2, #224
+ 617 00ee 9E21     		movs	r1, #158
+ 618 00f0 0020     		movs	r0, #0
+ 619 00f2 FFF7FEFF 		bl	LCD_ShowString
+ 620              	.LVL65:
+ 621 00f6 AAE7     		b	.L46
+ 622              	.L50:
+ 623              		.align	2
+ 624              	.L49:
+ 625 00f8 00000000 		.word	.LC0
+ 626 00fc 24000000 		.word	.LC2
+ 627 0100 34000000 		.word	.LC3
+ 628 0104 44000000 		.word	.LC4
+ 629 0108 54000000 		.word	.LC5
+ 630 010c 14000000 		.word	.LC1
+ 631              		.cfi_endproc
+ 632              	.LFE144:
+ 634              		.section	.text.player_entry,"ax",%progbits
+ 635              		.align	1
+ 636              		.syntax unified
+ 637              		.thumb
+ 638              		.thumb_func
+ 639              		.fpu fpv4-sp-d16
+ 641              	player_entry:
+ 642              	.LFB145:
+ 244:hardware/player/player.c **** 
+ 245:hardware/player/player.c **** static void player_entry(void *parameter)
+ 246:hardware/player/player.c **** {
+ 643              		.loc 1 246 0
+ 644              		.cfi_startproc
+ 645              		@ args = 0, pretend = 0, frame = 24
+ 646              		@ frame_needed = 0, uses_anonymous_args = 0
+ 647              	.LVL66:
+ 648 0000 30B5     		push	{r4, r5, lr}
+ 649              	.LCFI13:
+ARM GAS  /tmp/ccTFMFft.s 			page 17
+
+
+ 650              		.cfi_def_cfa_offset 12
+ 651              		.cfi_offset 4, -12
+ 652              		.cfi_offset 5, -8
+ 653              		.cfi_offset 14, -4
+ 654 0002 87B0     		sub	sp, sp, #28
+ 655              	.LCFI14:
+ 656              		.cfi_def_cfa_offset 40
+ 657 0004 0446     		mov	r4, r0
+ 658              	.LVL67:
+ 659 0006 0EE0     		b	.L52
+ 660              	.LVL68:
+ 661              	.L54:
+ 247:hardware/player/player.c **** 	player_t player = (player_t)parameter;
+ 248:hardware/player/player.c **** 	uint8_t buffer[PLAYER_BUFFER_SIZE], size;
+ 249:hardware/player/player.c **** 
+ 250:hardware/player/player.c **** 	while (1)
+ 251:hardware/player/player.c **** 	{
+ 252:hardware/player/player.c **** 		if (player->status == PLAYER_RUNNING)
+ 253:hardware/player/player.c **** 		{
+ 254:hardware/player/player.c **** 			size = player->song_time_all - player->song_time_pass;
+ 255:hardware/player/player.c **** 			if (size > PLAYER_BUFFER_SIZE)
+ 256:hardware/player/player.c **** 			{
+ 257:hardware/player/player.c **** 				size = PLAYER_BUFFER_SIZE;
+ 258:hardware/player/player.c **** 			}
+ 259:hardware/player/player.c **** 			size = player->decode->read(player->song_sheet[player->song_current - 1], player->song_time_pass
+ 662              		.loc 1 259 0
+ 663 0008 E26B     		ldr	r2, [r4, #60]
+ 664 000a 9568     		ldr	r5, [r2, #8]
+ 665 000c A078     		ldrb	r0, [r4, #2]	@ zero_extendqisi2
+ 666 000e 0130     		adds	r0, r0, #1
+ 667 0010 01AA     		add	r2, sp, #4
+ 668 0012 54F82000 		ldr	r0, [r4, r0, lsl #2]
+ 669 0016 A847     		blx	r5
+ 670              	.LVL69:
+ 260:hardware/player/player.c **** 			if (size > 0)
+ 671              		.loc 1 260 0
+ 672 0018 10F0FF05 		ands	r5, r0, #255
+ 673 001c 0ED1     		bne	.L59
+ 674              	.LVL70:
+ 675              	.L55:
+ 261:hardware/player/player.c **** 			{
+ 262:hardware/player/player.c **** 				player->audio->write(buffer, size);
+ 263:hardware/player/player.c **** 				player->song_time_pass += size;
+ 264:hardware/player/player.c **** 				player_show(player);
+ 265:hardware/player/player.c **** 			}
+ 266:hardware/player/player.c **** 
+ 267:hardware/player/player.c **** 			/* current playing over change to next song */
+ 268:hardware/player/player.c **** 			if (player->song_time_pass >= player->song_time_all)
+ 676              		.loc 1 268 0
+ 677 001e A288     		ldrh	r2, [r4, #4]
+ 678 0020 E388     		ldrh	r3, [r4, #6]
+ 679 0022 9A42     		cmp	r2, r3
+ 680 0024 16D2     		bcs	.L60
+ 681              	.L52:
+ 252:hardware/player/player.c **** 		{
+ 682              		.loc 1 252 0
+ 683 0026 2378     		ldrb	r3, [r4]	@ zero_extendqisi2
+ARM GAS  /tmp/ccTFMFft.s 			page 18
+
+
+ 684 0028 DBB9     		cbnz	r3, .L53
+ 254:hardware/player/player.c **** 			if (size > PLAYER_BUFFER_SIZE)
+ 685              		.loc 1 254 0
+ 686 002a A379     		ldrb	r3, [r4, #6]	@ zero_extendqisi2
+ 687 002c A188     		ldrh	r1, [r4, #4]
+ 688 002e CAB2     		uxtb	r2, r1
+ 689 0030 9B1A     		subs	r3, r3, r2
+ 690 0032 DBB2     		uxtb	r3, r3
+ 691              	.LVL71:
+ 255:hardware/player/player.c **** 			{
+ 692              		.loc 1 255 0
+ 693 0034 142B     		cmp	r3, #20
+ 694 0036 E7D9     		bls	.L54
+ 257:hardware/player/player.c **** 			}
+ 695              		.loc 1 257 0
+ 696 0038 1423     		movs	r3, #20
+ 697              	.LVL72:
+ 698 003a E5E7     		b	.L54
+ 699              	.LVL73:
+ 700              	.L59:
+ 262:hardware/player/player.c **** 				player->song_time_pass += size;
+ 701              		.loc 1 262 0
+ 702 003c A36B     		ldr	r3, [r4, #56]
+ 703 003e 1B69     		ldr	r3, [r3, #16]
+ 704 0040 C1B2     		uxtb	r1, r0
+ 705 0042 01A8     		add	r0, sp, #4
+ 706              	.LVL74:
+ 707 0044 9847     		blx	r3
+ 708              	.LVL75:
+ 263:hardware/player/player.c **** 				player_show(player);
+ 709              		.loc 1 263 0
+ 710 0046 A388     		ldrh	r3, [r4, #4]
+ 711 0048 1D44     		add	r5, r5, r3
+ 712 004a A580     		strh	r5, [r4, #4]	@ movhi
+ 264:hardware/player/player.c **** 			}
+ 713              		.loc 1 264 0
+ 714 004c 2046     		mov	r0, r4
+ 715 004e FFF7FEFF 		bl	player_show
+ 716              	.LVL76:
+ 717 0052 E4E7     		b	.L55
+ 718              	.L60:
+ 269:hardware/player/player.c **** 			{
+ 270:hardware/player/player.c **** 				player_next(player);
+ 719              		.loc 1 270 0
+ 720 0054 2046     		mov	r0, r4
+ 721 0056 FFF7FEFF 		bl	player_next
+ 722              	.LVL77:
+ 271:hardware/player/player.c **** 				player_show(player);
+ 723              		.loc 1 271 0
+ 724 005a 2046     		mov	r0, r4
+ 725 005c FFF7FEFF 		bl	player_show
+ 726              	.LVL78:
+ 727 0060 E1E7     		b	.L52
+ 728              	.L53:
+ 272:hardware/player/player.c **** 			}
+ 273:hardware/player/player.c **** 		}
+ 274:hardware/player/player.c **** 		else 
+ARM GAS  /tmp/ccTFMFft.s 			page 19
+
+
+ 275:hardware/player/player.c **** 		{
+ 276:hardware/player/player.c **** 			/* pause play to close audio */
+ 277:hardware/player/player.c **** 			player->audio->close();
+ 729              		.loc 1 277 0
+ 730 0062 A36B     		ldr	r3, [r4, #56]
+ 731 0064 9B68     		ldr	r3, [r3, #8]
+ 732 0066 9847     		blx	r3
+ 733              	.LVL79:
+ 278:hardware/player/player.c **** 
+ 279:hardware/player/player.c **** 			/* waiting play sem */
+ 280:hardware/player/player.c **** 			rt_sem_take(player->sem_play, RT_WAITING_FOREVER);
+ 734              		.loc 1 280 0
+ 735 0068 4FF0FF31 		mov	r1, #-1
+ 736 006c 206B     		ldr	r0, [r4, #48]
+ 737 006e FFF7FEFF 		bl	rt_sem_take
+ 738              	.LVL80:
+ 281:hardware/player/player.c **** 
+ 282:hardware/player/player.c **** 			/* start play to open audio */
+ 283:hardware/player/player.c **** 			player->audio->open();
+ 739              		.loc 1 283 0
+ 740 0072 A36B     		ldr	r3, [r4, #56]
+ 741 0074 5B68     		ldr	r3, [r3, #4]
+ 742 0076 9847     		blx	r3
+ 743              	.LVL81:
+ 744 0078 D5E7     		b	.L52
+ 745              		.cfi_endproc
+ 746              	.LFE145:
+ 748              		.section	.text.player_start,"ax",%progbits
+ 749              		.align	1
+ 750              		.global	player_start
+ 751              		.syntax unified
+ 752              		.thumb
+ 753              		.thumb_func
+ 754              		.fpu fpv4-sp-d16
+ 756              	player_start:
+ 757              	.LFB146:
+ 284:hardware/player/player.c **** 		}
+ 285:hardware/player/player.c **** 	}
+ 286:hardware/player/player.c **** }
+ 287:hardware/player/player.c **** 
+ 288:hardware/player/player.c **** int player_start(player_t player)
+ 289:hardware/player/player.c **** {
+ 758              		.loc 1 289 0
+ 759              		.cfi_startproc
+ 760              		@ args = 0, pretend = 0, frame = 8
+ 761              		@ frame_needed = 0, uses_anonymous_args = 0
+ 762              	.LVL82:
+ 290:hardware/player/player.c **** 	uint16_t len;
+ 291:hardware/player/player.c **** 	static rt_uint8_t inited = 0;
+ 292:hardware/player/player.c **** 
+ 293:hardware/player/player.c **** 	/* check player is running */
+ 294:hardware/player/player.c **** 	if (inited == 1)
+ 763              		.loc 1 294 0
+ 764 0000 274B     		ldr	r3, .L71
+ 765 0002 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 766 0004 012B     		cmp	r3, #1
+ 767 0006 41D0     		beq	.L64
+ARM GAS  /tmp/ccTFMFft.s 			page 20
+
+
+ 295:hardware/player/player.c **** 	{
+ 296:hardware/player/player.c **** 		return -RT_ERROR;
+ 297:hardware/player/player.c **** 	}
+ 298:hardware/player/player.c **** 
+ 299:hardware/player/player.c **** 	if (player->song_num == 0)
+ 768              		.loc 1 299 0
+ 769 0008 C378     		ldrb	r3, [r0, #3]	@ zero_extendqisi2
+ 770 000a 002B     		cmp	r3, #0
+ 771 000c 41D0     		beq	.L65
+ 289:hardware/player/player.c **** 	uint16_t len;
+ 772              		.loc 1 289 0
+ 773 000e 30B5     		push	{r4, r5, lr}
+ 774              	.LCFI15:
+ 775              		.cfi_def_cfa_offset 12
+ 776              		.cfi_offset 4, -12
+ 777              		.cfi_offset 5, -8
+ 778              		.cfi_offset 14, -4
+ 779 0010 85B0     		sub	sp, sp, #20
+ 780              	.LCFI16:
+ 781              		.cfi_def_cfa_offset 32
+ 782 0012 0446     		mov	r4, r0
+ 300:hardware/player/player.c **** 	{
+ 301:hardware/player/player.c **** 		return -1;
+ 302:hardware/player/player.c **** 	}
+ 303:hardware/player/player.c **** 	
+ 304:hardware/player/player.c **** 	/* call interface initialization decoder */
+ 305:hardware/player/player.c **** 	player->decode->init();
+ 783              		.loc 1 305 0
+ 784 0014 C36B     		ldr	r3, [r0, #60]
+ 785 0016 1B68     		ldr	r3, [r3]
+ 786 0018 9847     		blx	r3
+ 787              	.LVL83:
+ 306:hardware/player/player.c **** 
+ 307:hardware/player/player.c **** 	player->status = PLAYER_STOP;
+ 788              		.loc 1 307 0
+ 789 001a 0121     		movs	r1, #1
+ 790 001c 2170     		strb	r1, [r4]
+ 308:hardware/player/player.c **** 	player->volume = PLAYER_SOUND_SIZE_DEFAULT;
+ 791              		.loc 1 308 0
+ 792 001e 0323     		movs	r3, #3
+ 793 0020 6370     		strb	r3, [r4, #1]
+ 309:hardware/player/player.c **** 	player->song_current = 1;
+ 794              		.loc 1 309 0
+ 795 0022 A170     		strb	r1, [r4, #2]
+ 310:hardware/player/player.c **** 	player->song_time_pass = 0;
+ 796              		.loc 1 310 0
+ 797 0024 0025     		movs	r5, #0
+ 798 0026 A580     		strh	r5, [r4, #4]	@ movhi
+ 311:hardware/player/player.c **** 	player->decode->control(player->song_sheet[player->song_current - 1], DECODE_OPS_CMD_GET_LEN, &len
+ 799              		.loc 1 311 0
+ 800 0028 E36B     		ldr	r3, [r4, #60]
+ 801 002a 5B68     		ldr	r3, [r3, #4]
+ 802 002c 0DF10E02 		add	r2, sp, #14
+ 803 0030 A068     		ldr	r0, [r4, #8]
+ 804 0032 9847     		blx	r3
+ 805              	.LVL84:
+ 312:hardware/player/player.c **** 	player->song_time_all = len;
+ARM GAS  /tmp/ccTFMFft.s 			page 21
+
+
+ 806              		.loc 1 312 0
+ 807 0034 BDF80E30 		ldrh	r3, [sp, #14]
+ 808 0038 E380     		strh	r3, [r4, #6]	@ movhi
+ 313:hardware/player/player.c **** 
+ 314:hardware/player/player.c **** 	/* call interface initialization audio device */
+ 315:hardware/player/player.c **** 	player->audio->init();
+ 809              		.loc 1 315 0
+ 810 003a A36B     		ldr	r3, [r4, #56]
+ 811 003c 1B68     		ldr	r3, [r3]
+ 812 003e 9847     		blx	r3
+ 813              	.LVL85:
+ 316:hardware/player/player.c **** 	player->audio->control(AUDIO_OPS_CMD_SET_VOL, &player->volume);
+ 814              		.loc 1 316 0
+ 815 0040 A36B     		ldr	r3, [r4, #56]
+ 816 0042 DB68     		ldr	r3, [r3, #12]
+ 817 0044 611C     		adds	r1, r4, #1
+ 818 0046 2846     		mov	r0, r5
+ 819 0048 9847     		blx	r3
+ 820              	.LVL86:
+ 317:hardware/player/player.c **** 
+ 318:hardware/player/player.c **** 	/* initialization dynamic sem */
+ 319:hardware/player/player.c **** 	player->sem_play = rt_sem_create("sem_play", 0, RT_IPC_FLAG_FIFO);
+ 821              		.loc 1 319 0
+ 822 004a 2A46     		mov	r2, r5
+ 823 004c 2946     		mov	r1, r5
+ 824 004e 1548     		ldr	r0, .L71+4
+ 825 0050 FFF7FEFF 		bl	rt_sem_create
+ 826              	.LVL87:
+ 827 0054 2063     		str	r0, [r4, #48]
+ 320:hardware/player/player.c **** 	if (player->sem_play == RT_NULL)
+ 828              		.loc 1 320 0
+ 829 0056 F8B1     		cbz	r0, .L66
+ 321:hardware/player/player.c **** 	{
+ 322:hardware/player/player.c **** 		return -RT_ERROR;
+ 323:hardware/player/player.c **** 	}
+ 324:hardware/player/player.c **** 
+ 325:hardware/player/player.c **** 	/* create dynamic thread */
+ 326:hardware/player/player.c **** 	player->play_thread = rt_thread_create("player", 
+ 830              		.loc 1 326 0
+ 831 0058 1423     		movs	r3, #20
+ 832 005a 0193     		str	r3, [sp, #4]
+ 833 005c 0093     		str	r3, [sp]
+ 834 005e 4FF40073 		mov	r3, #512
+ 835 0062 2246     		mov	r2, r4
+ 836 0064 1049     		ldr	r1, .L71+8
+ 837 0066 1148     		ldr	r0, .L71+12
+ 838 0068 FFF7FEFF 		bl	rt_thread_create
+ 839              	.LVL88:
+ 840 006c 6063     		str	r0, [r4, #52]
+ 327:hardware/player/player.c **** 										player_entry, player,
+ 328:hardware/player/player.c **** 										512, 20, 20);
+ 329:hardware/player/player.c **** 	if (player->play_thread != RT_NULL)
+ 841              		.loc 1 329 0
+ 842 006e 38B1     		cbz	r0, .L63
+ 330:hardware/player/player.c **** 	{
+ 331:hardware/player/player.c **** 		rt_thread_startup(player->play_thread);
+ 843              		.loc 1 331 0
+ARM GAS  /tmp/ccTFMFft.s 			page 22
+
+
+ 844 0070 FFF7FEFF 		bl	rt_thread_startup
+ 845              	.LVL89:
+ 332:hardware/player/player.c **** 	}
+ 333:hardware/player/player.c **** 	else
+ 334:hardware/player/player.c **** 	{
+ 335:hardware/player/player.c **** 		rt_sem_delete(player->sem_play);
+ 336:hardware/player/player.c **** 		return -RT_ERROR;
+ 337:hardware/player/player.c **** 	}
+ 338:hardware/player/player.c **** 
+ 339:hardware/player/player.c **** 	inited = 1;
+ 846              		.loc 1 339 0
+ 847 0074 0122     		movs	r2, #1
+ 848 0076 0A4B     		ldr	r3, .L71
+ 849 0078 1A70     		strb	r2, [r3]
+ 340:hardware/player/player.c **** 
+ 341:hardware/player/player.c **** 	return 0;
+ 850              		.loc 1 341 0
+ 851 007a 2846     		mov	r0, r5
+ 852              	.L61:
+ 342:hardware/player/player.c **** }
+ 853              		.loc 1 342 0
+ 854 007c 05B0     		add	sp, sp, #20
+ 855              	.LCFI17:
+ 856              		.cfi_remember_state
+ 857              		.cfi_def_cfa_offset 12
+ 858              		@ sp needed
+ 859 007e 30BD     		pop	{r4, r5, pc}
+ 860              	.LVL90:
+ 861              	.L63:
+ 862              	.LCFI18:
+ 863              		.cfi_restore_state
+ 335:hardware/player/player.c **** 		return -RT_ERROR;
+ 864              		.loc 1 335 0
+ 865 0080 206B     		ldr	r0, [r4, #48]
+ 866 0082 FFF7FEFF 		bl	rt_sem_delete
+ 867              	.LVL91:
+ 336:hardware/player/player.c **** 	}
+ 868              		.loc 1 336 0
+ 869 0086 4FF0FF30 		mov	r0, #-1
+ 870 008a F7E7     		b	.L61
+ 871              	.LVL92:
+ 872              	.L64:
+ 873              	.LCFI19:
+ 874              		.cfi_def_cfa_offset 0
+ 875              		.cfi_restore 4
+ 876              		.cfi_restore 5
+ 877              		.cfi_restore 14
+ 296:hardware/player/player.c **** 	}
+ 878              		.loc 1 296 0
+ 879 008c 4FF0FF30 		mov	r0, #-1
+ 880              	.LVL93:
+ 881 0090 7047     		bx	lr
+ 882              	.LVL94:
+ 883              	.L65:
+ 301:hardware/player/player.c **** 	}
+ 884              		.loc 1 301 0
+ 885 0092 4FF0FF30 		mov	r0, #-1
+ARM GAS  /tmp/ccTFMFft.s 			page 23
+
+
+ 886              	.LVL95:
+ 887 0096 7047     		bx	lr
+ 888              	.LVL96:
+ 889              	.L66:
+ 890              	.LCFI20:
+ 891              		.cfi_def_cfa_offset 32
+ 892              		.cfi_offset 4, -12
+ 893              		.cfi_offset 5, -8
+ 894              		.cfi_offset 14, -4
+ 322:hardware/player/player.c **** 	}
+ 895              		.loc 1 322 0
+ 896 0098 4FF0FF30 		mov	r0, #-1
+ 897 009c EEE7     		b	.L61
+ 898              	.L72:
+ 899 009e 00BF     		.align	2
+ 900              	.L71:
+ 901 00a0 00000000 		.word	.LANCHOR0
+ 902 00a4 00000000 		.word	.LC6
+ 903 00a8 00000000 		.word	player_entry
+ 904 00ac 0C000000 		.word	.LC7
+ 905              		.cfi_endproc
+ 906              	.LFE146:
+ 908              		.section	.bss.inited.10921,"aw",%nobits
+ 909              		.set	.LANCHOR0,. + 0
+ 912              	inited.10921:
+ 913 0000 00       		.space	1
+ 914              		.section	.rodata.player_show.str1.4,"aMS",%progbits,1
+ 915              		.align	2
+ 916              	.LC0:
+ 917 0000 2A2A2A20 		.ascii	"*** beep player ***\000"
+ 917      62656570 
+ 917      20706C61 
+ 917      79657220 
+ 917      2A2A2A00 
+ 918              	.LC1:
+ 919 0014 2D2D2D2D 		.ascii	"-----> playing\000"
+ 919      2D3E2070 
+ 919      6C617969 
+ 919      6E6700
+ 920 0023 00       		.space	1
+ 921              	.LC2:
+ 922 0024 2D2D2D2D 		.ascii	"-----|| pause \000"
+ 922      2D7C7C20 
+ 922      70617573 
+ 922      652000
+ 923 0033 00       		.space	1
+ 924              	.LC3:
+ 925 0034 2D2D2D2D 		.ascii	"-------------\000"
+ 925      2D2D2D2D 
+ 925      2D2D2D2D 
+ 925      2D00
+ 926 0042 0000     		.space	2
+ 927              	.LC4:
+ 928 0044 706C6179 		.ascii	"playing:   %\000"
+ 928      696E673A 
+ 928      20202025 
+ 928      00
+ARM GAS  /tmp/ccTFMFft.s 			page 24
+
+
+ 929 0051 000000   		.space	3
+ 930              	.LC5:
+ 931 0054 766F6C3A 		.ascii	"vol:   %\000"
+ 931      20202025 
+ 931      00
+ 932              		.section	.rodata.player_start.str1.4,"aMS",%progbits,1
+ 933              		.align	2
+ 934              	.LC6:
+ 935 0000 73656D5F 		.ascii	"sem_play\000"
+ 935      706C6179 
+ 935      00
+ 936 0009 000000   		.space	3
+ 937              	.LC7:
+ 938 000c 706C6179 		.ascii	"player\000"
+ 938      657200
+ 939              		.text
+ 940              	.Letext0:
+ 941              		.file 2 "rt-thread/include/rtdef.h"
+ 942              		.file 3 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/machine/_default_types.h"
+ 943              		.file 4 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/lock.h"
+ 944              		.file 5 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_types.h"
+ 945              		.file 6 "/opt/gcc-arm-none-eabi-6-2017-q2-update/lib/gcc/arm-none-eabi/6.3.1/include/stddef.h"
+ 946              		.file 7 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/reent.h"
+ 947              		.file 8 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_stdint.h"
+ 948              		.file 9 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/time.h"
+ 949              		.file 10 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/errno.h"
+ 950              		.file 11 "rt-thread/components/finsh/finsh_api.h"
+ 951              		.file 12 "CORE/core_cm4.h"
+ 952              		.file 13 "USER/system_stm32f4xx.h"
+ 953              		.file 14 "HALLIB/Inc/stm32f4xx_hal.h"
+ 954              		.file 15 "SYSTEM/sys/sys.h"
+ 955              		.file 16 "board/board.h"
+ 956              		.file 17 "hardware/player/player.h"
+ 957              		.file 18 "hardware/LCD/font.h"
+ 958              		.file 19 "hardware/LCD/lcd.h"
+ 959              		.file 20 "rt-thread/include/rtthread.h"
+ 960              		.file 21 "rt-thread/include/rthw.h"
+ARM GAS  /tmp/ccTFMFft.s 			page 25
+
+
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 player.c
+     /tmp/ccTFMFft.s:18     .text.player_play:0000000000000000 $t
+     /tmp/ccTFMFft.s:25     .text.player_play:0000000000000000 player_play
+     /tmp/ccTFMFft.s:69     .text.player_stop:0000000000000000 $t
+     /tmp/ccTFMFft.s:76     .text.player_stop:0000000000000000 player_stop
+     /tmp/ccTFMFft.s:115    .text.player_last:0000000000000000 $t
+     /tmp/ccTFMFft.s:122    .text.player_last:0000000000000000 player_last
+     /tmp/ccTFMFft.s:197    .text.player_next:0000000000000000 $t
+     /tmp/ccTFMFft.s:204    .text.player_next:0000000000000000 player_next
+     /tmp/ccTFMFft.s:289    .text.player_control:0000000000000000 $t
+     /tmp/ccTFMFft.s:296    .text.player_control:0000000000000000 player_control
+     /tmp/ccTFMFft.s:317    .text.player_control:000000000000000e $d
+     /tmp/ccTFMFft.s:391    .text.player_add_song:0000000000000000 $t
+     /tmp/ccTFMFft.s:398    .text.player_add_song:0000000000000000 player_add_song
+     /tmp/ccTFMFft.s:445    .text.player_show:0000000000000000 $t
+     /tmp/ccTFMFft.s:452    .text.player_show:0000000000000000 player_show
+     /tmp/ccTFMFft.s:625    .text.player_show:00000000000000f8 $d
+     /tmp/ccTFMFft.s:635    .text.player_entry:0000000000000000 $t
+     /tmp/ccTFMFft.s:641    .text.player_entry:0000000000000000 player_entry
+     /tmp/ccTFMFft.s:749    .text.player_start:0000000000000000 $t
+     /tmp/ccTFMFft.s:756    .text.player_start:0000000000000000 player_start
+     /tmp/ccTFMFft.s:901    .text.player_start:00000000000000a0 $d
+     /tmp/ccTFMFft.s:912    .bss.inited.10921:0000000000000000 inited.10921
+     /tmp/ccTFMFft.s:913    .bss.inited.10921:0000000000000000 $d
+     /tmp/ccTFMFft.s:915    .rodata.player_show.str1.4:0000000000000000 $d
+     /tmp/ccTFMFft.s:933    .rodata.player_start.str1.4:0000000000000000 $d
+                     .debug_frame:0000000000000010 $d
+     /tmp/ccTFMFft.s:324    .text.player_control:0000000000000015 $d
+     /tmp/ccTFMFft.s:324    .text.player_control:0000000000000016 $t
+
+UNDEFINED SYMBOLS
+rt_hw_interrupt_disable
+rt_hw_interrupt_enable
+rt_sem_release
+LCD_ShowString
+LCD_ShowxNum
+rt_sem_take
+rt_sem_create
+rt_thread_create
+rt_thread_startup
+rt_sem_delete

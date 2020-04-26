@@ -1,0 +1,2281 @@
+ARM GAS  /tmp/cc7QoIaX.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.eabi_attribute 27, 1
+   3              		.eabi_attribute 28, 1
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.file	"ringblk_buf.c"
+  14              		.text
+  15              	.Ltext0:
+  16              		.cfi_sections	.debug_frame
+  17              		.section	.text.find_empty_blk_in_set,"ax",%progbits
+  18              		.align	1
+  19              		.syntax unified
+  20              		.thumb
+  21              		.thumb_func
+  22              		.fpu fpv4-sp-d16
+  24              	find_empty_blk_in_set:
+  25              	.LFB22:
+  26              		.file 1 "rt-thread/components/drivers/src/ringblk_buf.c"
+   1:rt-thread/components/drivers/src/ringblk_buf.c **** /*
+   2:rt-thread/components/drivers/src/ringblk_buf.c ****  * Copyright (c) 2006-2018, RT-Thread Development Team
+   3:rt-thread/components/drivers/src/ringblk_buf.c ****  *
+   4:rt-thread/components/drivers/src/ringblk_buf.c ****  * SPDX-License-Identifier: Apache-2.0
+   5:rt-thread/components/drivers/src/ringblk_buf.c ****  *
+   6:rt-thread/components/drivers/src/ringblk_buf.c ****  * Change Logs:
+   7:rt-thread/components/drivers/src/ringblk_buf.c ****  * Date           Author       Notes
+   8:rt-thread/components/drivers/src/ringblk_buf.c ****  * 2018-08-25     armink       the first version
+   9:rt-thread/components/drivers/src/ringblk_buf.c ****  */
+  10:rt-thread/components/drivers/src/ringblk_buf.c **** 
+  11:rt-thread/components/drivers/src/ringblk_buf.c **** #include <rthw.h>
+  12:rt-thread/components/drivers/src/ringblk_buf.c **** #include <rtthread.h>
+  13:rt-thread/components/drivers/src/ringblk_buf.c **** #include <rtdevice.h>
+  14:rt-thread/components/drivers/src/ringblk_buf.c **** 
+  15:rt-thread/components/drivers/src/ringblk_buf.c **** /**
+  16:rt-thread/components/drivers/src/ringblk_buf.c ****  * ring block buffer object initialization
+  17:rt-thread/components/drivers/src/ringblk_buf.c ****  *
+  18:rt-thread/components/drivers/src/ringblk_buf.c ****  * @param rbb ring block buffer object
+  19:rt-thread/components/drivers/src/ringblk_buf.c ****  * @param buf buffer
+  20:rt-thread/components/drivers/src/ringblk_buf.c ****  * @param buf_size buffer size
+  21:rt-thread/components/drivers/src/ringblk_buf.c ****  * @param block_set block set
+  22:rt-thread/components/drivers/src/ringblk_buf.c ****  * @param blk_max_num max block number
+  23:rt-thread/components/drivers/src/ringblk_buf.c ****  *
+  24:rt-thread/components/drivers/src/ringblk_buf.c ****  * @note When your application need align access, please make the buffer address is aligned.
+  25:rt-thread/components/drivers/src/ringblk_buf.c ****  */
+  26:rt-thread/components/drivers/src/ringblk_buf.c **** void rt_rbb_init(rt_rbb_t rbb, rt_uint8_t *buf, rt_size_t buf_size, rt_rbb_blk_t block_set, rt_size
+  27:rt-thread/components/drivers/src/ringblk_buf.c **** {
+  28:rt-thread/components/drivers/src/ringblk_buf.c ****     rt_size_t i;
+  29:rt-thread/components/drivers/src/ringblk_buf.c **** 
+  30:rt-thread/components/drivers/src/ringblk_buf.c ****     RT_ASSERT(rbb);
+  31:rt-thread/components/drivers/src/ringblk_buf.c ****     RT_ASSERT(buf);
+  32:rt-thread/components/drivers/src/ringblk_buf.c ****     RT_ASSERT(block_set);
+ARM GAS  /tmp/cc7QoIaX.s 			page 2
+
+
+  33:rt-thread/components/drivers/src/ringblk_buf.c **** 
+  34:rt-thread/components/drivers/src/ringblk_buf.c ****     rbb->buf = buf;
+  35:rt-thread/components/drivers/src/ringblk_buf.c ****     rbb->buf_size = buf_size;
+  36:rt-thread/components/drivers/src/ringblk_buf.c ****     rbb->blk_set = block_set;
+  37:rt-thread/components/drivers/src/ringblk_buf.c ****     rbb->blk_max_num = blk_max_num;
+  38:rt-thread/components/drivers/src/ringblk_buf.c ****     rt_slist_init(&rbb->blk_list);
+  39:rt-thread/components/drivers/src/ringblk_buf.c ****     /* initialize block status */
+  40:rt-thread/components/drivers/src/ringblk_buf.c ****     for (i = 0; i < blk_max_num; i++)
+  41:rt-thread/components/drivers/src/ringblk_buf.c ****     {
+  42:rt-thread/components/drivers/src/ringblk_buf.c ****         block_set[i].status = RT_RBB_BLK_UNUSED;
+  43:rt-thread/components/drivers/src/ringblk_buf.c ****     }
+  44:rt-thread/components/drivers/src/ringblk_buf.c **** }
+  45:rt-thread/components/drivers/src/ringblk_buf.c **** RTM_EXPORT(rt_rbb_init);
+  46:rt-thread/components/drivers/src/ringblk_buf.c **** 
+  47:rt-thread/components/drivers/src/ringblk_buf.c **** /**
+  48:rt-thread/components/drivers/src/ringblk_buf.c ****  * ring block buffer object create
+  49:rt-thread/components/drivers/src/ringblk_buf.c ****  *
+  50:rt-thread/components/drivers/src/ringblk_buf.c ****  * @param buf_size buffer size
+  51:rt-thread/components/drivers/src/ringblk_buf.c ****  * @param blk_max_num max block number
+  52:rt-thread/components/drivers/src/ringblk_buf.c ****  *
+  53:rt-thread/components/drivers/src/ringblk_buf.c ****  * @return != NULL: ring block buffer object
+  54:rt-thread/components/drivers/src/ringblk_buf.c ****  *            NULL: create failed
+  55:rt-thread/components/drivers/src/ringblk_buf.c ****  */
+  56:rt-thread/components/drivers/src/ringblk_buf.c **** rt_rbb_t rt_rbb_create(rt_size_t buf_size, rt_size_t blk_max_num)
+  57:rt-thread/components/drivers/src/ringblk_buf.c **** {
+  58:rt-thread/components/drivers/src/ringblk_buf.c ****     rt_rbb_t rbb = NULL;
+  59:rt-thread/components/drivers/src/ringblk_buf.c ****     rt_uint8_t *buf;
+  60:rt-thread/components/drivers/src/ringblk_buf.c ****     rt_rbb_blk_t blk_set;
+  61:rt-thread/components/drivers/src/ringblk_buf.c **** 
+  62:rt-thread/components/drivers/src/ringblk_buf.c ****     rbb = (rt_rbb_t)rt_malloc(sizeof(struct rt_rbb));
+  63:rt-thread/components/drivers/src/ringblk_buf.c ****     if (!rbb)
+  64:rt-thread/components/drivers/src/ringblk_buf.c ****     {
+  65:rt-thread/components/drivers/src/ringblk_buf.c ****         return NULL;
+  66:rt-thread/components/drivers/src/ringblk_buf.c ****     }
+  67:rt-thread/components/drivers/src/ringblk_buf.c **** 
+  68:rt-thread/components/drivers/src/ringblk_buf.c ****     buf = (rt_uint8_t *)rt_malloc(buf_size);
+  69:rt-thread/components/drivers/src/ringblk_buf.c ****     if (!buf)
+  70:rt-thread/components/drivers/src/ringblk_buf.c ****     {
+  71:rt-thread/components/drivers/src/ringblk_buf.c ****         rt_free(rbb);
+  72:rt-thread/components/drivers/src/ringblk_buf.c ****         return NULL;
+  73:rt-thread/components/drivers/src/ringblk_buf.c ****     }
+  74:rt-thread/components/drivers/src/ringblk_buf.c **** 
+  75:rt-thread/components/drivers/src/ringblk_buf.c ****     blk_set = (rt_rbb_blk_t)rt_malloc(sizeof(struct rt_rbb_blk) * blk_max_num);
+  76:rt-thread/components/drivers/src/ringblk_buf.c ****     if (!blk_set)
+  77:rt-thread/components/drivers/src/ringblk_buf.c ****     {
+  78:rt-thread/components/drivers/src/ringblk_buf.c ****         rt_free(buf);
+  79:rt-thread/components/drivers/src/ringblk_buf.c ****         rt_free(rbb);
+  80:rt-thread/components/drivers/src/ringblk_buf.c ****         return NULL;
+  81:rt-thread/components/drivers/src/ringblk_buf.c ****     }
+  82:rt-thread/components/drivers/src/ringblk_buf.c **** 
+  83:rt-thread/components/drivers/src/ringblk_buf.c ****     rt_rbb_init(rbb, buf, buf_size, blk_set, blk_max_num);
+  84:rt-thread/components/drivers/src/ringblk_buf.c **** 
+  85:rt-thread/components/drivers/src/ringblk_buf.c ****     return rbb;
+  86:rt-thread/components/drivers/src/ringblk_buf.c **** }
+  87:rt-thread/components/drivers/src/ringblk_buf.c **** RTM_EXPORT(rt_rbb_create);
+  88:rt-thread/components/drivers/src/ringblk_buf.c **** 
+  89:rt-thread/components/drivers/src/ringblk_buf.c **** /**
+ARM GAS  /tmp/cc7QoIaX.s 			page 3
+
+
+  90:rt-thread/components/drivers/src/ringblk_buf.c ****  * ring block buffer object destroy
+  91:rt-thread/components/drivers/src/ringblk_buf.c ****  *
+  92:rt-thread/components/drivers/src/ringblk_buf.c ****  * @param rbb ring block buffer object
+  93:rt-thread/components/drivers/src/ringblk_buf.c ****  */
+  94:rt-thread/components/drivers/src/ringblk_buf.c **** void rt_rbb_destroy(rt_rbb_t rbb)
+  95:rt-thread/components/drivers/src/ringblk_buf.c **** {
+  96:rt-thread/components/drivers/src/ringblk_buf.c ****     RT_ASSERT(rbb);
+  97:rt-thread/components/drivers/src/ringblk_buf.c **** 
+  98:rt-thread/components/drivers/src/ringblk_buf.c ****     rt_free(rbb->buf);
+  99:rt-thread/components/drivers/src/ringblk_buf.c ****     rt_free(rbb->blk_set);
+ 100:rt-thread/components/drivers/src/ringblk_buf.c ****     rt_free(rbb);
+ 101:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 102:rt-thread/components/drivers/src/ringblk_buf.c **** }
+ 103:rt-thread/components/drivers/src/ringblk_buf.c **** RTM_EXPORT(rt_rbb_destroy);
+ 104:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 105:rt-thread/components/drivers/src/ringblk_buf.c **** static rt_rbb_blk_t find_empty_blk_in_set(rt_rbb_t rbb)
+ 106:rt-thread/components/drivers/src/ringblk_buf.c **** {
+  27              		.loc 1 106 0
+  28              		.cfi_startproc
+  29              		@ args = 0, pretend = 0, frame = 0
+  30              		@ frame_needed = 0, uses_anonymous_args = 0
+  31              		@ link register save eliminated.
+  32              	.LVL0:
+  33 0000 10B4     		push	{r4}
+  34              	.LCFI0:
+  35              		.cfi_def_cfa_offset 4
+  36              		.cfi_offset 4, -4
+  37              	.LVL1:
+ 107:rt-thread/components/drivers/src/ringblk_buf.c ****     rt_size_t i;
+ 108:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 109:rt-thread/components/drivers/src/ringblk_buf.c ****     RT_ASSERT(rbb);
+ 110:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 111:rt-thread/components/drivers/src/ringblk_buf.c ****     for (i = 0; i < rbb->blk_max_num; i ++)
+  38              		.loc 1 111 0
+  39 0002 0023     		movs	r3, #0
+  40              	.LVL2:
+  41              	.L2:
+  42              		.loc 1 111 0 is_stmt 0 discriminator 1
+  43 0004 C268     		ldr	r2, [r0, #12]
+  44 0006 9342     		cmp	r3, r2
+  45 0008 08D2     		bcs	.L6
+ 112:rt-thread/components/drivers/src/ringblk_buf.c ****     {
+ 113:rt-thread/components/drivers/src/ringblk_buf.c ****         if (rbb->blk_set[i].status == RT_RBB_BLK_UNUSED)
+  46              		.loc 1 113 0 is_stmt 1
+  47 000a 8168     		ldr	r1, [r0, #8]
+  48 000c 03EB4304 		add	r4, r3, r3, lsl #1
+  49 0010 A200     		lsls	r2, r4, #2
+  50 0012 8C18     		adds	r4, r1, r2
+  51 0014 8A5C     		ldrb	r2, [r1, r2]	@ zero_extendqisi2
+  52 0016 12B1     		cbz	r2, .L1
+ 111:rt-thread/components/drivers/src/ringblk_buf.c ****     {
+  53              		.loc 1 111 0 discriminator 2
+  54 0018 0133     		adds	r3, r3, #1
+  55              	.LVL3:
+  56 001a F3E7     		b	.L2
+  57              	.L6:
+ 114:rt-thread/components/drivers/src/ringblk_buf.c ****         {
+ARM GAS  /tmp/cc7QoIaX.s 			page 4
+
+
+ 115:rt-thread/components/drivers/src/ringblk_buf.c ****             return &rbb->blk_set[i];
+ 116:rt-thread/components/drivers/src/ringblk_buf.c ****         }
+ 117:rt-thread/components/drivers/src/ringblk_buf.c ****     }
+ 118:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 119:rt-thread/components/drivers/src/ringblk_buf.c ****     return NULL;
+  58              		.loc 1 119 0
+  59 001c 0024     		movs	r4, #0
+  60              	.L1:
+ 120:rt-thread/components/drivers/src/ringblk_buf.c **** }
+  61              		.loc 1 120 0
+  62 001e 2046     		mov	r0, r4
+  63              	.LVL4:
+  64 0020 5DF8044B 		ldr	r4, [sp], #4
+  65              	.LCFI1:
+  66              		.cfi_restore 4
+  67              		.cfi_def_cfa_offset 0
+  68 0024 7047     		bx	lr
+  69              		.cfi_endproc
+  70              	.LFE22:
+  72              		.section	.text.rt_rbb_init,"ax",%progbits
+  73              		.align	1
+  74              		.global	rt_rbb_init
+  75              		.syntax unified
+  76              		.thumb
+  77              		.thumb_func
+  78              		.fpu fpv4-sp-d16
+  80              	rt_rbb_init:
+  81              	.LFB19:
+  27:rt-thread/components/drivers/src/ringblk_buf.c ****     rt_size_t i;
+  82              		.loc 1 27 0
+  83              		.cfi_startproc
+  84              		@ args = 4, pretend = 0, frame = 0
+  85              		@ frame_needed = 0, uses_anonymous_args = 0
+  86              		@ link register save eliminated.
+  87              	.LVL5:
+  88 0000 10B4     		push	{r4}
+  89              	.LCFI2:
+  90              		.cfi_def_cfa_offset 4
+  91              		.cfi_offset 4, -4
+  92 0002 019C     		ldr	r4, [sp, #4]
+  34:rt-thread/components/drivers/src/ringblk_buf.c ****     rbb->buf_size = buf_size;
+  93              		.loc 1 34 0
+  94 0004 0160     		str	r1, [r0]
+  35:rt-thread/components/drivers/src/ringblk_buf.c ****     rbb->blk_set = block_set;
+  95              		.loc 1 35 0
+  96 0006 4260     		str	r2, [r0, #4]
+  36:rt-thread/components/drivers/src/ringblk_buf.c ****     rbb->blk_max_num = blk_max_num;
+  97              		.loc 1 36 0
+  98 0008 8360     		str	r3, [r0, #8]
+  37:rt-thread/components/drivers/src/ringblk_buf.c ****     rt_slist_init(&rbb->blk_list);
+  99              		.loc 1 37 0
+ 100 000a C460     		str	r4, [r0, #12]
+ 101              	.LVL6:
+ 102              	.LBB40:
+ 103              	.LBB41:
+ 104              		.file 2 "rt-thread/include/rtservice.h"
+   1:rt-thread/include/rtservice.h **** /*
+ARM GAS  /tmp/cc7QoIaX.s 			page 5
+
+
+   2:rt-thread/include/rtservice.h ****  * Copyright (c) 2006-2018, RT-Thread Development Team
+   3:rt-thread/include/rtservice.h ****  *
+   4:rt-thread/include/rtservice.h ****  * SPDX-License-Identifier: Apache-2.0
+   5:rt-thread/include/rtservice.h ****  *
+   6:rt-thread/include/rtservice.h ****  * Change Logs:
+   7:rt-thread/include/rtservice.h ****  * Date           Author       Notes
+   8:rt-thread/include/rtservice.h ****  * 2006-03-16     Bernard      the first version
+   9:rt-thread/include/rtservice.h ****  * 2006-09-07     Bernard      move the kservice APIs to rtthread.h
+  10:rt-thread/include/rtservice.h ****  * 2007-06-27     Bernard      fix the rt_list_remove bug
+  11:rt-thread/include/rtservice.h ****  * 2012-03-22     Bernard      rename kservice.h to rtservice.h
+  12:rt-thread/include/rtservice.h ****  * 2017-11-15     JasonJia     Modify rt_slist_foreach to rt_slist_for_each_entry.
+  13:rt-thread/include/rtservice.h ****  *                             Make code cleanup.
+  14:rt-thread/include/rtservice.h ****  */
+  15:rt-thread/include/rtservice.h **** 
+  16:rt-thread/include/rtservice.h **** #ifndef __RT_SERVICE_H__
+  17:rt-thread/include/rtservice.h **** #define __RT_SERVICE_H__
+  18:rt-thread/include/rtservice.h **** 
+  19:rt-thread/include/rtservice.h **** #ifdef __cplusplus
+  20:rt-thread/include/rtservice.h **** extern "C" {
+  21:rt-thread/include/rtservice.h **** #endif
+  22:rt-thread/include/rtservice.h **** 
+  23:rt-thread/include/rtservice.h **** /**
+  24:rt-thread/include/rtservice.h ****  * @addtogroup KernelService
+  25:rt-thread/include/rtservice.h ****  */
+  26:rt-thread/include/rtservice.h **** 
+  27:rt-thread/include/rtservice.h **** /**@{*/
+  28:rt-thread/include/rtservice.h **** 
+  29:rt-thread/include/rtservice.h **** /**
+  30:rt-thread/include/rtservice.h ****  * rt_container_of - return the member address of ptr, if the type of ptr is the
+  31:rt-thread/include/rtservice.h ****  * struct type.
+  32:rt-thread/include/rtservice.h ****  */
+  33:rt-thread/include/rtservice.h **** #define rt_container_of(ptr, type, member) \
+  34:rt-thread/include/rtservice.h ****     ((type *)((char *)(ptr) - (unsigned long)(&((type *)0)->member)))
+  35:rt-thread/include/rtservice.h **** 
+  36:rt-thread/include/rtservice.h **** 
+  37:rt-thread/include/rtservice.h **** /**
+  38:rt-thread/include/rtservice.h ****  * @brief initialize a list object
+  39:rt-thread/include/rtservice.h ****  */
+  40:rt-thread/include/rtservice.h **** #define RT_LIST_OBJECT_INIT(object) { &(object), &(object) }
+  41:rt-thread/include/rtservice.h **** 
+  42:rt-thread/include/rtservice.h **** /**
+  43:rt-thread/include/rtservice.h ****  * @brief initialize a list
+  44:rt-thread/include/rtservice.h ****  *
+  45:rt-thread/include/rtservice.h ****  * @param l list to be initialized
+  46:rt-thread/include/rtservice.h ****  */
+  47:rt-thread/include/rtservice.h **** rt_inline void rt_list_init(rt_list_t *l)
+  48:rt-thread/include/rtservice.h **** {
+  49:rt-thread/include/rtservice.h ****     l->next = l->prev = l;
+  50:rt-thread/include/rtservice.h **** }
+  51:rt-thread/include/rtservice.h **** 
+  52:rt-thread/include/rtservice.h **** /**
+  53:rt-thread/include/rtservice.h ****  * @brief insert a node after a list
+  54:rt-thread/include/rtservice.h ****  *
+  55:rt-thread/include/rtservice.h ****  * @param l list to insert it
+  56:rt-thread/include/rtservice.h ****  * @param n new node to be inserted
+  57:rt-thread/include/rtservice.h ****  */
+  58:rt-thread/include/rtservice.h **** rt_inline void rt_list_insert_after(rt_list_t *l, rt_list_t *n)
+ARM GAS  /tmp/cc7QoIaX.s 			page 6
+
+
+  59:rt-thread/include/rtservice.h **** {
+  60:rt-thread/include/rtservice.h ****     l->next->prev = n;
+  61:rt-thread/include/rtservice.h ****     n->next = l->next;
+  62:rt-thread/include/rtservice.h **** 
+  63:rt-thread/include/rtservice.h ****     l->next = n;
+  64:rt-thread/include/rtservice.h ****     n->prev = l;
+  65:rt-thread/include/rtservice.h **** }
+  66:rt-thread/include/rtservice.h **** 
+  67:rt-thread/include/rtservice.h **** /**
+  68:rt-thread/include/rtservice.h ****  * @brief insert a node before a list
+  69:rt-thread/include/rtservice.h ****  *
+  70:rt-thread/include/rtservice.h ****  * @param n new node to be inserted
+  71:rt-thread/include/rtservice.h ****  * @param l list to insert it
+  72:rt-thread/include/rtservice.h ****  */
+  73:rt-thread/include/rtservice.h **** rt_inline void rt_list_insert_before(rt_list_t *l, rt_list_t *n)
+  74:rt-thread/include/rtservice.h **** {
+  75:rt-thread/include/rtservice.h ****     l->prev->next = n;
+  76:rt-thread/include/rtservice.h ****     n->prev = l->prev;
+  77:rt-thread/include/rtservice.h **** 
+  78:rt-thread/include/rtservice.h ****     l->prev = n;
+  79:rt-thread/include/rtservice.h ****     n->next = l;
+  80:rt-thread/include/rtservice.h **** }
+  81:rt-thread/include/rtservice.h **** 
+  82:rt-thread/include/rtservice.h **** /**
+  83:rt-thread/include/rtservice.h ****  * @brief remove node from list.
+  84:rt-thread/include/rtservice.h ****  * @param n the node to remove from the list.
+  85:rt-thread/include/rtservice.h ****  */
+  86:rt-thread/include/rtservice.h **** rt_inline void rt_list_remove(rt_list_t *n)
+  87:rt-thread/include/rtservice.h **** {
+  88:rt-thread/include/rtservice.h ****     n->next->prev = n->prev;
+  89:rt-thread/include/rtservice.h ****     n->prev->next = n->next;
+  90:rt-thread/include/rtservice.h **** 
+  91:rt-thread/include/rtservice.h ****     n->next = n->prev = n;
+  92:rt-thread/include/rtservice.h **** }
+  93:rt-thread/include/rtservice.h **** 
+  94:rt-thread/include/rtservice.h **** /**
+  95:rt-thread/include/rtservice.h ****  * @brief tests whether a list is empty
+  96:rt-thread/include/rtservice.h ****  * @param l the list to test.
+  97:rt-thread/include/rtservice.h ****  */
+  98:rt-thread/include/rtservice.h **** rt_inline int rt_list_isempty(const rt_list_t *l)
+  99:rt-thread/include/rtservice.h **** {
+ 100:rt-thread/include/rtservice.h ****     return l->next == l;
+ 101:rt-thread/include/rtservice.h **** }
+ 102:rt-thread/include/rtservice.h **** 
+ 103:rt-thread/include/rtservice.h **** /**
+ 104:rt-thread/include/rtservice.h ****  * @brief get the list length
+ 105:rt-thread/include/rtservice.h ****  * @param l the list to get.
+ 106:rt-thread/include/rtservice.h ****  */
+ 107:rt-thread/include/rtservice.h **** rt_inline unsigned int rt_list_len(const rt_list_t *l)
+ 108:rt-thread/include/rtservice.h **** {
+ 109:rt-thread/include/rtservice.h ****     unsigned int len = 0;
+ 110:rt-thread/include/rtservice.h ****     const rt_list_t *p = l;
+ 111:rt-thread/include/rtservice.h ****     while (p->next != l)
+ 112:rt-thread/include/rtservice.h ****     {
+ 113:rt-thread/include/rtservice.h ****         p = p->next;
+ 114:rt-thread/include/rtservice.h ****         len ++;
+ 115:rt-thread/include/rtservice.h ****     }
+ARM GAS  /tmp/cc7QoIaX.s 			page 7
+
+
+ 116:rt-thread/include/rtservice.h **** 
+ 117:rt-thread/include/rtservice.h ****     return len;
+ 118:rt-thread/include/rtservice.h **** }
+ 119:rt-thread/include/rtservice.h **** 
+ 120:rt-thread/include/rtservice.h **** /**
+ 121:rt-thread/include/rtservice.h ****  * @brief get the struct for this entry
+ 122:rt-thread/include/rtservice.h ****  * @param node the entry point
+ 123:rt-thread/include/rtservice.h ****  * @param type the type of structure
+ 124:rt-thread/include/rtservice.h ****  * @param member the name of list in structure
+ 125:rt-thread/include/rtservice.h ****  */
+ 126:rt-thread/include/rtservice.h **** #define rt_list_entry(node, type, member) \
+ 127:rt-thread/include/rtservice.h ****     rt_container_of(node, type, member)
+ 128:rt-thread/include/rtservice.h **** 
+ 129:rt-thread/include/rtservice.h **** /**
+ 130:rt-thread/include/rtservice.h ****  * rt_list_for_each - iterate over a list
+ 131:rt-thread/include/rtservice.h ****  * @pos:	the rt_list_t * to use as a loop cursor.
+ 132:rt-thread/include/rtservice.h ****  * @head:	the head for your list.
+ 133:rt-thread/include/rtservice.h ****  */
+ 134:rt-thread/include/rtservice.h **** #define rt_list_for_each(pos, head) \
+ 135:rt-thread/include/rtservice.h ****     for (pos = (head)->next; pos != (head); pos = pos->next)
+ 136:rt-thread/include/rtservice.h **** 
+ 137:rt-thread/include/rtservice.h **** /**
+ 138:rt-thread/include/rtservice.h ****  * rt_list_for_each_safe - iterate over a list safe against removal of list entry
+ 139:rt-thread/include/rtservice.h ****  * @pos:	the rt_list_t * to use as a loop cursor.
+ 140:rt-thread/include/rtservice.h ****  * @n:		another rt_list_t * to use as temporary storage
+ 141:rt-thread/include/rtservice.h ****  * @head:	the head for your list.
+ 142:rt-thread/include/rtservice.h ****  */
+ 143:rt-thread/include/rtservice.h **** #define rt_list_for_each_safe(pos, n, head) \
+ 144:rt-thread/include/rtservice.h **** 	for (pos = (head)->next, n = pos->next; pos != (head); \
+ 145:rt-thread/include/rtservice.h **** 		pos = n, n = pos->next)
+ 146:rt-thread/include/rtservice.h **** 
+ 147:rt-thread/include/rtservice.h **** /**
+ 148:rt-thread/include/rtservice.h ****  * rt_list_for_each_entry  -   iterate over list of given type
+ 149:rt-thread/include/rtservice.h ****  * @pos:    the type * to use as a loop cursor.
+ 150:rt-thread/include/rtservice.h ****  * @head:   the head for your list.
+ 151:rt-thread/include/rtservice.h ****  * @member: the name of the list_struct within the struct.
+ 152:rt-thread/include/rtservice.h ****  */
+ 153:rt-thread/include/rtservice.h **** #define rt_list_for_each_entry(pos, head, member) \
+ 154:rt-thread/include/rtservice.h ****     for (pos = rt_list_entry((head)->next, typeof(*pos), member); \
+ 155:rt-thread/include/rtservice.h ****          &pos->member != (head); \
+ 156:rt-thread/include/rtservice.h ****          pos = rt_list_entry(pos->member.next, typeof(*pos), member))
+ 157:rt-thread/include/rtservice.h **** 
+ 158:rt-thread/include/rtservice.h **** /**
+ 159:rt-thread/include/rtservice.h ****  * rt_list_for_each_entry_safe - iterate over list of given type safe against removal of list entry
+ 160:rt-thread/include/rtservice.h ****  * @pos:    the type * to use as a loop cursor.
+ 161:rt-thread/include/rtservice.h ****  * @n:      another type * to use as temporary storage
+ 162:rt-thread/include/rtservice.h ****  * @head:   the head for your list.
+ 163:rt-thread/include/rtservice.h ****  * @member: the name of the list_struct within the struct.
+ 164:rt-thread/include/rtservice.h ****  */
+ 165:rt-thread/include/rtservice.h **** #define rt_list_for_each_entry_safe(pos, n, head, member) \
+ 166:rt-thread/include/rtservice.h ****     for (pos = rt_list_entry((head)->next, typeof(*pos), member), \
+ 167:rt-thread/include/rtservice.h ****          n = rt_list_entry(pos->member.next, typeof(*pos), member); \
+ 168:rt-thread/include/rtservice.h ****          &pos->member != (head); \
+ 169:rt-thread/include/rtservice.h ****          pos = n, n = rt_list_entry(n->member.next, typeof(*n), member))
+ 170:rt-thread/include/rtservice.h **** 
+ 171:rt-thread/include/rtservice.h **** /**
+ 172:rt-thread/include/rtservice.h ****  * rt_list_first_entry - get the first element from a list
+ARM GAS  /tmp/cc7QoIaX.s 			page 8
+
+
+ 173:rt-thread/include/rtservice.h ****  * @ptr:    the list head to take the element from.
+ 174:rt-thread/include/rtservice.h ****  * @type:   the type of the struct this is embedded in.
+ 175:rt-thread/include/rtservice.h ****  * @member: the name of the list_struct within the struct.
+ 176:rt-thread/include/rtservice.h ****  *
+ 177:rt-thread/include/rtservice.h ****  * Note, that list is expected to be not empty.
+ 178:rt-thread/include/rtservice.h ****  */
+ 179:rt-thread/include/rtservice.h **** #define rt_list_first_entry(ptr, type, member) \
+ 180:rt-thread/include/rtservice.h ****     rt_list_entry((ptr)->next, type, member)
+ 181:rt-thread/include/rtservice.h **** 
+ 182:rt-thread/include/rtservice.h **** #define RT_SLIST_OBJECT_INIT(object) { RT_NULL }
+ 183:rt-thread/include/rtservice.h **** 
+ 184:rt-thread/include/rtservice.h **** /**
+ 185:rt-thread/include/rtservice.h ****  * @brief initialize a single list
+ 186:rt-thread/include/rtservice.h ****  *
+ 187:rt-thread/include/rtservice.h ****  * @param l the single list to be initialized
+ 188:rt-thread/include/rtservice.h ****  */
+ 189:rt-thread/include/rtservice.h **** rt_inline void rt_slist_init(rt_slist_t *l)
+ 190:rt-thread/include/rtservice.h **** {
+ 191:rt-thread/include/rtservice.h ****     l->next = RT_NULL;
+ 105              		.loc 2 191 0
+ 106 000c 0022     		movs	r2, #0
+ 107              	.LVL7:
+ 108 000e 0261     		str	r2, [r0, #16]
+ 109              	.LVL8:
+ 110              	.LBE41:
+ 111              	.LBE40:
+  40:rt-thread/components/drivers/src/ringblk_buf.c ****     {
+ 112              		.loc 1 40 0
+ 113 0010 05E0     		b	.L8
+ 114              	.LVL9:
+ 115              	.L9:
+  42:rt-thread/components/drivers/src/ringblk_buf.c ****     }
+ 116              		.loc 1 42 0 discriminator 3
+ 117 0012 02EB4200 		add	r0, r2, r2, lsl #1
+ 118 0016 8100     		lsls	r1, r0, #2
+ 119 0018 0020     		movs	r0, #0
+ 120 001a 5854     		strb	r0, [r3, r1]
+  40:rt-thread/components/drivers/src/ringblk_buf.c ****     {
+ 121              		.loc 1 40 0 discriminator 3
+ 122 001c 0132     		adds	r2, r2, #1
+ 123              	.LVL10:
+ 124              	.L8:
+  40:rt-thread/components/drivers/src/ringblk_buf.c ****     {
+ 125              		.loc 1 40 0 is_stmt 0 discriminator 1
+ 126 001e A242     		cmp	r2, r4
+ 127 0020 F7D3     		bcc	.L9
+  44:rt-thread/components/drivers/src/ringblk_buf.c **** RTM_EXPORT(rt_rbb_init);
+ 128              		.loc 1 44 0 is_stmt 1
+ 129 0022 5DF8044B 		ldr	r4, [sp], #4
+ 130              	.LCFI3:
+ 131              		.cfi_restore 4
+ 132              		.cfi_def_cfa_offset 0
+ 133              	.LVL11:
+ 134 0026 7047     		bx	lr
+ 135              		.cfi_endproc
+ 136              	.LFE19:
+ 138              		.section	.text.rt_rbb_create,"ax",%progbits
+ARM GAS  /tmp/cc7QoIaX.s 			page 9
+
+
+ 139              		.align	1
+ 140              		.global	rt_rbb_create
+ 141              		.syntax unified
+ 142              		.thumb
+ 143              		.thumb_func
+ 144              		.fpu fpv4-sp-d16
+ 146              	rt_rbb_create:
+ 147              	.LFB20:
+  57:rt-thread/components/drivers/src/ringblk_buf.c ****     rt_rbb_t rbb = NULL;
+ 148              		.loc 1 57 0
+ 149              		.cfi_startproc
+ 150              		@ args = 0, pretend = 0, frame = 0
+ 151              		@ frame_needed = 0, uses_anonymous_args = 0
+ 152              	.LVL12:
+ 153 0000 F0B5     		push	{r4, r5, r6, r7, lr}
+ 154              	.LCFI4:
+ 155              		.cfi_def_cfa_offset 20
+ 156              		.cfi_offset 4, -20
+ 157              		.cfi_offset 5, -16
+ 158              		.cfi_offset 6, -12
+ 159              		.cfi_offset 7, -8
+ 160              		.cfi_offset 14, -4
+ 161 0002 83B0     		sub	sp, sp, #12
+ 162              	.LCFI5:
+ 163              		.cfi_def_cfa_offset 32
+ 164 0004 0646     		mov	r6, r0
+ 165 0006 0C46     		mov	r4, r1
+ 166              	.LVL13:
+  62:rt-thread/components/drivers/src/ringblk_buf.c ****     if (!rbb)
+ 167              		.loc 1 62 0
+ 168 0008 1420     		movs	r0, #20
+ 169              	.LVL14:
+ 170 000a FFF7FEFF 		bl	rt_malloc
+ 171              	.LVL15:
+  63:rt-thread/components/drivers/src/ringblk_buf.c ****     {
+ 172              		.loc 1 63 0
+ 173 000e 0546     		mov	r5, r0
+ 174 0010 88B1     		cbz	r0, .L11
+  68:rt-thread/components/drivers/src/ringblk_buf.c ****     if (!buf)
+ 175              		.loc 1 68 0
+ 176 0012 3046     		mov	r0, r6
+ 177              	.LVL16:
+ 178 0014 FFF7FEFF 		bl	rt_malloc
+ 179              	.LVL17:
+  69:rt-thread/components/drivers/src/ringblk_buf.c ****     {
+ 180              		.loc 1 69 0
+ 181 0018 0746     		mov	r7, r0
+ 182 001a 78B1     		cbz	r0, .L16
+  75:rt-thread/components/drivers/src/ringblk_buf.c ****     if (!blk_set)
+ 183              		.loc 1 75 0
+ 184 001c 04EB4403 		add	r3, r4, r4, lsl #1
+ 185 0020 9800     		lsls	r0, r3, #2
+ 186              	.LVL18:
+ 187 0022 FFF7FEFF 		bl	rt_malloc
+ 188              	.LVL19:
+  76:rt-thread/components/drivers/src/ringblk_buf.c ****     {
+ 189              		.loc 1 76 0
+ARM GAS  /tmp/cc7QoIaX.s 			page 10
+
+
+ 190 0026 0346     		mov	r3, r0
+ 191 0028 68B1     		cbz	r0, .L17
+  83:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 192              		.loc 1 83 0
+ 193 002a 0094     		str	r4, [sp]
+ 194 002c 3246     		mov	r2, r6
+ 195 002e 3946     		mov	r1, r7
+ 196 0030 2846     		mov	r0, r5
+ 197              	.LVL20:
+ 198 0032 FFF7FEFF 		bl	rt_rbb_init
+ 199              	.LVL21:
+ 200              	.L11:
+  86:rt-thread/components/drivers/src/ringblk_buf.c **** RTM_EXPORT(rt_rbb_create);
+ 201              		.loc 1 86 0
+ 202 0036 2846     		mov	r0, r5
+ 203 0038 03B0     		add	sp, sp, #12
+ 204              	.LCFI6:
+ 205              		.cfi_remember_state
+ 206              		.cfi_def_cfa_offset 20
+ 207              		@ sp needed
+ 208 003a F0BD     		pop	{r4, r5, r6, r7, pc}
+ 209              	.LVL22:
+ 210              	.L16:
+ 211              	.LCFI7:
+ 212              		.cfi_restore_state
+  71:rt-thread/components/drivers/src/ringblk_buf.c ****         return NULL;
+ 213              		.loc 1 71 0
+ 214 003c 2846     		mov	r0, r5
+ 215              	.LVL23:
+ 216 003e FFF7FEFF 		bl	rt_free
+ 217              	.LVL24:
+  72:rt-thread/components/drivers/src/ringblk_buf.c ****     }
+ 218              		.loc 1 72 0
+ 219 0042 0025     		movs	r5, #0
+ 220              	.LVL25:
+ 221 0044 F7E7     		b	.L11
+ 222              	.LVL26:
+ 223              	.L17:
+  78:rt-thread/components/drivers/src/ringblk_buf.c ****         rt_free(rbb);
+ 224              		.loc 1 78 0
+ 225 0046 3846     		mov	r0, r7
+ 226              	.LVL27:
+ 227 0048 FFF7FEFF 		bl	rt_free
+ 228              	.LVL28:
+  79:rt-thread/components/drivers/src/ringblk_buf.c ****         return NULL;
+ 229              		.loc 1 79 0
+ 230 004c 2846     		mov	r0, r5
+ 231 004e FFF7FEFF 		bl	rt_free
+ 232              	.LVL29:
+  80:rt-thread/components/drivers/src/ringblk_buf.c ****     }
+ 233              		.loc 1 80 0
+ 234 0052 0025     		movs	r5, #0
+ 235              	.LVL30:
+ 236 0054 EFE7     		b	.L11
+ 237              		.cfi_endproc
+ 238              	.LFE20:
+ 240              		.section	.text.rt_rbb_destroy,"ax",%progbits
+ARM GAS  /tmp/cc7QoIaX.s 			page 11
+
+
+ 241              		.align	1
+ 242              		.global	rt_rbb_destroy
+ 243              		.syntax unified
+ 244              		.thumb
+ 245              		.thumb_func
+ 246              		.fpu fpv4-sp-d16
+ 248              	rt_rbb_destroy:
+ 249              	.LFB21:
+  95:rt-thread/components/drivers/src/ringblk_buf.c ****     RT_ASSERT(rbb);
+ 250              		.loc 1 95 0
+ 251              		.cfi_startproc
+ 252              		@ args = 0, pretend = 0, frame = 0
+ 253              		@ frame_needed = 0, uses_anonymous_args = 0
+ 254              	.LVL31:
+ 255 0000 10B5     		push	{r4, lr}
+ 256              	.LCFI8:
+ 257              		.cfi_def_cfa_offset 8
+ 258              		.cfi_offset 4, -8
+ 259              		.cfi_offset 14, -4
+ 260 0002 0446     		mov	r4, r0
+  98:rt-thread/components/drivers/src/ringblk_buf.c ****     rt_free(rbb->blk_set);
+ 261              		.loc 1 98 0
+ 262 0004 0068     		ldr	r0, [r0]
+ 263              	.LVL32:
+ 264 0006 FFF7FEFF 		bl	rt_free
+ 265              	.LVL33:
+  99:rt-thread/components/drivers/src/ringblk_buf.c ****     rt_free(rbb);
+ 266              		.loc 1 99 0
+ 267 000a A068     		ldr	r0, [r4, #8]
+ 268 000c FFF7FEFF 		bl	rt_free
+ 269              	.LVL34:
+ 100:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 270              		.loc 1 100 0
+ 271 0010 2046     		mov	r0, r4
+ 272 0012 FFF7FEFF 		bl	rt_free
+ 273              	.LVL35:
+ 274 0016 10BD     		pop	{r4, pc}
+ 275              		.cfi_endproc
+ 276              	.LFE21:
+ 278              		.section	.text.rt_rbb_blk_alloc,"ax",%progbits
+ 279              		.align	1
+ 280              		.global	rt_rbb_blk_alloc
+ 281              		.syntax unified
+ 282              		.thumb
+ 283              		.thumb_func
+ 284              		.fpu fpv4-sp-d16
+ 286              	rt_rbb_blk_alloc:
+ 287              	.LFB23:
+ 121:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 122:rt-thread/components/drivers/src/ringblk_buf.c **** /**
+ 123:rt-thread/components/drivers/src/ringblk_buf.c ****  * Allocate a block by given size. The block will add to blk_list when allocate success.
+ 124:rt-thread/components/drivers/src/ringblk_buf.c ****  *
+ 125:rt-thread/components/drivers/src/ringblk_buf.c ****  * @param rbb ring block buffer object
+ 126:rt-thread/components/drivers/src/ringblk_buf.c ****  * @param blk_size block size
+ 127:rt-thread/components/drivers/src/ringblk_buf.c ****  *
+ 128:rt-thread/components/drivers/src/ringblk_buf.c ****  * @note When your application need align access, please make the blk_szie is aligned.
+ 129:rt-thread/components/drivers/src/ringblk_buf.c ****  *
+ARM GAS  /tmp/cc7QoIaX.s 			page 12
+
+
+ 130:rt-thread/components/drivers/src/ringblk_buf.c ****  * @return != NULL: allocated block
+ 131:rt-thread/components/drivers/src/ringblk_buf.c ****  *            NULL: allocate failed
+ 132:rt-thread/components/drivers/src/ringblk_buf.c ****  */
+ 133:rt-thread/components/drivers/src/ringblk_buf.c **** rt_rbb_blk_t rt_rbb_blk_alloc(rt_rbb_t rbb, rt_size_t blk_size)
+ 134:rt-thread/components/drivers/src/ringblk_buf.c **** {
+ 288              		.loc 1 134 0
+ 289              		.cfi_startproc
+ 290              		@ args = 0, pretend = 0, frame = 0
+ 291              		@ frame_needed = 0, uses_anonymous_args = 0
+ 292              	.LVL36:
+ 293 0000 2DE9F041 		push	{r4, r5, r6, r7, r8, lr}
+ 294              	.LCFI9:
+ 295              		.cfi_def_cfa_offset 24
+ 296              		.cfi_offset 4, -24
+ 297              		.cfi_offset 5, -20
+ 298              		.cfi_offset 6, -16
+ 299              		.cfi_offset 7, -12
+ 300              		.cfi_offset 8, -8
+ 301              		.cfi_offset 14, -4
+ 302 0004 0546     		mov	r5, r0
+ 303 0006 0E46     		mov	r6, r1
+ 304              	.LVL37:
+ 135:rt-thread/components/drivers/src/ringblk_buf.c ****     rt_base_t level;
+ 136:rt-thread/components/drivers/src/ringblk_buf.c ****     rt_size_t empty1 = 0, empty2 = 0;
+ 137:rt-thread/components/drivers/src/ringblk_buf.c ****     rt_rbb_blk_t head, tail, new_rbb = NULL;
+ 138:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 139:rt-thread/components/drivers/src/ringblk_buf.c ****     RT_ASSERT(rbb);
+ 140:rt-thread/components/drivers/src/ringblk_buf.c ****     RT_ASSERT(blk_size < (1L << 24));
+ 141:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 142:rt-thread/components/drivers/src/ringblk_buf.c ****     level = rt_hw_interrupt_disable();
+ 305              		.loc 1 142 0
+ 306 0008 FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 307              	.LVL38:
+ 308 000c 0746     		mov	r7, r0
+ 309              	.LVL39:
+ 143:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 144:rt-thread/components/drivers/src/ringblk_buf.c ****     new_rbb = find_empty_blk_in_set(rbb);
+ 310              		.loc 1 144 0
+ 311 000e 2846     		mov	r0, r5
+ 312              	.LVL40:
+ 313 0010 FFF7FEFF 		bl	find_empty_blk_in_set
+ 314              	.LVL41:
+ 315 0014 0446     		mov	r4, r0
+ 316              	.LVL42:
+ 317              	.LBB42:
+ 318              	.LBB43:
+ 192:rt-thread/include/rtservice.h **** }
+ 193:rt-thread/include/rtservice.h **** 
+ 194:rt-thread/include/rtservice.h **** rt_inline void rt_slist_append(rt_slist_t *l, rt_slist_t *n)
+ 195:rt-thread/include/rtservice.h **** {
+ 196:rt-thread/include/rtservice.h ****     struct rt_slist_node *node;
+ 197:rt-thread/include/rtservice.h **** 
+ 198:rt-thread/include/rtservice.h ****     node = l;
+ 199:rt-thread/include/rtservice.h ****     while (node->next) node = node->next;
+ 200:rt-thread/include/rtservice.h **** 
+ 201:rt-thread/include/rtservice.h ****     /* append the node to the tail */
+ 202:rt-thread/include/rtservice.h ****     node->next = n;
+ARM GAS  /tmp/cc7QoIaX.s 			page 13
+
+
+ 203:rt-thread/include/rtservice.h ****     n->next = RT_NULL;
+ 204:rt-thread/include/rtservice.h **** }
+ 205:rt-thread/include/rtservice.h **** 
+ 206:rt-thread/include/rtservice.h **** rt_inline void rt_slist_insert(rt_slist_t *l, rt_slist_t *n)
+ 207:rt-thread/include/rtservice.h **** {
+ 208:rt-thread/include/rtservice.h ****     n->next = l->next;
+ 209:rt-thread/include/rtservice.h ****     l->next = n;
+ 210:rt-thread/include/rtservice.h **** }
+ 211:rt-thread/include/rtservice.h **** 
+ 212:rt-thread/include/rtservice.h **** rt_inline unsigned int rt_slist_len(const rt_slist_t *l)
+ 213:rt-thread/include/rtservice.h **** {
+ 214:rt-thread/include/rtservice.h ****     unsigned int len = 0;
+ 215:rt-thread/include/rtservice.h ****     const rt_slist_t *list = l->next;
+ 319              		.loc 2 215 0
+ 320 0016 2869     		ldr	r0, [r5, #16]
+ 321              	.LVL43:
+ 322 0018 0346     		mov	r3, r0
+ 214:rt-thread/include/rtservice.h ****     const rt_slist_t *list = l->next;
+ 323              		.loc 2 214 0
+ 324 001a 0022     		movs	r2, #0
+ 325 001c 01E0     		b	.L21
+ 326              	.LVL44:
+ 327              	.L22:
+ 216:rt-thread/include/rtservice.h ****     while (list != RT_NULL)
+ 217:rt-thread/include/rtservice.h ****     {
+ 218:rt-thread/include/rtservice.h ****         list = list->next;
+ 328              		.loc 2 218 0
+ 329 001e 1B68     		ldr	r3, [r3]
+ 330              	.LVL45:
+ 219:rt-thread/include/rtservice.h ****         len ++;
+ 331              		.loc 2 219 0
+ 332 0020 0132     		adds	r2, r2, #1
+ 333              	.LVL46:
+ 334              	.L21:
+ 216:rt-thread/include/rtservice.h ****     while (list != RT_NULL)
+ 335              		.loc 2 216 0
+ 336 0022 002B     		cmp	r3, #0
+ 337 0024 FBD1     		bne	.L22
+ 338              	.LVL47:
+ 339              	.LBE43:
+ 340              	.LBE42:
+ 145:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 146:rt-thread/components/drivers/src/ringblk_buf.c ****     if (rt_slist_len(&rbb->blk_list) < rbb->blk_max_num && new_rbb)
+ 341              		.loc 1 146 0
+ 342 0026 EB68     		ldr	r3, [r5, #12]
+ 343 0028 9A42     		cmp	r2, r3
+ 344 002a 80F08C80 		bcs	.L34
+ 345              		.loc 1 146 0 is_stmt 0 discriminator 1
+ 346 002e 002C     		cmp	r4, #0
+ 347 0030 00F08380 		beq	.L23
+ 348 0034 0346     		mov	r3, r0
+ 349 0036 0022     		movs	r2, #0
+ 350 0038 01E0     		b	.L24
+ 351              	.LVL48:
+ 352              	.L25:
+ 353              	.LBB44:
+ 354              	.LBB45:
+ARM GAS  /tmp/cc7QoIaX.s 			page 14
+
+
+ 218:rt-thread/include/rtservice.h ****         len ++;
+ 355              		.loc 2 218 0 is_stmt 1
+ 356 003a 1B68     		ldr	r3, [r3]
+ 357              	.LVL49:
+ 358              		.loc 2 219 0
+ 359 003c 0132     		adds	r2, r2, #1
+ 360              	.LVL50:
+ 361              	.L24:
+ 216:rt-thread/include/rtservice.h ****     {
+ 362              		.loc 2 216 0
+ 363 003e 002B     		cmp	r3, #0
+ 364 0040 FBD1     		bne	.L25
+ 365              	.LVL51:
+ 366              	.LBE45:
+ 367              	.LBE44:
+ 147:rt-thread/components/drivers/src/ringblk_buf.c ****     {
+ 148:rt-thread/components/drivers/src/ringblk_buf.c ****         if (rt_slist_len(&rbb->blk_list) > 0)
+ 368              		.loc 1 148 0
+ 369 0042 002A     		cmp	r2, #0
+ 370 0044 66D0     		beq	.L26
+ 371              	.LVL52:
+ 149:rt-thread/components/drivers/src/ringblk_buf.c ****         {
+ 150:rt-thread/components/drivers/src/ringblk_buf.c ****             head = rt_slist_first_entry(&rbb->blk_list, struct rt_rbb_blk, list);
+ 151:rt-thread/components/drivers/src/ringblk_buf.c ****             tail = rt_slist_tail_entry(&rbb->blk_list, struct rt_rbb_blk, list);
+ 372              		.loc 1 151 0
+ 373 0046 05F11001 		add	r1, r5, #16
+ 374              	.LVL53:
+ 375 004a 0A46     		mov	r2, r1
+ 376 004c 00E0     		b	.L27
+ 377              	.LVL54:
+ 378              	.L36:
+ 379              	.LBB46:
+ 380              	.LBB47:
+ 220:rt-thread/include/rtservice.h ****     }
+ 221:rt-thread/include/rtservice.h **** 
+ 222:rt-thread/include/rtservice.h ****     return len;
+ 223:rt-thread/include/rtservice.h **** }
+ 224:rt-thread/include/rtservice.h **** 
+ 225:rt-thread/include/rtservice.h **** rt_inline rt_slist_t *rt_slist_remove(rt_slist_t *l, rt_slist_t *n)
+ 226:rt-thread/include/rtservice.h **** {
+ 227:rt-thread/include/rtservice.h ****     /* remove slist head */
+ 228:rt-thread/include/rtservice.h ****     struct rt_slist_node *node = l;
+ 229:rt-thread/include/rtservice.h ****     while (node->next && node->next != n) node = node->next;
+ 230:rt-thread/include/rtservice.h **** 
+ 231:rt-thread/include/rtservice.h ****     /* remove node */
+ 232:rt-thread/include/rtservice.h ****     if (node->next != (rt_slist_t *)0) node->next = node->next->next;
+ 233:rt-thread/include/rtservice.h **** 
+ 234:rt-thread/include/rtservice.h ****     return l;
+ 235:rt-thread/include/rtservice.h **** }
+ 236:rt-thread/include/rtservice.h **** 
+ 237:rt-thread/include/rtservice.h **** rt_inline rt_slist_t *rt_slist_first(rt_slist_t *l)
+ 238:rt-thread/include/rtservice.h **** {
+ 239:rt-thread/include/rtservice.h ****     return l->next;
+ 240:rt-thread/include/rtservice.h **** }
+ 241:rt-thread/include/rtservice.h **** 
+ 242:rt-thread/include/rtservice.h **** rt_inline rt_slist_t *rt_slist_tail(rt_slist_t *l)
+ 243:rt-thread/include/rtservice.h **** {
+ARM GAS  /tmp/cc7QoIaX.s 			page 15
+
+
+ 244:rt-thread/include/rtservice.h ****     while (l->next) l = l->next;
+ 381              		.loc 2 244 0
+ 382 004e 1A46     		mov	r2, r3
+ 383              	.LVL55:
+ 384              	.L27:
+ 385 0050 1368     		ldr	r3, [r2]
+ 386 0052 002B     		cmp	r3, #0
+ 387 0054 FBD1     		bne	.L36
+ 388              	.LVL56:
+ 389              	.LBE47:
+ 390              	.LBE46:
+ 152:rt-thread/components/drivers/src/ringblk_buf.c ****             if (head->buf <= tail->buf)
+ 391              		.loc 1 152 0
+ 392 0056 50F804EC 		ldr	lr, [r0, #-4]
+ 393 005a 52F8043C 		ldr	r3, [r2, #-4]
+ 394 005e 9E45     		cmp	lr, r3
+ 395 0060 39D8     		bhi	.L28
+ 153:rt-thread/components/drivers/src/ringblk_buf.c ****             {
+ 154:rt-thread/components/drivers/src/ringblk_buf.c ****                 /**
+ 155:rt-thread/components/drivers/src/ringblk_buf.c ****                  *                      head                     tail
+ 156:rt-thread/components/drivers/src/ringblk_buf.c ****                  * +--------------------------------------+-----------------+------------------+
+ 157:rt-thread/components/drivers/src/ringblk_buf.c ****                  * |      empty2     | block1 |   block2  |      block3     |       empty1     |
+ 158:rt-thread/components/drivers/src/ringblk_buf.c ****                  * +--------------------------------------+-----------------+------------------+
+ 159:rt-thread/components/drivers/src/ringblk_buf.c ****                  *                            rbb->buf
+ 160:rt-thread/components/drivers/src/ringblk_buf.c ****                  */
+ 161:rt-thread/components/drivers/src/ringblk_buf.c ****                 empty1 = (rbb->buf + rbb->buf_size) - (tail->buf + tail->size);
+ 396              		.loc 1 161 0
+ 397 0062 D5F800C0 		ldr	ip, [r5]
+ 398 0066 6868     		ldr	r0, [r5, #4]
+ 399              	.LVL57:
+ 400 0068 00EB0C08 		add	r8, r0, ip
+ 401 006c 52F8080C 		ldr	r0, [r2, #-8]
+ 402 0070 03EB1023 		add	r3, r3, r0, lsr #8
+ 403 0074 A8EB0303 		sub	r3, r8, r3
+ 404              	.LVL58:
+ 162:rt-thread/components/drivers/src/ringblk_buf.c ****                 empty2 = head->buf - rbb->buf;
+ 405              		.loc 1 162 0
+ 406 0078 AEEB0C0E 		sub	lr, lr, ip
+ 407              	.LVL59:
+ 163:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 164:rt-thread/components/drivers/src/ringblk_buf.c ****                 if (empty1 >= blk_size)
+ 408              		.loc 1 164 0
+ 409 007c 9E42     		cmp	r6, r3
+ 410 007e 16D8     		bhi	.L29
+ 165:rt-thread/components/drivers/src/ringblk_buf.c ****                 {
+ 166:rt-thread/components/drivers/src/ringblk_buf.c ****                     rt_slist_append(&rbb->blk_list, &new_rbb->list);
+ 411              		.loc 1 166 0
+ 412 0080 04F10800 		add	r0, r4, #8
+ 413              	.LVL60:
+ 414 0084 00E0     		b	.L30
+ 415              	.LVL61:
+ 416              	.L37:
+ 417              	.LBB48:
+ 418              	.LBB49:
+ 199:rt-thread/include/rtservice.h **** 
+ 419              		.loc 2 199 0
+ 420 0086 1946     		mov	r1, r3
+ARM GAS  /tmp/cc7QoIaX.s 			page 16
+
+
+ 421              	.LVL62:
+ 422              	.L30:
+ 423 0088 0B68     		ldr	r3, [r1]
+ 424 008a 002B     		cmp	r3, #0
+ 425 008c FBD1     		bne	.L37
+ 202:rt-thread/include/rtservice.h ****     n->next = RT_NULL;
+ 426              		.loc 2 202 0
+ 427 008e 0860     		str	r0, [r1]
+ 428              	.LVL63:
+ 203:rt-thread/include/rtservice.h **** }
+ 429              		.loc 2 203 0
+ 430 0090 A360     		str	r3, [r4, #8]
+ 431              	.LVL64:
+ 432              	.LBE49:
+ 433              	.LBE48:
+ 167:rt-thread/components/drivers/src/ringblk_buf.c ****                     new_rbb->status = RT_RBB_BLK_INITED;
+ 434              		.loc 1 167 0
+ 435 0092 0123     		movs	r3, #1
+ 436 0094 2370     		strb	r3, [r4]
+ 168:rt-thread/components/drivers/src/ringblk_buf.c ****                     new_rbb->buf = tail->buf + tail->size;
+ 437              		.loc 1 168 0
+ 438 0096 52F8043C 		ldr	r3, [r2, #-4]
+ 439 009a 52F8082C 		ldr	r2, [r2, #-8]
+ 440              	.LVL65:
+ 441 009e 03EB1223 		add	r3, r3, r2, lsr #8
+ 442 00a2 6360     		str	r3, [r4, #4]
+ 169:rt-thread/components/drivers/src/ringblk_buf.c ****                     new_rbb->size = blk_size;
+ 443              		.loc 1 169 0
+ 444 00a4 2368     		ldr	r3, [r4]
+ 445 00a6 66F31F23 		bfi	r3, r6, #8, #24
+ 446 00aa 2360     		str	r3, [r4]
+ 447 00ac 45E0     		b	.L23
+ 448              	.LVL66:
+ 449              	.L29:
+ 170:rt-thread/components/drivers/src/ringblk_buf.c ****                 }
+ 171:rt-thread/components/drivers/src/ringblk_buf.c ****                 else if (empty2 >= blk_size)
+ 450              		.loc 1 171 0
+ 451 00ae 7645     		cmp	r6, lr
+ 452 00b0 4BD8     		bhi	.L38
+ 172:rt-thread/components/drivers/src/ringblk_buf.c ****                 {
+ 173:rt-thread/components/drivers/src/ringblk_buf.c ****                     rt_slist_append(&rbb->blk_list, &new_rbb->list);
+ 453              		.loc 1 173 0
+ 454 00b2 04F10802 		add	r2, r4, #8
+ 455              	.LVL67:
+ 456 00b6 00E0     		b	.L31
+ 457              	.LVL68:
+ 458              	.L39:
+ 459              	.LBB50:
+ 460              	.LBB51:
+ 199:rt-thread/include/rtservice.h **** 
+ 461              		.loc 2 199 0
+ 462 00b8 1946     		mov	r1, r3
+ 463              	.LVL69:
+ 464              	.L31:
+ 465 00ba 0B68     		ldr	r3, [r1]
+ 466 00bc 002B     		cmp	r3, #0
+ 467 00be FBD1     		bne	.L39
+ARM GAS  /tmp/cc7QoIaX.s 			page 17
+
+
+ 202:rt-thread/include/rtservice.h ****     n->next = RT_NULL;
+ 468              		.loc 2 202 0
+ 469 00c0 0A60     		str	r2, [r1]
+ 470              	.LVL70:
+ 203:rt-thread/include/rtservice.h **** }
+ 471              		.loc 2 203 0
+ 472 00c2 A360     		str	r3, [r4, #8]
+ 473              	.LVL71:
+ 474              	.LBE51:
+ 475              	.LBE50:
+ 174:rt-thread/components/drivers/src/ringblk_buf.c ****                     new_rbb->status = RT_RBB_BLK_INITED;
+ 476              		.loc 1 174 0
+ 477 00c4 0123     		movs	r3, #1
+ 478 00c6 2370     		strb	r3, [r4]
+ 175:rt-thread/components/drivers/src/ringblk_buf.c ****                     new_rbb->buf = rbb->buf;
+ 479              		.loc 1 175 0
+ 480 00c8 2B68     		ldr	r3, [r5]
+ 481 00ca 6360     		str	r3, [r4, #4]
+ 176:rt-thread/components/drivers/src/ringblk_buf.c ****                     new_rbb->size = blk_size;
+ 482              		.loc 1 176 0
+ 483 00cc 2368     		ldr	r3, [r4]
+ 484 00ce 66F31F23 		bfi	r3, r6, #8, #24
+ 485 00d2 2360     		str	r3, [r4]
+ 486 00d4 31E0     		b	.L23
+ 487              	.LVL72:
+ 488              	.L28:
+ 177:rt-thread/components/drivers/src/ringblk_buf.c ****                 }
+ 178:rt-thread/components/drivers/src/ringblk_buf.c ****                 else
+ 179:rt-thread/components/drivers/src/ringblk_buf.c ****                 {
+ 180:rt-thread/components/drivers/src/ringblk_buf.c ****                     /* no space */
+ 181:rt-thread/components/drivers/src/ringblk_buf.c ****                     new_rbb = NULL;
+ 182:rt-thread/components/drivers/src/ringblk_buf.c ****                 }
+ 183:rt-thread/components/drivers/src/ringblk_buf.c ****             }
+ 184:rt-thread/components/drivers/src/ringblk_buf.c ****             else
+ 185:rt-thread/components/drivers/src/ringblk_buf.c ****             {
+ 186:rt-thread/components/drivers/src/ringblk_buf.c ****                 /**
+ 187:rt-thread/components/drivers/src/ringblk_buf.c ****                  *        tail                                              head
+ 188:rt-thread/components/drivers/src/ringblk_buf.c ****                  * +----------------+-------------------------------------+--------+-----------+
+ 189:rt-thread/components/drivers/src/ringblk_buf.c ****                  * |     block3     |                empty1               | block1 |  block2   |
+ 190:rt-thread/components/drivers/src/ringblk_buf.c ****                  * +----------------+-------------------------------------+--------+-----------+
+ 191:rt-thread/components/drivers/src/ringblk_buf.c ****                  *                            rbb->buf
+ 192:rt-thread/components/drivers/src/ringblk_buf.c ****                  */
+ 193:rt-thread/components/drivers/src/ringblk_buf.c ****                 empty1 = head->buf - (tail->buf + tail->size);
+ 489              		.loc 1 193 0
+ 490 00d6 52F8080C 		ldr	r0, [r2, #-8]
+ 491              	.LVL73:
+ 492 00da 03EB1023 		add	r3, r3, r0, lsr #8
+ 493 00de AEEB0303 		sub	r3, lr, r3
+ 494              	.LVL74:
+ 194:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 195:rt-thread/components/drivers/src/ringblk_buf.c ****                 if (empty1 >= blk_size)
+ 495              		.loc 1 195 0
+ 496 00e2 9E42     		cmp	r6, r3
+ 497 00e4 33D8     		bhi	.L40
+ 196:rt-thread/components/drivers/src/ringblk_buf.c ****                 {
+ 197:rt-thread/components/drivers/src/ringblk_buf.c ****                     rt_slist_append(&rbb->blk_list, &new_rbb->list);
+ 498              		.loc 1 197 0
+ARM GAS  /tmp/cc7QoIaX.s 			page 18
+
+
+ 499 00e6 04F10800 		add	r0, r4, #8
+ 500              	.LVL75:
+ 501 00ea 00E0     		b	.L32
+ 502              	.LVL76:
+ 503              	.L41:
+ 504              	.LBB52:
+ 505              	.LBB53:
+ 199:rt-thread/include/rtservice.h **** 
+ 506              		.loc 2 199 0
+ 507 00ec 1946     		mov	r1, r3
+ 508              	.LVL77:
+ 509              	.L32:
+ 510 00ee 0B68     		ldr	r3, [r1]
+ 511 00f0 002B     		cmp	r3, #0
+ 512 00f2 FBD1     		bne	.L41
+ 202:rt-thread/include/rtservice.h ****     n->next = RT_NULL;
+ 513              		.loc 2 202 0
+ 514 00f4 0860     		str	r0, [r1]
+ 515              	.LVL78:
+ 203:rt-thread/include/rtservice.h **** }
+ 516              		.loc 2 203 0
+ 517 00f6 A360     		str	r3, [r4, #8]
+ 518              	.LVL79:
+ 519              	.LBE53:
+ 520              	.LBE52:
+ 198:rt-thread/components/drivers/src/ringblk_buf.c ****                     new_rbb->status = RT_RBB_BLK_INITED;
+ 521              		.loc 1 198 0
+ 522 00f8 0123     		movs	r3, #1
+ 523 00fa 2370     		strb	r3, [r4]
+ 199:rt-thread/components/drivers/src/ringblk_buf.c ****                     new_rbb->buf = tail->buf + tail->size;
+ 524              		.loc 1 199 0
+ 525 00fc 52F8043C 		ldr	r3, [r2, #-4]
+ 526 0100 52F8082C 		ldr	r2, [r2, #-8]
+ 527              	.LVL80:
+ 528 0104 03EB1223 		add	r3, r3, r2, lsr #8
+ 529 0108 6360     		str	r3, [r4, #4]
+ 200:rt-thread/components/drivers/src/ringblk_buf.c ****                     new_rbb->size = blk_size;
+ 530              		.loc 1 200 0
+ 531 010a 2368     		ldr	r3, [r4]
+ 532 010c 66F31F23 		bfi	r3, r6, #8, #24
+ 533 0110 2360     		str	r3, [r4]
+ 534 0112 12E0     		b	.L23
+ 535              	.LVL81:
+ 536              	.L26:
+ 201:rt-thread/components/drivers/src/ringblk_buf.c ****                 }
+ 202:rt-thread/components/drivers/src/ringblk_buf.c ****                 else
+ 203:rt-thread/components/drivers/src/ringblk_buf.c ****                 {
+ 204:rt-thread/components/drivers/src/ringblk_buf.c ****                     /* no space */
+ 205:rt-thread/components/drivers/src/ringblk_buf.c ****                     new_rbb = NULL;
+ 206:rt-thread/components/drivers/src/ringblk_buf.c ****                 }
+ 207:rt-thread/components/drivers/src/ringblk_buf.c ****             }
+ 208:rt-thread/components/drivers/src/ringblk_buf.c ****         }
+ 209:rt-thread/components/drivers/src/ringblk_buf.c ****         else
+ 210:rt-thread/components/drivers/src/ringblk_buf.c ****         {
+ 211:rt-thread/components/drivers/src/ringblk_buf.c ****             /* the list is empty */
+ 212:rt-thread/components/drivers/src/ringblk_buf.c ****             rt_slist_append(&rbb->blk_list, &new_rbb->list);
+ 537              		.loc 1 212 0
+ARM GAS  /tmp/cc7QoIaX.s 			page 19
+
+
+ 538 0114 05F11002 		add	r2, r5, #16
+ 539 0118 04F10801 		add	r1, r4, #8
+ 540              	.LVL82:
+ 541 011c 00E0     		b	.L33
+ 542              	.LVL83:
+ 543              	.L42:
+ 544              	.LBB54:
+ 545              	.LBB55:
+ 199:rt-thread/include/rtservice.h **** 
+ 546              		.loc 2 199 0
+ 547 011e 1A46     		mov	r2, r3
+ 548              	.LVL84:
+ 549              	.L33:
+ 550 0120 1368     		ldr	r3, [r2]
+ 551 0122 002B     		cmp	r3, #0
+ 552 0124 FBD1     		bne	.L42
+ 202:rt-thread/include/rtservice.h ****     n->next = RT_NULL;
+ 553              		.loc 2 202 0
+ 554 0126 1160     		str	r1, [r2]
+ 203:rt-thread/include/rtservice.h **** }
+ 555              		.loc 2 203 0
+ 556 0128 A360     		str	r3, [r4, #8]
+ 557              	.LVL85:
+ 558              	.LBE55:
+ 559              	.LBE54:
+ 213:rt-thread/components/drivers/src/ringblk_buf.c ****             new_rbb->status = RT_RBB_BLK_INITED;
+ 560              		.loc 1 213 0
+ 561 012a 0123     		movs	r3, #1
+ 562 012c 2370     		strb	r3, [r4]
+ 214:rt-thread/components/drivers/src/ringblk_buf.c ****             new_rbb->buf = rbb->buf;
+ 563              		.loc 1 214 0
+ 564 012e 2B68     		ldr	r3, [r5]
+ 565 0130 6360     		str	r3, [r4, #4]
+ 215:rt-thread/components/drivers/src/ringblk_buf.c ****             new_rbb->size = blk_size;
+ 566              		.loc 1 215 0
+ 567 0132 2368     		ldr	r3, [r4]
+ 568 0134 66F31F23 		bfi	r3, r6, #8, #24
+ 569 0138 2360     		str	r3, [r4]
+ 570              	.LVL86:
+ 571              	.L23:
+ 216:rt-thread/components/drivers/src/ringblk_buf.c ****         }
+ 217:rt-thread/components/drivers/src/ringblk_buf.c ****     }
+ 218:rt-thread/components/drivers/src/ringblk_buf.c ****     else
+ 219:rt-thread/components/drivers/src/ringblk_buf.c ****     {
+ 220:rt-thread/components/drivers/src/ringblk_buf.c ****         new_rbb = NULL;
+ 221:rt-thread/components/drivers/src/ringblk_buf.c ****     }
+ 222:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 223:rt-thread/components/drivers/src/ringblk_buf.c ****     rt_hw_interrupt_enable(level);
+ 572              		.loc 1 223 0
+ 573 013a 3846     		mov	r0, r7
+ 574 013c FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 575              	.LVL87:
+ 224:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 225:rt-thread/components/drivers/src/ringblk_buf.c ****     return new_rbb;
+ 226:rt-thread/components/drivers/src/ringblk_buf.c **** }
+ 576              		.loc 1 226 0
+ 577 0140 2046     		mov	r0, r4
+ARM GAS  /tmp/cc7QoIaX.s 			page 20
+
+
+ 578 0142 BDE8F081 		pop	{r4, r5, r6, r7, r8, pc}
+ 579              	.LVL88:
+ 580              	.L34:
+ 220:rt-thread/components/drivers/src/ringblk_buf.c ****     }
+ 581              		.loc 1 220 0
+ 582 0146 0024     		movs	r4, #0
+ 583              	.LVL89:
+ 584 0148 F7E7     		b	.L23
+ 585              	.LVL90:
+ 586              	.L38:
+ 181:rt-thread/components/drivers/src/ringblk_buf.c ****                 }
+ 587              		.loc 1 181 0
+ 588 014a 0024     		movs	r4, #0
+ 589              	.LVL91:
+ 590 014c F5E7     		b	.L23
+ 591              	.LVL92:
+ 592              	.L40:
+ 205:rt-thread/components/drivers/src/ringblk_buf.c ****                 }
+ 593              		.loc 1 205 0
+ 594 014e 0024     		movs	r4, #0
+ 595              	.LVL93:
+ 596 0150 F3E7     		b	.L23
+ 597              		.cfi_endproc
+ 598              	.LFE23:
+ 600              		.section	.text.rt_rbb_blk_put,"ax",%progbits
+ 601              		.align	1
+ 602              		.global	rt_rbb_blk_put
+ 603              		.syntax unified
+ 604              		.thumb
+ 605              		.thumb_func
+ 606              		.fpu fpv4-sp-d16
+ 608              	rt_rbb_blk_put:
+ 609              	.LFB24:
+ 227:rt-thread/components/drivers/src/ringblk_buf.c **** RTM_EXPORT(rt_rbb_blk_alloc);
+ 228:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 229:rt-thread/components/drivers/src/ringblk_buf.c **** /**
+ 230:rt-thread/components/drivers/src/ringblk_buf.c ****  * put a block to ring block buffer object
+ 231:rt-thread/components/drivers/src/ringblk_buf.c ****  *
+ 232:rt-thread/components/drivers/src/ringblk_buf.c ****  * @param block the block
+ 233:rt-thread/components/drivers/src/ringblk_buf.c ****  */
+ 234:rt-thread/components/drivers/src/ringblk_buf.c **** void rt_rbb_blk_put(rt_rbb_blk_t block)
+ 235:rt-thread/components/drivers/src/ringblk_buf.c **** {
+ 610              		.loc 1 235 0
+ 611              		.cfi_startproc
+ 612              		@ args = 0, pretend = 0, frame = 0
+ 613              		@ frame_needed = 0, uses_anonymous_args = 0
+ 614              		@ link register save eliminated.
+ 615              	.LVL94:
+ 236:rt-thread/components/drivers/src/ringblk_buf.c ****     RT_ASSERT(block);
+ 237:rt-thread/components/drivers/src/ringblk_buf.c ****     RT_ASSERT(block->status == RT_RBB_BLK_INITED);
+ 238:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 239:rt-thread/components/drivers/src/ringblk_buf.c ****     block->status = RT_RBB_BLK_PUT;
+ 616              		.loc 1 239 0
+ 617 0000 0223     		movs	r3, #2
+ 618 0002 0370     		strb	r3, [r0]
+ 619 0004 7047     		bx	lr
+ 620              		.cfi_endproc
+ARM GAS  /tmp/cc7QoIaX.s 			page 21
+
+
+ 621              	.LFE24:
+ 623              		.section	.text.rt_rbb_blk_get,"ax",%progbits
+ 624              		.align	1
+ 625              		.global	rt_rbb_blk_get
+ 626              		.syntax unified
+ 627              		.thumb
+ 628              		.thumb_func
+ 629              		.fpu fpv4-sp-d16
+ 631              	rt_rbb_blk_get:
+ 632              	.LFB25:
+ 240:rt-thread/components/drivers/src/ringblk_buf.c **** }
+ 241:rt-thread/components/drivers/src/ringblk_buf.c **** RTM_EXPORT(rt_rbb_blk_put);
+ 242:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 243:rt-thread/components/drivers/src/ringblk_buf.c **** /**
+ 244:rt-thread/components/drivers/src/ringblk_buf.c ****  * get a block from the ring block buffer object
+ 245:rt-thread/components/drivers/src/ringblk_buf.c ****  *
+ 246:rt-thread/components/drivers/src/ringblk_buf.c ****  * @param rbb ring block buffer object
+ 247:rt-thread/components/drivers/src/ringblk_buf.c ****  *
+ 248:rt-thread/components/drivers/src/ringblk_buf.c ****  * @return != NULL: block
+ 249:rt-thread/components/drivers/src/ringblk_buf.c ****  *            NULL: get failed
+ 250:rt-thread/components/drivers/src/ringblk_buf.c ****  */
+ 251:rt-thread/components/drivers/src/ringblk_buf.c **** rt_rbb_blk_t rt_rbb_blk_get(rt_rbb_t rbb)
+ 252:rt-thread/components/drivers/src/ringblk_buf.c **** {
+ 633              		.loc 1 252 0
+ 634              		.cfi_startproc
+ 635              		@ args = 0, pretend = 0, frame = 0
+ 636              		@ frame_needed = 0, uses_anonymous_args = 0
+ 637              	.LVL95:
+ 638 0000 10B5     		push	{r4, lr}
+ 639              	.LCFI10:
+ 640              		.cfi_def_cfa_offset 8
+ 641              		.cfi_offset 4, -8
+ 642              		.cfi_offset 14, -4
+ 643              	.LVL96:
+ 644              	.LBB56:
+ 645              	.LBB57:
+ 245:rt-thread/include/rtservice.h **** 
+ 246:rt-thread/include/rtservice.h ****     return l;
+ 247:rt-thread/include/rtservice.h **** }
+ 248:rt-thread/include/rtservice.h **** 
+ 249:rt-thread/include/rtservice.h **** rt_inline rt_slist_t *rt_slist_next(rt_slist_t *n)
+ 250:rt-thread/include/rtservice.h **** {
+ 251:rt-thread/include/rtservice.h ****     return n->next;
+ 252:rt-thread/include/rtservice.h **** }
+ 253:rt-thread/include/rtservice.h **** 
+ 254:rt-thread/include/rtservice.h **** rt_inline int rt_slist_isempty(rt_slist_t *l)
+ 255:rt-thread/include/rtservice.h **** {
+ 256:rt-thread/include/rtservice.h ****     return l->next == RT_NULL;
+ 646              		.loc 2 256 0
+ 647 0002 0369     		ldr	r3, [r0, #16]
+ 648              	.LVL97:
+ 649              	.LBE57:
+ 650              	.LBE56:
+ 253:rt-thread/components/drivers/src/ringblk_buf.c ****     rt_base_t level;
+ 254:rt-thread/components/drivers/src/ringblk_buf.c ****     rt_rbb_blk_t block = NULL;
+ 255:rt-thread/components/drivers/src/ringblk_buf.c ****     rt_slist_t *node;
+ 256:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ARM GAS  /tmp/cc7QoIaX.s 			page 22
+
+
+ 257:rt-thread/components/drivers/src/ringblk_buf.c ****     RT_ASSERT(rbb);
+ 258:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 259:rt-thread/components/drivers/src/ringblk_buf.c ****     if (rt_slist_isempty(&rbb->blk_list))
+ 651              		.loc 1 259 0
+ 652 0004 ABB1     		cbz	r3, .L51
+ 653 0006 0446     		mov	r4, r0
+ 260:rt-thread/components/drivers/src/ringblk_buf.c ****         return 0;
+ 261:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 262:rt-thread/components/drivers/src/ringblk_buf.c ****     level = rt_hw_interrupt_disable();
+ 654              		.loc 1 262 0
+ 655 0008 FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 656              	.LVL98:
+ 657              	.LBB58:
+ 658              	.LBB59:
+ 239:rt-thread/include/rtservice.h **** }
+ 659              		.loc 2 239 0
+ 660 000c 2369     		ldr	r3, [r4, #16]
+ 661              	.LVL99:
+ 662              	.L47:
+ 663              	.LBE59:
+ 664              	.LBE58:
+ 263:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 264:rt-thread/components/drivers/src/ringblk_buf.c ****     for (node = rt_slist_first(&rbb->blk_list); node; node = rt_slist_next(node))
+ 665              		.loc 1 264 0 discriminator 1
+ 666 000e 5BB1     		cbz	r3, .L53
+ 265:rt-thread/components/drivers/src/ringblk_buf.c ****     {
+ 266:rt-thread/components/drivers/src/ringblk_buf.c ****         block = rt_slist_entry(node, struct rt_rbb_blk, list);
+ 667              		.loc 1 266 0
+ 668 0010 A3F10804 		sub	r4, r3, #8
+ 669              	.LVL100:
+ 267:rt-thread/components/drivers/src/ringblk_buf.c ****         if (block->status == RT_RBB_BLK_PUT)
+ 670              		.loc 1 267 0
+ 671 0014 13F8082C 		ldrb	r2, [r3, #-8]	@ zero_extendqisi2
+ 672 0018 022A     		cmp	r2, #2
+ 673 001a 01D0     		beq	.L54
+ 674              	.LVL101:
+ 675              	.LBB60:
+ 676              	.LBB61:
+ 251:rt-thread/include/rtservice.h **** }
+ 677              		.loc 2 251 0
+ 678 001c 1B68     		ldr	r3, [r3]
+ 679              	.LVL102:
+ 680 001e F6E7     		b	.L47
+ 681              	.LVL103:
+ 682              	.L54:
+ 683              	.LBE61:
+ 684              	.LBE60:
+ 268:rt-thread/components/drivers/src/ringblk_buf.c ****         {
+ 269:rt-thread/components/drivers/src/ringblk_buf.c ****             block->status = RT_RBB_BLK_GET;
+ 685              		.loc 1 269 0
+ 686 0020 0322     		movs	r2, #3
+ 687 0022 03F8082C 		strb	r2, [r3, #-8]
+ 270:rt-thread/components/drivers/src/ringblk_buf.c ****             goto __exit;
+ 688              		.loc 1 270 0
+ 689 0026 00E0     		b	.L49
+ 690              	.LVL104:
+ 691              	.L53:
+ARM GAS  /tmp/cc7QoIaX.s 			page 23
+
+
+ 271:rt-thread/components/drivers/src/ringblk_buf.c ****         }
+ 272:rt-thread/components/drivers/src/ringblk_buf.c ****     }
+ 273:rt-thread/components/drivers/src/ringblk_buf.c ****     /* not found */
+ 274:rt-thread/components/drivers/src/ringblk_buf.c ****     block = NULL;
+ 692              		.loc 1 274 0
+ 693 0028 0024     		movs	r4, #0
+ 694              	.L49:
+ 695              	.LVL105:
+ 275:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 276:rt-thread/components/drivers/src/ringblk_buf.c **** __exit:
+ 277:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 278:rt-thread/components/drivers/src/ringblk_buf.c ****     rt_hw_interrupt_enable(level);
+ 696              		.loc 1 278 0
+ 697 002a FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 698              	.LVL106:
+ 699              	.L45:
+ 279:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 280:rt-thread/components/drivers/src/ringblk_buf.c ****     return block;
+ 281:rt-thread/components/drivers/src/ringblk_buf.c **** }
+ 700              		.loc 1 281 0
+ 701 002e 2046     		mov	r0, r4
+ 702 0030 10BD     		pop	{r4, pc}
+ 703              	.LVL107:
+ 704              	.L51:
+ 260:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 705              		.loc 1 260 0
+ 706 0032 0024     		movs	r4, #0
+ 707 0034 FBE7     		b	.L45
+ 708              		.cfi_endproc
+ 709              	.LFE25:
+ 711              		.section	.text.rt_rbb_blk_size,"ax",%progbits
+ 712              		.align	1
+ 713              		.global	rt_rbb_blk_size
+ 714              		.syntax unified
+ 715              		.thumb
+ 716              		.thumb_func
+ 717              		.fpu fpv4-sp-d16
+ 719              	rt_rbb_blk_size:
+ 720              	.LFB26:
+ 282:rt-thread/components/drivers/src/ringblk_buf.c **** RTM_EXPORT(rt_rbb_blk_get);
+ 283:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 284:rt-thread/components/drivers/src/ringblk_buf.c **** /**
+ 285:rt-thread/components/drivers/src/ringblk_buf.c ****  * return the block size
+ 286:rt-thread/components/drivers/src/ringblk_buf.c ****  *
+ 287:rt-thread/components/drivers/src/ringblk_buf.c ****  * @param block the block
+ 288:rt-thread/components/drivers/src/ringblk_buf.c ****  *
+ 289:rt-thread/components/drivers/src/ringblk_buf.c ****  * @return block size
+ 290:rt-thread/components/drivers/src/ringblk_buf.c ****  */
+ 291:rt-thread/components/drivers/src/ringblk_buf.c **** rt_size_t rt_rbb_blk_size(rt_rbb_blk_t block)
+ 292:rt-thread/components/drivers/src/ringblk_buf.c **** {
+ 721              		.loc 1 292 0
+ 722              		.cfi_startproc
+ 723              		@ args = 0, pretend = 0, frame = 0
+ 724              		@ frame_needed = 0, uses_anonymous_args = 0
+ 725              		@ link register save eliminated.
+ 726              	.LVL108:
+ 293:rt-thread/components/drivers/src/ringblk_buf.c ****     RT_ASSERT(block);
+ARM GAS  /tmp/cc7QoIaX.s 			page 24
+
+
+ 294:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 295:rt-thread/components/drivers/src/ringblk_buf.c ****     return block->size;
+ 727              		.loc 1 295 0
+ 728 0000 0068     		ldr	r0, [r0]
+ 729              	.LVL109:
+ 296:rt-thread/components/drivers/src/ringblk_buf.c **** }
+ 730              		.loc 1 296 0
+ 731 0002 000A     		lsrs	r0, r0, #8
+ 732 0004 7047     		bx	lr
+ 733              		.cfi_endproc
+ 734              	.LFE26:
+ 736              		.section	.text.rt_rbb_blk_buf,"ax",%progbits
+ 737              		.align	1
+ 738              		.global	rt_rbb_blk_buf
+ 739              		.syntax unified
+ 740              		.thumb
+ 741              		.thumb_func
+ 742              		.fpu fpv4-sp-d16
+ 744              	rt_rbb_blk_buf:
+ 745              	.LFB27:
+ 297:rt-thread/components/drivers/src/ringblk_buf.c **** RTM_EXPORT(rt_rbb_blk_size);
+ 298:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 299:rt-thread/components/drivers/src/ringblk_buf.c **** /**
+ 300:rt-thread/components/drivers/src/ringblk_buf.c ****  * return the block buffer
+ 301:rt-thread/components/drivers/src/ringblk_buf.c ****  *
+ 302:rt-thread/components/drivers/src/ringblk_buf.c ****  * @param block the block
+ 303:rt-thread/components/drivers/src/ringblk_buf.c ****  *
+ 304:rt-thread/components/drivers/src/ringblk_buf.c ****  * @return block buffer
+ 305:rt-thread/components/drivers/src/ringblk_buf.c ****  */
+ 306:rt-thread/components/drivers/src/ringblk_buf.c **** rt_uint8_t *rt_rbb_blk_buf(rt_rbb_blk_t block)
+ 307:rt-thread/components/drivers/src/ringblk_buf.c **** {
+ 746              		.loc 1 307 0
+ 747              		.cfi_startproc
+ 748              		@ args = 0, pretend = 0, frame = 0
+ 749              		@ frame_needed = 0, uses_anonymous_args = 0
+ 750              		@ link register save eliminated.
+ 751              	.LVL110:
+ 308:rt-thread/components/drivers/src/ringblk_buf.c ****     RT_ASSERT(block);
+ 309:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 310:rt-thread/components/drivers/src/ringblk_buf.c ****     return block->buf;
+ 311:rt-thread/components/drivers/src/ringblk_buf.c **** }
+ 752              		.loc 1 311 0
+ 753 0000 4068     		ldr	r0, [r0, #4]
+ 754              	.LVL111:
+ 755 0002 7047     		bx	lr
+ 756              		.cfi_endproc
+ 757              	.LFE27:
+ 759              		.section	.text.rt_rbb_blk_free,"ax",%progbits
+ 760              		.align	1
+ 761              		.global	rt_rbb_blk_free
+ 762              		.syntax unified
+ 763              		.thumb
+ 764              		.thumb_func
+ 765              		.fpu fpv4-sp-d16
+ 767              	rt_rbb_blk_free:
+ 768              	.LFB28:
+ 312:rt-thread/components/drivers/src/ringblk_buf.c **** RTM_EXPORT(rt_rbb_blk_buf);
+ARM GAS  /tmp/cc7QoIaX.s 			page 25
+
+
+ 313:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 314:rt-thread/components/drivers/src/ringblk_buf.c **** /**
+ 315:rt-thread/components/drivers/src/ringblk_buf.c ****  * free the block
+ 316:rt-thread/components/drivers/src/ringblk_buf.c ****  *
+ 317:rt-thread/components/drivers/src/ringblk_buf.c ****  * @param rbb ring block buffer object
+ 318:rt-thread/components/drivers/src/ringblk_buf.c ****  * @param block the block
+ 319:rt-thread/components/drivers/src/ringblk_buf.c ****  */
+ 320:rt-thread/components/drivers/src/ringblk_buf.c **** void rt_rbb_blk_free(rt_rbb_t rbb, rt_rbb_blk_t block)
+ 321:rt-thread/components/drivers/src/ringblk_buf.c **** {
+ 769              		.loc 1 321 0
+ 770              		.cfi_startproc
+ 771              		@ args = 0, pretend = 0, frame = 0
+ 772              		@ frame_needed = 0, uses_anonymous_args = 0
+ 773              	.LVL112:
+ 774 0000 38B5     		push	{r3, r4, r5, lr}
+ 775              	.LCFI11:
+ 776              		.cfi_def_cfa_offset 16
+ 777              		.cfi_offset 3, -16
+ 778              		.cfi_offset 4, -12
+ 779              		.cfi_offset 5, -8
+ 780              		.cfi_offset 14, -4
+ 781 0002 0446     		mov	r4, r0
+ 782 0004 0D46     		mov	r5, r1
+ 322:rt-thread/components/drivers/src/ringblk_buf.c ****     rt_base_t level;
+ 323:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 324:rt-thread/components/drivers/src/ringblk_buf.c ****     RT_ASSERT(rbb);
+ 325:rt-thread/components/drivers/src/ringblk_buf.c ****     RT_ASSERT(block);
+ 326:rt-thread/components/drivers/src/ringblk_buf.c ****     RT_ASSERT(block->status != RT_RBB_BLK_UNUSED);
+ 327:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 328:rt-thread/components/drivers/src/ringblk_buf.c ****     level = rt_hw_interrupt_disable();
+ 783              		.loc 1 328 0
+ 784 0006 FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 785              	.LVL113:
+ 329:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 330:rt-thread/components/drivers/src/ringblk_buf.c ****     /* remove it on rbb block list */
+ 331:rt-thread/components/drivers/src/ringblk_buf.c ****     rt_slist_remove(&rbb->blk_list, &block->list);
+ 786              		.loc 1 331 0
+ 787 000a 04F11002 		add	r2, r4, #16
+ 788 000e 05F10801 		add	r1, r5, #8
+ 789              	.LVL114:
+ 790 0012 00E0     		b	.L59
+ 791              	.LVL115:
+ 792              	.L61:
+ 793              	.LBB62:
+ 794              	.LBB63:
+ 229:rt-thread/include/rtservice.h **** 
+ 795              		.loc 2 229 0
+ 796 0014 1A46     		mov	r2, r3
+ 797              	.LVL116:
+ 798              	.L59:
+ 799 0016 1368     		ldr	r3, [r2]
+ 800 0018 0BB1     		cbz	r3, .L58
+ 801 001a 9942     		cmp	r1, r3
+ 802 001c FAD1     		bne	.L61
+ 803              	.L58:
+ 232:rt-thread/include/rtservice.h **** 
+ 804              		.loc 2 232 0
+ARM GAS  /tmp/cc7QoIaX.s 			page 26
+
+
+ 805 001e 0BB1     		cbz	r3, .L60
+ 806 0020 1B68     		ldr	r3, [r3]
+ 807 0022 1360     		str	r3, [r2]
+ 808              	.L60:
+ 809              	.LVL117:
+ 810              	.LBE63:
+ 811              	.LBE62:
+ 332:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 333:rt-thread/components/drivers/src/ringblk_buf.c ****     block->status = RT_RBB_BLK_UNUSED;
+ 812              		.loc 1 333 0
+ 813 0024 0023     		movs	r3, #0
+ 814 0026 2B70     		strb	r3, [r5]
+ 334:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 335:rt-thread/components/drivers/src/ringblk_buf.c ****     rt_hw_interrupt_enable(level);
+ 815              		.loc 1 335 0
+ 816 0028 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 817              	.LVL118:
+ 818 002c 38BD     		pop	{r3, r4, r5, pc}
+ 819              		.cfi_endproc
+ 820              	.LFE28:
+ 822              		.section	.text.rt_rbb_blk_queue_get,"ax",%progbits
+ 823              		.align	1
+ 824              		.global	rt_rbb_blk_queue_get
+ 825              		.syntax unified
+ 826              		.thumb
+ 827              		.thumb_func
+ 828              		.fpu fpv4-sp-d16
+ 830              	rt_rbb_blk_queue_get:
+ 831              	.LFB29:
+ 336:rt-thread/components/drivers/src/ringblk_buf.c **** }
+ 337:rt-thread/components/drivers/src/ringblk_buf.c **** RTM_EXPORT(rt_rbb_blk_free);
+ 338:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 339:rt-thread/components/drivers/src/ringblk_buf.c **** /**
+ 340:rt-thread/components/drivers/src/ringblk_buf.c ****  * get a continuous block to queue by given size
+ 341:rt-thread/components/drivers/src/ringblk_buf.c ****  *
+ 342:rt-thread/components/drivers/src/ringblk_buf.c ****  *          tail                         head
+ 343:rt-thread/components/drivers/src/ringblk_buf.c ****  * +------------------+---------------+--------+----------+--------+
+ 344:rt-thread/components/drivers/src/ringblk_buf.c ****  * |      block3      |  empty1       | block1 |  block2  |fragment|
+ 345:rt-thread/components/drivers/src/ringblk_buf.c ****  * +------------------+------------------------+----------+--------+
+ 346:rt-thread/components/drivers/src/ringblk_buf.c ****  *                                    |<-- return_size -->|    |
+ 347:rt-thread/components/drivers/src/ringblk_buf.c ****  *                                    |<--- queue_data_len --->|
+ 348:rt-thread/components/drivers/src/ringblk_buf.c ****  *
+ 349:rt-thread/components/drivers/src/ringblk_buf.c ****  *         tail                          head
+ 350:rt-thread/components/drivers/src/ringblk_buf.c ****  * +------------------+---------------+--------+----------+--------+
+ 351:rt-thread/components/drivers/src/ringblk_buf.c ****  * |      block3      |  empty1       | block1 |  block2  |fragment|
+ 352:rt-thread/components/drivers/src/ringblk_buf.c ****  * +------------------+------------------------+----------+--------+
+ 353:rt-thread/components/drivers/src/ringblk_buf.c ****  *                                    |<-- return_size -->|              out of len(b1+b2+b3)    |
+ 354:rt-thread/components/drivers/src/ringblk_buf.c ****  *                                    |<-------------------- queue_data_len -------------------->|
+ 355:rt-thread/components/drivers/src/ringblk_buf.c ****  *
+ 356:rt-thread/components/drivers/src/ringblk_buf.c ****  * @param rbb ring block buffer object
+ 357:rt-thread/components/drivers/src/ringblk_buf.c ****  * @param queue_data_len The max queue data size, and the return size must less then it.
+ 358:rt-thread/components/drivers/src/ringblk_buf.c ****  * @param queue continuous block queue
+ 359:rt-thread/components/drivers/src/ringblk_buf.c ****  *
+ 360:rt-thread/components/drivers/src/ringblk_buf.c ****  * @return the block queue data total size
+ 361:rt-thread/components/drivers/src/ringblk_buf.c ****  */
+ 362:rt-thread/components/drivers/src/ringblk_buf.c **** rt_size_t rt_rbb_blk_queue_get(rt_rbb_t rbb, rt_size_t queue_data_len, rt_rbb_blk_queue_t blk_queue
+ 363:rt-thread/components/drivers/src/ringblk_buf.c **** {
+ARM GAS  /tmp/cc7QoIaX.s 			page 27
+
+
+ 832              		.loc 1 363 0
+ 833              		.cfi_startproc
+ 834              		@ args = 0, pretend = 0, frame = 0
+ 835              		@ frame_needed = 0, uses_anonymous_args = 0
+ 836              	.LVL119:
+ 837 0000 2DE9F047 		push	{r4, r5, r6, r7, r8, r9, r10, lr}
+ 838              	.LCFI12:
+ 839              		.cfi_def_cfa_offset 32
+ 840              		.cfi_offset 4, -32
+ 841              		.cfi_offset 5, -28
+ 842              		.cfi_offset 6, -24
+ 843              		.cfi_offset 7, -20
+ 844              		.cfi_offset 8, -16
+ 845              		.cfi_offset 9, -12
+ 846              		.cfi_offset 10, -8
+ 847              		.cfi_offset 14, -4
+ 848              	.LVL120:
+ 849              	.LBB64:
+ 850              	.LBB65:
+ 851              		.loc 2 256 0
+ 852 0004 0369     		ldr	r3, [r0, #16]
+ 853              	.LVL121:
+ 854              	.LBE65:
+ 855              	.LBE64:
+ 364:rt-thread/components/drivers/src/ringblk_buf.c ****     rt_base_t level;
+ 365:rt-thread/components/drivers/src/ringblk_buf.c ****     rt_size_t data_total_size = 0;
+ 366:rt-thread/components/drivers/src/ringblk_buf.c ****     rt_slist_t *node;
+ 367:rt-thread/components/drivers/src/ringblk_buf.c ****     rt_rbb_blk_t last_block = NULL, block;
+ 368:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 369:rt-thread/components/drivers/src/ringblk_buf.c ****     RT_ASSERT(rbb);
+ 370:rt-thread/components/drivers/src/ringblk_buf.c ****     RT_ASSERT(blk_queue);
+ 371:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 372:rt-thread/components/drivers/src/ringblk_buf.c ****     if (rt_slist_isempty(&rbb->blk_list))
+ 856              		.loc 1 372 0
+ 857 0006 002B     		cmp	r3, #0
+ 858 0008 46D0     		beq	.L74
+ 859 000a 9046     		mov	r8, r2
+ 860 000c 8A46     		mov	r10, r1
+ 861 000e 8146     		mov	r9, r0
+ 373:rt-thread/components/drivers/src/ringblk_buf.c ****         return 0;
+ 374:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 375:rt-thread/components/drivers/src/ringblk_buf.c ****     level = rt_hw_interrupt_disable();
+ 862              		.loc 1 375 0
+ 863 0010 FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 864              	.LVL122:
+ 865              	.LBB66:
+ 866              	.LBB67:
+ 239:rt-thread/include/rtservice.h **** }
+ 867              		.loc 2 239 0
+ 868 0014 D9F81060 		ldr	r6, [r9, #16]
+ 869              	.LVL123:
+ 870              	.LBE67:
+ 871              	.LBE66:
+ 367:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 872              		.loc 1 367 0
+ 873 0018 0023     		movs	r3, #0
+ 365:rt-thread/components/drivers/src/ringblk_buf.c ****     rt_slist_t *node;
+ARM GAS  /tmp/cc7QoIaX.s 			page 28
+
+
+ 874              		.loc 1 365 0
+ 875 001a 1F46     		mov	r7, r3
+ 376:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 377:rt-thread/components/drivers/src/ringblk_buf.c ****     for (node = rt_slist_first(&rbb->blk_list); node; node = rt_slist_next(node))
+ 876              		.loc 1 377 0
+ 877 001c 1EE0     		b	.L65
+ 878              	.LVL124:
+ 879              	.L77:
+ 378:rt-thread/components/drivers/src/ringblk_buf.c ****     {
+ 379:rt-thread/components/drivers/src/ringblk_buf.c ****         if (!last_block)
+ 380:rt-thread/components/drivers/src/ringblk_buf.c ****         {
+ 381:rt-thread/components/drivers/src/ringblk_buf.c ****             last_block = rt_slist_entry(node, struct rt_rbb_blk, list);
+ 880              		.loc 1 381 0
+ 881 001e A6F10802 		sub	r2, r6, #8
+ 882              	.LVL125:
+ 382:rt-thread/components/drivers/src/ringblk_buf.c ****             if (last_block->status == RT_RBB_BLK_PUT)
+ 883              		.loc 1 382 0
+ 884 0022 16F8081C 		ldrb	r1, [r6, #-8]	@ zero_extendqisi2
+ 885 0026 0229     		cmp	r1, #2
+ 886 0028 17D1     		bne	.L67
+ 383:rt-thread/components/drivers/src/ringblk_buf.c ****             {
+ 384:rt-thread/components/drivers/src/ringblk_buf.c ****                 /* save the first put status block to queue */
+ 385:rt-thread/components/drivers/src/ringblk_buf.c ****                 blk_queue->blocks = last_block;
+ 887              		.loc 1 385 0
+ 888 002a C8F80020 		str	r2, [r8]
+ 386:rt-thread/components/drivers/src/ringblk_buf.c ****                 blk_queue->blk_num = 0;
+ 889              		.loc 1 386 0
+ 890 002e C8F80430 		str	r3, [r8, #4]
+ 891 0032 27E0     		b	.L68
+ 892              	.LVL126:
+ 893              	.L75:
+ 894              	.LBB68:
+ 895              	.LBB69:
+ 229:rt-thread/include/rtservice.h **** 
+ 896              		.loc 2 229 0
+ 897 0034 1C46     		mov	r4, r3
+ 898              	.LVL127:
+ 899              	.L71:
+ 900 0036 2368     		ldr	r3, [r4]
+ 901 0038 0BB1     		cbz	r3, .L70
+ 902 003a 9D42     		cmp	r5, r3
+ 903 003c FAD1     		bne	.L75
+ 904              	.L70:
+ 232:rt-thread/include/rtservice.h **** 
+ 905              		.loc 2 232 0
+ 906 003e 0BB1     		cbz	r3, .L72
+ 907 0040 1B68     		ldr	r3, [r3]
+ 908 0042 2360     		str	r3, [r4]
+ 909              	.L72:
+ 910              	.LVL128:
+ 911              	.LBE69:
+ 912              	.LBE68:
+ 387:rt-thread/components/drivers/src/ringblk_buf.c ****             }
+ 388:rt-thread/components/drivers/src/ringblk_buf.c ****             else
+ 389:rt-thread/components/drivers/src/ringblk_buf.c ****             {
+ 390:rt-thread/components/drivers/src/ringblk_buf.c ****                 /* the first block must be put status */
+ 391:rt-thread/components/drivers/src/ringblk_buf.c ****                 last_block = NULL;
+ARM GAS  /tmp/cc7QoIaX.s 			page 29
+
+
+ 392:rt-thread/components/drivers/src/ringblk_buf.c ****                 continue;
+ 393:rt-thread/components/drivers/src/ringblk_buf.c ****             }
+ 394:rt-thread/components/drivers/src/ringblk_buf.c ****         }
+ 395:rt-thread/components/drivers/src/ringblk_buf.c ****         else
+ 396:rt-thread/components/drivers/src/ringblk_buf.c ****         {
+ 397:rt-thread/components/drivers/src/ringblk_buf.c ****             block = rt_slist_entry(node, struct rt_rbb_blk, list);
+ 398:rt-thread/components/drivers/src/ringblk_buf.c ****             /*
+ 399:rt-thread/components/drivers/src/ringblk_buf.c ****              * these following conditions will break the loop:
+ 400:rt-thread/components/drivers/src/ringblk_buf.c ****              * 1. the current block is not put status
+ 401:rt-thread/components/drivers/src/ringblk_buf.c ****              * 2. the last block and current block is not continuous
+ 402:rt-thread/components/drivers/src/ringblk_buf.c ****              * 3. the data_total_size will out of range
+ 403:rt-thread/components/drivers/src/ringblk_buf.c ****              */
+ 404:rt-thread/components/drivers/src/ringblk_buf.c ****             if (block->status != RT_RBB_BLK_PUT ||
+ 405:rt-thread/components/drivers/src/ringblk_buf.c ****                 last_block->buf > block->buf ||
+ 406:rt-thread/components/drivers/src/ringblk_buf.c ****                 data_total_size + block->size > queue_data_len)
+ 407:rt-thread/components/drivers/src/ringblk_buf.c ****             {
+ 408:rt-thread/components/drivers/src/ringblk_buf.c ****                 break;
+ 409:rt-thread/components/drivers/src/ringblk_buf.c ****             }
+ 410:rt-thread/components/drivers/src/ringblk_buf.c ****             /* backup last block */
+ 411:rt-thread/components/drivers/src/ringblk_buf.c ****             last_block = block;
+ 412:rt-thread/components/drivers/src/ringblk_buf.c ****         }
+ 413:rt-thread/components/drivers/src/ringblk_buf.c ****         /* remove current block */
+ 414:rt-thread/components/drivers/src/ringblk_buf.c ****         rt_slist_remove(&rbb->blk_list, &last_block->list);
+ 415:rt-thread/components/drivers/src/ringblk_buf.c ****         data_total_size += last_block->size;
+ 913              		.loc 1 415 0
+ 914 0044 1368     		ldr	r3, [r2]
+ 915 0046 07EB1327 		add	r7, r7, r3, lsr #8
+ 916              	.LVL129:
+ 416:rt-thread/components/drivers/src/ringblk_buf.c ****         last_block->status = RT_RBB_BLK_GET;
+ 917              		.loc 1 416 0
+ 918 004a 0323     		movs	r3, #3
+ 919 004c 1370     		strb	r3, [r2]
+ 417:rt-thread/components/drivers/src/ringblk_buf.c ****         blk_queue->blk_num++;
+ 920              		.loc 1 417 0
+ 921 004e D8F80430 		ldr	r3, [r8, #4]
+ 922 0052 0133     		adds	r3, r3, #1
+ 923 0054 C8F80430 		str	r3, [r8, #4]
+ 924 0058 1346     		mov	r3, r2
+ 925              	.L67:
+ 926              	.LVL130:
+ 927              	.LBB70:
+ 928              	.LBB71:
+ 251:rt-thread/include/rtservice.h **** }
+ 929              		.loc 2 251 0 discriminator 2
+ 930 005a 3668     		ldr	r6, [r6]
+ 931              	.LVL131:
+ 932              	.L65:
+ 933              	.LBE71:
+ 934              	.LBE70:
+ 377:rt-thread/components/drivers/src/ringblk_buf.c ****     {
+ 935              		.loc 1 377 0 discriminator 1
+ 936 005c BEB1     		cbz	r6, .L69
+ 379:rt-thread/components/drivers/src/ringblk_buf.c ****         {
+ 937              		.loc 1 379 0
+ 938 005e 002B     		cmp	r3, #0
+ 939 0060 DDD0     		beq	.L77
+ 397:rt-thread/components/drivers/src/ringblk_buf.c ****             /*
+ARM GAS  /tmp/cc7QoIaX.s 			page 30
+
+
+ 940              		.loc 1 397 0
+ 941 0062 A6F10802 		sub	r2, r6, #8
+ 942              	.LVL132:
+ 404:rt-thread/components/drivers/src/ringblk_buf.c ****                 last_block->buf > block->buf ||
+ 943              		.loc 1 404 0
+ 944 0066 16F8081C 		ldrb	r1, [r6, #-8]	@ zero_extendqisi2
+ 945 006a 0229     		cmp	r1, #2
+ 946 006c 0FD1     		bne	.L69
+ 405:rt-thread/components/drivers/src/ringblk_buf.c ****                 data_total_size + block->size > queue_data_len)
+ 947              		.loc 1 405 0 discriminator 1
+ 948 006e 5968     		ldr	r1, [r3, #4]
+ 949 0070 56F8043C 		ldr	r3, [r6, #-4]
+ 950              	.LVL133:
+ 404:rt-thread/components/drivers/src/ringblk_buf.c ****                 last_block->buf > block->buf ||
+ 951              		.loc 1 404 0 discriminator 1
+ 952 0074 9942     		cmp	r1, r3
+ 953 0076 0AD8     		bhi	.L69
+ 406:rt-thread/components/drivers/src/ringblk_buf.c ****             {
+ 954              		.loc 1 406 0
+ 955 0078 56F8083C 		ldr	r3, [r6, #-8]
+ 956 007c 07EB1323 		add	r3, r7, r3, lsr #8
+ 405:rt-thread/components/drivers/src/ringblk_buf.c ****                 data_total_size + block->size > queue_data_len)
+ 957              		.loc 1 405 0
+ 958 0080 5345     		cmp	r3, r10
+ 959 0082 04D8     		bhi	.L69
+ 960              	.LVL134:
+ 961              	.L68:
+ 414:rt-thread/components/drivers/src/ringblk_buf.c ****         data_total_size += last_block->size;
+ 962              		.loc 1 414 0
+ 963 0084 09F11004 		add	r4, r9, #16
+ 964 0088 02F10805 		add	r5, r2, #8
+ 965              	.LVL135:
+ 966 008c D3E7     		b	.L71
+ 967              	.LVL136:
+ 968              	.L69:
+ 418:rt-thread/components/drivers/src/ringblk_buf.c ****     }
+ 419:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 420:rt-thread/components/drivers/src/ringblk_buf.c ****     rt_hw_interrupt_enable(level);
+ 969              		.loc 1 420 0
+ 970 008e FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 971              	.LVL137:
+ 972              	.L63:
+ 421:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 422:rt-thread/components/drivers/src/ringblk_buf.c ****     return data_total_size;
+ 423:rt-thread/components/drivers/src/ringblk_buf.c **** }
+ 973              		.loc 1 423 0
+ 974 0092 3846     		mov	r0, r7
+ 975 0094 BDE8F087 		pop	{r4, r5, r6, r7, r8, r9, r10, pc}
+ 976              	.LVL138:
+ 977              	.L74:
+ 373:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 978              		.loc 1 373 0
+ 979 0098 0027     		movs	r7, #0
+ 980 009a FAE7     		b	.L63
+ 981              		.cfi_endproc
+ 982              	.LFE29:
+ 984              		.section	.text.rt_rbb_blk_queue_len,"ax",%progbits
+ARM GAS  /tmp/cc7QoIaX.s 			page 31
+
+
+ 985              		.align	1
+ 986              		.global	rt_rbb_blk_queue_len
+ 987              		.syntax unified
+ 988              		.thumb
+ 989              		.thumb_func
+ 990              		.fpu fpv4-sp-d16
+ 992              	rt_rbb_blk_queue_len:
+ 993              	.LFB30:
+ 424:rt-thread/components/drivers/src/ringblk_buf.c **** RTM_EXPORT(rt_rbb_blk_queue_get);
+ 425:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 426:rt-thread/components/drivers/src/ringblk_buf.c **** /**
+ 427:rt-thread/components/drivers/src/ringblk_buf.c ****  * get all block length on block queue
+ 428:rt-thread/components/drivers/src/ringblk_buf.c ****  *
+ 429:rt-thread/components/drivers/src/ringblk_buf.c ****  * @param blk_queue the block queue
+ 430:rt-thread/components/drivers/src/ringblk_buf.c ****  *
+ 431:rt-thread/components/drivers/src/ringblk_buf.c ****  * @return total length
+ 432:rt-thread/components/drivers/src/ringblk_buf.c ****  */
+ 433:rt-thread/components/drivers/src/ringblk_buf.c **** rt_size_t rt_rbb_blk_queue_len(rt_rbb_blk_queue_t blk_queue)
+ 434:rt-thread/components/drivers/src/ringblk_buf.c **** {
+ 994              		.loc 1 434 0
+ 995              		.cfi_startproc
+ 996              		@ args = 0, pretend = 0, frame = 0
+ 997              		@ frame_needed = 0, uses_anonymous_args = 0
+ 998              		@ link register save eliminated.
+ 999              	.LVL139:
+ 1000 0000 30B4     		push	{r4, r5}
+ 1001              	.LCFI13:
+ 1002              		.cfi_def_cfa_offset 8
+ 1003              		.cfi_offset 4, -8
+ 1004              		.cfi_offset 5, -4
+ 1005 0002 0446     		mov	r4, r0
+ 1006              	.LVL140:
+ 435:rt-thread/components/drivers/src/ringblk_buf.c ****     rt_size_t i, data_total_size = 0;
+ 1007              		.loc 1 435 0
+ 1008 0004 0020     		movs	r0, #0
+ 1009              	.LVL141:
+ 436:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 437:rt-thread/components/drivers/src/ringblk_buf.c ****     RT_ASSERT(blk_queue);
+ 438:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 439:rt-thread/components/drivers/src/ringblk_buf.c ****     for (i = 0; i < blk_queue->blk_num; i++)
+ 1010              		.loc 1 439 0
+ 1011 0006 0346     		mov	r3, r0
+ 1012 0008 07E0     		b	.L79
+ 1013              	.LVL142:
+ 1014              	.L80:
+ 440:rt-thread/components/drivers/src/ringblk_buf.c ****     {
+ 441:rt-thread/components/drivers/src/ringblk_buf.c ****         data_total_size += blk_queue->blocks[i].size;
+ 1015              		.loc 1 441 0 discriminator 3
+ 1016 000a 2568     		ldr	r5, [r4]
+ 1017 000c 03EB4301 		add	r1, r3, r3, lsl #1
+ 1018 0010 8A00     		lsls	r2, r1, #2
+ 1019 0012 AA58     		ldr	r2, [r5, r2]
+ 1020 0014 00EB1220 		add	r0, r0, r2, lsr #8
+ 1021              	.LVL143:
+ 439:rt-thread/components/drivers/src/ringblk_buf.c ****     {
+ 1022              		.loc 1 439 0 discriminator 3
+ 1023 0018 0133     		adds	r3, r3, #1
+ARM GAS  /tmp/cc7QoIaX.s 			page 32
+
+
+ 1024              	.LVL144:
+ 1025              	.L79:
+ 439:rt-thread/components/drivers/src/ringblk_buf.c ****     {
+ 1026              		.loc 1 439 0 is_stmt 0 discriminator 1
+ 1027 001a 6268     		ldr	r2, [r4, #4]
+ 1028 001c 9342     		cmp	r3, r2
+ 1029 001e F4D3     		bcc	.L80
+ 442:rt-thread/components/drivers/src/ringblk_buf.c ****     }
+ 443:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 444:rt-thread/components/drivers/src/ringblk_buf.c ****     return data_total_size;
+ 445:rt-thread/components/drivers/src/ringblk_buf.c **** }
+ 1030              		.loc 1 445 0 is_stmt 1
+ 1031 0020 30BC     		pop	{r4, r5}
+ 1032              	.LCFI14:
+ 1033              		.cfi_restore 5
+ 1034              		.cfi_restore 4
+ 1035              		.cfi_def_cfa_offset 0
+ 1036              	.LVL145:
+ 1037 0022 7047     		bx	lr
+ 1038              		.cfi_endproc
+ 1039              	.LFE30:
+ 1041              		.section	.text.rt_rbb_blk_queue_buf,"ax",%progbits
+ 1042              		.align	1
+ 1043              		.global	rt_rbb_blk_queue_buf
+ 1044              		.syntax unified
+ 1045              		.thumb
+ 1046              		.thumb_func
+ 1047              		.fpu fpv4-sp-d16
+ 1049              	rt_rbb_blk_queue_buf:
+ 1050              	.LFB31:
+ 446:rt-thread/components/drivers/src/ringblk_buf.c **** RTM_EXPORT(rt_rbb_blk_queue_len);
+ 447:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 448:rt-thread/components/drivers/src/ringblk_buf.c **** /**
+ 449:rt-thread/components/drivers/src/ringblk_buf.c ****  * return the block queue buffer
+ 450:rt-thread/components/drivers/src/ringblk_buf.c ****  *
+ 451:rt-thread/components/drivers/src/ringblk_buf.c ****  * @param blk_queue the block queue
+ 452:rt-thread/components/drivers/src/ringblk_buf.c ****  *
+ 453:rt-thread/components/drivers/src/ringblk_buf.c ****  * @return block queue buffer
+ 454:rt-thread/components/drivers/src/ringblk_buf.c ****  */
+ 455:rt-thread/components/drivers/src/ringblk_buf.c **** rt_uint8_t *rt_rbb_blk_queue_buf(rt_rbb_blk_queue_t blk_queue)
+ 456:rt-thread/components/drivers/src/ringblk_buf.c **** {
+ 1051              		.loc 1 456 0
+ 1052              		.cfi_startproc
+ 1053              		@ args = 0, pretend = 0, frame = 0
+ 1054              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1055              		@ link register save eliminated.
+ 1056              	.LVL146:
+ 457:rt-thread/components/drivers/src/ringblk_buf.c ****     RT_ASSERT(blk_queue);
+ 458:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 459:rt-thread/components/drivers/src/ringblk_buf.c ****     return blk_queue->blocks[0].buf;
+ 1057              		.loc 1 459 0
+ 1058 0000 0368     		ldr	r3, [r0]
+ 460:rt-thread/components/drivers/src/ringblk_buf.c **** }
+ 1059              		.loc 1 460 0
+ 1060 0002 5868     		ldr	r0, [r3, #4]
+ 1061              	.LVL147:
+ 1062 0004 7047     		bx	lr
+ARM GAS  /tmp/cc7QoIaX.s 			page 33
+
+
+ 1063              		.cfi_endproc
+ 1064              	.LFE31:
+ 1066              		.section	.text.rt_rbb_blk_queue_free,"ax",%progbits
+ 1067              		.align	1
+ 1068              		.global	rt_rbb_blk_queue_free
+ 1069              		.syntax unified
+ 1070              		.thumb
+ 1071              		.thumb_func
+ 1072              		.fpu fpv4-sp-d16
+ 1074              	rt_rbb_blk_queue_free:
+ 1075              	.LFB32:
+ 461:rt-thread/components/drivers/src/ringblk_buf.c **** RTM_EXPORT(rt_rbb_blk_queue_buf);
+ 462:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 463:rt-thread/components/drivers/src/ringblk_buf.c **** /**
+ 464:rt-thread/components/drivers/src/ringblk_buf.c ****  * free the block queue
+ 465:rt-thread/components/drivers/src/ringblk_buf.c ****  *
+ 466:rt-thread/components/drivers/src/ringblk_buf.c ****  * @param rbb ring block buffer object
+ 467:rt-thread/components/drivers/src/ringblk_buf.c ****  * @param blk_queue the block queue
+ 468:rt-thread/components/drivers/src/ringblk_buf.c ****  */
+ 469:rt-thread/components/drivers/src/ringblk_buf.c **** void rt_rbb_blk_queue_free(rt_rbb_t rbb, rt_rbb_blk_queue_t blk_queue)
+ 470:rt-thread/components/drivers/src/ringblk_buf.c **** {
+ 1076              		.loc 1 470 0
+ 1077              		.cfi_startproc
+ 1078              		@ args = 0, pretend = 0, frame = 0
+ 1079              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1080              	.LVL148:
+ 1081 0000 70B5     		push	{r4, r5, r6, lr}
+ 1082              	.LCFI15:
+ 1083              		.cfi_def_cfa_offset 16
+ 1084              		.cfi_offset 4, -16
+ 1085              		.cfi_offset 5, -12
+ 1086              		.cfi_offset 6, -8
+ 1087              		.cfi_offset 14, -4
+ 1088 0002 0646     		mov	r6, r0
+ 1089 0004 0D46     		mov	r5, r1
+ 1090              	.LVL149:
+ 471:rt-thread/components/drivers/src/ringblk_buf.c ****     rt_size_t i;
+ 472:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 473:rt-thread/components/drivers/src/ringblk_buf.c ****     RT_ASSERT(rbb);
+ 474:rt-thread/components/drivers/src/ringblk_buf.c ****     RT_ASSERT(blk_queue);
+ 475:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 476:rt-thread/components/drivers/src/ringblk_buf.c ****     for (i = 0; i < blk_queue->blk_num; i++)
+ 1091              		.loc 1 476 0
+ 1092 0006 0024     		movs	r4, #0
+ 1093 0008 08E0     		b	.L84
+ 1094              	.LVL150:
+ 1095              	.L85:
+ 477:rt-thread/components/drivers/src/ringblk_buf.c ****     {
+ 478:rt-thread/components/drivers/src/ringblk_buf.c ****         rt_rbb_blk_free(rbb, &blk_queue->blocks[i]);
+ 1096              		.loc 1 478 0 discriminator 3
+ 1097 000a 2968     		ldr	r1, [r5]
+ 1098 000c 04EB4402 		add	r2, r4, r4, lsl #1
+ 1099 0010 9300     		lsls	r3, r2, #2
+ 1100 0012 1944     		add	r1, r1, r3
+ 1101 0014 3046     		mov	r0, r6
+ 1102 0016 FFF7FEFF 		bl	rt_rbb_blk_free
+ 1103              	.LVL151:
+ARM GAS  /tmp/cc7QoIaX.s 			page 34
+
+
+ 476:rt-thread/components/drivers/src/ringblk_buf.c ****     {
+ 1104              		.loc 1 476 0 discriminator 3
+ 1105 001a 0134     		adds	r4, r4, #1
+ 1106              	.LVL152:
+ 1107              	.L84:
+ 476:rt-thread/components/drivers/src/ringblk_buf.c ****     {
+ 1108              		.loc 1 476 0 is_stmt 0 discriminator 1
+ 1109 001c 6B68     		ldr	r3, [r5, #4]
+ 1110 001e 9C42     		cmp	r4, r3
+ 1111 0020 F3D3     		bcc	.L85
+ 479:rt-thread/components/drivers/src/ringblk_buf.c ****     }
+ 480:rt-thread/components/drivers/src/ringblk_buf.c **** }
+ 1112              		.loc 1 480 0 is_stmt 1
+ 1113 0022 70BD     		pop	{r4, r5, r6, pc}
+ 1114              		.cfi_endproc
+ 1115              	.LFE32:
+ 1117              		.section	.text.rt_rbb_next_blk_queue_len,"ax",%progbits
+ 1118              		.align	1
+ 1119              		.global	rt_rbb_next_blk_queue_len
+ 1120              		.syntax unified
+ 1121              		.thumb
+ 1122              		.thumb_func
+ 1123              		.fpu fpv4-sp-d16
+ 1125              	rt_rbb_next_blk_queue_len:
+ 1126              	.LFB33:
+ 481:rt-thread/components/drivers/src/ringblk_buf.c **** RTM_EXPORT(rt_rbb_blk_queue_free);
+ 482:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 483:rt-thread/components/drivers/src/ringblk_buf.c **** /**
+ 484:rt-thread/components/drivers/src/ringblk_buf.c ****  * The put status and buffer continuous blocks can be make a block queue.
+ 485:rt-thread/components/drivers/src/ringblk_buf.c ****  * This function will return the length which from next can be make block queue.
+ 486:rt-thread/components/drivers/src/ringblk_buf.c ****  *
+ 487:rt-thread/components/drivers/src/ringblk_buf.c ****  * @param rbb ring block buffer object
+ 488:rt-thread/components/drivers/src/ringblk_buf.c ****  *
+ 489:rt-thread/components/drivers/src/ringblk_buf.c ****  * @return the next can be make block queue's length
+ 490:rt-thread/components/drivers/src/ringblk_buf.c ****  */
+ 491:rt-thread/components/drivers/src/ringblk_buf.c **** rt_size_t rt_rbb_next_blk_queue_len(rt_rbb_t rbb)
+ 492:rt-thread/components/drivers/src/ringblk_buf.c **** {
+ 1127              		.loc 1 492 0
+ 1128              		.cfi_startproc
+ 1129              		@ args = 0, pretend = 0, frame = 0
+ 1130              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1131              	.LVL153:
+ 1132 0000 38B5     		push	{r3, r4, r5, lr}
+ 1133              	.LCFI16:
+ 1134              		.cfi_def_cfa_offset 16
+ 1135              		.cfi_offset 3, -16
+ 1136              		.cfi_offset 4, -12
+ 1137              		.cfi_offset 5, -8
+ 1138              		.cfi_offset 14, -4
+ 1139              	.LVL154:
+ 1140              	.LBB72:
+ 1141              	.LBB73:
+ 1142              		.loc 2 256 0
+ 1143 0002 0369     		ldr	r3, [r0, #16]
+ 1144              	.LVL155:
+ 1145              	.LBE73:
+ 1146              	.LBE72:
+ARM GAS  /tmp/cc7QoIaX.s 			page 35
+
+
+ 493:rt-thread/components/drivers/src/ringblk_buf.c ****     rt_base_t level;
+ 494:rt-thread/components/drivers/src/ringblk_buf.c ****     rt_size_t data_len = 0;
+ 495:rt-thread/components/drivers/src/ringblk_buf.c ****     rt_slist_t *node;
+ 496:rt-thread/components/drivers/src/ringblk_buf.c ****     rt_rbb_blk_t last_block = NULL, block;
+ 497:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 498:rt-thread/components/drivers/src/ringblk_buf.c ****     RT_ASSERT(rbb);
+ 499:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 500:rt-thread/components/drivers/src/ringblk_buf.c ****     if (rt_slist_isempty(&rbb->blk_list))
+ 1147              		.loc 1 500 0
+ 1148 0004 1BB3     		cbz	r3, .L95
+ 1149 0006 0446     		mov	r4, r0
+ 501:rt-thread/components/drivers/src/ringblk_buf.c ****         return 0;
+ 502:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 503:rt-thread/components/drivers/src/ringblk_buf.c ****     level = rt_hw_interrupt_disable();
+ 1150              		.loc 1 503 0
+ 1151 0008 FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 1152              	.LVL156:
+ 1153              	.LBB74:
+ 1154              	.LBB75:
+ 239:rt-thread/include/rtservice.h **** }
+ 1155              		.loc 2 239 0
+ 1156 000c 2369     		ldr	r3, [r4, #16]
+ 1157              	.LVL157:
+ 1158              	.LBE75:
+ 1159              	.LBE74:
+ 496:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 1160              		.loc 1 496 0
+ 1161 000e 0022     		movs	r2, #0
+ 494:rt-thread/components/drivers/src/ringblk_buf.c ****     rt_slist_t *node;
+ 1162              		.loc 1 494 0
+ 1163 0010 1446     		mov	r4, r2
+ 1164              	.LVL158:
+ 504:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 505:rt-thread/components/drivers/src/ringblk_buf.c ****     for (node = rt_slist_first(&rbb->blk_list); node; node = rt_slist_next(node))
+ 1165              		.loc 1 505 0
+ 1166 0012 0AE0     		b	.L89
+ 1167              	.LVL159:
+ 1168              	.L97:
+ 506:rt-thread/components/drivers/src/ringblk_buf.c ****     {
+ 507:rt-thread/components/drivers/src/ringblk_buf.c ****         if (!last_block)
+ 508:rt-thread/components/drivers/src/ringblk_buf.c ****         {
+ 509:rt-thread/components/drivers/src/ringblk_buf.c ****             last_block = rt_slist_entry(node, struct rt_rbb_blk, list);
+ 1169              		.loc 1 509 0
+ 1170 0014 A3F10801 		sub	r1, r3, #8
+ 1171              	.LVL160:
+ 510:rt-thread/components/drivers/src/ringblk_buf.c ****             if (last_block->status != RT_RBB_BLK_PUT)
+ 1172              		.loc 1 510 0
+ 1173 0018 13F8085C 		ldrb	r5, [r3, #-8]	@ zero_extendqisi2
+ 1174 001c 022D     		cmp	r5, #2
+ 1175 001e 03D1     		bne	.L91
+ 1176              	.LVL161:
+ 1177              	.L92:
+ 511:rt-thread/components/drivers/src/ringblk_buf.c ****             {
+ 512:rt-thread/components/drivers/src/ringblk_buf.c ****                 /* the first block must be put status */
+ 513:rt-thread/components/drivers/src/ringblk_buf.c ****                 last_block = NULL;
+ 514:rt-thread/components/drivers/src/ringblk_buf.c ****                 continue;
+ 515:rt-thread/components/drivers/src/ringblk_buf.c ****             }
+ARM GAS  /tmp/cc7QoIaX.s 			page 36
+
+
+ 516:rt-thread/components/drivers/src/ringblk_buf.c ****         }
+ 517:rt-thread/components/drivers/src/ringblk_buf.c ****         else
+ 518:rt-thread/components/drivers/src/ringblk_buf.c ****         {
+ 519:rt-thread/components/drivers/src/ringblk_buf.c ****             block = rt_slist_entry(node, struct rt_rbb_blk, list);
+ 520:rt-thread/components/drivers/src/ringblk_buf.c ****             /*
+ 521:rt-thread/components/drivers/src/ringblk_buf.c ****              * these following conditions will break the loop:
+ 522:rt-thread/components/drivers/src/ringblk_buf.c ****              * 1. the current block is not put status
+ 523:rt-thread/components/drivers/src/ringblk_buf.c ****              * 2. the last block and current block is not continuous
+ 524:rt-thread/components/drivers/src/ringblk_buf.c ****              */
+ 525:rt-thread/components/drivers/src/ringblk_buf.c ****             if (block->status != RT_RBB_BLK_PUT || last_block->buf > block->buf)
+ 526:rt-thread/components/drivers/src/ringblk_buf.c ****             {
+ 527:rt-thread/components/drivers/src/ringblk_buf.c ****                 break;
+ 528:rt-thread/components/drivers/src/ringblk_buf.c ****             }
+ 529:rt-thread/components/drivers/src/ringblk_buf.c ****             /* backup last block */
+ 530:rt-thread/components/drivers/src/ringblk_buf.c ****             last_block = block;
+ 531:rt-thread/components/drivers/src/ringblk_buf.c ****         }
+ 532:rt-thread/components/drivers/src/ringblk_buf.c ****         data_len += last_block->size;
+ 1178              		.loc 1 532 0
+ 1179 0020 0A68     		ldr	r2, [r1]
+ 1180 0022 04EB1224 		add	r4, r4, r2, lsr #8
+ 1181              	.LVL162:
+ 1182 0026 0A46     		mov	r2, r1
+ 1183              	.L91:
+ 1184              	.LVL163:
+ 1185              	.LBB76:
+ 1186              	.LBB77:
+ 251:rt-thread/include/rtservice.h **** }
+ 1187              		.loc 2 251 0 discriminator 2
+ 1188 0028 1B68     		ldr	r3, [r3]
+ 1189              	.LVL164:
+ 1190              	.L89:
+ 1191              	.LBE77:
+ 1192              	.LBE76:
+ 505:rt-thread/components/drivers/src/ringblk_buf.c ****     {
+ 1193              		.loc 1 505 0 discriminator 1
+ 1194 002a 63B1     		cbz	r3, .L93
+ 507:rt-thread/components/drivers/src/ringblk_buf.c ****         {
+ 1195              		.loc 1 507 0
+ 1196 002c 002A     		cmp	r2, #0
+ 1197 002e F1D0     		beq	.L97
+ 519:rt-thread/components/drivers/src/ringblk_buf.c ****             /*
+ 1198              		.loc 1 519 0
+ 1199 0030 A3F10801 		sub	r1, r3, #8
+ 1200              	.LVL165:
+ 525:rt-thread/components/drivers/src/ringblk_buf.c ****             {
+ 1201              		.loc 1 525 0
+ 1202 0034 13F8085C 		ldrb	r5, [r3, #-8]	@ zero_extendqisi2
+ 1203 0038 022D     		cmp	r5, #2
+ 1204 003a 04D1     		bne	.L93
+ 525:rt-thread/components/drivers/src/ringblk_buf.c ****             {
+ 1205              		.loc 1 525 0 is_stmt 0 discriminator 1
+ 1206 003c 5568     		ldr	r5, [r2, #4]
+ 1207 003e 53F8042C 		ldr	r2, [r3, #-4]
+ 1208              	.LVL166:
+ 1209 0042 9542     		cmp	r5, r2
+ 1210 0044 ECD9     		bls	.L92
+ 1211              	.LVL167:
+ARM GAS  /tmp/cc7QoIaX.s 			page 37
+
+
+ 1212              	.L93:
+ 533:rt-thread/components/drivers/src/ringblk_buf.c ****     }
+ 534:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 535:rt-thread/components/drivers/src/ringblk_buf.c ****     rt_hw_interrupt_enable(level);
+ 1213              		.loc 1 535 0 is_stmt 1
+ 1214 0046 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 1215              	.LVL168:
+ 1216              	.L87:
+ 536:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 537:rt-thread/components/drivers/src/ringblk_buf.c ****     return data_len;
+ 538:rt-thread/components/drivers/src/ringblk_buf.c **** }
+ 1217              		.loc 1 538 0
+ 1218 004a 2046     		mov	r0, r4
+ 1219 004c 38BD     		pop	{r3, r4, r5, pc}
+ 1220              	.LVL169:
+ 1221              	.L95:
+ 501:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 1222              		.loc 1 501 0
+ 1223 004e 0024     		movs	r4, #0
+ 1224 0050 FBE7     		b	.L87
+ 1225              		.cfi_endproc
+ 1226              	.LFE33:
+ 1228              		.section	.text.rt_rbb_get_buf_size,"ax",%progbits
+ 1229              		.align	1
+ 1230              		.global	rt_rbb_get_buf_size
+ 1231              		.syntax unified
+ 1232              		.thumb
+ 1233              		.thumb_func
+ 1234              		.fpu fpv4-sp-d16
+ 1236              	rt_rbb_get_buf_size:
+ 1237              	.LFB34:
+ 539:rt-thread/components/drivers/src/ringblk_buf.c **** RTM_EXPORT(rt_rbb_next_blk_queue_len);
+ 540:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 541:rt-thread/components/drivers/src/ringblk_buf.c **** /**
+ 542:rt-thread/components/drivers/src/ringblk_buf.c ****  * get the ring block buffer object buffer size
+ 543:rt-thread/components/drivers/src/ringblk_buf.c ****  *
+ 544:rt-thread/components/drivers/src/ringblk_buf.c ****  * @param rbb ring block buffer object
+ 545:rt-thread/components/drivers/src/ringblk_buf.c ****  *
+ 546:rt-thread/components/drivers/src/ringblk_buf.c ****  * @return buffer size
+ 547:rt-thread/components/drivers/src/ringblk_buf.c ****  */
+ 548:rt-thread/components/drivers/src/ringblk_buf.c **** rt_size_t rt_rbb_get_buf_size(rt_rbb_t rbb)
+ 549:rt-thread/components/drivers/src/ringblk_buf.c **** {
+ 1238              		.loc 1 549 0
+ 1239              		.cfi_startproc
+ 1240              		@ args = 0, pretend = 0, frame = 0
+ 1241              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1242              		@ link register save eliminated.
+ 1243              	.LVL170:
+ 550:rt-thread/components/drivers/src/ringblk_buf.c ****     RT_ASSERT(rbb);
+ 551:rt-thread/components/drivers/src/ringblk_buf.c **** 
+ 552:rt-thread/components/drivers/src/ringblk_buf.c ****     return rbb->buf_size;
+ 553:rt-thread/components/drivers/src/ringblk_buf.c **** }
+ 1244              		.loc 1 553 0
+ 1245 0000 4068     		ldr	r0, [r0, #4]
+ 1246              	.LVL171:
+ 1247 0002 7047     		bx	lr
+ 1248              		.cfi_endproc
+ARM GAS  /tmp/cc7QoIaX.s 			page 38
+
+
+ 1249              	.LFE34:
+ 1251              		.text
+ 1252              	.Letext0:
+ 1253              		.file 3 "rt-thread/include/rtdef.h"
+ 1254              		.file 4 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/lock.h"
+ 1255              		.file 5 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_types.h"
+ 1256              		.file 6 "/opt/gcc-arm-none-eabi-6-2017-q2-update/lib/gcc/arm-none-eabi/6.3.1/include/stddef.h"
+ 1257              		.file 7 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/reent.h"
+ 1258              		.file 8 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/time.h"
+ 1259              		.file 9 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/errno.h"
+ 1260              		.file 10 "rt-thread/components/finsh/finsh_api.h"
+ 1261              		.file 11 "rt-thread/components/drivers/include/ipc/ringblk_buf.h"
+ 1262              		.file 12 "rt-thread/include/rthw.h"
+ 1263              		.file 13 "rt-thread/include/rtthread.h"
+ARM GAS  /tmp/cc7QoIaX.s 			page 39
+
+
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 ringblk_buf.c
+     /tmp/cc7QoIaX.s:18     .text.find_empty_blk_in_set:0000000000000000 $t
+     /tmp/cc7QoIaX.s:24     .text.find_empty_blk_in_set:0000000000000000 find_empty_blk_in_set
+     /tmp/cc7QoIaX.s:73     .text.rt_rbb_init:0000000000000000 $t
+     /tmp/cc7QoIaX.s:80     .text.rt_rbb_init:0000000000000000 rt_rbb_init
+     /tmp/cc7QoIaX.s:139    .text.rt_rbb_create:0000000000000000 $t
+     /tmp/cc7QoIaX.s:146    .text.rt_rbb_create:0000000000000000 rt_rbb_create
+     /tmp/cc7QoIaX.s:241    .text.rt_rbb_destroy:0000000000000000 $t
+     /tmp/cc7QoIaX.s:248    .text.rt_rbb_destroy:0000000000000000 rt_rbb_destroy
+     /tmp/cc7QoIaX.s:279    .text.rt_rbb_blk_alloc:0000000000000000 $t
+     /tmp/cc7QoIaX.s:286    .text.rt_rbb_blk_alloc:0000000000000000 rt_rbb_blk_alloc
+     /tmp/cc7QoIaX.s:601    .text.rt_rbb_blk_put:0000000000000000 $t
+     /tmp/cc7QoIaX.s:608    .text.rt_rbb_blk_put:0000000000000000 rt_rbb_blk_put
+     /tmp/cc7QoIaX.s:624    .text.rt_rbb_blk_get:0000000000000000 $t
+     /tmp/cc7QoIaX.s:631    .text.rt_rbb_blk_get:0000000000000000 rt_rbb_blk_get
+     /tmp/cc7QoIaX.s:712    .text.rt_rbb_blk_size:0000000000000000 $t
+     /tmp/cc7QoIaX.s:719    .text.rt_rbb_blk_size:0000000000000000 rt_rbb_blk_size
+     /tmp/cc7QoIaX.s:737    .text.rt_rbb_blk_buf:0000000000000000 $t
+     /tmp/cc7QoIaX.s:744    .text.rt_rbb_blk_buf:0000000000000000 rt_rbb_blk_buf
+     /tmp/cc7QoIaX.s:760    .text.rt_rbb_blk_free:0000000000000000 $t
+     /tmp/cc7QoIaX.s:767    .text.rt_rbb_blk_free:0000000000000000 rt_rbb_blk_free
+     /tmp/cc7QoIaX.s:823    .text.rt_rbb_blk_queue_get:0000000000000000 $t
+     /tmp/cc7QoIaX.s:830    .text.rt_rbb_blk_queue_get:0000000000000000 rt_rbb_blk_queue_get
+     /tmp/cc7QoIaX.s:985    .text.rt_rbb_blk_queue_len:0000000000000000 $t
+     /tmp/cc7QoIaX.s:992    .text.rt_rbb_blk_queue_len:0000000000000000 rt_rbb_blk_queue_len
+     /tmp/cc7QoIaX.s:1042   .text.rt_rbb_blk_queue_buf:0000000000000000 $t
+     /tmp/cc7QoIaX.s:1049   .text.rt_rbb_blk_queue_buf:0000000000000000 rt_rbb_blk_queue_buf
+     /tmp/cc7QoIaX.s:1067   .text.rt_rbb_blk_queue_free:0000000000000000 $t
+     /tmp/cc7QoIaX.s:1074   .text.rt_rbb_blk_queue_free:0000000000000000 rt_rbb_blk_queue_free
+     /tmp/cc7QoIaX.s:1118   .text.rt_rbb_next_blk_queue_len:0000000000000000 $t
+     /tmp/cc7QoIaX.s:1125   .text.rt_rbb_next_blk_queue_len:0000000000000000 rt_rbb_next_blk_queue_len
+     /tmp/cc7QoIaX.s:1229   .text.rt_rbb_get_buf_size:0000000000000000 $t
+     /tmp/cc7QoIaX.s:1236   .text.rt_rbb_get_buf_size:0000000000000000 rt_rbb_get_buf_size
+                     .debug_frame:0000000000000010 $d
+
+UNDEFINED SYMBOLS
+rt_malloc
+rt_free
+rt_hw_interrupt_disable
+rt_hw_interrupt_enable

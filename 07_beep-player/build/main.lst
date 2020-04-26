@@ -1,0 +1,2169 @@
+ARM GAS  /tmp/ccj7LDw5.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.eabi_attribute 27, 1
+   3              		.eabi_attribute 28, 1
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.file	"main.c"
+  14              		.text
+  15              	.Ltext0:
+  16              		.cfi_sections	.debug_frame
+  17              		.section	.text.audio_control,"ax",%progbits
+  18              		.align	1
+  19              		.global	audio_control
+  20              		.syntax unified
+  21              		.thumb
+  22              		.thumb_func
+  23              		.fpu fpv4-sp-d16
+  25              	audio_control:
+  26              	.LFB144:
+  27              		.file 1 "USER/main.c"
+   1:USER/main.c   **** #include "decode.h"
+   2:USER/main.c   **** #include "key.h"
+   3:USER/main.c   **** #include "lcd.h"
+   4:USER/main.c   **** #include "led.h"
+   5:USER/main.c   **** #include "button.h"
+   6:USER/main.c   **** #include "beep.h"
+   7:USER/main.c   **** #include "rtdef.h"
+   8:USER/main.c   **** #include "rtthread.h"
+   9:USER/main.c   **** #include "drv_gpio.h"
+  10:USER/main.c   **** #include <stdint.h>
+  11:USER/main.c   **** #include "decode.h"
+  12:USER/main.c   **** #include "player.h"
+  13:USER/main.c   **** #include "song.h"
+  14:USER/main.c   **** #include "stm32f4xx_ll_fmc.h"
+  15:USER/main.c   **** 
+  16:USER/main.c   **** struct player player;
+  17:USER/main.c   **** struct audio_ops audio;
+  18:USER/main.c   **** struct decode_ops decode;
+  19:USER/main.c   **** 
+  20:USER/main.c   **** uint8_t beep_volume = 3;
+  21:USER/main.c   **** 
+  22:USER/main.c   **** int decode_read(void *song, int index, void *buffer, int size)
+  23:USER/main.c   **** {
+  24:USER/main.c   **** 	beep_song_get_data(song, index,buffer);
+  25:USER/main.c   **** 	return 1;
+  26:USER/main.c   **** }
+  27:USER/main.c   **** 
+  28:USER/main.c   **** int audio_write(void *buffer, int size)
+  29:USER/main.c   **** {
+  30:USER/main.c   **** 	struct beep_song_data *data = buffer;
+  31:USER/main.c   **** 
+ARM GAS  /tmp/ccj7LDw5.s 			page 2
+
+
+  32:USER/main.c   **** 	led_toggle();
+  33:USER/main.c   **** 	
+  34:USER/main.c   **** 	beep_on();
+  35:USER/main.c   **** 	beep_set(data->freq, beep_volume);
+  36:USER/main.c   **** 	rt_thread_mdelay(data->sound_len);
+  37:USER/main.c   **** 	beep_off();
+  38:USER/main.c   **** 	rt_thread_mdelay(data->nosound_len);
+  39:USER/main.c   **** 
+  40:USER/main.c   **** 	return size;
+  41:USER/main.c   **** }
+  42:USER/main.c   **** 
+  43:USER/main.c   **** int decode_control(void *song, int cmd, void *arg)
+  44:USER/main.c   **** {
+  45:USER/main.c   **** 	if (cmd == DECODE_OPS_CMD_GET_NAME)
+  46:USER/main.c   **** 	{
+  47:USER/main.c   **** 		beep_song_get_name(song, arg);
+  48:USER/main.c   **** 	}
+  49:USER/main.c   **** 	else if (cmd == DECODE_OPS_CMD_GET_LEN)
+  50:USER/main.c   **** 	{
+  51:USER/main.c   **** 		*(uint16_t *)arg = beep_song_get_len(song);
+  52:USER/main.c   **** 	}
+  53:USER/main.c   **** 	return 0;
+  54:USER/main.c   **** }
+  55:USER/main.c   **** 
+  56:USER/main.c   **** int audio_init(void)
+  57:USER/main.c   **** {
+  58:USER/main.c   **** 	beep_init();
+  59:USER/main.c   **** 	led_init();
+  60:USER/main.c   **** 	return 0;
+  61:USER/main.c   **** }
+  62:USER/main.c   **** 
+  63:USER/main.c   **** int audio_open(void)
+  64:USER/main.c   **** {
+  65:USER/main.c   **** 	beep_on();
+  66:USER/main.c   **** 	led_on();
+  67:USER/main.c   **** 	return 0;
+  68:USER/main.c   **** }
+  69:USER/main.c   **** 
+  70:USER/main.c   **** int audio_close(void)
+  71:USER/main.c   **** {
+  72:USER/main.c   **** 	beep_off();
+  73:USER/main.c   **** 	led_off();
+  74:USER/main.c   **** 	return 0;
+  75:USER/main.c   **** }
+  76:USER/main.c   **** 
+  77:USER/main.c   **** 
+  78:USER/main.c   **** int audio_control(int cmd, void *arg)
+  79:USER/main.c   **** {
+  28              		.loc 1 79 0
+  29              		.cfi_startproc
+  30              		@ args = 0, pretend = 0, frame = 0
+  31              		@ frame_needed = 0, uses_anonymous_args = 0
+  32              		@ link register save eliminated.
+  33              	.LVL0:
+  80:USER/main.c   **** 	if (cmd == AUDIO_OPS_CMD_SET_VOL)
+  34              		.loc 1 80 0
+  35 0000 10B9     		cbnz	r0, .L2
+ARM GAS  /tmp/ccj7LDw5.s 			page 3
+
+
+  81:USER/main.c   **** 	{
+  82:USER/main.c   **** 		beep_volume = *(uint8_t *)arg;
+  36              		.loc 1 82 0
+  37 0002 0A78     		ldrb	r2, [r1]	@ zero_extendqisi2
+  38 0004 024B     		ldr	r3, .L3
+  39 0006 1A70     		strb	r2, [r3]
+  40              	.L2:
+  83:USER/main.c   **** 	}
+  84:USER/main.c   **** 	return beep_volume;
+  85:USER/main.c   **** }
+  41              		.loc 1 85 0
+  42 0008 014B     		ldr	r3, .L3
+  43 000a 1878     		ldrb	r0, [r3]	@ zero_extendqisi2
+  44              	.LVL1:
+  45 000c 7047     		bx	lr
+  46              	.L4:
+  47 000e 00BF     		.align	2
+  48              	.L3:
+  49 0010 00000000 		.word	.LANCHOR0
+  50              		.cfi_endproc
+  51              	.LFE144:
+  53              		.section	.text.decode_read,"ax",%progbits
+  54              		.align	1
+  55              		.global	decode_read
+  56              		.syntax unified
+  57              		.thumb
+  58              		.thumb_func
+  59              		.fpu fpv4-sp-d16
+  61              	decode_read:
+  62              	.LFB138:
+  23:USER/main.c   **** 	beep_song_get_data(song, index,buffer);
+  63              		.loc 1 23 0
+  64              		.cfi_startproc
+  65              		@ args = 0, pretend = 0, frame = 0
+  66              		@ frame_needed = 0, uses_anonymous_args = 0
+  67              	.LVL2:
+  68 0000 08B5     		push	{r3, lr}
+  69              	.LCFI0:
+  70              		.cfi_def_cfa_offset 8
+  71              		.cfi_offset 3, -8
+  72              		.cfi_offset 14, -4
+  24:USER/main.c   **** 	return 1;
+  73              		.loc 1 24 0
+  74 0002 89B2     		uxth	r1, r1
+  75              	.LVL3:
+  76 0004 FFF7FEFF 		bl	beep_song_get_data
+  77              	.LVL4:
+  26:USER/main.c   **** 
+  78              		.loc 1 26 0
+  79 0008 0120     		movs	r0, #1
+  80 000a 08BD     		pop	{r3, pc}
+  81              		.cfi_endproc
+  82              	.LFE138:
+  84              		.section	.text.audio_write,"ax",%progbits
+  85              		.align	1
+  86              		.global	audio_write
+  87              		.syntax unified
+ARM GAS  /tmp/ccj7LDw5.s 			page 4
+
+
+  88              		.thumb
+  89              		.thumb_func
+  90              		.fpu fpv4-sp-d16
+  92              	audio_write:
+  93              	.LFB139:
+  29:USER/main.c   **** 	struct beep_song_data *data = buffer;
+  94              		.loc 1 29 0
+  95              		.cfi_startproc
+  96              		@ args = 0, pretend = 0, frame = 0
+  97              		@ frame_needed = 0, uses_anonymous_args = 0
+  98              	.LVL5:
+  99 0000 38B5     		push	{r3, r4, r5, lr}
+ 100              	.LCFI1:
+ 101              		.cfi_def_cfa_offset 16
+ 102              		.cfi_offset 3, -16
+ 103              		.cfi_offset 4, -12
+ 104              		.cfi_offset 5, -8
+ 105              		.cfi_offset 14, -4
+ 106 0002 0446     		mov	r4, r0
+ 107 0004 0D46     		mov	r5, r1
+ 108              	.LVL6:
+  32:USER/main.c   **** 	
+ 109              		.loc 1 32 0
+ 110 0006 FFF7FEFF 		bl	led_toggle
+ 111              	.LVL7:
+  34:USER/main.c   **** 	beep_set(data->freq, beep_volume);
+ 112              		.loc 1 34 0
+ 113 000a FFF7FEFF 		bl	beep_on
+ 114              	.LVL8:
+  35:USER/main.c   **** 	rt_thread_mdelay(data->sound_len);
+ 115              		.loc 1 35 0
+ 116 000e 074B     		ldr	r3, .L9
+ 117 0010 1978     		ldrb	r1, [r3]	@ zero_extendqisi2
+ 118 0012 2088     		ldrh	r0, [r4]
+ 119 0014 FFF7FEFF 		bl	beep_set
+ 120              	.LVL9:
+  36:USER/main.c   **** 	beep_off();
+ 121              		.loc 1 36 0
+ 122 0018 6088     		ldrh	r0, [r4, #2]
+ 123 001a FFF7FEFF 		bl	rt_thread_mdelay
+ 124              	.LVL10:
+  37:USER/main.c   **** 	rt_thread_mdelay(data->nosound_len);
+ 125              		.loc 1 37 0
+ 126 001e FFF7FEFF 		bl	beep_off
+ 127              	.LVL11:
+  38:USER/main.c   **** 
+ 128              		.loc 1 38 0
+ 129 0022 A088     		ldrh	r0, [r4, #4]
+ 130 0024 FFF7FEFF 		bl	rt_thread_mdelay
+ 131              	.LVL12:
+  41:USER/main.c   **** 
+ 132              		.loc 1 41 0
+ 133 0028 2846     		mov	r0, r5
+ 134 002a 38BD     		pop	{r3, r4, r5, pc}
+ 135              	.LVL13:
+ 136              	.L10:
+ 137              		.align	2
+ARM GAS  /tmp/ccj7LDw5.s 			page 5
+
+
+ 138              	.L9:
+ 139 002c 00000000 		.word	.LANCHOR0
+ 140              		.cfi_endproc
+ 141              	.LFE139:
+ 143              		.section	.text.decode_control,"ax",%progbits
+ 144              		.align	1
+ 145              		.global	decode_control
+ 146              		.syntax unified
+ 147              		.thumb
+ 148              		.thumb_func
+ 149              		.fpu fpv4-sp-d16
+ 151              	decode_control:
+ 152              	.LFB140:
+  44:USER/main.c   **** 	if (cmd == DECODE_OPS_CMD_GET_NAME)
+ 153              		.loc 1 44 0
+ 154              		.cfi_startproc
+ 155              		@ args = 0, pretend = 0, frame = 0
+ 156              		@ frame_needed = 0, uses_anonymous_args = 0
+ 157              	.LVL14:
+ 158 0000 10B5     		push	{r4, lr}
+ 159              	.LCFI2:
+ 160              		.cfi_def_cfa_offset 8
+ 161              		.cfi_offset 4, -8
+ 162              		.cfi_offset 14, -4
+ 163 0002 1446     		mov	r4, r2
+  45:USER/main.c   **** 	{
+ 164              		.loc 1 45 0
+ 165 0004 19B1     		cbz	r1, .L15
+  49:USER/main.c   **** 	{
+ 166              		.loc 1 49 0
+ 167 0006 0129     		cmp	r1, #1
+ 168 0008 05D0     		beq	.L16
+ 169              	.LVL15:
+ 170              	.L13:
+  54:USER/main.c   **** 
+ 171              		.loc 1 54 0
+ 172 000a 0020     		movs	r0, #0
+ 173 000c 10BD     		pop	{r4, pc}
+ 174              	.LVL16:
+ 175              	.L15:
+  47:USER/main.c   **** 	}
+ 176              		.loc 1 47 0
+ 177 000e 1146     		mov	r1, r2
+ 178              	.LVL17:
+ 179 0010 FFF7FEFF 		bl	beep_song_get_name
+ 180              	.LVL18:
+ 181 0014 F9E7     		b	.L13
+ 182              	.LVL19:
+ 183              	.L16:
+  51:USER/main.c   **** 	}
+ 184              		.loc 1 51 0
+ 185 0016 FFF7FEFF 		bl	beep_song_get_len
+ 186              	.LVL20:
+ 187 001a 2080     		strh	r0, [r4]	@ movhi
+ 188 001c F5E7     		b	.L13
+ 189              		.cfi_endproc
+ 190              	.LFE140:
+ARM GAS  /tmp/ccj7LDw5.s 			page 6
+
+
+ 192              		.section	.text.audio_init,"ax",%progbits
+ 193              		.align	1
+ 194              		.global	audio_init
+ 195              		.syntax unified
+ 196              		.thumb
+ 197              		.thumb_func
+ 198              		.fpu fpv4-sp-d16
+ 200              	audio_init:
+ 201              	.LFB141:
+  57:USER/main.c   **** 	beep_init();
+ 202              		.loc 1 57 0
+ 203              		.cfi_startproc
+ 204              		@ args = 0, pretend = 0, frame = 0
+ 205              		@ frame_needed = 0, uses_anonymous_args = 0
+ 206 0000 08B5     		push	{r3, lr}
+ 207              	.LCFI3:
+ 208              		.cfi_def_cfa_offset 8
+ 209              		.cfi_offset 3, -8
+ 210              		.cfi_offset 14, -4
+  58:USER/main.c   **** 	led_init();
+ 211              		.loc 1 58 0
+ 212 0002 FFF7FEFF 		bl	beep_init
+ 213              	.LVL21:
+  59:USER/main.c   **** 	return 0;
+ 214              		.loc 1 59 0
+ 215 0006 FFF7FEFF 		bl	led_init
+ 216              	.LVL22:
+  61:USER/main.c   **** 
+ 217              		.loc 1 61 0
+ 218 000a 0020     		movs	r0, #0
+ 219 000c 08BD     		pop	{r3, pc}
+ 220              		.cfi_endproc
+ 221              	.LFE141:
+ 223              		.section	.text.audio_open,"ax",%progbits
+ 224              		.align	1
+ 225              		.global	audio_open
+ 226              		.syntax unified
+ 227              		.thumb
+ 228              		.thumb_func
+ 229              		.fpu fpv4-sp-d16
+ 231              	audio_open:
+ 232              	.LFB142:
+  64:USER/main.c   **** 	beep_on();
+ 233              		.loc 1 64 0
+ 234              		.cfi_startproc
+ 235              		@ args = 0, pretend = 0, frame = 0
+ 236              		@ frame_needed = 0, uses_anonymous_args = 0
+ 237 0000 08B5     		push	{r3, lr}
+ 238              	.LCFI4:
+ 239              		.cfi_def_cfa_offset 8
+ 240              		.cfi_offset 3, -8
+ 241              		.cfi_offset 14, -4
+  65:USER/main.c   **** 	led_on();
+ 242              		.loc 1 65 0
+ 243 0002 FFF7FEFF 		bl	beep_on
+ 244              	.LVL23:
+  66:USER/main.c   **** 	return 0;
+ARM GAS  /tmp/ccj7LDw5.s 			page 7
+
+
+ 245              		.loc 1 66 0
+ 246 0006 FFF7FEFF 		bl	led_on
+ 247              	.LVL24:
+  68:USER/main.c   **** 
+ 248              		.loc 1 68 0
+ 249 000a 0020     		movs	r0, #0
+ 250 000c 08BD     		pop	{r3, pc}
+ 251              		.cfi_endproc
+ 252              	.LFE142:
+ 254              		.section	.text.audio_close,"ax",%progbits
+ 255              		.align	1
+ 256              		.global	audio_close
+ 257              		.syntax unified
+ 258              		.thumb
+ 259              		.thumb_func
+ 260              		.fpu fpv4-sp-d16
+ 262              	audio_close:
+ 263              	.LFB143:
+  71:USER/main.c   **** 	beep_off();
+ 264              		.loc 1 71 0
+ 265              		.cfi_startproc
+ 266              		@ args = 0, pretend = 0, frame = 0
+ 267              		@ frame_needed = 0, uses_anonymous_args = 0
+ 268 0000 08B5     		push	{r3, lr}
+ 269              	.LCFI5:
+ 270              		.cfi_def_cfa_offset 8
+ 271              		.cfi_offset 3, -8
+ 272              		.cfi_offset 14, -4
+  72:USER/main.c   **** 	led_off();
+ 273              		.loc 1 72 0
+ 274 0002 FFF7FEFF 		bl	beep_off
+ 275              	.LVL25:
+  73:USER/main.c   **** 	return 0;
+ 276              		.loc 1 73 0
+ 277 0006 FFF7FEFF 		bl	led_off
+ 278              	.LVL26:
+  75:USER/main.c   **** 
+ 279              		.loc 1 75 0
+ 280 000a 0020     		movs	r0, #0
+ 281 000c 08BD     		pop	{r3, pc}
+ 282              		.cfi_endproc
+ 283              	.LFE143:
+ 285              		.section	.text.player_init,"ax",%progbits
+ 286              		.align	1
+ 287              		.global	player_init
+ 288              		.syntax unified
+ 289              		.thumb
+ 290              		.thumb_func
+ 291              		.fpu fpv4-sp-d16
+ 293              	player_init:
+ 294              	.LFB145:
+  86:USER/main.c   **** 
+  87:USER/main.c   **** int player_init(void)
+  88:USER/main.c   **** {
+ 295              		.loc 1 88 0
+ 296              		.cfi_startproc
+ 297              		@ args = 0, pretend = 0, frame = 0
+ARM GAS  /tmp/ccj7LDw5.s 			page 8
+
+
+ 298              		@ frame_needed = 0, uses_anonymous_args = 0
+ 299 0000 10B5     		push	{r4, lr}
+ 300              	.LCFI6:
+ 301              		.cfi_def_cfa_offset 8
+ 302              		.cfi_offset 4, -8
+ 303              		.cfi_offset 14, -4
+  89:USER/main.c   **** 	decode.init = beep_song_decode_init;
+ 304              		.loc 1 89 0
+ 305 0002 1B4A     		ldr	r2, .L25
+ 306 0004 1B4B     		ldr	r3, .L25+4
+ 307 0006 1360     		str	r3, [r2]
+  90:USER/main.c   **** 	decode.control = decode_control;
+ 308              		.loc 1 90 0
+ 309 0008 1B4B     		ldr	r3, .L25+8
+ 310 000a 5360     		str	r3, [r2, #4]
+  91:USER/main.c   **** 	decode.read = decode_read;
+ 311              		.loc 1 91 0
+ 312 000c 1B4B     		ldr	r3, .L25+12
+ 313 000e 9360     		str	r3, [r2, #8]
+  92:USER/main.c   **** 
+  93:USER/main.c   **** 	audio.init = audio_init;
+ 314              		.loc 1 93 0
+ 315 0010 1B4B     		ldr	r3, .L25+16
+ 316 0012 1C49     		ldr	r1, .L25+20
+ 317 0014 1960     		str	r1, [r3]
+  94:USER/main.c   **** 	audio.open = audio_open;
+ 318              		.loc 1 94 0
+ 319 0016 1C49     		ldr	r1, .L25+24
+ 320 0018 5960     		str	r1, [r3, #4]
+  95:USER/main.c   **** 	audio.close = audio_close;
+ 321              		.loc 1 95 0
+ 322 001a 1C49     		ldr	r1, .L25+28
+ 323 001c 9960     		str	r1, [r3, #8]
+  96:USER/main.c   **** 	audio.control = audio_control;
+ 324              		.loc 1 96 0
+ 325 001e 1C49     		ldr	r1, .L25+32
+ 326 0020 D960     		str	r1, [r3, #12]
+  97:USER/main.c   **** 	audio.write = audio_write;
+ 327              		.loc 1 97 0
+ 328 0022 1C49     		ldr	r1, .L25+36
+ 329 0024 1961     		str	r1, [r3, #16]
+  98:USER/main.c   **** 
+  99:USER/main.c   **** 	player.decode = &decode;
+ 330              		.loc 1 99 0
+ 331 0026 1C4C     		ldr	r4, .L25+40
+ 332 0028 E263     		str	r2, [r4, #60]
+ 100:USER/main.c   **** 	player.audio = &audio;
+ 333              		.loc 1 100 0
+ 334 002a A363     		str	r3, [r4, #56]
+ 101:USER/main.c   **** 
+ 102:USER/main.c   **** 	player_add_song(&player, (void *)&song1);
+ 335              		.loc 1 102 0
+ 336 002c 1B49     		ldr	r1, .L25+44
+ 337 002e 2046     		mov	r0, r4
+ 338 0030 FFF7FEFF 		bl	player_add_song
+ 339              	.LVL27:
+ 103:USER/main.c   **** 	player_add_song(&player, (void *)&song2);
+ARM GAS  /tmp/ccj7LDw5.s 			page 9
+
+
+ 340              		.loc 1 103 0
+ 341 0034 1A49     		ldr	r1, .L25+48
+ 342 0036 2046     		mov	r0, r4
+ 343 0038 FFF7FEFF 		bl	player_add_song
+ 344              	.LVL28:
+ 104:USER/main.c   **** 	player_add_song(&player, (void *)&song3);
+ 345              		.loc 1 104 0
+ 346 003c 1949     		ldr	r1, .L25+52
+ 347 003e 2046     		mov	r0, r4
+ 348 0040 FFF7FEFF 		bl	player_add_song
+ 349              	.LVL29:
+ 105:USER/main.c   **** 	player_add_song(&player, (void *)&song4);
+ 350              		.loc 1 105 0
+ 351 0044 1849     		ldr	r1, .L25+56
+ 352 0046 2046     		mov	r0, r4
+ 353 0048 FFF7FEFF 		bl	player_add_song
+ 354              	.LVL30:
+ 106:USER/main.c   **** 	player_add_song(&player, (void *)&song5);
+ 355              		.loc 1 106 0
+ 356 004c 1749     		ldr	r1, .L25+60
+ 357 004e 2046     		mov	r0, r4
+ 358 0050 FFF7FEFF 		bl	player_add_song
+ 359              	.LVL31:
+ 107:USER/main.c   **** 	player_start(&player);
+ 360              		.loc 1 107 0
+ 361 0054 2046     		mov	r0, r4
+ 362 0056 FFF7FEFF 		bl	player_start
+ 363              	.LVL32:
+ 108:USER/main.c   **** 
+ 109:USER/main.c   **** 	player_control(&player, PLAYER_CMD_PLAY, RT_NULL);
+ 364              		.loc 1 109 0
+ 365 005a 0022     		movs	r2, #0
+ 366 005c 1146     		mov	r1, r2
+ 367 005e 2046     		mov	r0, r4
+ 368 0060 FFF7FEFF 		bl	player_control
+ 369              	.LVL33:
+ 110:USER/main.c   **** 	player_show(&player);
+ 370              		.loc 1 110 0
+ 371 0064 2046     		mov	r0, r4
+ 372 0066 FFF7FEFF 		bl	player_show
+ 373              	.LVL34:
+ 111:USER/main.c   **** 
+ 112:USER/main.c   **** 	return 0;
+ 113:USER/main.c   **** }
+ 374              		.loc 1 113 0
+ 375 006a 0020     		movs	r0, #0
+ 376 006c 10BD     		pop	{r4, pc}
+ 377              	.L26:
+ 378 006e 00BF     		.align	2
+ 379              	.L25:
+ 380 0070 00000000 		.word	decode
+ 381 0074 00000000 		.word	beep_song_decode_init
+ 382 0078 00000000 		.word	decode_control
+ 383 007c 00000000 		.word	decode_read
+ 384 0080 00000000 		.word	audio
+ 385 0084 00000000 		.word	audio_init
+ 386 0088 00000000 		.word	audio_open
+ARM GAS  /tmp/ccj7LDw5.s 			page 10
+
+
+ 387 008c 00000000 		.word	audio_close
+ 388 0090 00000000 		.word	audio_control
+ 389 0094 00000000 		.word	audio_write
+ 390 0098 00000000 		.word	player
+ 391 009c 00000000 		.word	.LANCHOR1
+ 392 00a0 00000000 		.word	.LANCHOR2
+ 393 00a4 00000000 		.word	.LANCHOR3
+ 394 00a8 00000000 		.word	.LANCHOR4
+ 395 00ac 00000000 		.word	.LANCHOR5
+ 396              		.cfi_endproc
+ 397              	.LFE145:
+ 399              		.section	.text.main,"ax",%progbits
+ 400              		.align	1
+ 401              		.global	main
+ 402              		.syntax unified
+ 403              		.thumb
+ 404              		.thumb_func
+ 405              		.fpu fpv4-sp-d16
+ 407              	main:
+ 408              	.LFB146:
+ 114:USER/main.c   **** 
+ 115:USER/main.c   **** #define KEY0 PIN_KEY0
+ 116:USER/main.c   **** #define KEY1 PIN_KEY1
+ 117:USER/main.c   **** #define KEY2 PIN_KEY2
+ 118:USER/main.c   **** #define KEY_WKUP PIN_WAKE_UP
+ 119:USER/main.c   **** 
+ 120:USER/main.c   **** #define KEY_PRESS_VALUE 0
+ 121:USER/main.c   **** #define KEY_WKUP_PRESS_VALUE 1
+ 122:USER/main.c   **** 
+ 123:USER/main.c   **** int main(void)
+ 124:USER/main.c   **** {
+ 409              		.loc 1 124 0
+ 410              		.cfi_startproc
+ 411              		@ args = 0, pretend = 0, frame = 0
+ 412              		@ frame_needed = 0, uses_anonymous_args = 0
+ 413 0000 08B5     		push	{r3, lr}
+ 414              	.LCFI7:
+ 415              		.cfi_def_cfa_offset 8
+ 416              		.cfi_offset 3, -8
+ 417              		.cfi_offset 14, -4
+ 125:USER/main.c   **** 	/* user app entry */
+ 126:USER/main.c   **** 	player_init();
+ 418              		.loc 1 126 0
+ 419 0002 FFF7FEFF 		bl	player_init
+ 420              	.LVL35:
+ 127:USER/main.c   **** 	key_init();
+ 421              		.loc 1 127 0
+ 422 0006 FFF7FEFF 		bl	key_init
+ 423              	.LVL36:
+ 128:USER/main.c   **** 
+ 129:USER/main.c   **** 	return 0;
+ 130:USER/main.c   **** }
+ 424              		.loc 1 130 0
+ 425 000a 0020     		movs	r0, #0
+ 426 000c 08BD     		pop	{r3, pc}
+ 427              		.cfi_endproc
+ 428              	.LFE146:
+ARM GAS  /tmp/ccj7LDw5.s 			page 11
+
+
+ 430              		.global	beep_volume
+ 431              		.comm	decode,12,4
+ 432              		.comm	audio,20,4
+ 433              		.comm	player,64,4
+ 434              		.global	song5
+ 435              		.global	song4
+ 436              		.global	song3
+ 437              		.global	song2
+ 438              		.global	song1
+ 439              		.section	.data.beep_volume,"aw",%progbits
+ 440              		.set	.LANCHOR0,. + 0
+ 443              	beep_volume:
+ 444 0000 03       		.byte	3
+ 445              		.section	.rodata.song1,"a",%progbits
+ 446              		.align	2
+ 447              		.set	.LANCHOR1,. + 0
+ 450              	song1:
+ 451 0000 736F6E67 		.ascii	"song1\000"
+ 451      3100
+ 452 0006 00000000 		.space	24
+ 452      00000000 
+ 452      00000000 
+ 452      00000000 
+ 452      00000000 
+ 453 001e 15       		.byte	21
+ 454 001f 02       		.byte	2
+ 455 0020 16       		.byte	22
+ 456 0021 02       		.byte	2
+ 457 0022 17       		.byte	23
+ 458 0023 02       		.byte	2
+ 459 0024 15       		.byte	21
+ 460 0025 02       		.byte	2
+ 461 0026 15       		.byte	21
+ 462 0027 02       		.byte	2
+ 463 0028 16       		.byte	22
+ 464 0029 02       		.byte	2
+ 465 002a 17       		.byte	23
+ 466 002b 02       		.byte	2
+ 467 002c 15       		.byte	21
+ 468 002d 02       		.byte	2
+ 469 002e 17       		.byte	23
+ 470 002f 02       		.byte	2
+ 471 0030 18       		.byte	24
+ 472 0031 02       		.byte	2
+ 473 0032 19       		.byte	25
+ 474 0033 01       		.byte	1
+ 475 0034 17       		.byte	23
+ 476 0035 02       		.byte	2
+ 477 0036 18       		.byte	24
+ 478 0037 02       		.byte	2
+ 479 0038 19       		.byte	25
+ 480 0039 01       		.byte	1
+ 481 003a 19       		.byte	25
+ 482 003b 03       		.byte	3
+ 483 003c 1A       		.byte	26
+ 484 003d 03       		.byte	3
+ 485 003e 19       		.byte	25
+ARM GAS  /tmp/ccj7LDw5.s 			page 12
+
+
+ 486 003f 03       		.byte	3
+ 487 0040 18       		.byte	24
+ 488 0041 03       		.byte	3
+ 489 0042 17       		.byte	23
+ 490 0043 02       		.byte	2
+ 491 0044 15       		.byte	21
+ 492 0045 16       		.byte	22
+ 493 0046 19       		.byte	25
+ 494 0047 03       		.byte	3
+ 495 0048 1A       		.byte	26
+ 496 0049 03       		.byte	3
+ 497 004a 19       		.byte	25
+ 498 004b 03       		.byte	3
+ 499 004c 18       		.byte	24
+ 500 004d 03       		.byte	3
+ 501 004e 17       		.byte	23
+ 502 004f 02       		.byte	2
+ 503 0050 15       		.byte	21
+ 504 0051 16       		.byte	22
+ 505 0052 15       		.byte	21
+ 506 0053 02       		.byte	2
+ 507 0054 0F       		.byte	15
+ 508 0055 02       		.byte	2
+ 509 0056 15       		.byte	21
+ 510 0057 01       		.byte	1
+ 511 0058 15       		.byte	21
+ 512 0059 02       		.byte	2
+ 513 005a 0F       		.byte	15
+ 514 005b 02       		.byte	2
+ 515 005c 15       		.byte	21
+ 516 005d 01       		.byte	1
+ 517 005e 00       		.byte	0
+ 518 005f 00       		.byte	0
+ 519 0060 00000000 		.space	434
+ 519      00000000 
+ 519      00000000 
+ 519      00000000 
+ 519      00000000 
+ 520              		.section	.rodata.song2,"a",%progbits
+ 521              		.align	2
+ 522              		.set	.LANCHOR2,. + 0
+ 525              	song2:
+ 526 0000 736F6E67 		.ascii	"song2\000"
+ 526      3200
+ 527 0006 00000000 		.space	24
+ 527      00000000 
+ 527      00000000 
+ 527      00000000 
+ 527      00000000 
+ 528 001e 17       		.byte	23
+ 529 001f 02       		.byte	2
+ 530 0020 17       		.byte	23
+ 531 0021 03       		.byte	3
+ 532 0022 18       		.byte	24
+ 533 0023 03       		.byte	3
+ 534 0024 19       		.byte	25
+ 535 0025 02       		.byte	2
+ARM GAS  /tmp/ccj7LDw5.s 			page 13
+
+
+ 536 0026 15       		.byte	21
+ 537 0027 03       		.byte	3
+ 538 0028 16       		.byte	22
+ 539 0029 03       		.byte	3
+ 540 002a 17       		.byte	23
+ 541 002b 03       		.byte	3
+ 542 002c 17       		.byte	23
+ 543 002d 03       		.byte	3
+ 544 002e 17       		.byte	23
+ 545 002f 03       		.byte	3
+ 546 0030 18       		.byte	24
+ 547 0031 03       		.byte	3
+ 548 0032 19       		.byte	25
+ 549 0033 02       		.byte	2
+ 550 0034 16       		.byte	22
+ 551 0035 03       		.byte	3
+ 552 0036 17       		.byte	23
+ 553 0037 03       		.byte	3
+ 554 0038 18       		.byte	24
+ 555 0039 02       		.byte	2
+ 556 003a 18       		.byte	24
+ 557 003b 03       		.byte	3
+ 558 003c 17       		.byte	23
+ 559 003d 03       		.byte	3
+ 560 003e 15       		.byte	21
+ 561 003f 02       		.byte	2
+ 562 0040 18       		.byte	24
+ 563 0041 03       		.byte	3
+ 564 0042 17       		.byte	23
+ 565 0043 03       		.byte	3
+ 566 0044 18       		.byte	24
+ 567 0045 02       		.byte	2
+ 568 0046 10       		.byte	16
+ 569 0047 03       		.byte	3
+ 570 0048 15       		.byte	21
+ 571 0049 03       		.byte	3
+ 572 004a 16       		.byte	22
+ 573 004b 02       		.byte	2
+ 574 004c 15       		.byte	21
+ 575 004d 03       		.byte	3
+ 576 004e 16       		.byte	22
+ 577 004f 03       		.byte	3
+ 578 0050 17       		.byte	23
+ 579 0051 02       		.byte	2
+ 580 0052 17       		.byte	23
+ 581 0053 03       		.byte	3
+ 582 0054 18       		.byte	24
+ 583 0055 03       		.byte	3
+ 584 0056 19       		.byte	25
+ 585 0057 02       		.byte	2
+ 586 0058 1A       		.byte	26
+ 587 0059 03       		.byte	3
+ 588 005a 1B       		.byte	27
+ 589 005b 03       		.byte	3
+ 590 005c 1F       		.byte	31
+ 591 005d 03       		.byte	3
+ 592 005e 1F       		.byte	31
+ARM GAS  /tmp/ccj7LDw5.s 			page 14
+
+
+ 593 005f 03       		.byte	3
+ 594 0060 17       		.byte	23
+ 595 0061 03       		.byte	3
+ 596 0062 18       		.byte	24
+ 597 0063 03       		.byte	3
+ 598 0064 19       		.byte	25
+ 599 0065 02       		.byte	2
+ 600 0066 16       		.byte	22
+ 601 0067 03       		.byte	3
+ 602 0068 17       		.byte	23
+ 603 0069 03       		.byte	3
+ 604 006a 18       		.byte	24
+ 605 006b 03       		.byte	3
+ 606 006c 17       		.byte	23
+ 607 006d 03       		.byte	3
+ 608 006e 18       		.byte	24
+ 609 006f 03       		.byte	3
+ 610 0070 1F       		.byte	31
+ 611 0071 03       		.byte	3
+ 612 0072 1F       		.byte	31
+ 613 0073 02       		.byte	2
+ 614 0074 16       		.byte	22
+ 615 0075 03       		.byte	3
+ 616 0076 17       		.byte	23
+ 617 0077 03       		.byte	3
+ 618 0078 18       		.byte	24
+ 619 0079 03       		.byte	3
+ 620 007a 17       		.byte	23
+ 621 007b 03       		.byte	3
+ 622 007c 18       		.byte	24
+ 623 007d 03       		.byte	3
+ 624 007e 20       		.byte	32
+ 625 007f 03       		.byte	3
+ 626 0080 20       		.byte	32
+ 627 0081 02       		.byte	2
+ 628 0082 1F       		.byte	31
+ 629 0083 03       		.byte	3
+ 630 0084 1B       		.byte	27
+ 631 0085 03       		.byte	3
+ 632 0086 1F       		.byte	31
+ 633 0087 66       		.byte	102
+ 634 0088 20       		.byte	32
+ 635 0089 03       		.byte	3
+ 636 008a 21       		.byte	33
+ 637 008b 03       		.byte	3
+ 638 008c 20       		.byte	32
+ 639 008d 03       		.byte	3
+ 640 008e 1F       		.byte	31
+ 641 008f 03       		.byte	3
+ 642 0090 1B       		.byte	27
+ 643 0091 03       		.byte	3
+ 644 0092 1F       		.byte	31
+ 645 0093 66       		.byte	102
+ 646 0094 1F       		.byte	31
+ 647 0095 03       		.byte	3
+ 648 0096 1B       		.byte	27
+ 649 0097 03       		.byte	3
+ARM GAS  /tmp/ccj7LDw5.s 			page 15
+
+
+ 650 0098 19       		.byte	25
+ 651 0099 03       		.byte	3
+ 652 009a 19       		.byte	25
+ 653 009b 03       		.byte	3
+ 654 009c 15       		.byte	21
+ 655 009d 03       		.byte	3
+ 656 009e 1A       		.byte	26
+ 657 009f 66       		.byte	102
+ 658 00a0 1A       		.byte	26
+ 659 00a1 03       		.byte	3
+ 660 00a2 19       		.byte	25
+ 661 00a3 03       		.byte	3
+ 662 00a4 15       		.byte	21
+ 663 00a5 03       		.byte	3
+ 664 00a6 15       		.byte	21
+ 665 00a7 03       		.byte	3
+ 666 00a8 17       		.byte	23
+ 667 00a9 03       		.byte	3
+ 668 00aa 16       		.byte	22
+ 669 00ab 66       		.byte	102
+ 670 00ac 17       		.byte	23
+ 671 00ad 04       		.byte	4
+ 672 00ae 18       		.byte	24
+ 673 00af 04       		.byte	4
+ 674 00b0 18       		.byte	24
+ 675 00b1 03       		.byte	3
+ 676 00b2 19       		.byte	25
+ 677 00b3 03       		.byte	3
+ 678 00b4 1F       		.byte	31
+ 679 00b5 03       		.byte	3
+ 680 00b6 1B       		.byte	27
+ 681 00b7 03       		.byte	3
+ 682 00b8 1F       		.byte	31
+ 683 00b9 66       		.byte	102
+ 684 00ba 20       		.byte	32
+ 685 00bb 03       		.byte	3
+ 686 00bc 21       		.byte	33
+ 687 00bd 03       		.byte	3
+ 688 00be 20       		.byte	32
+ 689 00bf 03       		.byte	3
+ 690 00c0 1F       		.byte	31
+ 691 00c1 03       		.byte	3
+ 692 00c2 1B       		.byte	27
+ 693 00c3 03       		.byte	3
+ 694 00c4 1F       		.byte	31
+ 695 00c5 66       		.byte	102
+ 696 00c6 1F       		.byte	31
+ 697 00c7 03       		.byte	3
+ 698 00c8 1B       		.byte	27
+ 699 00c9 03       		.byte	3
+ 700 00ca 19       		.byte	25
+ 701 00cb 03       		.byte	3
+ 702 00cc 19       		.byte	25
+ 703 00cd 03       		.byte	3
+ 704 00ce 15       		.byte	21
+ 705 00cf 03       		.byte	3
+ 706 00d0 1A       		.byte	26
+ARM GAS  /tmp/ccj7LDw5.s 			page 16
+
+
+ 707 00d1 66       		.byte	102
+ 708 00d2 1A       		.byte	26
+ 709 00d3 03       		.byte	3
+ 710 00d4 19       		.byte	25
+ 711 00d5 03       		.byte	3
+ 712 00d6 19       		.byte	25
+ 713 00d7 03       		.byte	3
+ 714 00d8 1F       		.byte	31
+ 715 00d9 03       		.byte	3
+ 716 00da 1B       		.byte	27
+ 717 00db 03       		.byte	3
+ 718 00dc 1F       		.byte	31
+ 719 00dd 00       		.byte	0
+ 720 00de 1A       		.byte	26
+ 721 00df 03       		.byte	3
+ 722 00e0 1A       		.byte	26
+ 723 00e1 03       		.byte	3
+ 724 00e2 1A       		.byte	26
+ 725 00e3 03       		.byte	3
+ 726 00e4 1B       		.byte	27
+ 727 00e5 03       		.byte	3
+ 728 00e6 1B       		.byte	27
+ 729 00e7 03       		.byte	3
+ 730 00e8 1A       		.byte	26
+ 731 00e9 03       		.byte	3
+ 732 00ea 19       		.byte	25
+ 733 00eb 03       		.byte	3
+ 734 00ec 19       		.byte	25
+ 735 00ed 02       		.byte	2
+ 736 00ee 17       		.byte	23
+ 737 00ef 03       		.byte	3
+ 738 00f0 15       		.byte	21
+ 739 00f1 17       		.byte	23
+ 740 00f2 15       		.byte	21
+ 741 00f3 03       		.byte	3
+ 742 00f4 16       		.byte	22
+ 743 00f5 03       		.byte	3
+ 744 00f6 17       		.byte	23
+ 745 00f7 03       		.byte	3
+ 746 00f8 18       		.byte	24
+ 747 00f9 03       		.byte	3
+ 748 00fa 17       		.byte	23
+ 749 00fb 04       		.byte	4
+ 750 00fc 18       		.byte	24
+ 751 00fd 0E       		.byte	14
+ 752 00fe 18       		.byte	24
+ 753 00ff 03       		.byte	3
+ 754 0100 17       		.byte	23
+ 755 0101 04       		.byte	4
+ 756 0102 18       		.byte	24
+ 757 0103 0E       		.byte	14
+ 758 0104 18       		.byte	24
+ 759 0105 66       		.byte	102
+ 760 0106 17       		.byte	23
+ 761 0107 03       		.byte	3
+ 762 0108 18       		.byte	24
+ 763 0109 03       		.byte	3
+ARM GAS  /tmp/ccj7LDw5.s 			page 17
+
+
+ 764 010a 17       		.byte	23
+ 765 010b 03       		.byte	3
+ 766 010c 18       		.byte	24
+ 767 010d 03       		.byte	3
+ 768 010e 20       		.byte	32
+ 769 010f 03       		.byte	3
+ 770 0110 20       		.byte	32
+ 771 0111 02       		.byte	2
+ 772 0112 1F       		.byte	31
+ 773 0113 03       		.byte	3
+ 774 0114 1B       		.byte	27
+ 775 0115 03       		.byte	3
+ 776 0116 1F       		.byte	31
+ 777 0117 66       		.byte	102
+ 778 0118 20       		.byte	32
+ 779 0119 03       		.byte	3
+ 780 011a 21       		.byte	33
+ 781 011b 03       		.byte	3
+ 782 011c 20       		.byte	32
+ 783 011d 03       		.byte	3
+ 784 011e 1F       		.byte	31
+ 785 011f 03       		.byte	3
+ 786 0120 1B       		.byte	27
+ 787 0121 03       		.byte	3
+ 788 0122 1F       		.byte	31
+ 789 0123 66       		.byte	102
+ 790 0124 1F       		.byte	31
+ 791 0125 04       		.byte	4
+ 792 0126 1B       		.byte	27
+ 793 0127 0E       		.byte	14
+ 794 0128 1B       		.byte	27
+ 795 0129 03       		.byte	3
+ 796 012a 19       		.byte	25
+ 797 012b 03       		.byte	3
+ 798 012c 19       		.byte	25
+ 799 012d 03       		.byte	3
+ 800 012e 15       		.byte	21
+ 801 012f 03       		.byte	3
+ 802 0130 1A       		.byte	26
+ 803 0131 66       		.byte	102
+ 804 0132 1A       		.byte	26
+ 805 0133 03       		.byte	3
+ 806 0134 19       		.byte	25
+ 807 0135 03       		.byte	3
+ 808 0136 15       		.byte	21
+ 809 0137 03       		.byte	3
+ 810 0138 15       		.byte	21
+ 811 0139 03       		.byte	3
+ 812 013a 17       		.byte	23
+ 813 013b 03       		.byte	3
+ 814 013c 16       		.byte	22
+ 815 013d 66       		.byte	102
+ 816 013e 17       		.byte	23
+ 817 013f 04       		.byte	4
+ 818 0140 18       		.byte	24
+ 819 0141 04       		.byte	4
+ 820 0142 18       		.byte	24
+ARM GAS  /tmp/ccj7LDw5.s 			page 18
+
+
+ 821 0143 03       		.byte	3
+ 822 0144 19       		.byte	25
+ 823 0145 03       		.byte	3
+ 824 0146 1F       		.byte	31
+ 825 0147 03       		.byte	3
+ 826 0148 1B       		.byte	27
+ 827 0149 03       		.byte	3
+ 828 014a 1F       		.byte	31
+ 829 014b 66       		.byte	102
+ 830 014c 20       		.byte	32
+ 831 014d 03       		.byte	3
+ 832 014e 21       		.byte	33
+ 833 014f 03       		.byte	3
+ 834 0150 20       		.byte	32
+ 835 0151 03       		.byte	3
+ 836 0152 1F       		.byte	31
+ 837 0153 03       		.byte	3
+ 838 0154 1B       		.byte	27
+ 839 0155 03       		.byte	3
+ 840 0156 1F       		.byte	31
+ 841 0157 66       		.byte	102
+ 842 0158 1F       		.byte	31
+ 843 0159 03       		.byte	3
+ 844 015a 1B       		.byte	27
+ 845 015b 03       		.byte	3
+ 846 015c 19       		.byte	25
+ 847 015d 03       		.byte	3
+ 848 015e 19       		.byte	25
+ 849 015f 03       		.byte	3
+ 850 0160 15       		.byte	21
+ 851 0161 03       		.byte	3
+ 852 0162 1A       		.byte	26
+ 853 0163 66       		.byte	102
+ 854 0164 1A       		.byte	26
+ 855 0165 03       		.byte	3
+ 856 0166 19       		.byte	25
+ 857 0167 03       		.byte	3
+ 858 0168 19       		.byte	25
+ 859 0169 03       		.byte	3
+ 860 016a 1F       		.byte	31
+ 861 016b 03       		.byte	3
+ 862 016c 1B       		.byte	27
+ 863 016d 03       		.byte	3
+ 864 016e 1F       		.byte	31
+ 865 016f 00       		.byte	0
+ 866 0170 18       		.byte	24
+ 867 0171 02       		.byte	2
+ 868 0172 18       		.byte	24
+ 869 0173 03       		.byte	3
+ 870 0174 1A       		.byte	26
+ 871 0175 03       		.byte	3
+ 872 0176 19       		.byte	25
+ 873 0177 0D       		.byte	13
+ 874 0178 15       		.byte	21
+ 875 0179 03       		.byte	3
+ 876 017a 15       		.byte	21
+ 877 017b 02       		.byte	2
+ARM GAS  /tmp/ccj7LDw5.s 			page 19
+
+
+ 878 017c 18       		.byte	24
+ 879 017d 66       		.byte	102
+ 880 017e 16       		.byte	22
+ 881 017f 02       		.byte	2
+ 882 0180 17       		.byte	23
+ 883 0181 02       		.byte	2
+ 884 0182 15       		.byte	21
+ 885 0183 00       		.byte	0
+ 886 0184 00       		.byte	0
+ 887 0185 00       		.byte	0
+ 888 0186 00000000 		.space	140
+ 888      00000000 
+ 888      00000000 
+ 888      00000000 
+ 888      00000000 
+ 889              		.section	.rodata.song3,"a",%progbits
+ 890              		.align	2
+ 891              		.set	.LANCHOR3,. + 0
+ 894              	song3:
+ 895 0000 736F6E67 		.ascii	"song3\000"
+ 895      3300
+ 896 0006 00000000 		.space	24
+ 896      00000000 
+ 896      00000000 
+ 896      00000000 
+ 896      00000000 
+ 897 001e 0F       		.byte	15
+ 898 001f 01       		.byte	1
+ 899 0020 15       		.byte	21
+ 900 0021 02       		.byte	2
+ 901 0022 16       		.byte	22
+ 902 0023 02       		.byte	2
+ 903 0024 17       		.byte	23
+ 904 0025 66       		.byte	102
+ 905 0026 18       		.byte	24
+ 906 0027 03       		.byte	3
+ 907 0028 17       		.byte	23
+ 908 0029 02       		.byte	2
+ 909 002a 15       		.byte	21
+ 910 002b 02       		.byte	2
+ 911 002c 16       		.byte	22
+ 912 002d 01       		.byte	1
+ 913 002e 15       		.byte	21
+ 914 002f 02       		.byte	2
+ 915 0030 10       		.byte	16
+ 916 0031 02       		.byte	2
+ 917 0032 15       		.byte	21
+ 918 0033 00       		.byte	0
+ 919 0034 0F       		.byte	15
+ 920 0035 01       		.byte	1
+ 921 0036 15       		.byte	21
+ 922 0037 02       		.byte	2
+ 923 0038 16       		.byte	22
+ 924 0039 02       		.byte	2
+ 925 003a 17       		.byte	23
+ 926 003b 02       		.byte	2
+ 927 003c 17       		.byte	23
+ARM GAS  /tmp/ccj7LDw5.s 			page 20
+
+
+ 928 003d 03       		.byte	3
+ 929 003e 18       		.byte	24
+ 930 003f 03       		.byte	3
+ 931 0040 19       		.byte	25
+ 932 0041 02       		.byte	2
+ 933 0042 15       		.byte	21
+ 934 0043 02       		.byte	2
+ 935 0044 18       		.byte	24
+ 936 0045 66       		.byte	102
+ 937 0046 17       		.byte	23
+ 938 0047 03       		.byte	3
+ 939 0048 19       		.byte	25
+ 940 0049 02       		.byte	2
+ 941 004a 16       		.byte	22
+ 942 004b 03       		.byte	3
+ 943 004c 17       		.byte	23
+ 944 004d 03       		.byte	3
+ 945 004e 16       		.byte	22
+ 946 004f 00       		.byte	0
+ 947 0050 17       		.byte	23
+ 948 0051 01       		.byte	1
+ 949 0052 19       		.byte	25
+ 950 0053 02       		.byte	2
+ 951 0054 1B       		.byte	27
+ 952 0055 02       		.byte	2
+ 953 0056 1B       		.byte	27
+ 954 0057 70       		.byte	112
+ 955 0058 1A       		.byte	26
+ 956 0059 03       		.byte	3
+ 957 005a 1A       		.byte	26
+ 958 005b 01       		.byte	1
+ 959 005c 19       		.byte	25
+ 960 005d 02       		.byte	2
+ 961 005e 19       		.byte	25
+ 962 005f 03       		.byte	3
+ 963 0060 1A       		.byte	26
+ 964 0061 03       		.byte	3
+ 965 0062 1B       		.byte	27
+ 966 0063 02       		.byte	2
+ 967 0064 1A       		.byte	26
+ 968 0065 0D       		.byte	13
+ 969 0066 19       		.byte	25
+ 970 0067 03       		.byte	3
+ 971 0068 17       		.byte	23
+ 972 0069 00       		.byte	0
+ 973 006a 18       		.byte	24
+ 974 006b 66       		.byte	102
+ 975 006c 18       		.byte	24
+ 976 006d 03       		.byte	3
+ 977 006e 19       		.byte	25
+ 978 006f 02       		.byte	2
+ 979 0070 1A       		.byte	26
+ 980 0071 02       		.byte	2
+ 981 0072 19       		.byte	25
+ 982 0073 0C       		.byte	12
+ 983 0074 18       		.byte	24
+ 984 0075 0D       		.byte	13
+ARM GAS  /tmp/ccj7LDw5.s 			page 21
+
+
+ 985 0076 17       		.byte	23
+ 986 0077 03       		.byte	3
+ 987 0078 16       		.byte	22
+ 988 0079 01       		.byte	1
+ 989 007a 11       		.byte	17
+ 990 007b 02       		.byte	2
+ 991 007c 11       		.byte	17
+ 992 007d 03       		.byte	3
+ 993 007e 10       		.byte	16
+ 994 007f 03       		.byte	3
+ 995 0080 0F       		.byte	15
+ 996 0081 0C       		.byte	12
+ 997 0082 10       		.byte	16
+ 998 0083 02       		.byte	2
+ 999 0084 15       		.byte	21
+ 1000 0085 00       		.byte	0
+ 1001 0086 1F       		.byte	31
+ 1002 0087 01       		.byte	1
+ 1003 0088 1A       		.byte	26
+ 1004 0089 01       		.byte	1
+ 1005 008a 18       		.byte	24
+ 1006 008b 66       		.byte	102
+ 1007 008c 19       		.byte	25
+ 1008 008d 03       		.byte	3
+ 1009 008e 1A       		.byte	26
+ 1010 008f 01       		.byte	1
+ 1011 0090 1B       		.byte	27
+ 1012 0091 02       		.byte	2
+ 1013 0092 1B       		.byte	27
+ 1014 0093 03       		.byte	3
+ 1015 0094 1B       		.byte	27
+ 1016 0095 03       		.byte	3
+ 1017 0096 1B       		.byte	27
+ 1018 0097 0C       		.byte	12
+ 1019 0098 1A       		.byte	26
+ 1020 0099 0D       		.byte	13
+ 1021 009a 19       		.byte	25
+ 1022 009b 03       		.byte	3
+ 1023 009c 17       		.byte	23
+ 1024 009d 00       		.byte	0
+ 1025 009e 1F       		.byte	31
+ 1026 009f 01       		.byte	1
+ 1027 00a0 1A       		.byte	26
+ 1028 00a1 01       		.byte	1
+ 1029 00a2 18       		.byte	24
+ 1030 00a3 66       		.byte	102
+ 1031 00a4 19       		.byte	25
+ 1032 00a5 03       		.byte	3
+ 1033 00a6 1A       		.byte	26
+ 1034 00a7 01       		.byte	1
+ 1035 00a8 10       		.byte	16
+ 1036 00a9 02       		.byte	2
+ 1037 00aa 10       		.byte	16
+ 1038 00ab 03       		.byte	3
+ 1039 00ac 10       		.byte	16
+ 1040 00ad 03       		.byte	3
+ 1041 00ae 1A       		.byte	26
+ARM GAS  /tmp/ccj7LDw5.s 			page 22
+
+
+ 1042 00af 0C       		.byte	12
+ 1043 00b0 18       		.byte	24
+ 1044 00b1 0D       		.byte	13
+ 1045 00b2 17       		.byte	23
+ 1046 00b3 03       		.byte	3
+ 1047 00b4 16       		.byte	22
+ 1048 00b5 00       		.byte	0
+ 1049 00b6 0F       		.byte	15
+ 1050 00b7 01       		.byte	1
+ 1051 00b8 15       		.byte	21
+ 1052 00b9 02       		.byte	2
+ 1053 00ba 16       		.byte	22
+ 1054 00bb 02       		.byte	2
+ 1055 00bc 17       		.byte	23
+ 1056 00bd 70       		.byte	112
+ 1057 00be 18       		.byte	24
+ 1058 00bf 03       		.byte	3
+ 1059 00c0 17       		.byte	23
+ 1060 00c1 02       		.byte	2
+ 1061 00c2 15       		.byte	21
+ 1062 00c3 03       		.byte	3
+ 1063 00c4 15       		.byte	21
+ 1064 00c5 03       		.byte	3
+ 1065 00c6 16       		.byte	22
+ 1066 00c7 66       		.byte	102
+ 1067 00c8 16       		.byte	22
+ 1068 00c9 03       		.byte	3
+ 1069 00ca 16       		.byte	22
+ 1070 00cb 02       		.byte	2
+ 1071 00cc 16       		.byte	22
+ 1072 00cd 03       		.byte	3
+ 1073 00ce 15       		.byte	21
+ 1074 00cf 03       		.byte	3
+ 1075 00d0 10       		.byte	16
+ 1076 00d1 02       		.byte	2
+ 1077 00d2 10       		.byte	16
+ 1078 00d3 01       		.byte	1
+ 1079 00d4 11       		.byte	17
+ 1080 00d5 01       		.byte	1
+ 1081 00d6 11       		.byte	17
+ 1082 00d7 66       		.byte	102
+ 1083 00d8 10       		.byte	16
+ 1084 00d9 03       		.byte	3
+ 1085 00da 0F       		.byte	15
+ 1086 00db 0C       		.byte	12
+ 1087 00dc 1A       		.byte	26
+ 1088 00dd 02       		.byte	2
+ 1089 00de 19       		.byte	25
+ 1090 00df 02       		.byte	2
+ 1091 00e0 16       		.byte	22
+ 1092 00e1 03       		.byte	3
+ 1093 00e2 16       		.byte	22
+ 1094 00e3 03       		.byte	3
+ 1095 00e4 18       		.byte	24
+ 1096 00e5 66       		.byte	102
+ 1097 00e6 18       		.byte	24
+ 1098 00e7 03       		.byte	3
+ARM GAS  /tmp/ccj7LDw5.s 			page 23
+
+
+ 1099 00e8 18       		.byte	24
+ 1100 00e9 02       		.byte	2
+ 1101 00ea 17       		.byte	23
+ 1102 00eb 03       		.byte	3
+ 1103 00ec 16       		.byte	22
+ 1104 00ed 03       		.byte	3
+ 1105 00ee 19       		.byte	25
+ 1106 00ef 00       		.byte	0
+ 1107 00f0 00       		.byte	0
+ 1108 00f1 00       		.byte	0
+ 1109 00f2 00000000 		.space	288
+ 1109      00000000 
+ 1109      00000000 
+ 1109      00000000 
+ 1109      00000000 
+ 1110              		.section	.rodata.song4,"a",%progbits
+ 1111              		.align	2
+ 1112              		.set	.LANCHOR4,. + 0
+ 1115              	song4:
+ 1116 0000 736F6E67 		.ascii	"song4\000"
+ 1116      3400
+ 1117 0006 00000000 		.space	24
+ 1117      00000000 
+ 1117      00000000 
+ 1117      00000000 
+ 1117      00000000 
+ 1118 001e 17       		.byte	23
+ 1119 001f 03       		.byte	3
+ 1120 0020 16       		.byte	22
+ 1121 0021 03       		.byte	3
+ 1122 0022 17       		.byte	23
+ 1123 0023 01       		.byte	1
+ 1124 0024 16       		.byte	22
+ 1125 0025 03       		.byte	3
+ 1126 0026 17       		.byte	23
+ 1127 0027 03       		.byte	3
+ 1128 0028 16       		.byte	22
+ 1129 0029 03       		.byte	3
+ 1130 002a 15       		.byte	21
+ 1131 002b 01       		.byte	1
+ 1132 002c 10       		.byte	16
+ 1133 002d 03       		.byte	3
+ 1134 002e 15       		.byte	21
+ 1135 002f 03       		.byte	3
+ 1136 0030 16       		.byte	22
+ 1137 0031 02       		.byte	2
+ 1138 0032 16       		.byte	22
+ 1139 0033 0D       		.byte	13
+ 1140 0034 17       		.byte	23
+ 1141 0035 03       		.byte	3
+ 1142 0036 16       		.byte	22
+ 1143 0037 03       		.byte	3
+ 1144 0038 15       		.byte	21
+ 1145 0039 03       		.byte	3
+ 1146 003a 10       		.byte	16
+ 1147 003b 03       		.byte	3
+ 1148 003c 10       		.byte	16
+ARM GAS  /tmp/ccj7LDw5.s 			page 24
+
+
+ 1149 003d 0E       		.byte	14
+ 1150 003e 15       		.byte	21
+ 1151 003f 04       		.byte	4
+ 1152 0040 0F       		.byte	15
+ 1153 0041 01       		.byte	1
+ 1154 0042 17       		.byte	23
+ 1155 0043 03       		.byte	3
+ 1156 0044 16       		.byte	22
+ 1157 0045 03       		.byte	3
+ 1158 0046 17       		.byte	23
+ 1159 0047 01       		.byte	1
+ 1160 0048 16       		.byte	22
+ 1161 0049 03       		.byte	3
+ 1162 004a 17       		.byte	23
+ 1163 004b 03       		.byte	3
+ 1164 004c 16       		.byte	22
+ 1165 004d 03       		.byte	3
+ 1166 004e 15       		.byte	21
+ 1167 004f 01       		.byte	1
+ 1168 0050 10       		.byte	16
+ 1169 0051 03       		.byte	3
+ 1170 0052 15       		.byte	21
+ 1171 0053 03       		.byte	3
+ 1172 0054 16       		.byte	22
+ 1173 0055 02       		.byte	2
+ 1174 0056 16       		.byte	22
+ 1175 0057 0D       		.byte	13
+ 1176 0058 17       		.byte	23
+ 1177 0059 03       		.byte	3
+ 1178 005a 16       		.byte	22
+ 1179 005b 03       		.byte	3
+ 1180 005c 15       		.byte	21
+ 1181 005d 03       		.byte	3
+ 1182 005e 10       		.byte	16
+ 1183 005f 03       		.byte	3
+ 1184 0060 15       		.byte	21
+ 1185 0061 03       		.byte	3
+ 1186 0062 16       		.byte	22
+ 1187 0063 01       		.byte	1
+ 1188 0064 17       		.byte	23
+ 1189 0065 03       		.byte	3
+ 1190 0066 16       		.byte	22
+ 1191 0067 03       		.byte	3
+ 1192 0068 17       		.byte	23
+ 1193 0069 01       		.byte	1
+ 1194 006a 16       		.byte	22
+ 1195 006b 03       		.byte	3
+ 1196 006c 17       		.byte	23
+ 1197 006d 03       		.byte	3
+ 1198 006e 16       		.byte	22
+ 1199 006f 03       		.byte	3
+ 1200 0070 15       		.byte	21
+ 1201 0071 01       		.byte	1
+ 1202 0072 10       		.byte	16
+ 1203 0073 03       		.byte	3
+ 1204 0074 15       		.byte	21
+ 1205 0075 03       		.byte	3
+ARM GAS  /tmp/ccj7LDw5.s 			page 25
+
+
+ 1206 0076 16       		.byte	22
+ 1207 0077 02       		.byte	2
+ 1208 0078 16       		.byte	22
+ 1209 0079 0D       		.byte	13
+ 1210 007a 17       		.byte	23
+ 1211 007b 03       		.byte	3
+ 1212 007c 16       		.byte	22
+ 1213 007d 03       		.byte	3
+ 1214 007e 15       		.byte	21
+ 1215 007f 03       		.byte	3
+ 1216 0080 10       		.byte	16
+ 1217 0081 03       		.byte	3
+ 1218 0082 10       		.byte	16
+ 1219 0083 0E       		.byte	14
+ 1220 0084 15       		.byte	21
+ 1221 0085 04       		.byte	4
+ 1222 0086 0F       		.byte	15
+ 1223 0087 01       		.byte	1
+ 1224 0088 17       		.byte	23
+ 1225 0089 03       		.byte	3
+ 1226 008a 19       		.byte	25
+ 1227 008b 03       		.byte	3
+ 1228 008c 19       		.byte	25
+ 1229 008d 01       		.byte	1
+ 1230 008e 19       		.byte	25
+ 1231 008f 03       		.byte	3
+ 1232 0090 1A       		.byte	26
+ 1233 0091 03       		.byte	3
+ 1234 0092 19       		.byte	25
+ 1235 0093 03       		.byte	3
+ 1236 0094 17       		.byte	23
+ 1237 0095 01       		.byte	1
+ 1238 0096 16       		.byte	22
+ 1239 0097 03       		.byte	3
+ 1240 0098 16       		.byte	22
+ 1241 0099 03       		.byte	3
+ 1242 009a 16       		.byte	22
+ 1243 009b 02       		.byte	2
+ 1244 009c 16       		.byte	22
+ 1245 009d 0D       		.byte	13
+ 1246 009e 17       		.byte	23
+ 1247 009f 03       		.byte	3
+ 1248 00a0 16       		.byte	22
+ 1249 00a1 03       		.byte	3
+ 1250 00a2 15       		.byte	21
+ 1251 00a3 03       		.byte	3
+ 1252 00a4 10       		.byte	16
+ 1253 00a5 03       		.byte	3
+ 1254 00a6 10       		.byte	16
+ 1255 00a7 0D       		.byte	13
+ 1256 00a8 15       		.byte	21
+ 1257 00a9 00       		.byte	0
+ 1258 00aa 19       		.byte	25
+ 1259 00ab 03       		.byte	3
+ 1260 00ac 19       		.byte	25
+ 1261 00ad 03       		.byte	3
+ 1262 00ae 1A       		.byte	26
+ARM GAS  /tmp/ccj7LDw5.s 			page 26
+
+
+ 1263 00af 03       		.byte	3
+ 1264 00b0 1F       		.byte	31
+ 1265 00b1 03       		.byte	3
+ 1266 00b2 1B       		.byte	27
+ 1267 00b3 03       		.byte	3
+ 1268 00b4 1B       		.byte	27
+ 1269 00b5 03       		.byte	3
+ 1270 00b6 1A       		.byte	26
+ 1271 00b7 03       		.byte	3
+ 1272 00b8 17       		.byte	23
+ 1273 00b9 0D       		.byte	13
+ 1274 00ba 16       		.byte	22
+ 1275 00bb 03       		.byte	3
+ 1276 00bc 16       		.byte	22
+ 1277 00bd 03       		.byte	3
+ 1278 00be 16       		.byte	22
+ 1279 00bf 0D       		.byte	13
+ 1280 00c0 17       		.byte	23
+ 1281 00c1 01       		.byte	1
+ 1282 00c2 17       		.byte	23
+ 1283 00c3 03       		.byte	3
+ 1284 00c4 17       		.byte	23
+ 1285 00c5 03       		.byte	3
+ 1286 00c6 19       		.byte	25
+ 1287 00c7 03       		.byte	3
+ 1288 00c8 1A       		.byte	26
+ 1289 00c9 02       		.byte	2
+ 1290 00ca 1A       		.byte	26
+ 1291 00cb 02       		.byte	2
+ 1292 00cc 10       		.byte	16
+ 1293 00cd 03       		.byte	3
+ 1294 00ce 17       		.byte	23
+ 1295 00cf 0D       		.byte	13
+ 1296 00d0 16       		.byte	22
+ 1297 00d1 03       		.byte	3
+ 1298 00d2 16       		.byte	22
+ 1299 00d3 01       		.byte	1
+ 1300 00d4 17       		.byte	23
+ 1301 00d5 03       		.byte	3
+ 1302 00d6 19       		.byte	25
+ 1303 00d7 03       		.byte	3
+ 1304 00d8 19       		.byte	25
+ 1305 00d9 03       		.byte	3
+ 1306 00da 17       		.byte	23
+ 1307 00db 03       		.byte	3
+ 1308 00dc 19       		.byte	25
+ 1309 00dd 02       		.byte	2
+ 1310 00de 1F       		.byte	31
+ 1311 00df 02       		.byte	2
+ 1312 00e0 1B       		.byte	27
+ 1313 00e1 03       		.byte	3
+ 1314 00e2 1A       		.byte	26
+ 1315 00e3 03       		.byte	3
+ 1316 00e4 1A       		.byte	26
+ 1317 00e5 0E       		.byte	14
+ 1318 00e6 1B       		.byte	27
+ 1319 00e7 04       		.byte	4
+ARM GAS  /tmp/ccj7LDw5.s 			page 27
+
+
+ 1320 00e8 17       		.byte	23
+ 1321 00e9 02       		.byte	2
+ 1322 00ea 1A       		.byte	26
+ 1323 00eb 03       		.byte	3
+ 1324 00ec 1A       		.byte	26
+ 1325 00ed 03       		.byte	3
+ 1326 00ee 1A       		.byte	26
+ 1327 00ef 0E       		.byte	14
+ 1328 00f0 1B       		.byte	27
+ 1329 00f1 04       		.byte	4
+ 1330 00f2 1A       		.byte	26
+ 1331 00f3 03       		.byte	3
+ 1332 00f4 19       		.byte	25
+ 1333 00f5 03       		.byte	3
+ 1334 00f6 17       		.byte	23
+ 1335 00f7 03       		.byte	3
+ 1336 00f8 16       		.byte	22
+ 1337 00f9 03       		.byte	3
+ 1338 00fa 17       		.byte	23
+ 1339 00fb 0D       		.byte	13
+ 1340 00fc 16       		.byte	22
+ 1341 00fd 03       		.byte	3
+ 1342 00fe 17       		.byte	23
+ 1343 00ff 03       		.byte	3
+ 1344 0100 19       		.byte	25
+ 1345 0101 01       		.byte	1
+ 1346 0102 19       		.byte	25
+ 1347 0103 03       		.byte	3
+ 1348 0104 19       		.byte	25
+ 1349 0105 03       		.byte	3
+ 1350 0106 1A       		.byte	26
+ 1351 0107 03       		.byte	3
+ 1352 0108 1F       		.byte	31
+ 1353 0109 03       		.byte	3
+ 1354 010a 1B       		.byte	27
+ 1355 010b 03       		.byte	3
+ 1356 010c 1B       		.byte	27
+ 1357 010d 03       		.byte	3
+ 1358 010e 1A       		.byte	26
+ 1359 010f 03       		.byte	3
+ 1360 0110 17       		.byte	23
+ 1361 0111 0D       		.byte	13
+ 1362 0112 16       		.byte	22
+ 1363 0113 03       		.byte	3
+ 1364 0114 16       		.byte	22
+ 1365 0115 03       		.byte	3
+ 1366 0116 16       		.byte	22
+ 1367 0117 03       		.byte	3
+ 1368 0118 17       		.byte	23
+ 1369 0119 01       		.byte	1
+ 1370 011a 17       		.byte	23
+ 1371 011b 03       		.byte	3
+ 1372 011c 17       		.byte	23
+ 1373 011d 03       		.byte	3
+ 1374 011e 19       		.byte	25
+ 1375 011f 03       		.byte	3
+ 1376 0120 1A       		.byte	26
+ARM GAS  /tmp/ccj7LDw5.s 			page 28
+
+
+ 1377 0121 02       		.byte	2
+ 1378 0122 1A       		.byte	26
+ 1379 0123 02       		.byte	2
+ 1380 0124 10       		.byte	16
+ 1381 0125 03       		.byte	3
+ 1382 0126 17       		.byte	23
+ 1383 0127 0D       		.byte	13
+ 1384 0128 16       		.byte	22
+ 1385 0129 03       		.byte	3
+ 1386 012a 16       		.byte	22
+ 1387 012b 01       		.byte	1
+ 1388 012c 17       		.byte	23
+ 1389 012d 03       		.byte	3
+ 1390 012e 19       		.byte	25
+ 1391 012f 03       		.byte	3
+ 1392 0130 19       		.byte	25
+ 1393 0131 03       		.byte	3
+ 1394 0132 17       		.byte	23
+ 1395 0133 03       		.byte	3
+ 1396 0134 19       		.byte	25
+ 1397 0135 03       		.byte	3
+ 1398 0136 1F       		.byte	31
+ 1399 0137 02       		.byte	2
+ 1400 0138 1B       		.byte	27
+ 1401 0139 03       		.byte	3
+ 1402 013a 1A       		.byte	26
+ 1403 013b 03       		.byte	3
+ 1404 013c 1A       		.byte	26
+ 1405 013d 0E       		.byte	14
+ 1406 013e 1B       		.byte	27
+ 1407 013f 04       		.byte	4
+ 1408 0140 17       		.byte	23
+ 1409 0141 02       		.byte	2
+ 1410 0142 1A       		.byte	26
+ 1411 0143 03       		.byte	3
+ 1412 0144 1A       		.byte	26
+ 1413 0145 03       		.byte	3
+ 1414 0146 1A       		.byte	26
+ 1415 0147 0E       		.byte	14
+ 1416 0148 1B       		.byte	27
+ 1417 0149 04       		.byte	4
+ 1418 014a 17       		.byte	23
+ 1419 014b 16       		.byte	22
+ 1420 014c 1A       		.byte	26
+ 1421 014d 03       		.byte	3
+ 1422 014e 1A       		.byte	26
+ 1423 014f 03       		.byte	3
+ 1424 0150 1A       		.byte	26
+ 1425 0151 0E       		.byte	14
+ 1426 0152 1B       		.byte	27
+ 1427 0153 04       		.byte	4
+ 1428 0154 1A       		.byte	26
+ 1429 0155 03       		.byte	3
+ 1430 0156 19       		.byte	25
+ 1431 0157 03       		.byte	3
+ 1432 0158 17       		.byte	23
+ 1433 0159 03       		.byte	3
+ARM GAS  /tmp/ccj7LDw5.s 			page 29
+
+
+ 1434 015a 16       		.byte	22
+ 1435 015b 03       		.byte	3
+ 1436 015c 0F       		.byte	15
+ 1437 015d 02       		.byte	2
+ 1438 015e 10       		.byte	16
+ 1439 015f 03       		.byte	3
+ 1440 0160 15       		.byte	21
+ 1441 0161 00       		.byte	0
+ 1442 0162 00       		.byte	0
+ 1443 0163 00       		.byte	0
+ 1444 0164 00000000 		.space	174
+ 1444      00000000 
+ 1444      00000000 
+ 1444      00000000 
+ 1444      00000000 
+ 1445              		.section	.rodata.song5,"a",%progbits
+ 1446              		.align	2
+ 1447              		.set	.LANCHOR5,. + 0
+ 1450              	song5:
+ 1451 0000 736F6E67 		.ascii	"song5\000"
+ 1451      3500
+ 1452 0006 00000000 		.space	24
+ 1452      00000000 
+ 1452      00000000 
+ 1452      00000000 
+ 1452      00000000 
+ 1453 001e 0D       		.byte	13
+ 1454 001f 02       		.byte	2
+ 1455 0020 0D       		.byte	13
+ 1456 0021 03       		.byte	3
+ 1457 0022 0E       		.byte	14
+ 1458 0023 17       		.byte	23
+ 1459 0024 10       		.byte	16
+ 1460 0025 03       		.byte	3
+ 1461 0026 15       		.byte	21
+ 1462 0027 03       		.byte	3
+ 1463 0028 1A       		.byte	26
+ 1464 0029 03       		.byte	3
+ 1465 002a 1B       		.byte	27
+ 1466 002b 02       		.byte	2
+ 1467 002c 19       		.byte	25
+ 1468 002d 03       		.byte	3
+ 1469 002e 19       		.byte	25
+ 1470 002f 03       		.byte	3
+ 1471 0030 19       		.byte	25
+ 1472 0031 16       		.byte	22
+ 1473 0032 15       		.byte	21
+ 1474 0033 04       		.byte	4
+ 1475 0034 1B       		.byte	27
+ 1476 0035 04       		.byte	4
+ 1477 0036 15       		.byte	21
+ 1478 0037 01       		.byte	1
+ 1479 0038 15       		.byte	21
+ 1480 0039 66       		.byte	102
+ 1481 003a 15       		.byte	21
+ 1482 003b 04       		.byte	4
+ 1483 003c 15       		.byte	21
+ARM GAS  /tmp/ccj7LDw5.s 			page 30
+
+
+ 1484 003d 03       		.byte	3
+ 1485 003e 16       		.byte	22
+ 1486 003f 03       		.byte	3
+ 1487 0040 11       		.byte	17
+ 1488 0041 03       		.byte	3
+ 1489 0042 15       		.byte	21
+ 1490 0043 03       		.byte	3
+ 1491 0044 11       		.byte	17
+ 1492 0045 03       		.byte	3
+ 1493 0046 0F       		.byte	15
+ 1494 0047 7A       		.byte	122
+ 1495 0048 0D       		.byte	13
+ 1496 0049 03       		.byte	3
+ 1497 004a 10       		.byte	16
+ 1498 004b 03       		.byte	3
+ 1499 004c 0F       		.byte	15
+ 1500 004d 03       		.byte	3
+ 1501 004e 0F       		.byte	15
+ 1502 004f 03       		.byte	3
+ 1503 0050 0E       		.byte	14
+ 1504 0051 03       		.byte	3
+ 1505 0052 0E       		.byte	14
+ 1506 0053 03       		.byte	3
+ 1507 0054 15       		.byte	21
+ 1508 0055 02       		.byte	2
+ 1509 0056 0D       		.byte	13
+ 1510 0057 03       		.byte	3
+ 1511 0058 0D       		.byte	13
+ 1512 0059 02       		.byte	2
+ 1513 005a 16       		.byte	22
+ 1514 005b 02       		.byte	2
+ 1515 005c 15       		.byte	21
+ 1516 005d 16       		.byte	22
+ 1517 005e 16       		.byte	22
+ 1518 005f 04       		.byte	4
+ 1519 0060 17       		.byte	23
+ 1520 0061 04       		.byte	4
+ 1521 0062 18       		.byte	24
+ 1522 0063 03       		.byte	3
+ 1523 0064 17       		.byte	23
+ 1524 0065 03       		.byte	3
+ 1525 0066 17       		.byte	23
+ 1526 0067 03       		.byte	3
+ 1527 0068 16       		.byte	22
+ 1528 0069 03       		.byte	3
+ 1529 006a 15       		.byte	21
+ 1530 006b 02       		.byte	2
+ 1531 006c 10       		.byte	16
+ 1532 006d 02       		.byte	2
+ 1533 006e 16       		.byte	22
+ 1534 006f 14       		.byte	20
+ 1535 0070 0F       		.byte	15
+ 1536 0071 03       		.byte	3
+ 1537 0072 15       		.byte	21
+ 1538 0073 03       		.byte	3
+ 1539 0074 16       		.byte	22
+ 1540 0075 03       		.byte	3
+ARM GAS  /tmp/ccj7LDw5.s 			page 31
+
+
+ 1541 0076 17       		.byte	23
+ 1542 0077 03       		.byte	3
+ 1543 0078 16       		.byte	22
+ 1544 0079 03       		.byte	3
+ 1545 007a 15       		.byte	21
+ 1546 007b 02       		.byte	2
+ 1547 007c 17       		.byte	23
+ 1548 007d 02       		.byte	2
+ 1549 007e 16       		.byte	22
+ 1550 007f 66       		.byte	102
+ 1551 0080 11       		.byte	17
+ 1552 0081 03       		.byte	3
+ 1553 0082 0F       		.byte	15
+ 1554 0083 16       		.byte	22
+ 1555 0084 17       		.byte	23
+ 1556 0085 03       		.byte	3
+ 1557 0086 10       		.byte	16
+ 1558 0087 03       		.byte	3
+ 1559 0088 11       		.byte	17
+ 1560 0089 03       		.byte	3
+ 1561 008a 15       		.byte	21
+ 1562 008b 03       		.byte	3
+ 1563 008c 11       		.byte	17
+ 1564 008d 03       		.byte	3
+ 1565 008e 10       		.byte	16
+ 1566 008f 02       		.byte	2
+ 1567 0090 15       		.byte	21
+ 1568 0091 02       		.byte	2
+ 1569 0092 11       		.byte	17
+ 1570 0093 66       		.byte	102
+ 1571 0094 0D       		.byte	13
+ 1572 0095 03       		.byte	3
+ 1573 0096 0F       		.byte	15
+ 1574 0097 01       		.byte	1
+ 1575 0098 10       		.byte	16
+ 1576 0099 03       		.byte	3
+ 1577 009a 0F       		.byte	15
+ 1578 009b 03       		.byte	3
+ 1579 009c 0F       		.byte	15
+ 1580 009d 03       		.byte	3
+ 1581 009e 0E       		.byte	14
+ 1582 009f 03       		.byte	3
+ 1583 00a0 0E       		.byte	14
+ 1584 00a1 03       		.byte	3
+ 1585 00a2 15       		.byte	21
+ 1586 00a3 66       		.byte	102
+ 1587 00a4 16       		.byte	22
+ 1588 00a5 66       		.byte	102
+ 1589 00a6 17       		.byte	23
+ 1590 00a7 03       		.byte	3
+ 1591 00a8 15       		.byte	21
+ 1592 00a9 02       		.byte	2
+ 1593 00aa 10       		.byte	16
+ 1594 00ab 03       		.byte	3
+ 1595 00ac 11       		.byte	17
+ 1596 00ad 03       		.byte	3
+ 1597 00ae 15       		.byte	21
+ARM GAS  /tmp/ccj7LDw5.s 			page 32
+
+
+ 1598 00af 02       		.byte	2
+ 1599 00b0 10       		.byte	16
+ 1600 00b1 02       		.byte	2
+ 1601 00b2 15       		.byte	21
+ 1602 00b3 03       		.byte	3
+ 1603 00b4 1A       		.byte	26
+ 1604 00b5 02       		.byte	2
+ 1605 00b6 19       		.byte	25
+ 1606 00b7 03       		.byte	3
+ 1607 00b8 19       		.byte	25
+ 1608 00b9 0A       		.byte	10
+ 1609 00ba 19       		.byte	25
+ 1610 00bb 00       		.byte	0
+ 1611 00bc 16       		.byte	22
+ 1612 00bd 03       		.byte	3
+ 1613 00be 15       		.byte	21
+ 1614 00bf 03       		.byte	3
+ 1615 00c0 19       		.byte	25
+ 1616 00c1 03       		.byte	3
+ 1617 00c2 17       		.byte	23
+ 1618 00c3 02       		.byte	2
+ 1619 00c4 17       		.byte	23
+ 1620 00c5 03       		.byte	3
+ 1621 00c6 16       		.byte	22
+ 1622 00c7 03       		.byte	3
+ 1623 00c8 15       		.byte	21
+ 1624 00c9 03       		.byte	3
+ 1625 00ca 11       		.byte	17
+ 1626 00cb 03       		.byte	3
+ 1627 00cc 15       		.byte	21
+ 1628 00cd 03       		.byte	3
+ 1629 00ce 10       		.byte	16
+ 1630 00cf 03       		.byte	3
+ 1631 00d0 17       		.byte	23
+ 1632 00d1 02       		.byte	2
+ 1633 00d2 10       		.byte	16
+ 1634 00d3 0D       		.byte	13
+ 1635 00d4 10       		.byte	16
+ 1636 00d5 02       		.byte	2
+ 1637 00d6 15       		.byte	21
+ 1638 00d7 03       		.byte	3
+ 1639 00d8 16       		.byte	22
+ 1640 00d9 04       		.byte	4
+ 1641 00da 15       		.byte	21
+ 1642 00db 04       		.byte	4
+ 1643 00dc 1A       		.byte	26
+ 1644 00dd 03       		.byte	3
+ 1645 00de 18       		.byte	24
+ 1646 00df 03       		.byte	3
+ 1647 00e0 18       		.byte	24
+ 1648 00e1 03       		.byte	3
+ 1649 00e2 17       		.byte	23
+ 1650 00e3 03       		.byte	3
+ 1651 00e4 18       		.byte	24
+ 1652 00e5 03       		.byte	3
+ 1653 00e6 10       		.byte	16
+ 1654 00e7 03       		.byte	3
+ARM GAS  /tmp/ccj7LDw5.s 			page 33
+
+
+ 1655 00e8 11       		.byte	17
+ 1656 00e9 03       		.byte	3
+ 1657 00ea 15       		.byte	21
+ 1658 00eb 03       		.byte	3
+ 1659 00ec 16       		.byte	22
+ 1660 00ed 14       		.byte	20
+ 1661 00ee 17       		.byte	23
+ 1662 00ef 04       		.byte	4
+ 1663 00f0 18       		.byte	24
+ 1664 00f1 04       		.byte	4
+ 1665 00f2 19       		.byte	25
+ 1666 00f3 03       		.byte	3
+ 1667 00f4 19       		.byte	25
+ 1668 00f5 03       		.byte	3
+ 1669 00f6 19       		.byte	25
+ 1670 00f7 03       		.byte	3
+ 1671 00f8 1A       		.byte	26
+ 1672 00f9 03       		.byte	3
+ 1673 00fa 15       		.byte	21
+ 1674 00fb 15       		.byte	21
+ 1675 00fc 19       		.byte	25
+ 1676 00fd 03       		.byte	3
+ 1677 00fe 11       		.byte	17
+ 1678 00ff 03       		.byte	3
+ 1679 0100 16       		.byte	22
+ 1680 0101 03       		.byte	3
+ 1681 0102 15       		.byte	21
+ 1682 0103 16       		.byte	22
+ 1683 0104 16       		.byte	22
+ 1684 0105 04       		.byte	4
+ 1685 0106 17       		.byte	23
+ 1686 0107 04       		.byte	4
+ 1687 0108 10       		.byte	16
+ 1688 0109 02       		.byte	2
+ 1689 010a 15       		.byte	21
+ 1690 010b 02       		.byte	2
+ 1691 010c 18       		.byte	24
+ 1692 010d 03       		.byte	3
+ 1693 010e 17       		.byte	23
+ 1694 010f 04       		.byte	4
+ 1695 0110 18       		.byte	24
+ 1696 0111 0E       		.byte	14
+ 1697 0112 18       		.byte	24
+ 1698 0113 03       		.byte	3
+ 1699 0114 19       		.byte	25
+ 1700 0115 03       		.byte	3
+ 1701 0116 16       		.byte	22
+ 1702 0117 64       		.byte	100
+ 1703 0118 15       		.byte	21
+ 1704 0119 03       		.byte	3
+ 1705 011a 16       		.byte	22
+ 1706 011b 0E       		.byte	14
+ 1707 011c 15       		.byte	21
+ 1708 011d 04       		.byte	4
+ 1709 011e 19       		.byte	25
+ 1710 011f 03       		.byte	3
+ 1711 0120 17       		.byte	23
+ARM GAS  /tmp/ccj7LDw5.s 			page 34
+
+
+ 1712 0121 02       		.byte	2
+ 1713 0122 17       		.byte	23
+ 1714 0123 03       		.byte	3
+ 1715 0124 16       		.byte	22
+ 1716 0125 03       		.byte	3
+ 1717 0126 15       		.byte	21
+ 1718 0127 03       		.byte	3
+ 1719 0128 11       		.byte	17
+ 1720 0129 03       		.byte	3
+ 1721 012a 15       		.byte	21
+ 1722 012b 03       		.byte	3
+ 1723 012c 10       		.byte	16
+ 1724 012d 03       		.byte	3
+ 1725 012e 0D       		.byte	13
+ 1726 012f 02       		.byte	2
+ 1727 0130 10       		.byte	16
+ 1728 0131 0D       		.byte	13
+ 1729 0132 10       		.byte	16
+ 1730 0133 02       		.byte	2
+ 1731 0134 15       		.byte	21
+ 1732 0135 03       		.byte	3
+ 1733 0136 16       		.byte	22
+ 1734 0137 04       		.byte	4
+ 1735 0138 15       		.byte	21
+ 1736 0139 04       		.byte	4
+ 1737 013a 1A       		.byte	26
+ 1738 013b 03       		.byte	3
+ 1739 013c 18       		.byte	24
+ 1740 013d 03       		.byte	3
+ 1741 013e 18       		.byte	24
+ 1742 013f 03       		.byte	3
+ 1743 0140 17       		.byte	23
+ 1744 0141 03       		.byte	3
+ 1745 0142 18       		.byte	24
+ 1746 0143 03       		.byte	3
+ 1747 0144 10       		.byte	16
+ 1748 0145 03       		.byte	3
+ 1749 0146 11       		.byte	17
+ 1750 0147 03       		.byte	3
+ 1751 0148 15       		.byte	21
+ 1752 0149 03       		.byte	3
+ 1753 014a 16       		.byte	22
+ 1754 014b 14       		.byte	20
+ 1755 014c 17       		.byte	23
+ 1756 014d 04       		.byte	4
+ 1757 014e 18       		.byte	24
+ 1758 014f 04       		.byte	4
+ 1759 0150 19       		.byte	25
+ 1760 0151 03       		.byte	3
+ 1761 0152 19       		.byte	25
+ 1762 0153 03       		.byte	3
+ 1763 0154 19       		.byte	25
+ 1764 0155 03       		.byte	3
+ 1765 0156 1A       		.byte	26
+ 1766 0157 03       		.byte	3
+ 1767 0158 15       		.byte	21
+ 1768 0159 15       		.byte	21
+ARM GAS  /tmp/ccj7LDw5.s 			page 35
+
+
+ 1769 015a 19       		.byte	25
+ 1770 015b 03       		.byte	3
+ 1771 015c 11       		.byte	17
+ 1772 015d 03       		.byte	3
+ 1773 015e 16       		.byte	22
+ 1774 015f 03       		.byte	3
+ 1775 0160 15       		.byte	21
+ 1776 0161 16       		.byte	22
+ 1777 0162 16       		.byte	22
+ 1778 0163 04       		.byte	4
+ 1779 0164 17       		.byte	23
+ 1780 0165 04       		.byte	4
+ 1781 0166 18       		.byte	24
+ 1782 0167 02       		.byte	2
+ 1783 0168 10       		.byte	16
+ 1784 0169 02       		.byte	2
+ 1785 016a 18       		.byte	24
+ 1786 016b 03       		.byte	3
+ 1787 016c 17       		.byte	23
+ 1788 016d 03       		.byte	3
+ 1789 016e 15       		.byte	21
+ 1790 016f 03       		.byte	3
+ 1791 0170 16       		.byte	22
+ 1792 0171 03       		.byte	3
+ 1793 0172 15       		.byte	21
+ 1794 0173 00       		.byte	0
+ 1795 0174 00       		.byte	0
+ 1796 0175 00       		.byte	0
+ 1797 0176 00000000 		.space	156
+ 1797      00000000 
+ 1797      00000000 
+ 1797      00000000 
+ 1797      00000000 
+ 1798              		.text
+ 1799              	.Letext0:
+ 1800              		.file 2 "rt-thread/include/rtdef.h"
+ 1801              		.file 3 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/machine/_default_types.h"
+ 1802              		.file 4 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/lock.h"
+ 1803              		.file 5 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_types.h"
+ 1804              		.file 6 "/opt/gcc-arm-none-eabi-6-2017-q2-update/lib/gcc/arm-none-eabi/6.3.1/include/stddef.h"
+ 1805              		.file 7 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/reent.h"
+ 1806              		.file 8 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_stdint.h"
+ 1807              		.file 9 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/time.h"
+ 1808              		.file 10 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/errno.h"
+ 1809              		.file 11 "rt-thread/components/finsh/finsh_api.h"
+ 1810              		.file 12 "hardware/decode/decode.h"
+ 1811              		.file 13 "hardware/player/player.h"
+ 1812              		.file 14 "CORE/core_cm4.h"
+ 1813              		.file 15 "USER/system_stm32f4xx.h"
+ 1814              		.file 16 "HALLIB/Inc/stm32f4xx_hal.h"
+ 1815              		.file 17 "board/board.h"
+ 1816              		.file 18 "hardware/LCD/font.h"
+ 1817              		.file 19 "SYSTEM/sys/sys.h"
+ 1818              		.file 20 "hardware/LCD/lcd.h"
+ 1819              		.file 21 "hardware/player/song.h"
+ 1820              		.file 22 "hardware/key/key.h"
+ 1821              		.file 23 "hardware/beep/beep.h"
+ARM GAS  /tmp/ccj7LDw5.s 			page 36
+
+
+ 1822              		.file 24 "hardware/LED/led.h"
+ 1823              		.file 25 "rt-thread/include/rtthread.h"
+ARM GAS  /tmp/ccj7LDw5.s 			page 37
+
+
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 main.c
+     /tmp/ccj7LDw5.s:18     .text.audio_control:0000000000000000 $t
+     /tmp/ccj7LDw5.s:25     .text.audio_control:0000000000000000 audio_control
+     /tmp/ccj7LDw5.s:49     .text.audio_control:0000000000000010 $d
+     /tmp/ccj7LDw5.s:54     .text.decode_read:0000000000000000 $t
+     /tmp/ccj7LDw5.s:61     .text.decode_read:0000000000000000 decode_read
+     /tmp/ccj7LDw5.s:85     .text.audio_write:0000000000000000 $t
+     /tmp/ccj7LDw5.s:92     .text.audio_write:0000000000000000 audio_write
+     /tmp/ccj7LDw5.s:139    .text.audio_write:000000000000002c $d
+     /tmp/ccj7LDw5.s:144    .text.decode_control:0000000000000000 $t
+     /tmp/ccj7LDw5.s:151    .text.decode_control:0000000000000000 decode_control
+     /tmp/ccj7LDw5.s:193    .text.audio_init:0000000000000000 $t
+     /tmp/ccj7LDw5.s:200    .text.audio_init:0000000000000000 audio_init
+     /tmp/ccj7LDw5.s:224    .text.audio_open:0000000000000000 $t
+     /tmp/ccj7LDw5.s:231    .text.audio_open:0000000000000000 audio_open
+     /tmp/ccj7LDw5.s:255    .text.audio_close:0000000000000000 $t
+     /tmp/ccj7LDw5.s:262    .text.audio_close:0000000000000000 audio_close
+     /tmp/ccj7LDw5.s:286    .text.player_init:0000000000000000 $t
+     /tmp/ccj7LDw5.s:293    .text.player_init:0000000000000000 player_init
+     /tmp/ccj7LDw5.s:380    .text.player_init:0000000000000070 $d
+                            *COM*:000000000000000c decode
+                            *COM*:0000000000000014 audio
+                            *COM*:0000000000000040 player
+     /tmp/ccj7LDw5.s:400    .text.main:0000000000000000 $t
+     /tmp/ccj7LDw5.s:407    .text.main:0000000000000000 main
+     /tmp/ccj7LDw5.s:443    .data.beep_volume:0000000000000000 beep_volume
+     /tmp/ccj7LDw5.s:1450   .rodata.song5:0000000000000000 song5
+     /tmp/ccj7LDw5.s:1115   .rodata.song4:0000000000000000 song4
+     /tmp/ccj7LDw5.s:894    .rodata.song3:0000000000000000 song3
+     /tmp/ccj7LDw5.s:525    .rodata.song2:0000000000000000 song2
+     /tmp/ccj7LDw5.s:450    .rodata.song1:0000000000000000 song1
+     /tmp/ccj7LDw5.s:446    .rodata.song1:0000000000000000 $d
+     /tmp/ccj7LDw5.s:521    .rodata.song2:0000000000000000 $d
+     /tmp/ccj7LDw5.s:890    .rodata.song3:0000000000000000 $d
+     /tmp/ccj7LDw5.s:1111   .rodata.song4:0000000000000000 $d
+     /tmp/ccj7LDw5.s:1446   .rodata.song5:0000000000000000 $d
+                     .debug_frame:0000000000000010 $d
+
+UNDEFINED SYMBOLS
+beep_song_get_data
+led_toggle
+beep_on
+beep_set
+rt_thread_mdelay
+beep_off
+beep_song_get_name
+beep_song_get_len
+beep_init
+led_init
+led_on
+led_off
+player_add_song
+player_start
+player_control
+player_show
+beep_song_decode_init
+ARM GAS  /tmp/ccj7LDw5.s 			page 38
+
+
+key_init

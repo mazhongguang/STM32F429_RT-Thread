@@ -1,0 +1,549 @@
+ARM GAS  /tmp/cct6IP9m.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.eabi_attribute 27, 1
+   3              		.eabi_attribute 28, 1
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.file	"i2c_core.c"
+  14              		.text
+  15              	.Ltext0:
+  16              		.cfi_sections	.debug_frame
+  17              		.section	.text.rt_i2c_core_init,"ax",%progbits
+  18              		.align	1
+  19              		.global	rt_i2c_core_init
+  20              		.syntax unified
+  21              		.thumb
+  22              		.thumb_func
+  23              		.fpu fpv4-sp-d16
+  25              	rt_i2c_core_init:
+  26              	.LFB24:
+  27              		.file 1 "rt-thread/components/drivers/i2c/i2c_core.c"
+   1:rt-thread/components/drivers/i2c/i2c_core.c **** /*
+   2:rt-thread/components/drivers/i2c/i2c_core.c ****  * Copyright (c) 2006-2018, RT-Thread Development Team
+   3:rt-thread/components/drivers/i2c/i2c_core.c ****  *
+   4:rt-thread/components/drivers/i2c/i2c_core.c ****  * SPDX-License-Identifier: Apache-2.0
+   5:rt-thread/components/drivers/i2c/i2c_core.c ****  *
+   6:rt-thread/components/drivers/i2c/i2c_core.c ****  * Change Logs:
+   7:rt-thread/components/drivers/i2c/i2c_core.c ****  * Date           Author        Notes
+   8:rt-thread/components/drivers/i2c/i2c_core.c ****  * 2012-04-25     weety         first version
+   9:rt-thread/components/drivers/i2c/i2c_core.c ****  */
+  10:rt-thread/components/drivers/i2c/i2c_core.c **** 
+  11:rt-thread/components/drivers/i2c/i2c_core.c **** #include <rtdevice.h>
+  12:rt-thread/components/drivers/i2c/i2c_core.c **** 
+  13:rt-thread/components/drivers/i2c/i2c_core.c **** #define DBG_TAG               "I2C"
+  14:rt-thread/components/drivers/i2c/i2c_core.c **** #ifdef RT_I2C_DEBUG
+  15:rt-thread/components/drivers/i2c/i2c_core.c **** #define DBG_LVL               DBG_LOG
+  16:rt-thread/components/drivers/i2c/i2c_core.c **** #else
+  17:rt-thread/components/drivers/i2c/i2c_core.c **** #define DBG_LVL               DBG_INFO
+  18:rt-thread/components/drivers/i2c/i2c_core.c **** #endif
+  19:rt-thread/components/drivers/i2c/i2c_core.c **** #include <rtdbg.h>
+  20:rt-thread/components/drivers/i2c/i2c_core.c **** 
+  21:rt-thread/components/drivers/i2c/i2c_core.c **** rt_err_t rt_i2c_bus_device_register(struct rt_i2c_bus_device *bus,
+  22:rt-thread/components/drivers/i2c/i2c_core.c ****                                     const char               *bus_name)
+  23:rt-thread/components/drivers/i2c/i2c_core.c **** {
+  24:rt-thread/components/drivers/i2c/i2c_core.c ****     rt_err_t res = RT_EOK;
+  25:rt-thread/components/drivers/i2c/i2c_core.c **** 
+  26:rt-thread/components/drivers/i2c/i2c_core.c **** 	rt_mutex_init(&bus->lock, "i2c_bus_lock", RT_IPC_FLAG_FIFO);
+  27:rt-thread/components/drivers/i2c/i2c_core.c **** 
+  28:rt-thread/components/drivers/i2c/i2c_core.c **** 	if (bus->timeout == 0) bus->timeout = RT_TICK_PER_SECOND;
+  29:rt-thread/components/drivers/i2c/i2c_core.c **** 
+  30:rt-thread/components/drivers/i2c/i2c_core.c **** 	res = rt_i2c_bus_device_device_init(bus, bus_name);
+  31:rt-thread/components/drivers/i2c/i2c_core.c **** 
+ARM GAS  /tmp/cct6IP9m.s 			page 2
+
+
+  32:rt-thread/components/drivers/i2c/i2c_core.c **** 	LOG_I("I2C bus [%s] registered", bus_name);
+  33:rt-thread/components/drivers/i2c/i2c_core.c **** 
+  34:rt-thread/components/drivers/i2c/i2c_core.c **** 	return res;
+  35:rt-thread/components/drivers/i2c/i2c_core.c **** }
+  36:rt-thread/components/drivers/i2c/i2c_core.c **** 
+  37:rt-thread/components/drivers/i2c/i2c_core.c **** struct rt_i2c_bus_device *rt_i2c_bus_device_find(const char *bus_name)
+  38:rt-thread/components/drivers/i2c/i2c_core.c **** {
+  39:rt-thread/components/drivers/i2c/i2c_core.c ****     struct rt_i2c_bus_device *bus;
+  40:rt-thread/components/drivers/i2c/i2c_core.c ****     rt_device_t dev = rt_device_find(bus_name);
+  41:rt-thread/components/drivers/i2c/i2c_core.c ****     if (dev == RT_NULL || dev->type != RT_Device_Class_I2CBUS)
+  42:rt-thread/components/drivers/i2c/i2c_core.c ****     {
+  43:rt-thread/components/drivers/i2c/i2c_core.c ****         LOG_E("I2C bus %s not exist", bus_name);
+  44:rt-thread/components/drivers/i2c/i2c_core.c **** 
+  45:rt-thread/components/drivers/i2c/i2c_core.c ****         return RT_NULL;
+  46:rt-thread/components/drivers/i2c/i2c_core.c ****     }
+  47:rt-thread/components/drivers/i2c/i2c_core.c **** 
+  48:rt-thread/components/drivers/i2c/i2c_core.c ****     bus = (struct rt_i2c_bus_device *)dev->user_data;
+  49:rt-thread/components/drivers/i2c/i2c_core.c **** 
+  50:rt-thread/components/drivers/i2c/i2c_core.c ****     return bus;
+  51:rt-thread/components/drivers/i2c/i2c_core.c **** }
+  52:rt-thread/components/drivers/i2c/i2c_core.c **** 
+  53:rt-thread/components/drivers/i2c/i2c_core.c **** rt_size_t rt_i2c_transfer(struct rt_i2c_bus_device *bus,
+  54:rt-thread/components/drivers/i2c/i2c_core.c ****                           struct rt_i2c_msg         msgs[],
+  55:rt-thread/components/drivers/i2c/i2c_core.c ****                           rt_uint32_t               num)
+  56:rt-thread/components/drivers/i2c/i2c_core.c **** {
+  57:rt-thread/components/drivers/i2c/i2c_core.c ****     rt_size_t ret;
+  58:rt-thread/components/drivers/i2c/i2c_core.c **** 
+  59:rt-thread/components/drivers/i2c/i2c_core.c ****     if (bus->ops->master_xfer)
+  60:rt-thread/components/drivers/i2c/i2c_core.c ****     {
+  61:rt-thread/components/drivers/i2c/i2c_core.c **** #ifdef RT_I2C_DEBUG
+  62:rt-thread/components/drivers/i2c/i2c_core.c ****         for (ret = 0; ret < num; ret++)
+  63:rt-thread/components/drivers/i2c/i2c_core.c ****         {
+  64:rt-thread/components/drivers/i2c/i2c_core.c ****             LOG_D("msgs[%d] %c, addr=0x%02x, len=%d", ret,
+  65:rt-thread/components/drivers/i2c/i2c_core.c ****                   (msgs[ret].flags & RT_I2C_RD) ? 'R' : 'W',
+  66:rt-thread/components/drivers/i2c/i2c_core.c ****                   msgs[ret].addr, msgs[ret].len);
+  67:rt-thread/components/drivers/i2c/i2c_core.c ****         }
+  68:rt-thread/components/drivers/i2c/i2c_core.c **** #endif
+  69:rt-thread/components/drivers/i2c/i2c_core.c **** 
+  70:rt-thread/components/drivers/i2c/i2c_core.c ****         rt_mutex_take(&bus->lock, RT_WAITING_FOREVER);
+  71:rt-thread/components/drivers/i2c/i2c_core.c ****         ret = bus->ops->master_xfer(bus, msgs, num);
+  72:rt-thread/components/drivers/i2c/i2c_core.c ****         rt_mutex_release(&bus->lock);
+  73:rt-thread/components/drivers/i2c/i2c_core.c **** 
+  74:rt-thread/components/drivers/i2c/i2c_core.c ****         return ret;
+  75:rt-thread/components/drivers/i2c/i2c_core.c ****     }
+  76:rt-thread/components/drivers/i2c/i2c_core.c ****     else
+  77:rt-thread/components/drivers/i2c/i2c_core.c ****     {
+  78:rt-thread/components/drivers/i2c/i2c_core.c ****         LOG_E("I2C bus operation not supported");
+  79:rt-thread/components/drivers/i2c/i2c_core.c **** 
+  80:rt-thread/components/drivers/i2c/i2c_core.c ****         return 0;
+  81:rt-thread/components/drivers/i2c/i2c_core.c ****     }
+  82:rt-thread/components/drivers/i2c/i2c_core.c **** }
+  83:rt-thread/components/drivers/i2c/i2c_core.c **** 
+  84:rt-thread/components/drivers/i2c/i2c_core.c **** rt_size_t rt_i2c_master_send(struct rt_i2c_bus_device *bus,
+  85:rt-thread/components/drivers/i2c/i2c_core.c ****                              rt_uint16_t               addr,
+  86:rt-thread/components/drivers/i2c/i2c_core.c ****                              rt_uint16_t               flags,
+  87:rt-thread/components/drivers/i2c/i2c_core.c ****                              const rt_uint8_t         *buf,
+  88:rt-thread/components/drivers/i2c/i2c_core.c ****                              rt_uint32_t               count)
+ARM GAS  /tmp/cct6IP9m.s 			page 3
+
+
+  89:rt-thread/components/drivers/i2c/i2c_core.c **** {
+  90:rt-thread/components/drivers/i2c/i2c_core.c ****     rt_err_t ret;
+  91:rt-thread/components/drivers/i2c/i2c_core.c ****     struct rt_i2c_msg msg;
+  92:rt-thread/components/drivers/i2c/i2c_core.c **** 
+  93:rt-thread/components/drivers/i2c/i2c_core.c ****     msg.addr  = addr;
+  94:rt-thread/components/drivers/i2c/i2c_core.c ****     msg.flags = flags;
+  95:rt-thread/components/drivers/i2c/i2c_core.c ****     msg.len   = count;
+  96:rt-thread/components/drivers/i2c/i2c_core.c ****     msg.buf   = (rt_uint8_t *)buf;
+  97:rt-thread/components/drivers/i2c/i2c_core.c **** 
+  98:rt-thread/components/drivers/i2c/i2c_core.c ****     ret = rt_i2c_transfer(bus, &msg, 1);
+  99:rt-thread/components/drivers/i2c/i2c_core.c **** 
+ 100:rt-thread/components/drivers/i2c/i2c_core.c ****     return (ret > 0) ? count : ret;
+ 101:rt-thread/components/drivers/i2c/i2c_core.c **** }
+ 102:rt-thread/components/drivers/i2c/i2c_core.c **** 
+ 103:rt-thread/components/drivers/i2c/i2c_core.c **** rt_size_t rt_i2c_master_recv(struct rt_i2c_bus_device *bus,
+ 104:rt-thread/components/drivers/i2c/i2c_core.c ****                              rt_uint16_t               addr,
+ 105:rt-thread/components/drivers/i2c/i2c_core.c ****                              rt_uint16_t               flags,
+ 106:rt-thread/components/drivers/i2c/i2c_core.c ****                              rt_uint8_t               *buf,
+ 107:rt-thread/components/drivers/i2c/i2c_core.c ****                              rt_uint32_t               count)
+ 108:rt-thread/components/drivers/i2c/i2c_core.c **** {
+ 109:rt-thread/components/drivers/i2c/i2c_core.c ****     rt_err_t ret;
+ 110:rt-thread/components/drivers/i2c/i2c_core.c ****     struct rt_i2c_msg msg;
+ 111:rt-thread/components/drivers/i2c/i2c_core.c ****     RT_ASSERT(bus != RT_NULL);
+ 112:rt-thread/components/drivers/i2c/i2c_core.c **** 
+ 113:rt-thread/components/drivers/i2c/i2c_core.c ****     msg.addr   = addr;
+ 114:rt-thread/components/drivers/i2c/i2c_core.c ****     msg.flags  = flags | RT_I2C_RD;
+ 115:rt-thread/components/drivers/i2c/i2c_core.c ****     msg.len    = count;
+ 116:rt-thread/components/drivers/i2c/i2c_core.c ****     msg.buf    = buf;
+ 117:rt-thread/components/drivers/i2c/i2c_core.c **** 
+ 118:rt-thread/components/drivers/i2c/i2c_core.c ****     ret = rt_i2c_transfer(bus, &msg, 1);
+ 119:rt-thread/components/drivers/i2c/i2c_core.c **** 
+ 120:rt-thread/components/drivers/i2c/i2c_core.c ****     return (ret > 0) ? count : ret;
+ 121:rt-thread/components/drivers/i2c/i2c_core.c **** }
+ 122:rt-thread/components/drivers/i2c/i2c_core.c **** 
+ 123:rt-thread/components/drivers/i2c/i2c_core.c **** int rt_i2c_core_init(void)
+ 124:rt-thread/components/drivers/i2c/i2c_core.c **** {
+  28              		.loc 1 124 0
+  29              		.cfi_startproc
+  30              		@ args = 0, pretend = 0, frame = 0
+  31              		@ frame_needed = 0, uses_anonymous_args = 0
+  32              		@ link register save eliminated.
+ 125:rt-thread/components/drivers/i2c/i2c_core.c ****     return 0;
+ 126:rt-thread/components/drivers/i2c/i2c_core.c **** }
+  33              		.loc 1 126 0
+  34 0000 0020     		movs	r0, #0
+  35 0002 7047     		bx	lr
+  36              		.cfi_endproc
+  37              	.LFE24:
+  39              		.section	.text.rt_i2c_bus_device_register,"ax",%progbits
+  40              		.align	1
+  41              		.global	rt_i2c_bus_device_register
+  42              		.syntax unified
+  43              		.thumb
+  44              		.thumb_func
+  45              		.fpu fpv4-sp-d16
+  47              	rt_i2c_bus_device_register:
+  48              	.LFB19:
+ARM GAS  /tmp/cct6IP9m.s 			page 4
+
+
+  23:rt-thread/components/drivers/i2c/i2c_core.c ****     rt_err_t res = RT_EOK;
+  49              		.loc 1 23 0
+  50              		.cfi_startproc
+  51              		@ args = 0, pretend = 0, frame = 0
+  52              		@ frame_needed = 0, uses_anonymous_args = 0
+  53              	.LVL0:
+  54 0000 38B5     		push	{r3, r4, r5, lr}
+  55              	.LCFI0:
+  56              		.cfi_def_cfa_offset 16
+  57              		.cfi_offset 3, -16
+  58              		.cfi_offset 4, -12
+  59              		.cfi_offset 5, -8
+  60              		.cfi_offset 14, -4
+  61 0002 0446     		mov	r4, r0
+  62 0004 0D46     		mov	r5, r1
+  63              	.LVL1:
+  26:rt-thread/components/drivers/i2c/i2c_core.c **** 
+  64              		.loc 1 26 0
+  65 0006 0022     		movs	r2, #0
+  66 0008 0649     		ldr	r1, .L5
+  67              	.LVL2:
+  68 000a 3430     		adds	r0, r0, #52
+  69              	.LVL3:
+  70 000c FFF7FEFF 		bl	rt_mutex_init
+  71              	.LVL4:
+  28:rt-thread/components/drivers/i2c/i2c_core.c **** 
+  72              		.loc 1 28 0
+  73 0010 A36D     		ldr	r3, [r4, #88]
+  74 0012 13B9     		cbnz	r3, .L3
+  28:rt-thread/components/drivers/i2c/i2c_core.c **** 
+  75              		.loc 1 28 0 is_stmt 0 discriminator 1
+  76 0014 4FF47A73 		mov	r3, #1000
+  77 0018 A365     		str	r3, [r4, #88]
+  78              	.L3:
+  30:rt-thread/components/drivers/i2c/i2c_core.c **** 
+  79              		.loc 1 30 0 is_stmt 1
+  80 001a 2946     		mov	r1, r5
+  81 001c 2046     		mov	r0, r4
+  82 001e FFF7FEFF 		bl	rt_i2c_bus_device_device_init
+  83              	.LVL5:
+  35:rt-thread/components/drivers/i2c/i2c_core.c **** 
+  84              		.loc 1 35 0
+  85 0022 38BD     		pop	{r3, r4, r5, pc}
+  86              	.LVL6:
+  87              	.L6:
+  88              		.align	2
+  89              	.L5:
+  90 0024 00000000 		.word	.LC0
+  91              		.cfi_endproc
+  92              	.LFE19:
+  94              		.section	.text.rt_i2c_bus_device_find,"ax",%progbits
+  95              		.align	1
+  96              		.global	rt_i2c_bus_device_find
+  97              		.syntax unified
+  98              		.thumb
+  99              		.thumb_func
+ 100              		.fpu fpv4-sp-d16
+ARM GAS  /tmp/cct6IP9m.s 			page 5
+
+
+ 102              	rt_i2c_bus_device_find:
+ 103              	.LFB20:
+  38:rt-thread/components/drivers/i2c/i2c_core.c ****     struct rt_i2c_bus_device *bus;
+ 104              		.loc 1 38 0
+ 105              		.cfi_startproc
+ 106              		@ args = 0, pretend = 0, frame = 0
+ 107              		@ frame_needed = 0, uses_anonymous_args = 0
+ 108              	.LVL7:
+ 109 0000 08B5     		push	{r3, lr}
+ 110              	.LCFI1:
+ 111              		.cfi_def_cfa_offset 8
+ 112              		.cfi_offset 3, -8
+ 113              		.cfi_offset 14, -4
+  40:rt-thread/components/drivers/i2c/i2c_core.c ****     if (dev == RT_NULL || dev->type != RT_Device_Class_I2CBUS)
+ 114              		.loc 1 40 0
+ 115 0002 FFF7FEFF 		bl	rt_device_find
+ 116              	.LVL8:
+  41:rt-thread/components/drivers/i2c/i2c_core.c ****     {
+ 117              		.loc 1 41 0
+ 118 0006 20B1     		cbz	r0, .L9
+  41:rt-thread/components/drivers/i2c/i2c_core.c ****     {
+ 119              		.loc 1 41 0 is_stmt 0 discriminator 1
+ 120 0008 027D     		ldrb	r2, [r0, #20]	@ zero_extendqisi2
+ 121 000a 082A     		cmp	r2, #8
+ 122 000c 03D1     		bne	.L10
+  48:rt-thread/components/drivers/i2c/i2c_core.c **** 
+ 123              		.loc 1 48 0 is_stmt 1
+ 124 000e 806A     		ldr	r0, [r0, #40]
+ 125              	.LVL9:
+  50:rt-thread/components/drivers/i2c/i2c_core.c **** }
+ 126              		.loc 1 50 0
+ 127 0010 08BD     		pop	{r3, pc}
+ 128              	.LVL10:
+ 129              	.L9:
+  45:rt-thread/components/drivers/i2c/i2c_core.c ****     }
+ 130              		.loc 1 45 0
+ 131 0012 0020     		movs	r0, #0
+ 132              	.LVL11:
+ 133 0014 08BD     		pop	{r3, pc}
+ 134              	.LVL12:
+ 135              	.L10:
+ 136 0016 0020     		movs	r0, #0
+ 137              	.LVL13:
+  51:rt-thread/components/drivers/i2c/i2c_core.c **** 
+ 138              		.loc 1 51 0
+ 139 0018 08BD     		pop	{r3, pc}
+ 140              		.cfi_endproc
+ 141              	.LFE20:
+ 143              		.section	.text.rt_i2c_transfer,"ax",%progbits
+ 144              		.align	1
+ 145              		.global	rt_i2c_transfer
+ 146              		.syntax unified
+ 147              		.thumb
+ 148              		.thumb_func
+ 149              		.fpu fpv4-sp-d16
+ 151              	rt_i2c_transfer:
+ 152              	.LFB21:
+ARM GAS  /tmp/cct6IP9m.s 			page 6
+
+
+  56:rt-thread/components/drivers/i2c/i2c_core.c ****     rt_size_t ret;
+ 153              		.loc 1 56 0
+ 154              		.cfi_startproc
+ 155              		@ args = 0, pretend = 0, frame = 0
+ 156              		@ frame_needed = 0, uses_anonymous_args = 0
+ 157              	.LVL14:
+ 158 0000 F8B5     		push	{r3, r4, r5, r6, r7, lr}
+ 159              	.LCFI2:
+ 160              		.cfi_def_cfa_offset 24
+ 161              		.cfi_offset 3, -24
+ 162              		.cfi_offset 4, -20
+ 163              		.cfi_offset 5, -16
+ 164              		.cfi_offset 6, -12
+ 165              		.cfi_offset 7, -8
+ 166              		.cfi_offset 14, -4
+  59:rt-thread/components/drivers/i2c/i2c_core.c ****     {
+ 167              		.loc 1 59 0
+ 168 0002 C36A     		ldr	r3, [r0, #44]
+ 169 0004 1B68     		ldr	r3, [r3]
+ 170 0006 ABB1     		cbz	r3, .L14
+ 171 0008 1646     		mov	r6, r2
+ 172 000a 0D46     		mov	r5, r1
+ 173 000c 0446     		mov	r4, r0
+  70:rt-thread/components/drivers/i2c/i2c_core.c ****         ret = bus->ops->master_xfer(bus, msgs, num);
+ 174              		.loc 1 70 0
+ 175 000e 00F13407 		add	r7, r0, #52
+ 176 0012 4FF0FF31 		mov	r1, #-1
+ 177              	.LVL15:
+ 178 0016 3846     		mov	r0, r7
+ 179              	.LVL16:
+ 180 0018 FFF7FEFF 		bl	rt_mutex_take
+ 181              	.LVL17:
+  71:rt-thread/components/drivers/i2c/i2c_core.c ****         rt_mutex_release(&bus->lock);
+ 182              		.loc 1 71 0
+ 183 001c E36A     		ldr	r3, [r4, #44]
+ 184 001e 1B68     		ldr	r3, [r3]
+ 185 0020 3246     		mov	r2, r6
+ 186 0022 2946     		mov	r1, r5
+ 187 0024 2046     		mov	r0, r4
+ 188 0026 9847     		blx	r3
+ 189              	.LVL18:
+ 190 0028 0446     		mov	r4, r0
+ 191              	.LVL19:
+  72:rt-thread/components/drivers/i2c/i2c_core.c **** 
+ 192              		.loc 1 72 0
+ 193 002a 3846     		mov	r0, r7
+ 194              	.LVL20:
+ 195 002c FFF7FEFF 		bl	rt_mutex_release
+ 196              	.LVL21:
+ 197              	.L12:
+  82:rt-thread/components/drivers/i2c/i2c_core.c **** 
+ 198              		.loc 1 82 0
+ 199 0030 2046     		mov	r0, r4
+ 200 0032 F8BD     		pop	{r3, r4, r5, r6, r7, pc}
+ 201              	.LVL22:
+ 202              	.L14:
+  80:rt-thread/components/drivers/i2c/i2c_core.c ****     }
+ARM GAS  /tmp/cct6IP9m.s 			page 7
+
+
+ 203              		.loc 1 80 0
+ 204 0034 0024     		movs	r4, #0
+ 205 0036 FBE7     		b	.L12
+ 206              		.cfi_endproc
+ 207              	.LFE21:
+ 209              		.section	.text.rt_i2c_master_send,"ax",%progbits
+ 210              		.align	1
+ 211              		.global	rt_i2c_master_send
+ 212              		.syntax unified
+ 213              		.thumb
+ 214              		.thumb_func
+ 215              		.fpu fpv4-sp-d16
+ 217              	rt_i2c_master_send:
+ 218              	.LFB22:
+  89:rt-thread/components/drivers/i2c/i2c_core.c ****     rt_err_t ret;
+ 219              		.loc 1 89 0
+ 220              		.cfi_startproc
+ 221              		@ args = 4, pretend = 0, frame = 16
+ 222              		@ frame_needed = 0, uses_anonymous_args = 0
+ 223              	.LVL23:
+ 224 0000 10B5     		push	{r4, lr}
+ 225              	.LCFI3:
+ 226              		.cfi_def_cfa_offset 8
+ 227              		.cfi_offset 4, -8
+ 228              		.cfi_offset 14, -4
+ 229 0002 84B0     		sub	sp, sp, #16
+ 230              	.LCFI4:
+ 231              		.cfi_def_cfa_offset 24
+ 232 0004 069C     		ldr	r4, [sp, #24]
+  93:rt-thread/components/drivers/i2c/i2c_core.c ****     msg.flags = flags;
+ 233              		.loc 1 93 0
+ 234 0006 ADF80410 		strh	r1, [sp, #4]	@ movhi
+  94:rt-thread/components/drivers/i2c/i2c_core.c ****     msg.len   = count;
+ 235              		.loc 1 94 0
+ 236 000a ADF80620 		strh	r2, [sp, #6]	@ movhi
+  95:rt-thread/components/drivers/i2c/i2c_core.c ****     msg.buf   = (rt_uint8_t *)buf;
+ 237              		.loc 1 95 0
+ 238 000e ADF80840 		strh	r4, [sp, #8]	@ movhi
+  96:rt-thread/components/drivers/i2c/i2c_core.c **** 
+ 239              		.loc 1 96 0
+ 240 0012 0393     		str	r3, [sp, #12]
+  98:rt-thread/components/drivers/i2c/i2c_core.c **** 
+ 241              		.loc 1 98 0
+ 242 0014 0122     		movs	r2, #1
+ 243              	.LVL24:
+ 244 0016 01A9     		add	r1, sp, #4
+ 245              	.LVL25:
+ 246 0018 FFF7FEFF 		bl	rt_i2c_transfer
+ 247              	.LVL26:
+ 100:rt-thread/components/drivers/i2c/i2c_core.c **** }
+ 248              		.loc 1 100 0
+ 249 001c 0028     		cmp	r0, #0
+ 250 001e 00DD     		ble	.L16
+ 251 0020 2046     		mov	r0, r4
+ 252              	.LVL27:
+ 253              	.L16:
+ 101:rt-thread/components/drivers/i2c/i2c_core.c **** 
+ARM GAS  /tmp/cct6IP9m.s 			page 8
+
+
+ 254              		.loc 1 101 0
+ 255 0022 04B0     		add	sp, sp, #16
+ 256              	.LCFI5:
+ 257              		.cfi_def_cfa_offset 8
+ 258              		@ sp needed
+ 259 0024 10BD     		pop	{r4, pc}
+ 260              		.cfi_endproc
+ 261              	.LFE22:
+ 263              		.section	.text.rt_i2c_master_recv,"ax",%progbits
+ 264              		.align	1
+ 265              		.global	rt_i2c_master_recv
+ 266              		.syntax unified
+ 267              		.thumb
+ 268              		.thumb_func
+ 269              		.fpu fpv4-sp-d16
+ 271              	rt_i2c_master_recv:
+ 272              	.LFB23:
+ 108:rt-thread/components/drivers/i2c/i2c_core.c ****     rt_err_t ret;
+ 273              		.loc 1 108 0
+ 274              		.cfi_startproc
+ 275              		@ args = 4, pretend = 0, frame = 16
+ 276              		@ frame_needed = 0, uses_anonymous_args = 0
+ 277              	.LVL28:
+ 278 0000 10B5     		push	{r4, lr}
+ 279              	.LCFI6:
+ 280              		.cfi_def_cfa_offset 8
+ 281              		.cfi_offset 4, -8
+ 282              		.cfi_offset 14, -4
+ 283 0002 84B0     		sub	sp, sp, #16
+ 284              	.LCFI7:
+ 285              		.cfi_def_cfa_offset 24
+ 286 0004 069C     		ldr	r4, [sp, #24]
+ 113:rt-thread/components/drivers/i2c/i2c_core.c ****     msg.flags  = flags | RT_I2C_RD;
+ 287              		.loc 1 113 0
+ 288 0006 ADF80410 		strh	r1, [sp, #4]	@ movhi
+ 114:rt-thread/components/drivers/i2c/i2c_core.c ****     msg.len    = count;
+ 289              		.loc 1 114 0
+ 290 000a 42F00102 		orr	r2, r2, #1
+ 291              	.LVL29:
+ 292 000e ADF80620 		strh	r2, [sp, #6]	@ movhi
+ 115:rt-thread/components/drivers/i2c/i2c_core.c ****     msg.buf    = buf;
+ 293              		.loc 1 115 0
+ 294 0012 ADF80840 		strh	r4, [sp, #8]	@ movhi
+ 116:rt-thread/components/drivers/i2c/i2c_core.c **** 
+ 295              		.loc 1 116 0
+ 296 0016 0393     		str	r3, [sp, #12]
+ 118:rt-thread/components/drivers/i2c/i2c_core.c **** 
+ 297              		.loc 1 118 0
+ 298 0018 0122     		movs	r2, #1
+ 299 001a 01A9     		add	r1, sp, #4
+ 300              	.LVL30:
+ 301 001c FFF7FEFF 		bl	rt_i2c_transfer
+ 302              	.LVL31:
+ 120:rt-thread/components/drivers/i2c/i2c_core.c **** }
+ 303              		.loc 1 120 0
+ 304 0020 0028     		cmp	r0, #0
+ 305 0022 00DD     		ble	.L19
+ARM GAS  /tmp/cct6IP9m.s 			page 9
+
+
+ 306 0024 2046     		mov	r0, r4
+ 307              	.LVL32:
+ 308              	.L19:
+ 121:rt-thread/components/drivers/i2c/i2c_core.c **** 
+ 309              		.loc 1 121 0
+ 310 0026 04B0     		add	sp, sp, #16
+ 311              	.LCFI8:
+ 312              		.cfi_def_cfa_offset 8
+ 313              		@ sp needed
+ 314 0028 10BD     		pop	{r4, pc}
+ 315              		.cfi_endproc
+ 316              	.LFE23:
+ 318              		.global	__rt_init_rt_i2c_core_init
+ 319              		.section	.rodata.rt_i2c_bus_device_register.str1.4,"aMS",%progbits,1
+ 320              		.align	2
+ 321              	.LC0:
+ 322 0000 6932635F 		.ascii	"i2c_bus_lock\000"
+ 322      6275735F 
+ 322      6C6F636B 
+ 322      00
+ 323              		.section	.rti_fn.4,"a",%progbits
+ 324              		.align	2
+ 327              	__rt_init_rt_i2c_core_init:
+ 328 0000 00000000 		.word	rt_i2c_core_init
+ 329              		.text
+ 330              	.Letext0:
+ 331              		.file 2 "rt-thread/include/rtdef.h"
+ 332              		.file 3 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/lock.h"
+ 333              		.file 4 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_types.h"
+ 334              		.file 5 "/opt/gcc-arm-none-eabi-6-2017-q2-update/lib/gcc/arm-none-eabi/6.3.1/include/stddef.h"
+ 335              		.file 6 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/reent.h"
+ 336              		.file 7 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/time.h"
+ 337              		.file 8 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/errno.h"
+ 338              		.file 9 "rt-thread/components/finsh/finsh_api.h"
+ 339              		.file 10 "rt-thread/components/drivers/include/drivers/i2c.h"
+ 340              		.file 11 "rt-thread/include/rtthread.h"
+ 341              		.file 12 "rt-thread/components/drivers/include/drivers/i2c_dev.h"
+ARM GAS  /tmp/cct6IP9m.s 			page 10
+
+
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 i2c_core.c
+     /tmp/cct6IP9m.s:18     .text.rt_i2c_core_init:0000000000000000 $t
+     /tmp/cct6IP9m.s:25     .text.rt_i2c_core_init:0000000000000000 rt_i2c_core_init
+     /tmp/cct6IP9m.s:40     .text.rt_i2c_bus_device_register:0000000000000000 $t
+     /tmp/cct6IP9m.s:47     .text.rt_i2c_bus_device_register:0000000000000000 rt_i2c_bus_device_register
+     /tmp/cct6IP9m.s:90     .text.rt_i2c_bus_device_register:0000000000000024 $d
+     /tmp/cct6IP9m.s:95     .text.rt_i2c_bus_device_find:0000000000000000 $t
+     /tmp/cct6IP9m.s:102    .text.rt_i2c_bus_device_find:0000000000000000 rt_i2c_bus_device_find
+     /tmp/cct6IP9m.s:144    .text.rt_i2c_transfer:0000000000000000 $t
+     /tmp/cct6IP9m.s:151    .text.rt_i2c_transfer:0000000000000000 rt_i2c_transfer
+     /tmp/cct6IP9m.s:210    .text.rt_i2c_master_send:0000000000000000 $t
+     /tmp/cct6IP9m.s:217    .text.rt_i2c_master_send:0000000000000000 rt_i2c_master_send
+     /tmp/cct6IP9m.s:264    .text.rt_i2c_master_recv:0000000000000000 $t
+     /tmp/cct6IP9m.s:271    .text.rt_i2c_master_recv:0000000000000000 rt_i2c_master_recv
+     /tmp/cct6IP9m.s:327    .rti_fn.4:0000000000000000 __rt_init_rt_i2c_core_init
+     /tmp/cct6IP9m.s:320    .rodata.rt_i2c_bus_device_register.str1.4:0000000000000000 $d
+     /tmp/cct6IP9m.s:324    .rti_fn.4:0000000000000000 $d
+                     .debug_frame:0000000000000010 $d
+
+UNDEFINED SYMBOLS
+rt_mutex_init
+rt_i2c_bus_device_device_init
+rt_device_find
+rt_mutex_take
+rt_mutex_release

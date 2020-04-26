@@ -1,0 +1,1232 @@
+ARM GAS  /tmp/ccdHtj5N.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.eabi_attribute 27, 1
+   3              		.eabi_attribute 28, 1
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.file	"rt_drv_pwm.c"
+  14              		.text
+  15              	.Ltext0:
+  16              		.cfi_sections	.debug_frame
+  17              		.section	.text._pwm_control,"ax",%progbits
+  18              		.align	1
+  19              		.syntax unified
+  20              		.thumb
+  21              		.thumb_func
+  22              		.fpu fpv4-sp-d16
+  24              	_pwm_control:
+  25              	.LFB19:
+  26              		.file 1 "rt-thread/components/drivers/misc/rt_drv_pwm.c"
+   1:rt-thread/components/drivers/misc/rt_drv_pwm.c **** /*
+   2:rt-thread/components/drivers/misc/rt_drv_pwm.c ****  * Copyright (c) 2006-2018, RT-Thread Development Team
+   3:rt-thread/components/drivers/misc/rt_drv_pwm.c ****  *
+   4:rt-thread/components/drivers/misc/rt_drv_pwm.c ****  * SPDX-License-Identifier: Apache-2.0
+   5:rt-thread/components/drivers/misc/rt_drv_pwm.c ****  *
+   6:rt-thread/components/drivers/misc/rt_drv_pwm.c ****  * Change Logs:
+   7:rt-thread/components/drivers/misc/rt_drv_pwm.c ****  * Date           Author       Notes
+   8:rt-thread/components/drivers/misc/rt_drv_pwm.c ****  * 2018-05-07     aozima       the first version
+   9:rt-thread/components/drivers/misc/rt_drv_pwm.c ****  */
+  10:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+  11:rt-thread/components/drivers/misc/rt_drv_pwm.c **** #include <string.h>
+  12:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+  13:rt-thread/components/drivers/misc/rt_drv_pwm.c **** #include <drivers/rt_drv_pwm.h>
+  14:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+  15:rt-thread/components/drivers/misc/rt_drv_pwm.c **** static rt_err_t _pwm_control(rt_device_t dev, int cmd, void *args)
+  16:rt-thread/components/drivers/misc/rt_drv_pwm.c **** {
+  27              		.loc 1 16 0
+  28              		.cfi_startproc
+  29              		@ args = 0, pretend = 0, frame = 0
+  30              		@ frame_needed = 0, uses_anonymous_args = 0
+  31              	.LVL0:
+  32 0000 08B5     		push	{r3, lr}
+  33              	.LCFI0:
+  34              		.cfi_def_cfa_offset 8
+  35              		.cfi_offset 3, -8
+  36              		.cfi_offset 14, -4
+  37              	.LVL1:
+  17:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     rt_err_t result = RT_EOK;
+  18:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     struct rt_device_pwm *pwm = (struct rt_device_pwm *)dev;
+  19:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+  20:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     if (pwm->ops->control)
+  38              		.loc 1 20 0
+ARM GAS  /tmp/ccdHtj5N.s 			page 2
+
+
+  39 0002 C36A     		ldr	r3, [r0, #44]
+  40 0004 1B68     		ldr	r3, [r3]
+  41 0006 0BB1     		cbz	r3, .L3
+  21:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     {
+  22:rt-thread/components/drivers/misc/rt_drv_pwm.c ****         result = pwm->ops->control(pwm, cmd, args);
+  42              		.loc 1 22 0
+  43 0008 9847     		blx	r3
+  44              	.LVL2:
+  45 000a 08BD     		pop	{r3, pc}
+  46              	.LVL3:
+  47              	.L3:
+  17:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     rt_err_t result = RT_EOK;
+  48              		.loc 1 17 0
+  49 000c 0020     		movs	r0, #0
+  50              	.LVL4:
+  23:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     }
+  24:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+  25:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     return result;
+  26:rt-thread/components/drivers/misc/rt_drv_pwm.c **** }
+  51              		.loc 1 26 0
+  52 000e 08BD     		pop	{r3, pc}
+  53              		.cfi_endproc
+  54              	.LFE19:
+  56              		.section	.text._pwm_read,"ax",%progbits
+  57              		.align	1
+  58              		.syntax unified
+  59              		.thumb
+  60              		.thumb_func
+  61              		.fpu fpv4-sp-d16
+  63              	_pwm_read:
+  64              	.LFB20:
+  27:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+  28:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+  29:rt-thread/components/drivers/misc/rt_drv_pwm.c **** /*
+  30:rt-thread/components/drivers/misc/rt_drv_pwm.c **** pos: channel
+  31:rt-thread/components/drivers/misc/rt_drv_pwm.c **** void *buffer: rt_uint32_t pulse[size]
+  32:rt-thread/components/drivers/misc/rt_drv_pwm.c **** size : number of pulse, only set to sizeof(rt_uint32_t).
+  33:rt-thread/components/drivers/misc/rt_drv_pwm.c **** */
+  34:rt-thread/components/drivers/misc/rt_drv_pwm.c **** static rt_size_t _pwm_read(rt_device_t dev, rt_off_t pos, void *buffer, rt_size_t size)
+  35:rt-thread/components/drivers/misc/rt_drv_pwm.c **** {
+  65              		.loc 1 35 0
+  66              		.cfi_startproc
+  67              		@ args = 0, pretend = 0, frame = 16
+  68              		@ frame_needed = 0, uses_anonymous_args = 0
+  69              	.LVL5:
+  70 0000 70B5     		push	{r4, r5, r6, lr}
+  71              	.LCFI1:
+  72              		.cfi_def_cfa_offset 16
+  73              		.cfi_offset 4, -16
+  74              		.cfi_offset 5, -12
+  75              		.cfi_offset 6, -8
+  76              		.cfi_offset 14, -4
+  77 0002 84B0     		sub	sp, sp, #16
+  78              	.LCFI2:
+  79              		.cfi_def_cfa_offset 32
+  80              	.LVL6:
+  36:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     rt_err_t result = RT_EOK;
+ARM GAS  /tmp/ccdHtj5N.s 			page 3
+
+
+  37:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     struct rt_device_pwm *pwm = (struct rt_device_pwm *)dev;
+  38:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     rt_uint32_t *pulse = (rt_uint32_t *)buffer;
+  39:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     struct rt_pwm_configuration configuration = {0};
+  81              		.loc 1 39 0
+  82 0004 0024     		movs	r4, #0
+  83 0006 0294     		str	r4, [sp, #8]
+  84 0008 0394     		str	r4, [sp, #12]
+  40:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+  41:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     configuration.channel = pos;
+  85              		.loc 1 41 0
+  86 000a 0191     		str	r1, [sp, #4]
+  42:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+  43:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     if (pwm->ops->control)
+  87              		.loc 1 43 0
+  88 000c C16A     		ldr	r1, [r0, #44]
+  89              	.LVL7:
+  90 000e 0E68     		ldr	r6, [r1]
+  91 0010 56B1     		cbz	r6, .L7
+  92 0012 1C46     		mov	r4, r3
+  93 0014 1546     		mov	r5, r2
+  44:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     {
+  45:rt-thread/components/drivers/misc/rt_drv_pwm.c ****         result = pwm->ops->control(pwm, PWM_CMD_GET,  &configuration);
+  94              		.loc 1 45 0
+  95 0016 01AA     		add	r2, sp, #4
+  96              	.LVL8:
+  97 0018 8321     		movs	r1, #131
+  98 001a B047     		blx	r6
+  99              	.LVL9:
+  46:rt-thread/components/drivers/misc/rt_drv_pwm.c ****         if (result != RT_EOK)
+ 100              		.loc 1 46 0
+ 101 001c 30B9     		cbnz	r0, .L8
+  47:rt-thread/components/drivers/misc/rt_drv_pwm.c ****         {
+  48:rt-thread/components/drivers/misc/rt_drv_pwm.c ****             return 0;
+  49:rt-thread/components/drivers/misc/rt_drv_pwm.c ****         }
+  50:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+  51:rt-thread/components/drivers/misc/rt_drv_pwm.c ****         *pulse = configuration.pulse;
+ 102              		.loc 1 51 0
+ 103 001e 039B     		ldr	r3, [sp, #12]
+ 104 0020 2B60     		str	r3, [r5]
+  52:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     }
+  53:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+  54:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     return size;
+ 105              		.loc 1 54 0
+ 106 0022 2046     		mov	r0, r4
+ 107              	.LVL10:
+ 108              	.L5:
+  55:rt-thread/components/drivers/misc/rt_drv_pwm.c **** }
+ 109              		.loc 1 55 0
+ 110 0024 04B0     		add	sp, sp, #16
+ 111              	.LCFI3:
+ 112              		.cfi_remember_state
+ 113              		.cfi_def_cfa_offset 16
+ 114              		@ sp needed
+ 115 0026 70BD     		pop	{r4, r5, r6, pc}
+ 116              	.LVL11:
+ 117              	.L7:
+ 118              	.LCFI4:
+ARM GAS  /tmp/ccdHtj5N.s 			page 4
+
+
+ 119              		.cfi_restore_state
+  54:rt-thread/components/drivers/misc/rt_drv_pwm.c **** }
+ 120              		.loc 1 54 0
+ 121 0028 1846     		mov	r0, r3
+ 122              	.LVL12:
+ 123 002a FBE7     		b	.L5
+ 124              	.LVL13:
+ 125              	.L8:
+  48:rt-thread/components/drivers/misc/rt_drv_pwm.c ****         }
+ 126              		.loc 1 48 0
+ 127 002c 0020     		movs	r0, #0
+ 128              	.LVL14:
+ 129 002e F9E7     		b	.L5
+ 130              		.cfi_endproc
+ 131              	.LFE20:
+ 133              		.section	.text._pwm_write,"ax",%progbits
+ 134              		.align	1
+ 135              		.syntax unified
+ 136              		.thumb
+ 137              		.thumb_func
+ 138              		.fpu fpv4-sp-d16
+ 140              	_pwm_write:
+ 141              	.LFB21:
+  56:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+  57:rt-thread/components/drivers/misc/rt_drv_pwm.c **** /*
+  58:rt-thread/components/drivers/misc/rt_drv_pwm.c **** pos: channel
+  59:rt-thread/components/drivers/misc/rt_drv_pwm.c **** void *buffer: rt_uint32_t pulse[size]
+  60:rt-thread/components/drivers/misc/rt_drv_pwm.c **** size : number of pulse, only set to sizeof(rt_uint32_t).
+  61:rt-thread/components/drivers/misc/rt_drv_pwm.c **** */
+  62:rt-thread/components/drivers/misc/rt_drv_pwm.c **** static rt_size_t _pwm_write(rt_device_t dev, rt_off_t pos, const void *buffer, rt_size_t size)
+  63:rt-thread/components/drivers/misc/rt_drv_pwm.c **** {
+ 142              		.loc 1 63 0
+ 143              		.cfi_startproc
+ 144              		@ args = 0, pretend = 0, frame = 16
+ 145              		@ frame_needed = 0, uses_anonymous_args = 0
+ 146              	.LVL15:
+ 147 0000 F0B5     		push	{r4, r5, r6, r7, lr}
+ 148              	.LCFI5:
+ 149              		.cfi_def_cfa_offset 20
+ 150              		.cfi_offset 4, -20
+ 151              		.cfi_offset 5, -16
+ 152              		.cfi_offset 6, -12
+ 153              		.cfi_offset 7, -8
+ 154              		.cfi_offset 14, -4
+ 155 0002 85B0     		sub	sp, sp, #20
+ 156              	.LCFI6:
+ 157              		.cfi_def_cfa_offset 40
+ 158              	.LVL16:
+  64:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     rt_err_t result = RT_EOK;
+  65:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     struct rt_device_pwm *pwm = (struct rt_device_pwm *)dev;
+  66:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     rt_uint32_t *pulse = (rt_uint32_t *)buffer;
+  67:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     struct rt_pwm_configuration configuration = {0};
+ 159              		.loc 1 67 0
+ 160 0004 0024     		movs	r4, #0
+ 161 0006 0294     		str	r4, [sp, #8]
+ 162 0008 0394     		str	r4, [sp, #12]
+  68:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+ARM GAS  /tmp/ccdHtj5N.s 			page 5
+
+
+  69:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     configuration.channel = pos;
+ 163              		.loc 1 69 0
+ 164 000a 0191     		str	r1, [sp, #4]
+  70:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+  71:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     if (pwm->ops->control)
+ 165              		.loc 1 71 0
+ 166 000c C16A     		ldr	r1, [r0, #44]
+ 167              	.LVL17:
+ 168 000e 0F68     		ldr	r7, [r1]
+ 169 0010 B7B1     		cbz	r7, .L12
+ 170 0012 1C46     		mov	r4, r3
+ 171 0014 1646     		mov	r6, r2
+ 172 0016 0546     		mov	r5, r0
+  72:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     {
+  73:rt-thread/components/drivers/misc/rt_drv_pwm.c ****         result = pwm->ops->control(pwm, PWM_CMD_GET, &configuration);
+ 173              		.loc 1 73 0
+ 174 0018 01AA     		add	r2, sp, #4
+ 175              	.LVL18:
+ 176 001a 8321     		movs	r1, #131
+ 177 001c B847     		blx	r7
+ 178              	.LVL19:
+  74:rt-thread/components/drivers/misc/rt_drv_pwm.c ****         if (result != RT_EOK)
+ 179              		.loc 1 74 0
+ 180 001e 10B1     		cbz	r0, .L16
+  75:rt-thread/components/drivers/misc/rt_drv_pwm.c ****         {
+  76:rt-thread/components/drivers/misc/rt_drv_pwm.c ****             return 0;
+ 181              		.loc 1 76 0
+ 182 0020 0020     		movs	r0, #0
+ 183              	.LVL20:
+ 184              	.L10:
+  77:rt-thread/components/drivers/misc/rt_drv_pwm.c ****         }
+  78:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+  79:rt-thread/components/drivers/misc/rt_drv_pwm.c ****         configuration.pulse = *pulse;
+  80:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+  81:rt-thread/components/drivers/misc/rt_drv_pwm.c ****         result = pwm->ops->control(pwm, PWM_CMD_SET, &configuration);
+  82:rt-thread/components/drivers/misc/rt_drv_pwm.c ****         if (result != RT_EOK)
+  83:rt-thread/components/drivers/misc/rt_drv_pwm.c ****         {
+  84:rt-thread/components/drivers/misc/rt_drv_pwm.c ****             return 0;
+  85:rt-thread/components/drivers/misc/rt_drv_pwm.c ****         }
+  86:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     }
+  87:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+  88:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     return size;
+  89:rt-thread/components/drivers/misc/rt_drv_pwm.c **** }
+ 185              		.loc 1 89 0
+ 186 0022 05B0     		add	sp, sp, #20
+ 187              	.LCFI7:
+ 188              		.cfi_remember_state
+ 189              		.cfi_def_cfa_offset 20
+ 190              		@ sp needed
+ 191 0024 F0BD     		pop	{r4, r5, r6, r7, pc}
+ 192              	.LVL21:
+ 193              	.L16:
+ 194              	.LCFI8:
+ 195              		.cfi_restore_state
+  79:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+ 196              		.loc 1 79 0
+ 197 0026 3368     		ldr	r3, [r6]
+ARM GAS  /tmp/ccdHtj5N.s 			page 6
+
+
+ 198 0028 0393     		str	r3, [sp, #12]
+  81:rt-thread/components/drivers/misc/rt_drv_pwm.c ****         if (result != RT_EOK)
+ 199              		.loc 1 81 0
+ 200 002a EB6A     		ldr	r3, [r5, #44]
+ 201 002c 1B68     		ldr	r3, [r3]
+ 202 002e 01AA     		add	r2, sp, #4
+ 203 0030 8221     		movs	r1, #130
+ 204 0032 2846     		mov	r0, r5
+ 205              	.LVL22:
+ 206 0034 9847     		blx	r3
+ 207              	.LVL23:
+  82:rt-thread/components/drivers/misc/rt_drv_pwm.c ****         {
+ 208              		.loc 1 82 0
+ 209 0036 08B9     		cbnz	r0, .L17
+  88:rt-thread/components/drivers/misc/rt_drv_pwm.c **** }
+ 210              		.loc 1 88 0
+ 211 0038 2046     		mov	r0, r4
+ 212              	.LVL24:
+ 213 003a F2E7     		b	.L10
+ 214              	.LVL25:
+ 215              	.L17:
+  84:rt-thread/components/drivers/misc/rt_drv_pwm.c ****         }
+ 216              		.loc 1 84 0
+ 217 003c 0020     		movs	r0, #0
+ 218              	.LVL26:
+ 219 003e F0E7     		b	.L10
+ 220              	.LVL27:
+ 221              	.L12:
+  88:rt-thread/components/drivers/misc/rt_drv_pwm.c **** }
+ 222              		.loc 1 88 0
+ 223 0040 1846     		mov	r0, r3
+ 224              	.LVL28:
+ 225 0042 EEE7     		b	.L10
+ 226              		.cfi_endproc
+ 227              	.LFE21:
+ 229              		.section	.text.rt_pwm_enable,"ax",%progbits
+ 230              		.align	1
+ 231              		.global	rt_pwm_enable
+ 232              		.syntax unified
+ 233              		.thumb
+ 234              		.thumb_func
+ 235              		.fpu fpv4-sp-d16
+ 237              	rt_pwm_enable:
+ 238              	.LFB23:
+  90:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+  91:rt-thread/components/drivers/misc/rt_drv_pwm.c **** #ifdef RT_USING_DEVICE_OPS
+  92:rt-thread/components/drivers/misc/rt_drv_pwm.c **** static const struct rt_device_ops pwm_device_ops =
+  93:rt-thread/components/drivers/misc/rt_drv_pwm.c **** {
+  94:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     RT_NULL,
+  95:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     RT_NULL,
+  96:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     RT_NULL,
+  97:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     _pwm_read,
+  98:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     _pwm_write,
+  99:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     _pwm_control
+ 100:rt-thread/components/drivers/misc/rt_drv_pwm.c **** };
+ 101:rt-thread/components/drivers/misc/rt_drv_pwm.c **** #endif /* RT_USING_DEVICE_OPS */
+ 102:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+ARM GAS  /tmp/ccdHtj5N.s 			page 7
+
+
+ 103:rt-thread/components/drivers/misc/rt_drv_pwm.c **** rt_err_t rt_device_pwm_register(struct rt_device_pwm *device, const char *name, const struct rt_pwm
+ 104:rt-thread/components/drivers/misc/rt_drv_pwm.c **** {
+ 105:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     rt_err_t result = RT_EOK;
+ 106:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+ 107:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     memset(device, 0, sizeof(struct rt_device_pwm));
+ 108:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+ 109:rt-thread/components/drivers/misc/rt_drv_pwm.c **** #ifdef RT_USING_DEVICE_OPS
+ 110:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     device->parent.ops = &pwm_device_ops;
+ 111:rt-thread/components/drivers/misc/rt_drv_pwm.c **** #else
+ 112:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     device->parent.init = RT_NULL;
+ 113:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     device->parent.open = RT_NULL;
+ 114:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     device->parent.close = RT_NULL;
+ 115:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     device->parent.read  = _pwm_read;
+ 116:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     device->parent.write = _pwm_write;
+ 117:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     device->parent.control = _pwm_control;
+ 118:rt-thread/components/drivers/misc/rt_drv_pwm.c **** #endif /* RT_USING_DEVICE_OPS */
+ 119:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+ 120:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     device->parent.type         = RT_Device_Class_Miscellaneous;
+ 121:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     device->ops                 = ops;
+ 122:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     device->parent.user_data    = (void *)user_data;
+ 123:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+ 124:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     result = rt_device_register(&device->parent, name, RT_DEVICE_FLAG_RDWR);
+ 125:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+ 126:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     return result;
+ 127:rt-thread/components/drivers/misc/rt_drv_pwm.c **** }
+ 128:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+ 129:rt-thread/components/drivers/misc/rt_drv_pwm.c **** rt_err_t rt_pwm_enable(struct rt_device_pwm *device, int channel)
+ 130:rt-thread/components/drivers/misc/rt_drv_pwm.c **** {
+ 239              		.loc 1 130 0
+ 240              		.cfi_startproc
+ 241              		@ args = 0, pretend = 0, frame = 16
+ 242              		@ frame_needed = 0, uses_anonymous_args = 0
+ 243              	.LVL29:
+ 244 0000 00B5     		push	{lr}
+ 245              	.LCFI9:
+ 246              		.cfi_def_cfa_offset 4
+ 247              		.cfi_offset 14, -4
+ 248 0002 85B0     		sub	sp, sp, #20
+ 249              	.LCFI10:
+ 250              		.cfi_def_cfa_offset 24
+ 251              	.LVL30:
+ 131:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     rt_err_t result = RT_EOK;
+ 132:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     struct rt_pwm_configuration configuration = {0};
+ 252              		.loc 1 132 0
+ 253 0004 0023     		movs	r3, #0
+ 254 0006 0293     		str	r3, [sp, #8]
+ 255 0008 0393     		str	r3, [sp, #12]
+ 133:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+ 134:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     if (!device)
+ 256              		.loc 1 134 0
+ 257 000a 40B1     		cbz	r0, .L20
+ 135:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     {
+ 136:rt-thread/components/drivers/misc/rt_drv_pwm.c ****         return -RT_EIO;
+ 137:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     }
+ 138:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+ 139:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     configuration.channel = channel;
+ 258              		.loc 1 139 0
+ARM GAS  /tmp/ccdHtj5N.s 			page 8
+
+
+ 259 000c 04AA     		add	r2, sp, #16
+ 260 000e 42F80C1D 		str	r1, [r2, #-12]!
+ 140:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     result = rt_device_control(&device->parent, PWM_CMD_ENABLE, &configuration);
+ 261              		.loc 1 140 0
+ 262 0012 8021     		movs	r1, #128
+ 263              	.LVL31:
+ 264 0014 FFF7FEFF 		bl	rt_device_control
+ 265              	.LVL32:
+ 266              	.L18:
+ 141:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+ 142:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     return result;
+ 143:rt-thread/components/drivers/misc/rt_drv_pwm.c **** }
+ 267              		.loc 1 143 0
+ 268 0018 05B0     		add	sp, sp, #20
+ 269              	.LCFI11:
+ 270              		.cfi_remember_state
+ 271              		.cfi_def_cfa_offset 4
+ 272              		@ sp needed
+ 273 001a 5DF804FB 		ldr	pc, [sp], #4
+ 274              	.LVL33:
+ 275              	.L20:
+ 276              	.LCFI12:
+ 277              		.cfi_restore_state
+ 136:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     }
+ 278              		.loc 1 136 0
+ 279 001e 6FF00700 		mvn	r0, #7
+ 280              	.LVL34:
+ 281 0022 F9E7     		b	.L18
+ 282              		.cfi_endproc
+ 283              	.LFE23:
+ 285              		.section	.text.rt_pwm_set,"ax",%progbits
+ 286              		.align	1
+ 287              		.global	rt_pwm_set
+ 288              		.syntax unified
+ 289              		.thumb
+ 290              		.thumb_func
+ 291              		.fpu fpv4-sp-d16
+ 293              	rt_pwm_set:
+ 294              	.LFB25:
+ 144:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+ 145:rt-thread/components/drivers/misc/rt_drv_pwm.c **** rt_err_t rt_pwm_disable(struct rt_device_pwm *device, int channel)
+ 146:rt-thread/components/drivers/misc/rt_drv_pwm.c **** {
+ 147:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     rt_err_t result = RT_EOK;
+ 148:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     struct rt_pwm_configuration configuration = {0};
+ 149:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+ 150:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     if (!device)
+ 151:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     {
+ 152:rt-thread/components/drivers/misc/rt_drv_pwm.c ****         return -RT_EIO;
+ 153:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     }
+ 154:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+ 155:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     configuration.channel = channel;
+ 156:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     result = rt_device_control(&device->parent, PWM_CMD_DISABLE, &configuration);
+ 157:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+ 158:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     return result;
+ 159:rt-thread/components/drivers/misc/rt_drv_pwm.c **** }
+ 160:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+ 161:rt-thread/components/drivers/misc/rt_drv_pwm.c **** rt_err_t rt_pwm_set(struct rt_device_pwm *device, int channel, rt_uint32_t period, rt_uint32_t puls
+ARM GAS  /tmp/ccdHtj5N.s 			page 9
+
+
+ 162:rt-thread/components/drivers/misc/rt_drv_pwm.c **** {
+ 295              		.loc 1 162 0
+ 296              		.cfi_startproc
+ 297              		@ args = 0, pretend = 0, frame = 16
+ 298              		@ frame_needed = 0, uses_anonymous_args = 0
+ 299              	.LVL35:
+ 163:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     rt_err_t result = RT_EOK;
+ 164:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     struct rt_pwm_configuration configuration = {0};
+ 165:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+ 166:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     if (!device)
+ 300              		.loc 1 166 0
+ 301 0000 50B1     		cbz	r0, .L24
+ 162:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     rt_err_t result = RT_EOK;
+ 302              		.loc 1 162 0
+ 303 0002 10B5     		push	{r4, lr}
+ 304              	.LCFI13:
+ 305              		.cfi_def_cfa_offset 8
+ 306              		.cfi_offset 4, -8
+ 307              		.cfi_offset 14, -4
+ 308 0004 84B0     		sub	sp, sp, #16
+ 309              	.LCFI14:
+ 310              		.cfi_def_cfa_offset 24
+ 167:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     {
+ 168:rt-thread/components/drivers/misc/rt_drv_pwm.c ****         return -RT_EIO;
+ 169:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     }
+ 170:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+ 171:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     configuration.channel = channel;
+ 311              		.loc 1 171 0
+ 312 0006 0191     		str	r1, [sp, #4]
+ 172:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     configuration.period = period;
+ 313              		.loc 1 172 0
+ 314 0008 0292     		str	r2, [sp, #8]
+ 173:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     configuration.pulse = pulse;
+ 315              		.loc 1 173 0
+ 316 000a 0393     		str	r3, [sp, #12]
+ 174:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     result = rt_device_control(&device->parent, PWM_CMD_SET, &configuration);
+ 317              		.loc 1 174 0
+ 318 000c 01AA     		add	r2, sp, #4
+ 319              	.LVL36:
+ 320 000e 8221     		movs	r1, #130
+ 321              	.LVL37:
+ 322 0010 FFF7FEFF 		bl	rt_device_control
+ 323              	.LVL38:
+ 175:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+ 176:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     return result;
+ 177:rt-thread/components/drivers/misc/rt_drv_pwm.c **** }
+ 324              		.loc 1 177 0
+ 325 0014 04B0     		add	sp, sp, #16
+ 326              	.LCFI15:
+ 327              		.cfi_def_cfa_offset 8
+ 328              		@ sp needed
+ 329 0016 10BD     		pop	{r4, pc}
+ 330              	.LVL39:
+ 331              	.L24:
+ 332              	.LCFI16:
+ 333              		.cfi_def_cfa_offset 0
+ 334              		.cfi_restore 4
+ARM GAS  /tmp/ccdHtj5N.s 			page 10
+
+
+ 335              		.cfi_restore 14
+ 168:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     }
+ 336              		.loc 1 168 0
+ 337 0018 6FF00700 		mvn	r0, #7
+ 338              	.LVL40:
+ 339 001c 7047     		bx	lr
+ 340              		.cfi_endproc
+ 341              	.LFE25:
+ 343              		.section	.text.pwm_enable,"ax",%progbits
+ 344              		.align	1
+ 345              		.syntax unified
+ 346              		.thumb
+ 347              		.thumb_func
+ 348              		.fpu fpv4-sp-d16
+ 350              	pwm_enable:
+ 351              	.LFB27:
+ 178:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+ 179:rt-thread/components/drivers/misc/rt_drv_pwm.c **** #ifdef RT_USING_FINSH
+ 180:rt-thread/components/drivers/misc/rt_drv_pwm.c **** #include <finsh.h>
+ 181:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+ 182:rt-thread/components/drivers/misc/rt_drv_pwm.c **** FINSH_FUNCTION_EXPORT_ALIAS(rt_pwm_enable, pwm_enable, enable pwm by channel.);
+ 183:rt-thread/components/drivers/misc/rt_drv_pwm.c **** FINSH_FUNCTION_EXPORT_ALIAS(rt_pwm_set, pwm_set, set pwm.);
+ 184:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+ 185:rt-thread/components/drivers/misc/rt_drv_pwm.c **** #ifdef FINSH_USING_MSH
+ 186:rt-thread/components/drivers/misc/rt_drv_pwm.c **** static int pwm_enable(int argc, char **argv)
+ 187:rt-thread/components/drivers/misc/rt_drv_pwm.c **** {
+ 352              		.loc 1 187 0
+ 353              		.cfi_startproc
+ 354              		@ args = 0, pretend = 0, frame = 0
+ 355              		@ frame_needed = 0, uses_anonymous_args = 0
+ 356              	.LVL41:
+ 357 0000 38B5     		push	{r3, r4, r5, lr}
+ 358              	.LCFI17:
+ 359              		.cfi_def_cfa_offset 16
+ 360              		.cfi_offset 3, -16
+ 361              		.cfi_offset 4, -12
+ 362              		.cfi_offset 5, -8
+ 363              		.cfi_offset 14, -4
+ 364              	.LVL42:
+ 188:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     int result = 0;
+ 189:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     struct rt_device_pwm *device = RT_NULL;
+ 190:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+ 191:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     if (argc != 3)
+ 365              		.loc 1 191 0
+ 366 0002 0328     		cmp	r0, #3
+ 367 0004 0DD1     		bne	.L34
+ 368 0006 0C46     		mov	r4, r1
+ 192:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     {
+ 193:rt-thread/components/drivers/misc/rt_drv_pwm.c ****         rt_kprintf("Usage: pwm_enable pwm1 1\n");
+ 194:rt-thread/components/drivers/misc/rt_drv_pwm.c ****         result = -RT_ERROR;
+ 195:rt-thread/components/drivers/misc/rt_drv_pwm.c ****         goto _exit;
+ 196:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     }
+ 197:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+ 198:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     device = (struct rt_device_pwm *)rt_device_find(argv[1]);
+ 369              		.loc 1 198 0
+ 370 0008 4868     		ldr	r0, [r1, #4]
+ 371              	.LVL43:
+ARM GAS  /tmp/ccdHtj5N.s 			page 11
+
+
+ 372 000a FFF7FEFF 		bl	rt_device_find
+ 373              	.LVL44:
+ 199:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     if (!device)
+ 374              		.loc 1 199 0
+ 375 000e 0546     		mov	r5, r0
+ 376 0010 68B1     		cbz	r0, .L32
+ 200:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     {
+ 201:rt-thread/components/drivers/misc/rt_drv_pwm.c ****         result = -RT_EIO;
+ 202:rt-thread/components/drivers/misc/rt_drv_pwm.c ****         goto _exit;
+ 203:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     }
+ 204:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+ 205:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     result = rt_pwm_enable(device, atoi(argv[2]));
+ 377              		.loc 1 205 0
+ 378 0012 A068     		ldr	r0, [r4, #8]
+ 379              	.LVL45:
+ 380 0014 FFF7FEFF 		bl	atoi
+ 381              	.LVL46:
+ 382 0018 0146     		mov	r1, r0
+ 383 001a 2846     		mov	r0, r5
+ 384 001c FFF7FEFF 		bl	rt_pwm_enable
+ 385              	.LVL47:
+ 386 0020 38BD     		pop	{r3, r4, r5, pc}
+ 387              	.LVL48:
+ 388              	.L34:
+ 193:rt-thread/components/drivers/misc/rt_drv_pwm.c ****         result = -RT_ERROR;
+ 389              		.loc 1 193 0
+ 390 0022 0448     		ldr	r0, .L35
+ 391              	.LVL49:
+ 392 0024 FFF7FEFF 		bl	rt_kprintf
+ 393              	.LVL50:
+ 194:rt-thread/components/drivers/misc/rt_drv_pwm.c ****         goto _exit;
+ 394              		.loc 1 194 0
+ 395 0028 4FF0FF30 		mov	r0, #-1
+ 195:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     }
+ 396              		.loc 1 195 0
+ 397 002c 38BD     		pop	{r3, r4, r5, pc}
+ 398              	.LVL51:
+ 399              	.L32:
+ 201:rt-thread/components/drivers/misc/rt_drv_pwm.c ****         goto _exit;
+ 400              		.loc 1 201 0
+ 401 002e 6FF00700 		mvn	r0, #7
+ 402              	.LVL52:
+ 403              	.L31:
+ 206:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+ 207:rt-thread/components/drivers/misc/rt_drv_pwm.c **** _exit:
+ 208:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     return result;
+ 209:rt-thread/components/drivers/misc/rt_drv_pwm.c **** }
+ 404              		.loc 1 209 0
+ 405 0032 38BD     		pop	{r3, r4, r5, pc}
+ 406              	.LVL53:
+ 407              	.L36:
+ 408              		.align	2
+ 409              	.L35:
+ 410 0034 00000000 		.word	.LC0
+ 411              		.cfi_endproc
+ 412              	.LFE27:
+ 414              		.section	.text.pwm_set,"ax",%progbits
+ARM GAS  /tmp/ccdHtj5N.s 			page 12
+
+
+ 415              		.align	1
+ 416              		.syntax unified
+ 417              		.thumb
+ 418              		.thumb_func
+ 419              		.fpu fpv4-sp-d16
+ 421              	pwm_set:
+ 422              	.LFB29:
+ 210:rt-thread/components/drivers/misc/rt_drv_pwm.c **** MSH_CMD_EXPORT(pwm_enable, pwm_enable pwm1 1);
+ 211:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+ 212:rt-thread/components/drivers/misc/rt_drv_pwm.c **** static int pwm_disable(int argc, char **argv)
+ 213:rt-thread/components/drivers/misc/rt_drv_pwm.c **** {
+ 214:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     int result = 0;
+ 215:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     struct rt_device_pwm *device = RT_NULL;
+ 216:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+ 217:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     if (argc != 3)
+ 218:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     {
+ 219:rt-thread/components/drivers/misc/rt_drv_pwm.c ****         rt_kprintf("Usage: pwm_enable pwm1 1\n");
+ 220:rt-thread/components/drivers/misc/rt_drv_pwm.c ****         result = -RT_ERROR;
+ 221:rt-thread/components/drivers/misc/rt_drv_pwm.c ****         goto _exit;
+ 222:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     }
+ 223:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+ 224:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     device = (struct rt_device_pwm *)rt_device_find(argv[1]);
+ 225:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     if (!device)
+ 226:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     {
+ 227:rt-thread/components/drivers/misc/rt_drv_pwm.c ****         result = -RT_EIO;
+ 228:rt-thread/components/drivers/misc/rt_drv_pwm.c ****         goto _exit;
+ 229:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     }
+ 230:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+ 231:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     result = rt_pwm_disable(device, atoi(argv[2]));
+ 232:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+ 233:rt-thread/components/drivers/misc/rt_drv_pwm.c **** _exit:
+ 234:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     return result;
+ 235:rt-thread/components/drivers/misc/rt_drv_pwm.c **** }
+ 236:rt-thread/components/drivers/misc/rt_drv_pwm.c **** MSH_CMD_EXPORT(pwm_disable, pwm_disable pwm1 1);
+ 237:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+ 238:rt-thread/components/drivers/misc/rt_drv_pwm.c **** static int pwm_set(int argc, char **argv)
+ 239:rt-thread/components/drivers/misc/rt_drv_pwm.c **** {
+ 423              		.loc 1 239 0
+ 424              		.cfi_startproc
+ 425              		@ args = 0, pretend = 0, frame = 0
+ 426              		@ frame_needed = 0, uses_anonymous_args = 0
+ 427              	.LVL54:
+ 428 0000 F8B5     		push	{r3, r4, r5, r6, r7, lr}
+ 429              	.LCFI18:
+ 430              		.cfi_def_cfa_offset 24
+ 431              		.cfi_offset 3, -24
+ 432              		.cfi_offset 4, -20
+ 433              		.cfi_offset 5, -16
+ 434              		.cfi_offset 6, -12
+ 435              		.cfi_offset 7, -8
+ 436              		.cfi_offset 14, -4
+ 437              	.LVL55:
+ 240:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     int result = 0;
+ 241:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     struct rt_device_pwm *device = RT_NULL;
+ 242:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+ 243:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     if (argc != 5)
+ 438              		.loc 1 243 0
+ARM GAS  /tmp/ccdHtj5N.s 			page 13
+
+
+ 439 0002 0528     		cmp	r0, #5
+ 440 0004 17D1     		bne	.L42
+ 441 0006 0C46     		mov	r4, r1
+ 244:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     {
+ 245:rt-thread/components/drivers/misc/rt_drv_pwm.c ****         rt_kprintf("Usage: pwm_set pwm1 1 100 50\n");
+ 246:rt-thread/components/drivers/misc/rt_drv_pwm.c ****         result = -RT_ERROR;
+ 247:rt-thread/components/drivers/misc/rt_drv_pwm.c ****         goto _exit;
+ 248:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     }
+ 249:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+ 250:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     device = (struct rt_device_pwm *)rt_device_find(argv[1]);
+ 442              		.loc 1 250 0
+ 443 0008 4868     		ldr	r0, [r1, #4]
+ 444              	.LVL56:
+ 445 000a FFF7FEFF 		bl	rt_device_find
+ 446              	.LVL57:
+ 251:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     if (!device)
+ 447              		.loc 1 251 0
+ 448 000e 0546     		mov	r5, r0
+ 449 0010 B8B1     		cbz	r0, .L40
+ 252:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     {
+ 253:rt-thread/components/drivers/misc/rt_drv_pwm.c ****         result = -RT_EIO;
+ 254:rt-thread/components/drivers/misc/rt_drv_pwm.c ****         goto _exit;
+ 255:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     }
+ 256:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+ 257:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     result = rt_pwm_set(device, atoi(argv[2]), atoi(argv[3]), atoi(argv[4]));
+ 450              		.loc 1 257 0
+ 451 0012 A068     		ldr	r0, [r4, #8]
+ 452              	.LVL58:
+ 453 0014 FFF7FEFF 		bl	atoi
+ 454              	.LVL59:
+ 455 0018 0646     		mov	r6, r0
+ 456 001a E068     		ldr	r0, [r4, #12]
+ 457 001c FFF7FEFF 		bl	atoi
+ 458              	.LVL60:
+ 459 0020 0746     		mov	r7, r0
+ 460 0022 2069     		ldr	r0, [r4, #16]
+ 461 0024 FFF7FEFF 		bl	atoi
+ 462              	.LVL61:
+ 463 0028 0346     		mov	r3, r0
+ 464 002a 3A46     		mov	r2, r7
+ 465 002c 3146     		mov	r1, r6
+ 466 002e 2846     		mov	r0, r5
+ 467 0030 FFF7FEFF 		bl	rt_pwm_set
+ 468              	.LVL62:
+ 469 0034 F8BD     		pop	{r3, r4, r5, r6, r7, pc}
+ 470              	.LVL63:
+ 471              	.L42:
+ 245:rt-thread/components/drivers/misc/rt_drv_pwm.c ****         result = -RT_ERROR;
+ 472              		.loc 1 245 0
+ 473 0036 0448     		ldr	r0, .L43
+ 474              	.LVL64:
+ 475 0038 FFF7FEFF 		bl	rt_kprintf
+ 476              	.LVL65:
+ 246:rt-thread/components/drivers/misc/rt_drv_pwm.c ****         goto _exit;
+ 477              		.loc 1 246 0
+ 478 003c 4FF0FF30 		mov	r0, #-1
+ 247:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     }
+ARM GAS  /tmp/ccdHtj5N.s 			page 14
+
+
+ 479              		.loc 1 247 0
+ 480 0040 F8BD     		pop	{r3, r4, r5, r6, r7, pc}
+ 481              	.LVL66:
+ 482              	.L40:
+ 253:rt-thread/components/drivers/misc/rt_drv_pwm.c ****         goto _exit;
+ 483              		.loc 1 253 0
+ 484 0042 6FF00700 		mvn	r0, #7
+ 485              	.LVL67:
+ 486              	.L39:
+ 258:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+ 259:rt-thread/components/drivers/misc/rt_drv_pwm.c **** _exit:
+ 260:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     return result;
+ 261:rt-thread/components/drivers/misc/rt_drv_pwm.c **** }
+ 487              		.loc 1 261 0
+ 488 0046 F8BD     		pop	{r3, r4, r5, r6, r7, pc}
+ 489              	.LVL68:
+ 490              	.L44:
+ 491              		.align	2
+ 492              	.L43:
+ 493 0048 00000000 		.word	.LC1
+ 494              		.cfi_endproc
+ 495              	.LFE29:
+ 497              		.section	.text.rt_device_pwm_register,"ax",%progbits
+ 498              		.align	1
+ 499              		.global	rt_device_pwm_register
+ 500              		.syntax unified
+ 501              		.thumb
+ 502              		.thumb_func
+ 503              		.fpu fpv4-sp-d16
+ 505              	rt_device_pwm_register:
+ 506              	.LFB22:
+ 104:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     rt_err_t result = RT_EOK;
+ 507              		.loc 1 104 0
+ 508              		.cfi_startproc
+ 509              		@ args = 0, pretend = 0, frame = 0
+ 510              		@ frame_needed = 0, uses_anonymous_args = 0
+ 511              	.LVL69:
+ 512 0000 F8B5     		push	{r3, r4, r5, r6, r7, lr}
+ 513              	.LCFI19:
+ 514              		.cfi_def_cfa_offset 24
+ 515              		.cfi_offset 3, -24
+ 516              		.cfi_offset 4, -20
+ 517              		.cfi_offset 5, -16
+ 518              		.cfi_offset 6, -12
+ 519              		.cfi_offset 7, -8
+ 520              		.cfi_offset 14, -4
+ 521 0002 0446     		mov	r4, r0
+ 522 0004 0D46     		mov	r5, r1
+ 523 0006 1746     		mov	r7, r2
+ 524 0008 1E46     		mov	r6, r3
+ 525              	.LVL70:
+ 107:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+ 526              		.loc 1 107 0
+ 527 000a 3022     		movs	r2, #48
+ 528              	.LVL71:
+ 529 000c 0021     		movs	r1, #0
+ 530              	.LVL72:
+ARM GAS  /tmp/ccdHtj5N.s 			page 15
+
+
+ 531 000e FFF7FEFF 		bl	memset
+ 532              	.LVL73:
+ 110:rt-thread/components/drivers/misc/rt_drv_pwm.c **** #else
+ 533              		.loc 1 110 0
+ 534 0012 064B     		ldr	r3, .L47
+ 535 0014 6362     		str	r3, [r4, #36]
+ 120:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     device->ops                 = ops;
+ 536              		.loc 1 120 0
+ 537 0016 1223     		movs	r3, #18
+ 538 0018 2375     		strb	r3, [r4, #20]
+ 121:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     device->parent.user_data    = (void *)user_data;
+ 539              		.loc 1 121 0
+ 540 001a E762     		str	r7, [r4, #44]
+ 122:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+ 541              		.loc 1 122 0
+ 542 001c A662     		str	r6, [r4, #40]
+ 124:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+ 543              		.loc 1 124 0
+ 544 001e 0322     		movs	r2, #3
+ 545 0020 2946     		mov	r1, r5
+ 546 0022 2046     		mov	r0, r4
+ 547 0024 FFF7FEFF 		bl	rt_device_register
+ 548              	.LVL74:
+ 127:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+ 549              		.loc 1 127 0
+ 550 0028 F8BD     		pop	{r3, r4, r5, r6, r7, pc}
+ 551              	.LVL75:
+ 552              	.L48:
+ 553 002a 00BF     		.align	2
+ 554              	.L47:
+ 555 002c 00000000 		.word	.LANCHOR0
+ 556              		.cfi_endproc
+ 557              	.LFE22:
+ 559              		.section	.text.rt_pwm_disable,"ax",%progbits
+ 560              		.align	1
+ 561              		.global	rt_pwm_disable
+ 562              		.syntax unified
+ 563              		.thumb
+ 564              		.thumb_func
+ 565              		.fpu fpv4-sp-d16
+ 567              	rt_pwm_disable:
+ 568              	.LFB24:
+ 146:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     rt_err_t result = RT_EOK;
+ 569              		.loc 1 146 0
+ 570              		.cfi_startproc
+ 571              		@ args = 0, pretend = 0, frame = 16
+ 572              		@ frame_needed = 0, uses_anonymous_args = 0
+ 573              	.LVL76:
+ 574 0000 00B5     		push	{lr}
+ 575              	.LCFI20:
+ 576              		.cfi_def_cfa_offset 4
+ 577              		.cfi_offset 14, -4
+ 578 0002 85B0     		sub	sp, sp, #20
+ 579              	.LCFI21:
+ 580              		.cfi_def_cfa_offset 24
+ 581              	.LVL77:
+ 148:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+ARM GAS  /tmp/ccdHtj5N.s 			page 16
+
+
+ 582              		.loc 1 148 0
+ 583 0004 0023     		movs	r3, #0
+ 584 0006 0293     		str	r3, [sp, #8]
+ 585 0008 0393     		str	r3, [sp, #12]
+ 150:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     {
+ 586              		.loc 1 150 0
+ 587 000a 40B1     		cbz	r0, .L51
+ 155:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     result = rt_device_control(&device->parent, PWM_CMD_DISABLE, &configuration);
+ 588              		.loc 1 155 0
+ 589 000c 04AA     		add	r2, sp, #16
+ 590 000e 42F80C1D 		str	r1, [r2, #-12]!
+ 156:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+ 591              		.loc 1 156 0
+ 592 0012 8121     		movs	r1, #129
+ 593              	.LVL78:
+ 594 0014 FFF7FEFF 		bl	rt_device_control
+ 595              	.LVL79:
+ 596              	.L49:
+ 159:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+ 597              		.loc 1 159 0
+ 598 0018 05B0     		add	sp, sp, #20
+ 599              	.LCFI22:
+ 600              		.cfi_remember_state
+ 601              		.cfi_def_cfa_offset 4
+ 602              		@ sp needed
+ 603 001a 5DF804FB 		ldr	pc, [sp], #4
+ 604              	.LVL80:
+ 605              	.L51:
+ 606              	.LCFI23:
+ 607              		.cfi_restore_state
+ 152:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     }
+ 608              		.loc 1 152 0
+ 609 001e 6FF00700 		mvn	r0, #7
+ 610              	.LVL81:
+ 611 0022 F9E7     		b	.L49
+ 612              		.cfi_endproc
+ 613              	.LFE24:
+ 615              		.section	.text.pwm_disable,"ax",%progbits
+ 616              		.align	1
+ 617              		.syntax unified
+ 618              		.thumb
+ 619              		.thumb_func
+ 620              		.fpu fpv4-sp-d16
+ 622              	pwm_disable:
+ 623              	.LFB28:
+ 213:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     int result = 0;
+ 624              		.loc 1 213 0
+ 625              		.cfi_startproc
+ 626              		@ args = 0, pretend = 0, frame = 0
+ 627              		@ frame_needed = 0, uses_anonymous_args = 0
+ 628              	.LVL82:
+ 629 0000 38B5     		push	{r3, r4, r5, lr}
+ 630              	.LCFI24:
+ 631              		.cfi_def_cfa_offset 16
+ 632              		.cfi_offset 3, -16
+ 633              		.cfi_offset 4, -12
+ 634              		.cfi_offset 5, -8
+ARM GAS  /tmp/ccdHtj5N.s 			page 17
+
+
+ 635              		.cfi_offset 14, -4
+ 636              	.LVL83:
+ 217:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     {
+ 637              		.loc 1 217 0
+ 638 0002 0328     		cmp	r0, #3
+ 639 0004 0DD1     		bne	.L58
+ 640 0006 0C46     		mov	r4, r1
+ 224:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     if (!device)
+ 641              		.loc 1 224 0
+ 642 0008 4868     		ldr	r0, [r1, #4]
+ 643              	.LVL84:
+ 644 000a FFF7FEFF 		bl	rt_device_find
+ 645              	.LVL85:
+ 225:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     {
+ 646              		.loc 1 225 0
+ 647 000e 0546     		mov	r5, r0
+ 648 0010 68B1     		cbz	r0, .L56
+ 231:rt-thread/components/drivers/misc/rt_drv_pwm.c **** 
+ 649              		.loc 1 231 0
+ 650 0012 A068     		ldr	r0, [r4, #8]
+ 651              	.LVL86:
+ 652 0014 FFF7FEFF 		bl	atoi
+ 653              	.LVL87:
+ 654 0018 0146     		mov	r1, r0
+ 655 001a 2846     		mov	r0, r5
+ 656 001c FFF7FEFF 		bl	rt_pwm_disable
+ 657              	.LVL88:
+ 658 0020 38BD     		pop	{r3, r4, r5, pc}
+ 659              	.LVL89:
+ 660              	.L58:
+ 219:rt-thread/components/drivers/misc/rt_drv_pwm.c ****         result = -RT_ERROR;
+ 661              		.loc 1 219 0
+ 662 0022 0448     		ldr	r0, .L59
+ 663              	.LVL90:
+ 664 0024 FFF7FEFF 		bl	rt_kprintf
+ 665              	.LVL91:
+ 220:rt-thread/components/drivers/misc/rt_drv_pwm.c ****         goto _exit;
+ 666              		.loc 1 220 0
+ 667 0028 4FF0FF30 		mov	r0, #-1
+ 221:rt-thread/components/drivers/misc/rt_drv_pwm.c ****     }
+ 668              		.loc 1 221 0
+ 669 002c 38BD     		pop	{r3, r4, r5, pc}
+ 670              	.LVL92:
+ 671              	.L56:
+ 227:rt-thread/components/drivers/misc/rt_drv_pwm.c ****         goto _exit;
+ 672              		.loc 1 227 0
+ 673 002e 6FF00700 		mvn	r0, #7
+ 674              	.LVL93:
+ 675              	.L55:
+ 235:rt-thread/components/drivers/misc/rt_drv_pwm.c **** MSH_CMD_EXPORT(pwm_disable, pwm_disable pwm1 1);
+ 676              		.loc 1 235 0
+ 677 0032 38BD     		pop	{r3, r4, r5, pc}
+ 678              	.LVL94:
+ 679              	.L60:
+ 680              		.align	2
+ 681              	.L59:
+ 682 0034 00000000 		.word	.LC0
+ARM GAS  /tmp/ccdHtj5N.s 			page 18
+
+
+ 683              		.cfi_endproc
+ 684              	.LFE28:
+ 686              		.global	__fsym___cmd_pwm_set
+ 687              		.global	__fsym___cmd_pwm_set_desc
+ 688              		.global	__fsym___cmd_pwm_set_name
+ 689              		.global	__fsym___cmd_pwm_disable
+ 690              		.global	__fsym___cmd_pwm_disable_desc
+ 691              		.global	__fsym___cmd_pwm_disable_name
+ 692              		.global	__fsym___cmd_pwm_enable
+ 693              		.global	__fsym___cmd_pwm_enable_desc
+ 694              		.global	__fsym___cmd_pwm_enable_name
+ 695              		.global	__fsym_pwm_set
+ 696              		.global	__fsym_pwm_set_desc
+ 697              		.global	__fsym_pwm_set_name
+ 698              		.global	__fsym_pwm_enable
+ 699              		.global	__fsym_pwm_enable_desc
+ 700              		.global	__fsym_pwm_enable_name
+ 701              		.section	.rodata.name,"a",%progbits
+ 702              		.align	2
+ 705              	__fsym___cmd_pwm_set_desc:
+ 706 0000 70776D5F 		.ascii	"pwm_set pwm1 1 100 50\000"
+ 706      73657420 
+ 706      70776D31 
+ 706      20312031 
+ 706      30302035 
+ 707 0016 0000     		.space	2
+ 710              	__fsym___cmd_pwm_set_name:
+ 711 0018 5F5F636D 		.ascii	"__cmd_pwm_set\000"
+ 711      645F7077 
+ 711      6D5F7365 
+ 711      7400
+ 712 0026 0000     		.space	2
+ 715              	__fsym___cmd_pwm_disable_desc:
+ 716 0028 70776D5F 		.ascii	"pwm_disable pwm1 1\000"
+ 716      64697361 
+ 716      626C6520 
+ 716      70776D31 
+ 716      203100
+ 717 003b 00       		.space	1
+ 720              	__fsym___cmd_pwm_disable_name:
+ 721 003c 5F5F636D 		.ascii	"__cmd_pwm_disable\000"
+ 721      645F7077 
+ 721      6D5F6469 
+ 721      7361626C 
+ 721      6500
+ 722 004e 0000     		.space	2
+ 725              	__fsym___cmd_pwm_enable_desc:
+ 726 0050 70776D5F 		.ascii	"pwm_enable pwm1 1\000"
+ 726      656E6162 
+ 726      6C652070 
+ 726      776D3120 
+ 726      3100
+ 727 0062 0000     		.space	2
+ 730              	__fsym___cmd_pwm_enable_name:
+ 731 0064 5F5F636D 		.ascii	"__cmd_pwm_enable\000"
+ 731      645F7077 
+ 731      6D5F656E 
+ARM GAS  /tmp/ccdHtj5N.s 			page 19
+
+
+ 731      61626C65 
+ 731      00
+ 732 0075 000000   		.space	3
+ 735              	__fsym_pwm_set_desc:
+ 736 0078 73657420 		.ascii	"set pwm.\000"
+ 736      70776D2E 
+ 736      00
+ 737 0081 000000   		.space	3
+ 740              	__fsym_pwm_set_name:
+ 741 0084 70776D5F 		.ascii	"pwm_set\000"
+ 741      73657400 
+ 744              	__fsym_pwm_enable_desc:
+ 745 008c 656E6162 		.ascii	"enable pwm by channel.\000"
+ 745      6C652070 
+ 745      776D2062 
+ 745      79206368 
+ 745      616E6E65 
+ 746 00a3 00       		.space	1
+ 749              	__fsym_pwm_enable_name:
+ 750 00a4 70776D5F 		.ascii	"pwm_enable\000"
+ 750      656E6162 
+ 750      6C6500
+ 751              		.section	.rodata.pwm_device_ops,"a",%progbits
+ 752              		.align	2
+ 753              		.set	.LANCHOR0,. + 0
+ 756              	pwm_device_ops:
+ 757 0000 00000000 		.word	0
+ 758 0004 00000000 		.word	0
+ 759 0008 00000000 		.word	0
+ 760 000c 00000000 		.word	_pwm_read
+ 761 0010 00000000 		.word	_pwm_write
+ 762 0014 00000000 		.word	_pwm_control
+ 763              		.section	.rodata.pwm_enable.str1.4,"aMS",%progbits,1
+ 764              		.align	2
+ 765              	.LC0:
+ 766 0000 55736167 		.ascii	"Usage: pwm_enable pwm1 1\012\000"
+ 766      653A2070 
+ 766      776D5F65 
+ 766      6E61626C 
+ 766      65207077 
+ 767              		.section	.rodata.pwm_set.str1.4,"aMS",%progbits,1
+ 768              		.align	2
+ 769              	.LC1:
+ 770 0000 55736167 		.ascii	"Usage: pwm_set pwm1 1 100 50\012\000"
+ 770      653A2070 
+ 770      776D5F73 
+ 770      65742070 
+ 770      776D3120 
+ 771              		.section	FSymTab,"a",%progbits
+ 772              		.align	2
+ 775              	__fsym___cmd_pwm_set:
+ 776 0000 00000000 		.word	__fsym___cmd_pwm_set_name
+ 777 0004 00000000 		.word	__fsym___cmd_pwm_set_desc
+ 778 0008 00000000 		.word	pwm_set
+ 781              	__fsym___cmd_pwm_disable:
+ 782 000c 00000000 		.word	__fsym___cmd_pwm_disable_name
+ 783 0010 00000000 		.word	__fsym___cmd_pwm_disable_desc
+ARM GAS  /tmp/ccdHtj5N.s 			page 20
+
+
+ 784 0014 00000000 		.word	pwm_disable
+ 787              	__fsym___cmd_pwm_enable:
+ 788 0018 00000000 		.word	__fsym___cmd_pwm_enable_name
+ 789 001c 00000000 		.word	__fsym___cmd_pwm_enable_desc
+ 790 0020 00000000 		.word	pwm_enable
+ 793              	__fsym_pwm_set:
+ 794 0024 00000000 		.word	__fsym_pwm_set_name
+ 795 0028 00000000 		.word	__fsym_pwm_set_desc
+ 796 002c 00000000 		.word	rt_pwm_set
+ 799              	__fsym_pwm_enable:
+ 800 0030 00000000 		.word	__fsym_pwm_enable_name
+ 801 0034 00000000 		.word	__fsym_pwm_enable_desc
+ 802 0038 00000000 		.word	rt_pwm_enable
+ 803              		.text
+ 804              	.Letext0:
+ 805              		.file 2 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/machine/_default_types.h"
+ 806              		.file 3 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/lock.h"
+ 807              		.file 4 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_types.h"
+ 808              		.file 5 "/opt/gcc-arm-none-eabi-6-2017-q2-update/lib/gcc/arm-none-eabi/6.3.1/include/stddef.h"
+ 809              		.file 6 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/reent.h"
+ 810              		.file 7 "rt-thread/include/rtdef.h"
+ 811              		.file 8 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_stdint.h"
+ 812              		.file 9 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/time.h"
+ 813              		.file 10 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/errno.h"
+ 814              		.file 11 "rt-thread/components/finsh/finsh_api.h"
+ 815              		.file 12 "rt-thread/components/drivers/include/drivers/rt_drv_pwm.h"
+ 816              		.file 13 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/ctype.h"
+ 817              		.file 14 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/stdlib.h"
+ 818              		.file 15 "rt-thread/components/finsh/finsh.h"
+ 819              		.file 16 "rt-thread/include/rtthread.h"
+ARM GAS  /tmp/ccdHtj5N.s 			page 21
+
+
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 rt_drv_pwm.c
+     /tmp/ccdHtj5N.s:18     .text._pwm_control:0000000000000000 $t
+     /tmp/ccdHtj5N.s:24     .text._pwm_control:0000000000000000 _pwm_control
+     /tmp/ccdHtj5N.s:57     .text._pwm_read:0000000000000000 $t
+     /tmp/ccdHtj5N.s:63     .text._pwm_read:0000000000000000 _pwm_read
+     /tmp/ccdHtj5N.s:134    .text._pwm_write:0000000000000000 $t
+     /tmp/ccdHtj5N.s:140    .text._pwm_write:0000000000000000 _pwm_write
+     /tmp/ccdHtj5N.s:230    .text.rt_pwm_enable:0000000000000000 $t
+     /tmp/ccdHtj5N.s:237    .text.rt_pwm_enable:0000000000000000 rt_pwm_enable
+     /tmp/ccdHtj5N.s:286    .text.rt_pwm_set:0000000000000000 $t
+     /tmp/ccdHtj5N.s:293    .text.rt_pwm_set:0000000000000000 rt_pwm_set
+     /tmp/ccdHtj5N.s:344    .text.pwm_enable:0000000000000000 $t
+     /tmp/ccdHtj5N.s:350    .text.pwm_enable:0000000000000000 pwm_enable
+     /tmp/ccdHtj5N.s:410    .text.pwm_enable:0000000000000034 $d
+     /tmp/ccdHtj5N.s:415    .text.pwm_set:0000000000000000 $t
+     /tmp/ccdHtj5N.s:421    .text.pwm_set:0000000000000000 pwm_set
+     /tmp/ccdHtj5N.s:493    .text.pwm_set:0000000000000048 $d
+     /tmp/ccdHtj5N.s:498    .text.rt_device_pwm_register:0000000000000000 $t
+     /tmp/ccdHtj5N.s:505    .text.rt_device_pwm_register:0000000000000000 rt_device_pwm_register
+     /tmp/ccdHtj5N.s:555    .text.rt_device_pwm_register:000000000000002c $d
+     /tmp/ccdHtj5N.s:560    .text.rt_pwm_disable:0000000000000000 $t
+     /tmp/ccdHtj5N.s:567    .text.rt_pwm_disable:0000000000000000 rt_pwm_disable
+     /tmp/ccdHtj5N.s:616    .text.pwm_disable:0000000000000000 $t
+     /tmp/ccdHtj5N.s:622    .text.pwm_disable:0000000000000000 pwm_disable
+     /tmp/ccdHtj5N.s:682    .text.pwm_disable:0000000000000034 $d
+     /tmp/ccdHtj5N.s:775    FSymTab:0000000000000000 __fsym___cmd_pwm_set
+     /tmp/ccdHtj5N.s:705    .rodata.name:0000000000000000 __fsym___cmd_pwm_set_desc
+     /tmp/ccdHtj5N.s:710    .rodata.name:0000000000000018 __fsym___cmd_pwm_set_name
+     /tmp/ccdHtj5N.s:781    FSymTab:000000000000000c __fsym___cmd_pwm_disable
+     /tmp/ccdHtj5N.s:715    .rodata.name:0000000000000028 __fsym___cmd_pwm_disable_desc
+     /tmp/ccdHtj5N.s:720    .rodata.name:000000000000003c __fsym___cmd_pwm_disable_name
+     /tmp/ccdHtj5N.s:787    FSymTab:0000000000000018 __fsym___cmd_pwm_enable
+     /tmp/ccdHtj5N.s:725    .rodata.name:0000000000000050 __fsym___cmd_pwm_enable_desc
+     /tmp/ccdHtj5N.s:730    .rodata.name:0000000000000064 __fsym___cmd_pwm_enable_name
+     /tmp/ccdHtj5N.s:793    FSymTab:0000000000000024 __fsym_pwm_set
+     /tmp/ccdHtj5N.s:735    .rodata.name:0000000000000078 __fsym_pwm_set_desc
+     /tmp/ccdHtj5N.s:740    .rodata.name:0000000000000084 __fsym_pwm_set_name
+     /tmp/ccdHtj5N.s:799    FSymTab:0000000000000030 __fsym_pwm_enable
+     /tmp/ccdHtj5N.s:744    .rodata.name:000000000000008c __fsym_pwm_enable_desc
+     /tmp/ccdHtj5N.s:749    .rodata.name:00000000000000a4 __fsym_pwm_enable_name
+     /tmp/ccdHtj5N.s:702    .rodata.name:0000000000000000 $d
+     /tmp/ccdHtj5N.s:752    .rodata.pwm_device_ops:0000000000000000 $d
+     /tmp/ccdHtj5N.s:756    .rodata.pwm_device_ops:0000000000000000 pwm_device_ops
+     /tmp/ccdHtj5N.s:764    .rodata.pwm_enable.str1.4:0000000000000000 $d
+     /tmp/ccdHtj5N.s:768    .rodata.pwm_set.str1.4:0000000000000000 $d
+     /tmp/ccdHtj5N.s:772    FSymTab:0000000000000000 $d
+                     .debug_frame:0000000000000010 $d
+
+UNDEFINED SYMBOLS
+rt_device_control
+rt_device_find
+atoi
+rt_kprintf
+memset
+rt_device_register

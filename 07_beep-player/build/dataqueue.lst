@@ -1,0 +1,1247 @@
+ARM GAS  /tmp/ccrBBS1o.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.eabi_attribute 27, 1
+   3              		.eabi_attribute 28, 1
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.file	"dataqueue.c"
+  14              		.text
+  15              	.Ltext0:
+  16              		.cfi_sections	.debug_frame
+  17              		.section	.text.rt_data_queue_init,"ax",%progbits
+  18              		.align	1
+  19              		.global	rt_data_queue_init
+  20              		.syntax unified
+  21              		.thumb
+  22              		.thumb_func
+  23              		.fpu fpv4-sp-d16
+  25              	rt_data_queue_init:
+  26              	.LFB19:
+  27              		.file 1 "rt-thread/components/drivers/src/dataqueue.c"
+   1:rt-thread/components/drivers/src/dataqueue.c **** /*
+   2:rt-thread/components/drivers/src/dataqueue.c ****  * Copyright (c) 2006-2018, RT-Thread Development Team
+   3:rt-thread/components/drivers/src/dataqueue.c ****  *
+   4:rt-thread/components/drivers/src/dataqueue.c ****  * SPDX-License-Identifier: Apache-2.0
+   5:rt-thread/components/drivers/src/dataqueue.c ****  *
+   6:rt-thread/components/drivers/src/dataqueue.c ****  * Change Logs:
+   7:rt-thread/components/drivers/src/dataqueue.c ****  * Date           Author       Notes
+   8:rt-thread/components/drivers/src/dataqueue.c ****  * 2012-09-30     Bernard      first version.
+   9:rt-thread/components/drivers/src/dataqueue.c ****  * 2016-10-31     armink       fix some resume push and pop thread bugs
+  10:rt-thread/components/drivers/src/dataqueue.c ****  */
+  11:rt-thread/components/drivers/src/dataqueue.c **** 
+  12:rt-thread/components/drivers/src/dataqueue.c **** #include <rtthread.h>
+  13:rt-thread/components/drivers/src/dataqueue.c **** #include <rtdevice.h>
+  14:rt-thread/components/drivers/src/dataqueue.c **** #include <rthw.h>
+  15:rt-thread/components/drivers/src/dataqueue.c **** 
+  16:rt-thread/components/drivers/src/dataqueue.c **** struct rt_data_item
+  17:rt-thread/components/drivers/src/dataqueue.c **** {
+  18:rt-thread/components/drivers/src/dataqueue.c ****     const void *data_ptr;
+  19:rt-thread/components/drivers/src/dataqueue.c ****     rt_size_t data_size;
+  20:rt-thread/components/drivers/src/dataqueue.c **** };
+  21:rt-thread/components/drivers/src/dataqueue.c **** 
+  22:rt-thread/components/drivers/src/dataqueue.c **** rt_err_t
+  23:rt-thread/components/drivers/src/dataqueue.c **** rt_data_queue_init(struct rt_data_queue *queue,
+  24:rt-thread/components/drivers/src/dataqueue.c ****                    rt_uint16_t size,
+  25:rt-thread/components/drivers/src/dataqueue.c ****                    rt_uint16_t lwm,
+  26:rt-thread/components/drivers/src/dataqueue.c ****                    void (*evt_notify)(struct rt_data_queue *queue, rt_uint32_t event))
+  27:rt-thread/components/drivers/src/dataqueue.c **** {
+  28              		.loc 1 27 0
+  29              		.cfi_startproc
+  30              		@ args = 0, pretend = 0, frame = 0
+  31              		@ frame_needed = 0, uses_anonymous_args = 0
+ARM GAS  /tmp/ccrBBS1o.s 			page 2
+
+
+  32              	.LVL0:
+  33 0000 10B5     		push	{r4, lr}
+  34              	.LCFI0:
+  35              		.cfi_def_cfa_offset 8
+  36              		.cfi_offset 4, -8
+  37              		.cfi_offset 14, -4
+  38 0002 0446     		mov	r4, r0
+  28:rt-thread/components/drivers/src/dataqueue.c ****     RT_ASSERT(queue != RT_NULL);
+  29:rt-thread/components/drivers/src/dataqueue.c **** 
+  30:rt-thread/components/drivers/src/dataqueue.c ****     queue->evt_notify = evt_notify;
+  39              		.loc 1 30 0
+  40 0004 0362     		str	r3, [r0, #32]
+  31:rt-thread/components/drivers/src/dataqueue.c **** 
+  32:rt-thread/components/drivers/src/dataqueue.c ****     queue->size = size;
+  41              		.loc 1 32 0
+  42 0006 0180     		strh	r1, [r0]	@ movhi
+  33:rt-thread/components/drivers/src/dataqueue.c ****     queue->lwm = lwm;
+  43              		.loc 1 33 0
+  44 0008 4280     		strh	r2, [r0, #2]	@ movhi
+  34:rt-thread/components/drivers/src/dataqueue.c **** 
+  35:rt-thread/components/drivers/src/dataqueue.c ****     queue->get_index = 0;
+  45              		.loc 1 35 0
+  46 000a 0023     		movs	r3, #0
+  47              	.LVL1:
+  48 000c 0381     		strh	r3, [r0, #8]	@ movhi
+  36:rt-thread/components/drivers/src/dataqueue.c ****     queue->put_index = 0;
+  49              		.loc 1 36 0
+  50 000e 4381     		strh	r3, [r0, #10]	@ movhi
+  37:rt-thread/components/drivers/src/dataqueue.c **** 
+  38:rt-thread/components/drivers/src/dataqueue.c ****     rt_list_init(&(queue->suspended_push_list));
+  51              		.loc 1 38 0
+  52 0010 00F11003 		add	r3, r0, #16
+  53              	.LVL2:
+  54              	.LBB18:
+  55              	.LBB19:
+  56              		.file 2 "rt-thread/include/rtservice.h"
+   1:rt-thread/include/rtservice.h **** /*
+   2:rt-thread/include/rtservice.h ****  * Copyright (c) 2006-2018, RT-Thread Development Team
+   3:rt-thread/include/rtservice.h ****  *
+   4:rt-thread/include/rtservice.h ****  * SPDX-License-Identifier: Apache-2.0
+   5:rt-thread/include/rtservice.h ****  *
+   6:rt-thread/include/rtservice.h ****  * Change Logs:
+   7:rt-thread/include/rtservice.h ****  * Date           Author       Notes
+   8:rt-thread/include/rtservice.h ****  * 2006-03-16     Bernard      the first version
+   9:rt-thread/include/rtservice.h ****  * 2006-09-07     Bernard      move the kservice APIs to rtthread.h
+  10:rt-thread/include/rtservice.h ****  * 2007-06-27     Bernard      fix the rt_list_remove bug
+  11:rt-thread/include/rtservice.h ****  * 2012-03-22     Bernard      rename kservice.h to rtservice.h
+  12:rt-thread/include/rtservice.h ****  * 2017-11-15     JasonJia     Modify rt_slist_foreach to rt_slist_for_each_entry.
+  13:rt-thread/include/rtservice.h ****  *                             Make code cleanup.
+  14:rt-thread/include/rtservice.h ****  */
+  15:rt-thread/include/rtservice.h **** 
+  16:rt-thread/include/rtservice.h **** #ifndef __RT_SERVICE_H__
+  17:rt-thread/include/rtservice.h **** #define __RT_SERVICE_H__
+  18:rt-thread/include/rtservice.h **** 
+  19:rt-thread/include/rtservice.h **** #ifdef __cplusplus
+  20:rt-thread/include/rtservice.h **** extern "C" {
+  21:rt-thread/include/rtservice.h **** #endif
+ARM GAS  /tmp/ccrBBS1o.s 			page 3
+
+
+  22:rt-thread/include/rtservice.h **** 
+  23:rt-thread/include/rtservice.h **** /**
+  24:rt-thread/include/rtservice.h ****  * @addtogroup KernelService
+  25:rt-thread/include/rtservice.h ****  */
+  26:rt-thread/include/rtservice.h **** 
+  27:rt-thread/include/rtservice.h **** /**@{*/
+  28:rt-thread/include/rtservice.h **** 
+  29:rt-thread/include/rtservice.h **** /**
+  30:rt-thread/include/rtservice.h ****  * rt_container_of - return the member address of ptr, if the type of ptr is the
+  31:rt-thread/include/rtservice.h ****  * struct type.
+  32:rt-thread/include/rtservice.h ****  */
+  33:rt-thread/include/rtservice.h **** #define rt_container_of(ptr, type, member) \
+  34:rt-thread/include/rtservice.h ****     ((type *)((char *)(ptr) - (unsigned long)(&((type *)0)->member)))
+  35:rt-thread/include/rtservice.h **** 
+  36:rt-thread/include/rtservice.h **** 
+  37:rt-thread/include/rtservice.h **** /**
+  38:rt-thread/include/rtservice.h ****  * @brief initialize a list object
+  39:rt-thread/include/rtservice.h ****  */
+  40:rt-thread/include/rtservice.h **** #define RT_LIST_OBJECT_INIT(object) { &(object), &(object) }
+  41:rt-thread/include/rtservice.h **** 
+  42:rt-thread/include/rtservice.h **** /**
+  43:rt-thread/include/rtservice.h ****  * @brief initialize a list
+  44:rt-thread/include/rtservice.h ****  *
+  45:rt-thread/include/rtservice.h ****  * @param l list to be initialized
+  46:rt-thread/include/rtservice.h ****  */
+  47:rt-thread/include/rtservice.h **** rt_inline void rt_list_init(rt_list_t *l)
+  48:rt-thread/include/rtservice.h **** {
+  49:rt-thread/include/rtservice.h ****     l->next = l->prev = l;
+  57              		.loc 2 49 0
+  58 0014 4361     		str	r3, [r0, #20]
+  59 0016 0361     		str	r3, [r0, #16]
+  60              	.LVL3:
+  61              	.LBE19:
+  62              	.LBE18:
+  39:rt-thread/components/drivers/src/dataqueue.c ****     rt_list_init(&(queue->suspended_pop_list));
+  63              		.loc 1 39 0
+  64 0018 00F11803 		add	r3, r0, #24
+  65              	.LVL4:
+  66              	.LBB20:
+  67              	.LBB21:
+  68              		.loc 2 49 0
+  69 001c C361     		str	r3, [r0, #28]
+  70 001e 8361     		str	r3, [r0, #24]
+  71              	.LVL5:
+  72              	.LBE21:
+  73              	.LBE20:
+  40:rt-thread/components/drivers/src/dataqueue.c **** 
+  41:rt-thread/components/drivers/src/dataqueue.c ****     queue->queue = (struct rt_data_item *)rt_malloc(sizeof(struct rt_data_item) * size);
+  74              		.loc 1 41 0
+  75 0020 C800     		lsls	r0, r1, #3
+  76              	.LVL6:
+  77 0022 FFF7FEFF 		bl	rt_malloc
+  78              	.LVL7:
+  79 0026 E060     		str	r0, [r4, #12]
+  42:rt-thread/components/drivers/src/dataqueue.c ****     if (queue->queue == RT_NULL)
+  80              		.loc 1 42 0
+  81 0028 08B1     		cbz	r0, .L5
+ARM GAS  /tmp/ccrBBS1o.s 			page 4
+
+
+  43:rt-thread/components/drivers/src/dataqueue.c ****     {
+  44:rt-thread/components/drivers/src/dataqueue.c ****         return -RT_ENOMEM;
+  45:rt-thread/components/drivers/src/dataqueue.c ****     }
+  46:rt-thread/components/drivers/src/dataqueue.c **** 
+  47:rt-thread/components/drivers/src/dataqueue.c ****     return RT_EOK;
+  82              		.loc 1 47 0
+  83 002a 0020     		movs	r0, #0
+  48:rt-thread/components/drivers/src/dataqueue.c **** }
+  84              		.loc 1 48 0
+  85 002c 10BD     		pop	{r4, pc}
+  86              	.LVL8:
+  87              	.L5:
+  44:rt-thread/components/drivers/src/dataqueue.c ****     }
+  88              		.loc 1 44 0
+  89 002e 6FF00400 		mvn	r0, #4
+  90 0032 10BD     		pop	{r4, pc}
+  91              		.cfi_endproc
+  92              	.LFE19:
+  94              		.section	.text.rt_data_queue_push,"ax",%progbits
+  95              		.align	1
+  96              		.global	rt_data_queue_push
+  97              		.syntax unified
+  98              		.thumb
+  99              		.thumb_func
+ 100              		.fpu fpv4-sp-d16
+ 102              	rt_data_queue_push:
+ 103              	.LFB20:
+  49:rt-thread/components/drivers/src/dataqueue.c **** RTM_EXPORT(rt_data_queue_init);
+  50:rt-thread/components/drivers/src/dataqueue.c **** 
+  51:rt-thread/components/drivers/src/dataqueue.c **** rt_err_t rt_data_queue_push(struct rt_data_queue *queue,
+  52:rt-thread/components/drivers/src/dataqueue.c ****                             const void *data_ptr,
+  53:rt-thread/components/drivers/src/dataqueue.c ****                             rt_size_t data_size,
+  54:rt-thread/components/drivers/src/dataqueue.c ****                             rt_int32_t timeout)
+  55:rt-thread/components/drivers/src/dataqueue.c **** {
+ 104              		.loc 1 55 0
+ 105              		.cfi_startproc
+ 106              		@ args = 0, pretend = 0, frame = 8
+ 107              		@ frame_needed = 0, uses_anonymous_args = 0
+ 108              	.LVL9:
+ 109 0000 2DE9F047 		push	{r4, r5, r6, r7, r8, r9, r10, lr}
+ 110              	.LCFI1:
+ 111              		.cfi_def_cfa_offset 32
+ 112              		.cfi_offset 4, -32
+ 113              		.cfi_offset 5, -28
+ 114              		.cfi_offset 6, -24
+ 115              		.cfi_offset 7, -20
+ 116              		.cfi_offset 8, -16
+ 117              		.cfi_offset 9, -12
+ 118              		.cfi_offset 10, -8
+ 119              		.cfi_offset 14, -4
+ 120 0004 82B0     		sub	sp, sp, #8
+ 121              	.LCFI2:
+ 122              		.cfi_def_cfa_offset 40
+ 123 0006 0446     		mov	r4, r0
+ 124 0008 8846     		mov	r8, r1
+ 125 000a 9246     		mov	r10, r2
+ 126 000c 0193     		str	r3, [sp, #4]
+ARM GAS  /tmp/ccrBBS1o.s 			page 5
+
+
+ 127              	.LVL10:
+  56:rt-thread/components/drivers/src/dataqueue.c ****     rt_ubase_t  level;
+  57:rt-thread/components/drivers/src/dataqueue.c ****     rt_thread_t thread;
+  58:rt-thread/components/drivers/src/dataqueue.c ****     rt_err_t    result;
+  59:rt-thread/components/drivers/src/dataqueue.c ****     
+  60:rt-thread/components/drivers/src/dataqueue.c ****     RT_ASSERT(queue != RT_NULL);
+  61:rt-thread/components/drivers/src/dataqueue.c **** 
+  62:rt-thread/components/drivers/src/dataqueue.c ****     result = RT_EOK;
+  63:rt-thread/components/drivers/src/dataqueue.c ****     thread = rt_thread_self();
+ 128              		.loc 1 63 0
+ 129 000e FFF7FEFF 		bl	rt_thread_self
+ 130              	.LVL11:
+ 131 0012 0546     		mov	r5, r0
+ 132              	.LVL12:
+  64:rt-thread/components/drivers/src/dataqueue.c **** 
+  65:rt-thread/components/drivers/src/dataqueue.c ****     level = rt_hw_interrupt_disable();
+ 133              		.loc 1 65 0
+ 134 0014 FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 135              	.LVL13:
+ 136 0018 0646     		mov	r6, r0
+ 137              	.LVL14:
+  62:rt-thread/components/drivers/src/dataqueue.c ****     thread = rt_thread_self();
+ 138              		.loc 1 62 0
+ 139 001a 0027     		movs	r7, #0
+  66:rt-thread/components/drivers/src/dataqueue.c ****     while (queue->put_index - queue->get_index == queue->size)
+ 140              		.loc 1 66 0
+ 141 001c 0AE0     		b	.L7
+ 142              	.LVL15:
+ 143              	.L9:
+  67:rt-thread/components/drivers/src/dataqueue.c ****     {
+  68:rt-thread/components/drivers/src/dataqueue.c ****         /* queue is full */
+  69:rt-thread/components/drivers/src/dataqueue.c ****         if (timeout == 0)
+  70:rt-thread/components/drivers/src/dataqueue.c ****         {
+  71:rt-thread/components/drivers/src/dataqueue.c ****             result = -RT_ETIMEOUT;
+  72:rt-thread/components/drivers/src/dataqueue.c **** 
+  73:rt-thread/components/drivers/src/dataqueue.c ****             goto __exit;
+  74:rt-thread/components/drivers/src/dataqueue.c ****         }
+  75:rt-thread/components/drivers/src/dataqueue.c **** 
+  76:rt-thread/components/drivers/src/dataqueue.c ****         /* current context checking */
+  77:rt-thread/components/drivers/src/dataqueue.c ****         RT_DEBUG_NOT_IN_INTERRUPT;
+  78:rt-thread/components/drivers/src/dataqueue.c **** 
+  79:rt-thread/components/drivers/src/dataqueue.c ****         /* reset thread error number */
+  80:rt-thread/components/drivers/src/dataqueue.c ****         thread->error = RT_EOK;
+  81:rt-thread/components/drivers/src/dataqueue.c ****         
+  82:rt-thread/components/drivers/src/dataqueue.c ****         /* suspend thread on the push list */
+  83:rt-thread/components/drivers/src/dataqueue.c ****         rt_thread_suspend(thread);
+  84:rt-thread/components/drivers/src/dataqueue.c ****         rt_list_insert_before(&(queue->suspended_push_list), &(thread->tlist));
+  85:rt-thread/components/drivers/src/dataqueue.c ****         /* start timer */
+  86:rt-thread/components/drivers/src/dataqueue.c ****         if (timeout > 0)
+  87:rt-thread/components/drivers/src/dataqueue.c ****         {
+  88:rt-thread/components/drivers/src/dataqueue.c ****             /* reset the timeout of thread timer and start it */
+  89:rt-thread/components/drivers/src/dataqueue.c ****             rt_timer_control(&(thread->thread_timer),
+  90:rt-thread/components/drivers/src/dataqueue.c ****                              RT_TIMER_CTRL_SET_TIME,
+  91:rt-thread/components/drivers/src/dataqueue.c ****                              &timeout);
+  92:rt-thread/components/drivers/src/dataqueue.c ****             rt_timer_start(&(thread->thread_timer));
+  93:rt-thread/components/drivers/src/dataqueue.c ****         }
+  94:rt-thread/components/drivers/src/dataqueue.c **** 
+ARM GAS  /tmp/ccrBBS1o.s 			page 6
+
+
+  95:rt-thread/components/drivers/src/dataqueue.c ****         /* enable interrupt */
+  96:rt-thread/components/drivers/src/dataqueue.c ****         rt_hw_interrupt_enable(level);
+ 144              		.loc 1 96 0
+ 145 001e 3046     		mov	r0, r6
+ 146 0020 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 147              	.LVL16:
+  97:rt-thread/components/drivers/src/dataqueue.c **** 
+  98:rt-thread/components/drivers/src/dataqueue.c ****         /* do schedule */
+  99:rt-thread/components/drivers/src/dataqueue.c ****         rt_schedule();
+ 148              		.loc 1 99 0
+ 149 0024 FFF7FEFF 		bl	rt_schedule
+ 150              	.LVL17:
+ 100:rt-thread/components/drivers/src/dataqueue.c **** 
+ 101:rt-thread/components/drivers/src/dataqueue.c ****         /* thread is waked up */
+ 102:rt-thread/components/drivers/src/dataqueue.c ****         result = thread->error;
+ 151              		.loc 1 102 0
+ 152 0028 2F6B     		ldr	r7, [r5, #48]
+ 153              	.LVL18:
+ 103:rt-thread/components/drivers/src/dataqueue.c ****         level = rt_hw_interrupt_disable();
+ 154              		.loc 1 103 0
+ 155 002a FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 156              	.LVL19:
+ 157 002e 0646     		mov	r6, r0
+ 158              	.LVL20:
+ 104:rt-thread/components/drivers/src/dataqueue.c ****         if (result != RT_EOK) goto __exit;
+ 159              		.loc 1 104 0
+ 160 0030 002F     		cmp	r7, #0
+ 161 0032 4CD1     		bne	.L8
+ 162              	.LVL21:
+ 163              	.L7:
+  66:rt-thread/components/drivers/src/dataqueue.c ****     {
+ 164              		.loc 1 66 0
+ 165 0034 6189     		ldrh	r1, [r4, #10]
+ 166 0036 2389     		ldrh	r3, [r4, #8]
+ 167 0038 CB1A     		subs	r3, r1, r3
+ 168 003a 2288     		ldrh	r2, [r4]
+ 169 003c 9342     		cmp	r3, r2
+ 170 003e 1FD1     		bne	.L14
+  69:rt-thread/components/drivers/src/dataqueue.c ****         {
+ 171              		.loc 1 69 0
+ 172 0040 019B     		ldr	r3, [sp, #4]
+ 173 0042 002B     		cmp	r3, #0
+ 174 0044 41D0     		beq	.L12
+  80:rt-thread/components/drivers/src/dataqueue.c ****         
+ 175              		.loc 1 80 0
+ 176 0046 0023     		movs	r3, #0
+ 177 0048 2B63     		str	r3, [r5, #48]
+  83:rt-thread/components/drivers/src/dataqueue.c ****         rt_list_insert_before(&(queue->suspended_push_list), &(thread->tlist));
+ 178              		.loc 1 83 0
+ 179 004a 2846     		mov	r0, r5
+ 180              	.LVL22:
+ 181 004c FFF7FEFF 		bl	rt_thread_suspend
+ 182              	.LVL23:
+  84:rt-thread/components/drivers/src/dataqueue.c ****         /* start timer */
+ 183              		.loc 1 84 0
+ 184 0050 04F11002 		add	r2, r4, #16
+ 185 0054 05F11403 		add	r3, r5, #20
+ARM GAS  /tmp/ccrBBS1o.s 			page 7
+
+
+ 186              	.LBB22:
+ 187              	.LBB23:
+  50:rt-thread/include/rtservice.h **** }
+  51:rt-thread/include/rtservice.h **** 
+  52:rt-thread/include/rtservice.h **** /**
+  53:rt-thread/include/rtservice.h ****  * @brief insert a node after a list
+  54:rt-thread/include/rtservice.h ****  *
+  55:rt-thread/include/rtservice.h ****  * @param l list to insert it
+  56:rt-thread/include/rtservice.h ****  * @param n new node to be inserted
+  57:rt-thread/include/rtservice.h ****  */
+  58:rt-thread/include/rtservice.h **** rt_inline void rt_list_insert_after(rt_list_t *l, rt_list_t *n)
+  59:rt-thread/include/rtservice.h **** {
+  60:rt-thread/include/rtservice.h ****     l->next->prev = n;
+  61:rt-thread/include/rtservice.h ****     n->next = l->next;
+  62:rt-thread/include/rtservice.h **** 
+  63:rt-thread/include/rtservice.h ****     l->next = n;
+  64:rt-thread/include/rtservice.h ****     n->prev = l;
+  65:rt-thread/include/rtservice.h **** }
+  66:rt-thread/include/rtservice.h **** 
+  67:rt-thread/include/rtservice.h **** /**
+  68:rt-thread/include/rtservice.h ****  * @brief insert a node before a list
+  69:rt-thread/include/rtservice.h ****  *
+  70:rt-thread/include/rtservice.h ****  * @param n new node to be inserted
+  71:rt-thread/include/rtservice.h ****  * @param l list to insert it
+  72:rt-thread/include/rtservice.h ****  */
+  73:rt-thread/include/rtservice.h **** rt_inline void rt_list_insert_before(rt_list_t *l, rt_list_t *n)
+  74:rt-thread/include/rtservice.h **** {
+  75:rt-thread/include/rtservice.h ****     l->prev->next = n;
+ 188              		.loc 2 75 0
+ 189 0058 6169     		ldr	r1, [r4, #20]
+ 190 005a 0B60     		str	r3, [r1]
+  76:rt-thread/include/rtservice.h ****     n->prev = l->prev;
+ 191              		.loc 2 76 0
+ 192 005c 6169     		ldr	r1, [r4, #20]
+ 193 005e A961     		str	r1, [r5, #24]
+  77:rt-thread/include/rtservice.h **** 
+  78:rt-thread/include/rtservice.h ****     l->prev = n;
+ 194              		.loc 2 78 0
+ 195 0060 6361     		str	r3, [r4, #20]
+  79:rt-thread/include/rtservice.h ****     n->next = l;
+ 196              		.loc 2 79 0
+ 197 0062 6A61     		str	r2, [r5, #20]
+ 198              	.LBE23:
+ 199              	.LBE22:
+  86:rt-thread/components/drivers/src/dataqueue.c ****         {
+ 200              		.loc 1 86 0
+ 201 0064 019B     		ldr	r3, [sp, #4]
+ 202 0066 002B     		cmp	r3, #0
+ 203 0068 D9DD     		ble	.L9
+  89:rt-thread/components/drivers/src/dataqueue.c ****                              RT_TIMER_CTRL_SET_TIME,
+ 204              		.loc 1 89 0
+ 205 006a 05F14C09 		add	r9, r5, #76
+ 206 006e 01AA     		add	r2, sp, #4
+ 207 0070 0021     		movs	r1, #0
+ 208 0072 4846     		mov	r0, r9
+ 209 0074 FFF7FEFF 		bl	rt_timer_control
+ 210              	.LVL24:
+ARM GAS  /tmp/ccrBBS1o.s 			page 8
+
+
+  92:rt-thread/components/drivers/src/dataqueue.c ****         }
+ 211              		.loc 1 92 0
+ 212 0078 4846     		mov	r0, r9
+ 213 007a FFF7FEFF 		bl	rt_timer_start
+ 214              	.LVL25:
+ 215 007e CEE7     		b	.L9
+ 216              	.LVL26:
+ 217              	.L14:
+ 105:rt-thread/components/drivers/src/dataqueue.c ****     }
+ 106:rt-thread/components/drivers/src/dataqueue.c **** 
+ 107:rt-thread/components/drivers/src/dataqueue.c ****     queue->queue[queue->put_index % queue->size].data_ptr  = data_ptr;
+ 218              		.loc 1 107 0
+ 219 0080 E368     		ldr	r3, [r4, #12]
+ 220 0082 B1FBF2F0 		udiv	r0, r1, r2
+ 221              	.LVL27:
+ 222 0086 02FB1012 		mls	r2, r2, r0, r1
+ 223 008a 92B2     		uxth	r2, r2
+ 224 008c 43F83280 		str	r8, [r3, r2, lsl #3]
+ 108:rt-thread/components/drivers/src/dataqueue.c ****     queue->queue[queue->put_index % queue->size].data_size = data_size;
+ 225              		.loc 1 108 0
+ 226 0090 E268     		ldr	r2, [r4, #12]
+ 227 0092 6089     		ldrh	r0, [r4, #10]
+ 228 0094 2188     		ldrh	r1, [r4]
+ 229 0096 B0FBF1F3 		udiv	r3, r0, r1
+ 230 009a 01FB1303 		mls	r3, r1, r3, r0
+ 231 009e 9BB2     		uxth	r3, r3
+ 232 00a0 02EBC303 		add	r3, r2, r3, lsl #3
+ 233 00a4 C3F804A0 		str	r10, [r3, #4]
+ 109:rt-thread/components/drivers/src/dataqueue.c ****     queue->put_index += 1;
+ 234              		.loc 1 109 0
+ 235 00a8 6389     		ldrh	r3, [r4, #10]
+ 236 00aa 0133     		adds	r3, r3, #1
+ 237 00ac 6381     		strh	r3, [r4, #10]	@ movhi
+ 110:rt-thread/components/drivers/src/dataqueue.c **** 
+ 111:rt-thread/components/drivers/src/dataqueue.c ****     /* there is at least one thread in suspended list */
+ 112:rt-thread/components/drivers/src/dataqueue.c ****     if (!rt_list_isempty(&(queue->suspended_pop_list)))
+ 238              		.loc 1 112 0
+ 239 00ae 04F11803 		add	r3, r4, #24
+ 240              	.LBB24:
+ 241              	.LBB25:
+  80:rt-thread/include/rtservice.h **** }
+  81:rt-thread/include/rtservice.h **** 
+  82:rt-thread/include/rtservice.h **** /**
+  83:rt-thread/include/rtservice.h ****  * @brief remove node from list.
+  84:rt-thread/include/rtservice.h ****  * @param n the node to remove from the list.
+  85:rt-thread/include/rtservice.h ****  */
+  86:rt-thread/include/rtservice.h **** rt_inline void rt_list_remove(rt_list_t *n)
+  87:rt-thread/include/rtservice.h **** {
+  88:rt-thread/include/rtservice.h ****     n->next->prev = n->prev;
+  89:rt-thread/include/rtservice.h ****     n->prev->next = n->next;
+  90:rt-thread/include/rtservice.h **** 
+  91:rt-thread/include/rtservice.h ****     n->next = n->prev = n;
+  92:rt-thread/include/rtservice.h **** }
+  93:rt-thread/include/rtservice.h **** 
+  94:rt-thread/include/rtservice.h **** /**
+  95:rt-thread/include/rtservice.h ****  * @brief tests whether a list is empty
+  96:rt-thread/include/rtservice.h ****  * @param l the list to test.
+ARM GAS  /tmp/ccrBBS1o.s 			page 9
+
+
+  97:rt-thread/include/rtservice.h ****  */
+  98:rt-thread/include/rtservice.h **** rt_inline int rt_list_isempty(const rt_list_t *l)
+  99:rt-thread/include/rtservice.h **** {
+ 100:rt-thread/include/rtservice.h ****     return l->next == l;
+ 242              		.loc 2 100 0
+ 243 00b2 A069     		ldr	r0, [r4, #24]
+ 244              	.LBE25:
+ 245              	.LBE24:
+ 246              		.loc 1 112 0
+ 247 00b4 8342     		cmp	r3, r0
+ 248 00b6 0AD0     		beq	.L8
+ 249              	.LVL28:
+ 113:rt-thread/components/drivers/src/dataqueue.c ****     {
+ 114:rt-thread/components/drivers/src/dataqueue.c ****         /* get thread entry */
+ 115:rt-thread/components/drivers/src/dataqueue.c ****         thread = rt_list_entry(queue->suspended_pop_list.next,
+ 116:rt-thread/components/drivers/src/dataqueue.c ****                                struct rt_thread,
+ 117:rt-thread/components/drivers/src/dataqueue.c ****                                tlist);
+ 118:rt-thread/components/drivers/src/dataqueue.c **** 
+ 119:rt-thread/components/drivers/src/dataqueue.c ****         /* resume it */
+ 120:rt-thread/components/drivers/src/dataqueue.c ****         rt_thread_resume(thread);
+ 250              		.loc 1 120 0
+ 251 00b8 1438     		subs	r0, r0, #20
+ 252              	.LVL29:
+ 253 00ba FFF7FEFF 		bl	rt_thread_resume
+ 254              	.LVL30:
+ 121:rt-thread/components/drivers/src/dataqueue.c ****         rt_hw_interrupt_enable(level);
+ 255              		.loc 1 121 0
+ 256 00be 3046     		mov	r0, r6
+ 257 00c0 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 258              	.LVL31:
+ 122:rt-thread/components/drivers/src/dataqueue.c **** 
+ 123:rt-thread/components/drivers/src/dataqueue.c ****         /* perform a schedule */
+ 124:rt-thread/components/drivers/src/dataqueue.c ****         rt_schedule();
+ 259              		.loc 1 124 0
+ 260 00c4 FFF7FEFF 		bl	rt_schedule
+ 261              	.LVL32:
+ 125:rt-thread/components/drivers/src/dataqueue.c **** 
+ 126:rt-thread/components/drivers/src/dataqueue.c ****         return result;
+ 262              		.loc 1 126 0
+ 263 00c8 0AE0     		b	.L6
+ 264              	.LVL33:
+ 265              	.L12:
+  71:rt-thread/components/drivers/src/dataqueue.c **** 
+ 266              		.loc 1 71 0
+ 267 00ca 6FF00107 		mvn	r7, #1
+ 268              	.LVL34:
+ 269              	.L8:
+ 127:rt-thread/components/drivers/src/dataqueue.c ****     }
+ 128:rt-thread/components/drivers/src/dataqueue.c **** 
+ 129:rt-thread/components/drivers/src/dataqueue.c **** __exit:
+ 130:rt-thread/components/drivers/src/dataqueue.c ****     rt_hw_interrupt_enable(level);
+ 270              		.loc 1 130 0
+ 271 00ce 3046     		mov	r0, r6
+ 272 00d0 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 273              	.LVL35:
+ 131:rt-thread/components/drivers/src/dataqueue.c ****     if ((result == RT_EOK) && queue->evt_notify != RT_NULL)
+ 274              		.loc 1 131 0
+ARM GAS  /tmp/ccrBBS1o.s 			page 10
+
+
+ 275 00d4 27B9     		cbnz	r7, .L6
+ 276              		.loc 1 131 0 is_stmt 0 discriminator 1
+ 277 00d6 236A     		ldr	r3, [r4, #32]
+ 278 00d8 13B1     		cbz	r3, .L6
+ 132:rt-thread/components/drivers/src/dataqueue.c ****     {
+ 133:rt-thread/components/drivers/src/dataqueue.c ****         queue->evt_notify(queue, RT_DATAQUEUE_EVENT_PUSH);
+ 279              		.loc 1 133 0 is_stmt 1
+ 280 00da 0221     		movs	r1, #2
+ 281 00dc 2046     		mov	r0, r4
+ 282 00de 9847     		blx	r3
+ 283              	.LVL36:
+ 284              	.L6:
+ 134:rt-thread/components/drivers/src/dataqueue.c ****     }
+ 135:rt-thread/components/drivers/src/dataqueue.c **** 
+ 136:rt-thread/components/drivers/src/dataqueue.c ****     return result;
+ 137:rt-thread/components/drivers/src/dataqueue.c **** }
+ 285              		.loc 1 137 0
+ 286 00e0 3846     		mov	r0, r7
+ 287 00e2 02B0     		add	sp, sp, #8
+ 288              	.LCFI3:
+ 289              		.cfi_def_cfa_offset 32
+ 290              		@ sp needed
+ 291 00e4 BDE8F087 		pop	{r4, r5, r6, r7, r8, r9, r10, pc}
+ 292              		.cfi_endproc
+ 293              	.LFE20:
+ 295              		.section	.text.rt_data_queue_pop,"ax",%progbits
+ 296              		.align	1
+ 297              		.global	rt_data_queue_pop
+ 298              		.syntax unified
+ 299              		.thumb
+ 300              		.thumb_func
+ 301              		.fpu fpv4-sp-d16
+ 303              	rt_data_queue_pop:
+ 304              	.LFB21:
+ 138:rt-thread/components/drivers/src/dataqueue.c **** RTM_EXPORT(rt_data_queue_push);
+ 139:rt-thread/components/drivers/src/dataqueue.c **** 
+ 140:rt-thread/components/drivers/src/dataqueue.c **** rt_err_t rt_data_queue_pop(struct rt_data_queue *queue,
+ 141:rt-thread/components/drivers/src/dataqueue.c ****                            const void** data_ptr,
+ 142:rt-thread/components/drivers/src/dataqueue.c ****                            rt_size_t *size, 
+ 143:rt-thread/components/drivers/src/dataqueue.c ****                            rt_int32_t timeout)
+ 144:rt-thread/components/drivers/src/dataqueue.c **** {
+ 305              		.loc 1 144 0
+ 306              		.cfi_startproc
+ 307              		@ args = 0, pretend = 0, frame = 8
+ 308              		@ frame_needed = 0, uses_anonymous_args = 0
+ 309              	.LVL37:
+ 310 0000 2DE9F047 		push	{r4, r5, r6, r7, r8, r9, r10, lr}
+ 311              	.LCFI4:
+ 312              		.cfi_def_cfa_offset 32
+ 313              		.cfi_offset 4, -32
+ 314              		.cfi_offset 5, -28
+ 315              		.cfi_offset 6, -24
+ 316              		.cfi_offset 7, -20
+ 317              		.cfi_offset 8, -16
+ 318              		.cfi_offset 9, -12
+ 319              		.cfi_offset 10, -8
+ 320              		.cfi_offset 14, -4
+ARM GAS  /tmp/ccrBBS1o.s 			page 11
+
+
+ 321 0004 82B0     		sub	sp, sp, #8
+ 322              	.LCFI5:
+ 323              		.cfi_def_cfa_offset 40
+ 324 0006 0446     		mov	r4, r0
+ 325 0008 8846     		mov	r8, r1
+ 326 000a 9246     		mov	r10, r2
+ 327 000c 0193     		str	r3, [sp, #4]
+ 328              	.LVL38:
+ 145:rt-thread/components/drivers/src/dataqueue.c ****     rt_ubase_t  level;
+ 146:rt-thread/components/drivers/src/dataqueue.c ****     rt_thread_t thread;
+ 147:rt-thread/components/drivers/src/dataqueue.c ****     rt_err_t    result;
+ 148:rt-thread/components/drivers/src/dataqueue.c **** 
+ 149:rt-thread/components/drivers/src/dataqueue.c ****     RT_ASSERT(queue != RT_NULL);
+ 150:rt-thread/components/drivers/src/dataqueue.c ****     RT_ASSERT(data_ptr != RT_NULL);
+ 151:rt-thread/components/drivers/src/dataqueue.c ****     RT_ASSERT(size != RT_NULL);
+ 152:rt-thread/components/drivers/src/dataqueue.c **** 
+ 153:rt-thread/components/drivers/src/dataqueue.c ****     result = RT_EOK;
+ 154:rt-thread/components/drivers/src/dataqueue.c ****     thread = rt_thread_self();
+ 329              		.loc 1 154 0
+ 330 000e FFF7FEFF 		bl	rt_thread_self
+ 331              	.LVL39:
+ 332 0012 0546     		mov	r5, r0
+ 333              	.LVL40:
+ 155:rt-thread/components/drivers/src/dataqueue.c **** 
+ 156:rt-thread/components/drivers/src/dataqueue.c ****     level = rt_hw_interrupt_disable();
+ 334              		.loc 1 156 0
+ 335 0014 FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 336              	.LVL41:
+ 337 0018 0646     		mov	r6, r0
+ 338              	.LVL42:
+ 153:rt-thread/components/drivers/src/dataqueue.c ****     thread = rt_thread_self();
+ 339              		.loc 1 153 0
+ 340 001a 0027     		movs	r7, #0
+ 157:rt-thread/components/drivers/src/dataqueue.c ****     while (queue->get_index == queue->put_index)
+ 341              		.loc 1 157 0
+ 342 001c 0AE0     		b	.L16
+ 343              	.LVL43:
+ 344              	.L18:
+ 158:rt-thread/components/drivers/src/dataqueue.c ****     {
+ 159:rt-thread/components/drivers/src/dataqueue.c ****         /* queue is empty */
+ 160:rt-thread/components/drivers/src/dataqueue.c ****         if (timeout == 0)
+ 161:rt-thread/components/drivers/src/dataqueue.c ****         {
+ 162:rt-thread/components/drivers/src/dataqueue.c ****             result = -RT_ETIMEOUT;
+ 163:rt-thread/components/drivers/src/dataqueue.c ****             goto __exit;
+ 164:rt-thread/components/drivers/src/dataqueue.c ****         }
+ 165:rt-thread/components/drivers/src/dataqueue.c **** 
+ 166:rt-thread/components/drivers/src/dataqueue.c ****         /* current context checking */
+ 167:rt-thread/components/drivers/src/dataqueue.c ****         RT_DEBUG_NOT_IN_INTERRUPT;
+ 168:rt-thread/components/drivers/src/dataqueue.c **** 
+ 169:rt-thread/components/drivers/src/dataqueue.c ****         /* reset thread error number */
+ 170:rt-thread/components/drivers/src/dataqueue.c ****         thread->error = RT_EOK;
+ 171:rt-thread/components/drivers/src/dataqueue.c ****         
+ 172:rt-thread/components/drivers/src/dataqueue.c ****         /* suspend thread on the pop list */
+ 173:rt-thread/components/drivers/src/dataqueue.c ****         rt_thread_suspend(thread);
+ 174:rt-thread/components/drivers/src/dataqueue.c ****         rt_list_insert_before(&(queue->suspended_pop_list), &(thread->tlist));
+ 175:rt-thread/components/drivers/src/dataqueue.c ****         /* start timer */
+ 176:rt-thread/components/drivers/src/dataqueue.c ****         if (timeout > 0)
+ARM GAS  /tmp/ccrBBS1o.s 			page 12
+
+
+ 177:rt-thread/components/drivers/src/dataqueue.c ****         {
+ 178:rt-thread/components/drivers/src/dataqueue.c ****             /* reset the timeout of thread timer and start it */
+ 179:rt-thread/components/drivers/src/dataqueue.c ****             rt_timer_control(&(thread->thread_timer),
+ 180:rt-thread/components/drivers/src/dataqueue.c ****                              RT_TIMER_CTRL_SET_TIME,
+ 181:rt-thread/components/drivers/src/dataqueue.c ****                              &timeout);
+ 182:rt-thread/components/drivers/src/dataqueue.c ****             rt_timer_start(&(thread->thread_timer));
+ 183:rt-thread/components/drivers/src/dataqueue.c ****         }
+ 184:rt-thread/components/drivers/src/dataqueue.c **** 
+ 185:rt-thread/components/drivers/src/dataqueue.c ****         /* enable interrupt */
+ 186:rt-thread/components/drivers/src/dataqueue.c ****         rt_hw_interrupt_enable(level);
+ 345              		.loc 1 186 0
+ 346 001e 3046     		mov	r0, r6
+ 347 0020 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 348              	.LVL44:
+ 187:rt-thread/components/drivers/src/dataqueue.c **** 
+ 188:rt-thread/components/drivers/src/dataqueue.c ****         /* do schedule */
+ 189:rt-thread/components/drivers/src/dataqueue.c ****         rt_schedule();
+ 349              		.loc 1 189 0
+ 350 0024 FFF7FEFF 		bl	rt_schedule
+ 351              	.LVL45:
+ 190:rt-thread/components/drivers/src/dataqueue.c **** 
+ 191:rt-thread/components/drivers/src/dataqueue.c ****         /* thread is waked up */
+ 192:rt-thread/components/drivers/src/dataqueue.c ****         result = thread->error;
+ 352              		.loc 1 192 0
+ 353 0028 2F6B     		ldr	r7, [r5, #48]
+ 354              	.LVL46:
+ 193:rt-thread/components/drivers/src/dataqueue.c ****         level  = rt_hw_interrupt_disable();
+ 355              		.loc 1 193 0
+ 356 002a FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 357              	.LVL47:
+ 358 002e 0646     		mov	r6, r0
+ 359              	.LVL48:
+ 194:rt-thread/components/drivers/src/dataqueue.c ****         if (result != RT_EOK)
+ 360              		.loc 1 194 0
+ 361 0030 002F     		cmp	r7, #0
+ 362 0032 5DD1     		bne	.L17
+ 363              	.LVL49:
+ 364              	.L16:
+ 157:rt-thread/components/drivers/src/dataqueue.c ****     {
+ 365              		.loc 1 157 0
+ 366 0034 2389     		ldrh	r3, [r4, #8]
+ 367 0036 6289     		ldrh	r2, [r4, #10]
+ 368 0038 9342     		cmp	r3, r2
+ 369 003a 1FD1     		bne	.L25
+ 160:rt-thread/components/drivers/src/dataqueue.c ****         {
+ 370              		.loc 1 160 0
+ 371 003c 019B     		ldr	r3, [sp, #4]
+ 372 003e 002B     		cmp	r3, #0
+ 373 0040 54D0     		beq	.L23
+ 170:rt-thread/components/drivers/src/dataqueue.c ****         
+ 374              		.loc 1 170 0
+ 375 0042 0023     		movs	r3, #0
+ 376 0044 2B63     		str	r3, [r5, #48]
+ 173:rt-thread/components/drivers/src/dataqueue.c ****         rt_list_insert_before(&(queue->suspended_pop_list), &(thread->tlist));
+ 377              		.loc 1 173 0
+ 378 0046 2846     		mov	r0, r5
+ 379              	.LVL50:
+ARM GAS  /tmp/ccrBBS1o.s 			page 13
+
+
+ 380 0048 FFF7FEFF 		bl	rt_thread_suspend
+ 381              	.LVL51:
+ 174:rt-thread/components/drivers/src/dataqueue.c ****         /* start timer */
+ 382              		.loc 1 174 0
+ 383 004c 04F11802 		add	r2, r4, #24
+ 384 0050 05F11403 		add	r3, r5, #20
+ 385              	.LBB26:
+ 386              	.LBB27:
+  75:rt-thread/include/rtservice.h ****     n->prev = l->prev;
+ 387              		.loc 2 75 0
+ 388 0054 E169     		ldr	r1, [r4, #28]
+ 389 0056 0B60     		str	r3, [r1]
+  76:rt-thread/include/rtservice.h **** 
+ 390              		.loc 2 76 0
+ 391 0058 E169     		ldr	r1, [r4, #28]
+ 392 005a A961     		str	r1, [r5, #24]
+  78:rt-thread/include/rtservice.h ****     n->next = l;
+ 393              		.loc 2 78 0
+ 394 005c E361     		str	r3, [r4, #28]
+  79:rt-thread/include/rtservice.h **** }
+ 395              		.loc 2 79 0
+ 396 005e 6A61     		str	r2, [r5, #20]
+ 397              	.LBE27:
+ 398              	.LBE26:
+ 176:rt-thread/components/drivers/src/dataqueue.c ****         {
+ 399              		.loc 1 176 0
+ 400 0060 019B     		ldr	r3, [sp, #4]
+ 401 0062 002B     		cmp	r3, #0
+ 402 0064 DBDD     		ble	.L18
+ 179:rt-thread/components/drivers/src/dataqueue.c ****                              RT_TIMER_CTRL_SET_TIME,
+ 403              		.loc 1 179 0
+ 404 0066 05F14C09 		add	r9, r5, #76
+ 405 006a 01AA     		add	r2, sp, #4
+ 406 006c 0021     		movs	r1, #0
+ 407 006e 4846     		mov	r0, r9
+ 408 0070 FFF7FEFF 		bl	rt_timer_control
+ 409              	.LVL52:
+ 182:rt-thread/components/drivers/src/dataqueue.c ****         }
+ 410              		.loc 1 182 0
+ 411 0074 4846     		mov	r0, r9
+ 412 0076 FFF7FEFF 		bl	rt_timer_start
+ 413              	.LVL53:
+ 414 007a D0E7     		b	.L18
+ 415              	.LVL54:
+ 416              	.L25:
+ 195:rt-thread/components/drivers/src/dataqueue.c ****             goto __exit;
+ 196:rt-thread/components/drivers/src/dataqueue.c ****     }
+ 197:rt-thread/components/drivers/src/dataqueue.c **** 
+ 198:rt-thread/components/drivers/src/dataqueue.c ****     *data_ptr = queue->queue[queue->get_index % queue->size].data_ptr;
+ 417              		.loc 1 198 0
+ 418 007c E068     		ldr	r0, [r4, #12]
+ 419              	.LVL55:
+ 420 007e 2188     		ldrh	r1, [r4]
+ 421 0080 B3FBF1F2 		udiv	r2, r3, r1
+ 422 0084 01FB1233 		mls	r3, r1, r2, r3
+ 423 0088 9BB2     		uxth	r3, r3
+ 424 008a 50F83330 		ldr	r3, [r0, r3, lsl #3]
+ARM GAS  /tmp/ccrBBS1o.s 			page 14
+
+
+ 425 008e C8F80030 		str	r3, [r8]
+ 199:rt-thread/components/drivers/src/dataqueue.c ****     *size     = queue->queue[queue->get_index % queue->size].data_size;
+ 426              		.loc 1 199 0
+ 427 0092 E268     		ldr	r2, [r4, #12]
+ 428 0094 2089     		ldrh	r0, [r4, #8]
+ 429 0096 2188     		ldrh	r1, [r4]
+ 430 0098 B0FBF1F3 		udiv	r3, r0, r1
+ 431 009c 01FB1303 		mls	r3, r1, r3, r0
+ 432 00a0 9BB2     		uxth	r3, r3
+ 433 00a2 02EBC303 		add	r3, r2, r3, lsl #3
+ 434 00a6 5B68     		ldr	r3, [r3, #4]
+ 435 00a8 CAF80030 		str	r3, [r10]
+ 200:rt-thread/components/drivers/src/dataqueue.c **** 
+ 201:rt-thread/components/drivers/src/dataqueue.c ****     queue->get_index += 1;
+ 436              		.loc 1 201 0
+ 437 00ac 2389     		ldrh	r3, [r4, #8]
+ 438 00ae 0133     		adds	r3, r3, #1
+ 439 00b0 9BB2     		uxth	r3, r3
+ 440 00b2 2381     		strh	r3, [r4, #8]	@ movhi
+ 202:rt-thread/components/drivers/src/dataqueue.c **** 
+ 203:rt-thread/components/drivers/src/dataqueue.c ****     if ((queue->put_index - queue->get_index) <= queue->lwm)
+ 441              		.loc 1 203 0
+ 442 00b4 6289     		ldrh	r2, [r4, #10]
+ 443 00b6 D31A     		subs	r3, r2, r3
+ 444 00b8 6288     		ldrh	r2, [r4, #2]
+ 445 00ba 9342     		cmp	r3, r2
+ 446 00bc 18DC     		bgt	.L17
+ 204:rt-thread/components/drivers/src/dataqueue.c ****     {
+ 205:rt-thread/components/drivers/src/dataqueue.c ****         /* there is at least one thread in suspended list */
+ 206:rt-thread/components/drivers/src/dataqueue.c ****         if (!rt_list_isempty(&(queue->suspended_push_list)))
+ 447              		.loc 1 206 0
+ 448 00be 04F11003 		add	r3, r4, #16
+ 449              	.LBB28:
+ 450              	.LBB29:
+ 451              		.loc 2 100 0
+ 452 00c2 2069     		ldr	r0, [r4, #16]
+ 453              	.LBE29:
+ 454              	.LBE28:
+ 455              		.loc 1 206 0
+ 456 00c4 8342     		cmp	r3, r0
+ 457 00c6 0DD0     		beq	.L20
+ 458              	.LVL56:
+ 207:rt-thread/components/drivers/src/dataqueue.c ****         {
+ 208:rt-thread/components/drivers/src/dataqueue.c ****             /* get thread entry */
+ 209:rt-thread/components/drivers/src/dataqueue.c ****             thread = rt_list_entry(queue->suspended_push_list.next,
+ 210:rt-thread/components/drivers/src/dataqueue.c ****                                    struct rt_thread,
+ 211:rt-thread/components/drivers/src/dataqueue.c ****                                    tlist);
+ 212:rt-thread/components/drivers/src/dataqueue.c **** 
+ 213:rt-thread/components/drivers/src/dataqueue.c ****             /* resume it */
+ 214:rt-thread/components/drivers/src/dataqueue.c ****             rt_thread_resume(thread);
+ 459              		.loc 1 214 0
+ 460 00c8 1438     		subs	r0, r0, #20
+ 461              	.LVL57:
+ 462 00ca FFF7FEFF 		bl	rt_thread_resume
+ 463              	.LVL58:
+ 215:rt-thread/components/drivers/src/dataqueue.c ****             rt_hw_interrupt_enable(level);
+ 464              		.loc 1 215 0
+ARM GAS  /tmp/ccrBBS1o.s 			page 15
+
+
+ 465 00ce 3046     		mov	r0, r6
+ 466 00d0 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 467              	.LVL59:
+ 216:rt-thread/components/drivers/src/dataqueue.c **** 
+ 217:rt-thread/components/drivers/src/dataqueue.c ****             /* perform a schedule */
+ 218:rt-thread/components/drivers/src/dataqueue.c ****             rt_schedule();
+ 468              		.loc 1 218 0
+ 469 00d4 FFF7FEFF 		bl	rt_schedule
+ 470              	.LVL60:
+ 471              	.L21:
+ 219:rt-thread/components/drivers/src/dataqueue.c ****         }
+ 220:rt-thread/components/drivers/src/dataqueue.c ****         else
+ 221:rt-thread/components/drivers/src/dataqueue.c ****         {
+ 222:rt-thread/components/drivers/src/dataqueue.c ****             rt_hw_interrupt_enable(level);
+ 223:rt-thread/components/drivers/src/dataqueue.c ****         }
+ 224:rt-thread/components/drivers/src/dataqueue.c **** 
+ 225:rt-thread/components/drivers/src/dataqueue.c ****         if (queue->evt_notify != RT_NULL)
+ 472              		.loc 1 225 0
+ 473 00d8 236A     		ldr	r3, [r4, #32]
+ 474 00da 93B1     		cbz	r3, .L15
+ 226:rt-thread/components/drivers/src/dataqueue.c ****             queue->evt_notify(queue, RT_DATAQUEUE_EVENT_LWM);
+ 475              		.loc 1 226 0
+ 476 00dc 0321     		movs	r1, #3
+ 477 00de 2046     		mov	r0, r4
+ 478 00e0 9847     		blx	r3
+ 479              	.LVL61:
+ 480 00e2 0EE0     		b	.L15
+ 481              	.LVL62:
+ 482              	.L20:
+ 222:rt-thread/components/drivers/src/dataqueue.c ****         }
+ 483              		.loc 1 222 0
+ 484 00e4 3046     		mov	r0, r6
+ 485 00e6 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 486              	.LVL63:
+ 487 00ea F5E7     		b	.L21
+ 488              	.LVL64:
+ 489              	.L23:
+ 162:rt-thread/components/drivers/src/dataqueue.c ****             goto __exit;
+ 490              		.loc 1 162 0
+ 491 00ec 6FF00107 		mvn	r7, #1
+ 492              	.LVL65:
+ 493              	.L17:
+ 227:rt-thread/components/drivers/src/dataqueue.c **** 
+ 228:rt-thread/components/drivers/src/dataqueue.c ****         return result;
+ 229:rt-thread/components/drivers/src/dataqueue.c ****     }
+ 230:rt-thread/components/drivers/src/dataqueue.c **** 
+ 231:rt-thread/components/drivers/src/dataqueue.c **** __exit:
+ 232:rt-thread/components/drivers/src/dataqueue.c ****     rt_hw_interrupt_enable(level);
+ 494              		.loc 1 232 0
+ 495 00f0 3046     		mov	r0, r6
+ 496 00f2 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 497              	.LVL66:
+ 233:rt-thread/components/drivers/src/dataqueue.c ****     if ((result == RT_EOK) && (queue->evt_notify != RT_NULL))
+ 498              		.loc 1 233 0
+ 499 00f6 27B9     		cbnz	r7, .L15
+ 500              		.loc 1 233 0 is_stmt 0 discriminator 1
+ 501 00f8 236A     		ldr	r3, [r4, #32]
+ARM GAS  /tmp/ccrBBS1o.s 			page 16
+
+
+ 502 00fa 13B1     		cbz	r3, .L15
+ 234:rt-thread/components/drivers/src/dataqueue.c ****     {
+ 235:rt-thread/components/drivers/src/dataqueue.c ****         queue->evt_notify(queue, RT_DATAQUEUE_EVENT_POP);
+ 503              		.loc 1 235 0 is_stmt 1
+ 504 00fc 0121     		movs	r1, #1
+ 505 00fe 2046     		mov	r0, r4
+ 506 0100 9847     		blx	r3
+ 507              	.LVL67:
+ 508              	.L15:
+ 236:rt-thread/components/drivers/src/dataqueue.c ****     }
+ 237:rt-thread/components/drivers/src/dataqueue.c **** 
+ 238:rt-thread/components/drivers/src/dataqueue.c ****     return result;
+ 239:rt-thread/components/drivers/src/dataqueue.c **** }
+ 509              		.loc 1 239 0
+ 510 0102 3846     		mov	r0, r7
+ 511 0104 02B0     		add	sp, sp, #8
+ 512              	.LCFI6:
+ 513              		.cfi_def_cfa_offset 32
+ 514              		@ sp needed
+ 515 0106 BDE8F087 		pop	{r4, r5, r6, r7, r8, r9, r10, pc}
+ 516              		.cfi_endproc
+ 517              	.LFE21:
+ 519              		.section	.text.rt_data_queue_peak,"ax",%progbits
+ 520              		.align	1
+ 521              		.global	rt_data_queue_peak
+ 522              		.syntax unified
+ 523              		.thumb
+ 524              		.thumb_func
+ 525              		.fpu fpv4-sp-d16
+ 527              	rt_data_queue_peak:
+ 528              	.LFB22:
+ 240:rt-thread/components/drivers/src/dataqueue.c **** RTM_EXPORT(rt_data_queue_pop);
+ 241:rt-thread/components/drivers/src/dataqueue.c **** 
+ 242:rt-thread/components/drivers/src/dataqueue.c **** rt_err_t rt_data_queue_peak(struct rt_data_queue *queue,
+ 243:rt-thread/components/drivers/src/dataqueue.c ****                             const void** data_ptr,
+ 244:rt-thread/components/drivers/src/dataqueue.c ****                             rt_size_t *size)
+ 245:rt-thread/components/drivers/src/dataqueue.c **** {
+ 529              		.loc 1 245 0
+ 530              		.cfi_startproc
+ 531              		@ args = 0, pretend = 0, frame = 0
+ 532              		@ frame_needed = 0, uses_anonymous_args = 0
+ 533              	.LVL68:
+ 534 0000 F8B5     		push	{r3, r4, r5, r6, r7, lr}
+ 535              	.LCFI7:
+ 536              		.cfi_def_cfa_offset 24
+ 537              		.cfi_offset 3, -24
+ 538              		.cfi_offset 4, -20
+ 539              		.cfi_offset 5, -16
+ 540              		.cfi_offset 6, -12
+ 541              		.cfi_offset 7, -8
+ 542              		.cfi_offset 14, -4
+ 543 0002 0446     		mov	r4, r0
+ 544 0004 0E46     		mov	r6, r1
+ 545 0006 1546     		mov	r5, r2
+ 246:rt-thread/components/drivers/src/dataqueue.c ****     rt_ubase_t  level;
+ 247:rt-thread/components/drivers/src/dataqueue.c **** 
+ 248:rt-thread/components/drivers/src/dataqueue.c ****     RT_ASSERT(queue != RT_NULL);
+ARM GAS  /tmp/ccrBBS1o.s 			page 17
+
+
+ 249:rt-thread/components/drivers/src/dataqueue.c **** 
+ 250:rt-thread/components/drivers/src/dataqueue.c ****     level = rt_hw_interrupt_disable();
+ 546              		.loc 1 250 0
+ 547 0008 FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 548              	.LVL69:
+ 251:rt-thread/components/drivers/src/dataqueue.c **** 
+ 252:rt-thread/components/drivers/src/dataqueue.c ****     if (queue->get_index == queue->put_index) 
+ 549              		.loc 1 252 0
+ 550 000c 2289     		ldrh	r2, [r4, #8]
+ 551 000e 6389     		ldrh	r3, [r4, #10]
+ 552 0010 9A42     		cmp	r2, r3
+ 553 0012 19D0     		beq	.L30
+ 253:rt-thread/components/drivers/src/dataqueue.c ****     {
+ 254:rt-thread/components/drivers/src/dataqueue.c ****         rt_hw_interrupt_enable(level);
+ 255:rt-thread/components/drivers/src/dataqueue.c ****         
+ 256:rt-thread/components/drivers/src/dataqueue.c ****         return -RT_EEMPTY;
+ 257:rt-thread/components/drivers/src/dataqueue.c ****     }
+ 258:rt-thread/components/drivers/src/dataqueue.c **** 
+ 259:rt-thread/components/drivers/src/dataqueue.c ****     *data_ptr = queue->queue[queue->get_index % queue->size].data_ptr;
+ 554              		.loc 1 259 0
+ 555 0014 E768     		ldr	r7, [r4, #12]
+ 556 0016 2188     		ldrh	r1, [r4]
+ 557 0018 B2FBF1F3 		udiv	r3, r2, r1
+ 558 001c 01FB1323 		mls	r3, r1, r3, r2
+ 559 0020 9BB2     		uxth	r3, r3
+ 560 0022 57F83330 		ldr	r3, [r7, r3, lsl #3]
+ 561 0026 3360     		str	r3, [r6]
+ 260:rt-thread/components/drivers/src/dataqueue.c ****     *size     = queue->queue[queue->get_index % queue->size].data_size;
+ 562              		.loc 1 260 0
+ 563 0028 E268     		ldr	r2, [r4, #12]
+ 564 002a 2689     		ldrh	r6, [r4, #8]
+ 565              	.LVL70:
+ 566 002c 2188     		ldrh	r1, [r4]
+ 567 002e B6FBF1F3 		udiv	r3, r6, r1
+ 568 0032 01FB1363 		mls	r3, r1, r3, r6
+ 569 0036 9BB2     		uxth	r3, r3
+ 570 0038 02EBC303 		add	r3, r2, r3, lsl #3
+ 571 003c 5B68     		ldr	r3, [r3, #4]
+ 572 003e 2B60     		str	r3, [r5]
+ 261:rt-thread/components/drivers/src/dataqueue.c **** 
+ 262:rt-thread/components/drivers/src/dataqueue.c ****     rt_hw_interrupt_enable(level);
+ 573              		.loc 1 262 0
+ 574 0040 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 575              	.LVL71:
+ 263:rt-thread/components/drivers/src/dataqueue.c **** 
+ 264:rt-thread/components/drivers/src/dataqueue.c ****     return RT_EOK;
+ 576              		.loc 1 264 0
+ 577 0044 0020     		movs	r0, #0
+ 265:rt-thread/components/drivers/src/dataqueue.c **** }
+ 578              		.loc 1 265 0
+ 579 0046 F8BD     		pop	{r3, r4, r5, r6, r7, pc}
+ 580              	.LVL72:
+ 581              	.L30:
+ 254:rt-thread/components/drivers/src/dataqueue.c ****         
+ 582              		.loc 1 254 0
+ 583 0048 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 584              	.LVL73:
+ARM GAS  /tmp/ccrBBS1o.s 			page 18
+
+
+ 256:rt-thread/components/drivers/src/dataqueue.c ****     }
+ 585              		.loc 1 256 0
+ 586 004c 6FF00300 		mvn	r0, #3
+ 587 0050 F8BD     		pop	{r3, r4, r5, r6, r7, pc}
+ 588              		.cfi_endproc
+ 589              	.LFE22:
+ 591              		.section	.text.rt_data_queue_reset,"ax",%progbits
+ 592              		.align	1
+ 593              		.global	rt_data_queue_reset
+ 594              		.syntax unified
+ 595              		.thumb
+ 596              		.thumb_func
+ 597              		.fpu fpv4-sp-d16
+ 599              	rt_data_queue_reset:
+ 600              	.LFB23:
+ 266:rt-thread/components/drivers/src/dataqueue.c **** RTM_EXPORT(rt_data_queue_peak);
+ 267:rt-thread/components/drivers/src/dataqueue.c **** 
+ 268:rt-thread/components/drivers/src/dataqueue.c **** void rt_data_queue_reset(struct rt_data_queue *queue)
+ 269:rt-thread/components/drivers/src/dataqueue.c **** {
+ 601              		.loc 1 269 0
+ 602              		.cfi_startproc
+ 603              		@ args = 0, pretend = 0, frame = 0
+ 604              		@ frame_needed = 0, uses_anonymous_args = 0
+ 605              	.LVL74:
+ 606 0000 38B5     		push	{r3, r4, r5, lr}
+ 607              	.LCFI8:
+ 608              		.cfi_def_cfa_offset 16
+ 609              		.cfi_offset 3, -16
+ 610              		.cfi_offset 4, -12
+ 611              		.cfi_offset 5, -8
+ 612              		.cfi_offset 14, -4
+ 613 0002 0446     		mov	r4, r0
+ 270:rt-thread/components/drivers/src/dataqueue.c ****     struct rt_thread *thread;
+ 271:rt-thread/components/drivers/src/dataqueue.c ****     register rt_ubase_t temp;
+ 272:rt-thread/components/drivers/src/dataqueue.c **** 
+ 273:rt-thread/components/drivers/src/dataqueue.c ****     rt_enter_critical();
+ 614              		.loc 1 273 0
+ 615 0004 FFF7FEFF 		bl	rt_enter_critical
+ 616              	.LVL75:
+ 274:rt-thread/components/drivers/src/dataqueue.c ****     /* wakeup all suspend threads */
+ 275:rt-thread/components/drivers/src/dataqueue.c **** 
+ 276:rt-thread/components/drivers/src/dataqueue.c ****     /* resume on pop list */
+ 277:rt-thread/components/drivers/src/dataqueue.c ****     while (!rt_list_isempty(&(queue->suspended_pop_list)))
+ 617              		.loc 1 277 0
+ 618 0008 0CE0     		b	.L32
+ 619              	.L33:
+ 278:rt-thread/components/drivers/src/dataqueue.c ****     {
+ 279:rt-thread/components/drivers/src/dataqueue.c ****         /* disable interrupt */
+ 280:rt-thread/components/drivers/src/dataqueue.c ****         temp = rt_hw_interrupt_disable();
+ 620              		.loc 1 280 0
+ 621 000a FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 622              	.LVL76:
+ 623 000e 0546     		mov	r5, r0
+ 624              	.LVL77:
+ 281:rt-thread/components/drivers/src/dataqueue.c **** 
+ 282:rt-thread/components/drivers/src/dataqueue.c ****         /* get next suspend thread */
+ 283:rt-thread/components/drivers/src/dataqueue.c ****         thread = rt_list_entry(queue->suspended_pop_list.next,
+ARM GAS  /tmp/ccrBBS1o.s 			page 19
+
+
+ 625              		.loc 1 283 0
+ 626 0010 A069     		ldr	r0, [r4, #24]
+ 627              	.LVL78:
+ 284:rt-thread/components/drivers/src/dataqueue.c ****                                struct rt_thread,
+ 285:rt-thread/components/drivers/src/dataqueue.c ****                                tlist);
+ 286:rt-thread/components/drivers/src/dataqueue.c ****         /* set error code to RT_ERROR */
+ 287:rt-thread/components/drivers/src/dataqueue.c ****         thread->error = -RT_ERROR;
+ 628              		.loc 1 287 0
+ 629 0012 4FF0FF33 		mov	r3, #-1
+ 630 0016 C361     		str	r3, [r0, #28]
+ 288:rt-thread/components/drivers/src/dataqueue.c **** 
+ 289:rt-thread/components/drivers/src/dataqueue.c ****         /*
+ 290:rt-thread/components/drivers/src/dataqueue.c ****          * resume thread
+ 291:rt-thread/components/drivers/src/dataqueue.c ****          * In rt_thread_resume function, it will remove current thread from
+ 292:rt-thread/components/drivers/src/dataqueue.c ****          * suspend list
+ 293:rt-thread/components/drivers/src/dataqueue.c ****          */
+ 294:rt-thread/components/drivers/src/dataqueue.c ****         rt_thread_resume(thread);
+ 631              		.loc 1 294 0
+ 632 0018 1438     		subs	r0, r0, #20
+ 633              	.LVL79:
+ 634 001a FFF7FEFF 		bl	rt_thread_resume
+ 635              	.LVL80:
+ 295:rt-thread/components/drivers/src/dataqueue.c **** 
+ 296:rt-thread/components/drivers/src/dataqueue.c ****         /* enable interrupt */
+ 297:rt-thread/components/drivers/src/dataqueue.c ****         rt_hw_interrupt_enable(temp);
+ 636              		.loc 1 297 0
+ 637 001e 2846     		mov	r0, r5
+ 638 0020 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 639              	.LVL81:
+ 640              	.L32:
+ 277:rt-thread/components/drivers/src/dataqueue.c ****     {
+ 641              		.loc 1 277 0
+ 642 0024 04F11803 		add	r3, r4, #24
+ 643              	.LBB30:
+ 644              	.LBB31:
+ 645              		.loc 2 100 0
+ 646 0028 A269     		ldr	r2, [r4, #24]
+ 647              	.LBE31:
+ 648              	.LBE30:
+ 277:rt-thread/components/drivers/src/dataqueue.c ****     {
+ 649              		.loc 1 277 0
+ 650 002a 9342     		cmp	r3, r2
+ 651 002c EDD1     		bne	.L33
+ 652 002e 0CE0     		b	.L34
+ 653              	.L35:
+ 298:rt-thread/components/drivers/src/dataqueue.c ****     }
+ 299:rt-thread/components/drivers/src/dataqueue.c **** 
+ 300:rt-thread/components/drivers/src/dataqueue.c ****     /* resume on push list */
+ 301:rt-thread/components/drivers/src/dataqueue.c ****     while (!rt_list_isempty(&(queue->suspended_push_list)))
+ 302:rt-thread/components/drivers/src/dataqueue.c ****     {
+ 303:rt-thread/components/drivers/src/dataqueue.c ****         /* disable interrupt */
+ 304:rt-thread/components/drivers/src/dataqueue.c ****         temp = rt_hw_interrupt_disable();
+ 654              		.loc 1 304 0
+ 655 0030 FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 656              	.LVL82:
+ 657 0034 0546     		mov	r5, r0
+ 658              	.LVL83:
+ARM GAS  /tmp/ccrBBS1o.s 			page 20
+
+
+ 305:rt-thread/components/drivers/src/dataqueue.c **** 
+ 306:rt-thread/components/drivers/src/dataqueue.c ****         /* get next suspend thread */
+ 307:rt-thread/components/drivers/src/dataqueue.c ****         thread = rt_list_entry(queue->suspended_push_list.next,
+ 659              		.loc 1 307 0
+ 660 0036 2069     		ldr	r0, [r4, #16]
+ 661              	.LVL84:
+ 308:rt-thread/components/drivers/src/dataqueue.c ****                                struct rt_thread,
+ 309:rt-thread/components/drivers/src/dataqueue.c ****                                tlist);
+ 310:rt-thread/components/drivers/src/dataqueue.c ****         /* set error code to RT_ERROR */
+ 311:rt-thread/components/drivers/src/dataqueue.c ****         thread->error = -RT_ERROR;
+ 662              		.loc 1 311 0
+ 663 0038 4FF0FF33 		mov	r3, #-1
+ 664 003c C361     		str	r3, [r0, #28]
+ 312:rt-thread/components/drivers/src/dataqueue.c **** 
+ 313:rt-thread/components/drivers/src/dataqueue.c ****         /*
+ 314:rt-thread/components/drivers/src/dataqueue.c ****          * resume thread
+ 315:rt-thread/components/drivers/src/dataqueue.c ****          * In rt_thread_resume function, it will remove current thread from
+ 316:rt-thread/components/drivers/src/dataqueue.c ****          * suspend list
+ 317:rt-thread/components/drivers/src/dataqueue.c ****          */
+ 318:rt-thread/components/drivers/src/dataqueue.c ****         rt_thread_resume(thread);
+ 665              		.loc 1 318 0
+ 666 003e 1438     		subs	r0, r0, #20
+ 667              	.LVL85:
+ 668 0040 FFF7FEFF 		bl	rt_thread_resume
+ 669              	.LVL86:
+ 319:rt-thread/components/drivers/src/dataqueue.c **** 
+ 320:rt-thread/components/drivers/src/dataqueue.c ****         /* enable interrupt */
+ 321:rt-thread/components/drivers/src/dataqueue.c ****         rt_hw_interrupt_enable(temp);
+ 670              		.loc 1 321 0
+ 671 0044 2846     		mov	r0, r5
+ 672 0046 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 673              	.LVL87:
+ 674              	.L34:
+ 301:rt-thread/components/drivers/src/dataqueue.c ****     {
+ 675              		.loc 1 301 0
+ 676 004a 04F11003 		add	r3, r4, #16
+ 677              	.LBB32:
+ 678              	.LBB33:
+ 679              		.loc 2 100 0
+ 680 004e 2269     		ldr	r2, [r4, #16]
+ 681              	.LBE33:
+ 682              	.LBE32:
+ 301:rt-thread/components/drivers/src/dataqueue.c ****     {
+ 683              		.loc 1 301 0
+ 684 0050 9342     		cmp	r3, r2
+ 685 0052 EDD1     		bne	.L35
+ 322:rt-thread/components/drivers/src/dataqueue.c ****     }
+ 323:rt-thread/components/drivers/src/dataqueue.c ****     rt_exit_critical();
+ 686              		.loc 1 323 0
+ 687 0054 FFF7FEFF 		bl	rt_exit_critical
+ 688              	.LVL88:
+ 324:rt-thread/components/drivers/src/dataqueue.c **** 
+ 325:rt-thread/components/drivers/src/dataqueue.c ****     rt_schedule();
+ 689              		.loc 1 325 0
+ 690 0058 FFF7FEFF 		bl	rt_schedule
+ 691              	.LVL89:
+ 692 005c 38BD     		pop	{r3, r4, r5, pc}
+ARM GAS  /tmp/ccrBBS1o.s 			page 21
+
+
+ 693              		.cfi_endproc
+ 694              	.LFE23:
+ 696              		.text
+ 697              	.Letext0:
+ 698              		.file 3 "rt-thread/include/rtdef.h"
+ 699              		.file 4 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/lock.h"
+ 700              		.file 5 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_types.h"
+ 701              		.file 6 "/opt/gcc-arm-none-eabi-6-2017-q2-update/lib/gcc/arm-none-eabi/6.3.1/include/stddef.h"
+ 702              		.file 7 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/reent.h"
+ 703              		.file 8 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/time.h"
+ 704              		.file 9 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/errno.h"
+ 705              		.file 10 "rt-thread/components/finsh/finsh_api.h"
+ 706              		.file 11 "rt-thread/components/drivers/include/ipc/dataqueue.h"
+ 707              		.file 12 "rt-thread/include/rtthread.h"
+ 708              		.file 13 "rt-thread/include/rthw.h"
+ARM GAS  /tmp/ccrBBS1o.s 			page 22
+
+
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 dataqueue.c
+     /tmp/ccrBBS1o.s:18     .text.rt_data_queue_init:0000000000000000 $t
+     /tmp/ccrBBS1o.s:25     .text.rt_data_queue_init:0000000000000000 rt_data_queue_init
+     /tmp/ccrBBS1o.s:95     .text.rt_data_queue_push:0000000000000000 $t
+     /tmp/ccrBBS1o.s:102    .text.rt_data_queue_push:0000000000000000 rt_data_queue_push
+     /tmp/ccrBBS1o.s:296    .text.rt_data_queue_pop:0000000000000000 $t
+     /tmp/ccrBBS1o.s:303    .text.rt_data_queue_pop:0000000000000000 rt_data_queue_pop
+     /tmp/ccrBBS1o.s:520    .text.rt_data_queue_peak:0000000000000000 $t
+     /tmp/ccrBBS1o.s:527    .text.rt_data_queue_peak:0000000000000000 rt_data_queue_peak
+     /tmp/ccrBBS1o.s:592    .text.rt_data_queue_reset:0000000000000000 $t
+     /tmp/ccrBBS1o.s:599    .text.rt_data_queue_reset:0000000000000000 rt_data_queue_reset
+                     .debug_frame:0000000000000010 $d
+
+UNDEFINED SYMBOLS
+rt_malloc
+rt_thread_self
+rt_hw_interrupt_disable
+rt_hw_interrupt_enable
+rt_schedule
+rt_thread_suspend
+rt_timer_control
+rt_timer_start
+rt_thread_resume
+rt_enter_critical
+rt_exit_critical

@@ -1,0 +1,558 @@
+ARM GAS  /tmp/cc0KiQ83.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.eabi_attribute 27, 1
+   3              		.eabi_attribute 28, 1
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.file	"completion.c"
+  14              		.text
+  15              	.Ltext0:
+  16              		.cfi_sections	.debug_frame
+  17              		.section	.text.rt_completion_init,"ax",%progbits
+  18              		.align	1
+  19              		.global	rt_completion_init
+  20              		.syntax unified
+  21              		.thumb
+  22              		.thumb_func
+  23              		.fpu fpv4-sp-d16
+  25              	rt_completion_init:
+  26              	.LFB19:
+  27              		.file 1 "rt-thread/components/drivers/src/completion.c"
+   1:rt-thread/components/drivers/src/completion.c **** /*
+   2:rt-thread/components/drivers/src/completion.c ****  * Copyright (c) 2006-2018, RT-Thread Development Team
+   3:rt-thread/components/drivers/src/completion.c ****  *
+   4:rt-thread/components/drivers/src/completion.c ****  * SPDX-License-Identifier: Apache-2.0
+   5:rt-thread/components/drivers/src/completion.c ****  *
+   6:rt-thread/components/drivers/src/completion.c ****  * Change Logs:
+   7:rt-thread/components/drivers/src/completion.c ****  * Date           Author       Notes
+   8:rt-thread/components/drivers/src/completion.c ****  * 2012-09-30     Bernard      first version.
+   9:rt-thread/components/drivers/src/completion.c ****  */
+  10:rt-thread/components/drivers/src/completion.c **** 
+  11:rt-thread/components/drivers/src/completion.c **** #include <rthw.h>
+  12:rt-thread/components/drivers/src/completion.c **** #include <rtthread.h>
+  13:rt-thread/components/drivers/src/completion.c **** #include <rtdevice.h>
+  14:rt-thread/components/drivers/src/completion.c **** 
+  15:rt-thread/components/drivers/src/completion.c **** #define RT_COMPLETED    1
+  16:rt-thread/components/drivers/src/completion.c **** #define RT_UNCOMPLETED  0
+  17:rt-thread/components/drivers/src/completion.c **** 
+  18:rt-thread/components/drivers/src/completion.c **** void rt_completion_init(struct rt_completion *completion)
+  19:rt-thread/components/drivers/src/completion.c **** {
+  28              		.loc 1 19 0
+  29              		.cfi_startproc
+  30              		@ args = 0, pretend = 0, frame = 0
+  31              		@ frame_needed = 0, uses_anonymous_args = 0
+  32              	.LVL0:
+  33 0000 10B5     		push	{r4, lr}
+  34              	.LCFI0:
+  35              		.cfi_def_cfa_offset 8
+  36              		.cfi_offset 4, -8
+  37              		.cfi_offset 14, -4
+  38 0002 0446     		mov	r4, r0
+  20:rt-thread/components/drivers/src/completion.c ****     rt_base_t level;
+ARM GAS  /tmp/cc0KiQ83.s 			page 2
+
+
+  21:rt-thread/components/drivers/src/completion.c ****     RT_ASSERT(completion != RT_NULL);
+  22:rt-thread/components/drivers/src/completion.c **** 
+  23:rt-thread/components/drivers/src/completion.c ****     level = rt_hw_interrupt_disable();
+  39              		.loc 1 23 0
+  40 0004 FFF7FEFF 		bl	rt_hw_interrupt_disable
+  41              	.LVL1:
+  24:rt-thread/components/drivers/src/completion.c ****     completion->flag = RT_UNCOMPLETED;
+  42              		.loc 1 24 0
+  43 0008 2346     		mov	r3, r4
+  44 000a 0022     		movs	r2, #0
+  45 000c 43F8042B 		str	r2, [r3], #4
+  46              	.LVL2:
+  47              	.LBB9:
+  48              	.LBB10:
+  49              		.file 2 "rt-thread/include/rtservice.h"
+   1:rt-thread/include/rtservice.h **** /*
+   2:rt-thread/include/rtservice.h ****  * Copyright (c) 2006-2018, RT-Thread Development Team
+   3:rt-thread/include/rtservice.h ****  *
+   4:rt-thread/include/rtservice.h ****  * SPDX-License-Identifier: Apache-2.0
+   5:rt-thread/include/rtservice.h ****  *
+   6:rt-thread/include/rtservice.h ****  * Change Logs:
+   7:rt-thread/include/rtservice.h ****  * Date           Author       Notes
+   8:rt-thread/include/rtservice.h ****  * 2006-03-16     Bernard      the first version
+   9:rt-thread/include/rtservice.h ****  * 2006-09-07     Bernard      move the kservice APIs to rtthread.h
+  10:rt-thread/include/rtservice.h ****  * 2007-06-27     Bernard      fix the rt_list_remove bug
+  11:rt-thread/include/rtservice.h ****  * 2012-03-22     Bernard      rename kservice.h to rtservice.h
+  12:rt-thread/include/rtservice.h ****  * 2017-11-15     JasonJia     Modify rt_slist_foreach to rt_slist_for_each_entry.
+  13:rt-thread/include/rtservice.h ****  *                             Make code cleanup.
+  14:rt-thread/include/rtservice.h ****  */
+  15:rt-thread/include/rtservice.h **** 
+  16:rt-thread/include/rtservice.h **** #ifndef __RT_SERVICE_H__
+  17:rt-thread/include/rtservice.h **** #define __RT_SERVICE_H__
+  18:rt-thread/include/rtservice.h **** 
+  19:rt-thread/include/rtservice.h **** #ifdef __cplusplus
+  20:rt-thread/include/rtservice.h **** extern "C" {
+  21:rt-thread/include/rtservice.h **** #endif
+  22:rt-thread/include/rtservice.h **** 
+  23:rt-thread/include/rtservice.h **** /**
+  24:rt-thread/include/rtservice.h ****  * @addtogroup KernelService
+  25:rt-thread/include/rtservice.h ****  */
+  26:rt-thread/include/rtservice.h **** 
+  27:rt-thread/include/rtservice.h **** /**@{*/
+  28:rt-thread/include/rtservice.h **** 
+  29:rt-thread/include/rtservice.h **** /**
+  30:rt-thread/include/rtservice.h ****  * rt_container_of - return the member address of ptr, if the type of ptr is the
+  31:rt-thread/include/rtservice.h ****  * struct type.
+  32:rt-thread/include/rtservice.h ****  */
+  33:rt-thread/include/rtservice.h **** #define rt_container_of(ptr, type, member) \
+  34:rt-thread/include/rtservice.h ****     ((type *)((char *)(ptr) - (unsigned long)(&((type *)0)->member)))
+  35:rt-thread/include/rtservice.h **** 
+  36:rt-thread/include/rtservice.h **** 
+  37:rt-thread/include/rtservice.h **** /**
+  38:rt-thread/include/rtservice.h ****  * @brief initialize a list object
+  39:rt-thread/include/rtservice.h ****  */
+  40:rt-thread/include/rtservice.h **** #define RT_LIST_OBJECT_INIT(object) { &(object), &(object) }
+  41:rt-thread/include/rtservice.h **** 
+  42:rt-thread/include/rtservice.h **** /**
+ARM GAS  /tmp/cc0KiQ83.s 			page 3
+
+
+  43:rt-thread/include/rtservice.h ****  * @brief initialize a list
+  44:rt-thread/include/rtservice.h ****  *
+  45:rt-thread/include/rtservice.h ****  * @param l list to be initialized
+  46:rt-thread/include/rtservice.h ****  */
+  47:rt-thread/include/rtservice.h **** rt_inline void rt_list_init(rt_list_t *l)
+  48:rt-thread/include/rtservice.h **** {
+  49:rt-thread/include/rtservice.h ****     l->next = l->prev = l;
+  50              		.loc 2 49 0
+  51 0010 A360     		str	r3, [r4, #8]
+  52 0012 6360     		str	r3, [r4, #4]
+  53              	.LVL3:
+  54              	.LBE10:
+  55              	.LBE9:
+  25:rt-thread/components/drivers/src/completion.c ****     rt_list_init(&completion->suspended_list);
+  26:rt-thread/components/drivers/src/completion.c ****     rt_hw_interrupt_enable(level);
+  56              		.loc 1 26 0
+  57 0014 FFF7FEFF 		bl	rt_hw_interrupt_enable
+  58              	.LVL4:
+  59 0018 10BD     		pop	{r4, pc}
+  60              		.cfi_endproc
+  61              	.LFE19:
+  63              		.section	.text.rt_completion_wait,"ax",%progbits
+  64              		.align	1
+  65              		.global	rt_completion_wait
+  66              		.syntax unified
+  67              		.thumb
+  68              		.thumb_func
+  69              		.fpu fpv4-sp-d16
+  71              	rt_completion_wait:
+  72              	.LFB20:
+  27:rt-thread/components/drivers/src/completion.c **** }
+  28:rt-thread/components/drivers/src/completion.c **** RTM_EXPORT(rt_completion_init);
+  29:rt-thread/components/drivers/src/completion.c **** 
+  30:rt-thread/components/drivers/src/completion.c **** rt_err_t rt_completion_wait(struct rt_completion *completion,
+  31:rt-thread/components/drivers/src/completion.c ****                             rt_int32_t            timeout)
+  32:rt-thread/components/drivers/src/completion.c **** {
+  73              		.loc 1 32 0
+  74              		.cfi_startproc
+  75              		@ args = 0, pretend = 0, frame = 8
+  76              		@ frame_needed = 0, uses_anonymous_args = 0
+  77              	.LVL5:
+  78 0000 F0B5     		push	{r4, r5, r6, r7, lr}
+  79              	.LCFI1:
+  80              		.cfi_def_cfa_offset 20
+  81              		.cfi_offset 4, -20
+  82              		.cfi_offset 5, -16
+  83              		.cfi_offset 6, -12
+  84              		.cfi_offset 7, -8
+  85              		.cfi_offset 14, -4
+  86 0002 83B0     		sub	sp, sp, #12
+  87              	.LCFI2:
+  88              		.cfi_def_cfa_offset 32
+  89 0004 0446     		mov	r4, r0
+  90 0006 0191     		str	r1, [sp, #4]
+  91              	.LVL6:
+  33:rt-thread/components/drivers/src/completion.c ****     rt_err_t result;
+  34:rt-thread/components/drivers/src/completion.c ****     rt_base_t level;
+ARM GAS  /tmp/cc0KiQ83.s 			page 4
+
+
+  35:rt-thread/components/drivers/src/completion.c ****     rt_thread_t thread;
+  36:rt-thread/components/drivers/src/completion.c ****     RT_ASSERT(completion != RT_NULL);
+  37:rt-thread/components/drivers/src/completion.c **** 
+  38:rt-thread/components/drivers/src/completion.c ****     result = RT_EOK;
+  39:rt-thread/components/drivers/src/completion.c ****     thread = rt_thread_self();
+  92              		.loc 1 39 0
+  93 0008 FFF7FEFF 		bl	rt_thread_self
+  94              	.LVL7:
+  95 000c 0546     		mov	r5, r0
+  96              	.LVL8:
+  40:rt-thread/components/drivers/src/completion.c **** 
+  41:rt-thread/components/drivers/src/completion.c ****     level = rt_hw_interrupt_disable();
+  97              		.loc 1 41 0
+  98 000e FFF7FEFF 		bl	rt_hw_interrupt_disable
+  99              	.LVL9:
+ 100 0012 0646     		mov	r6, r0
+ 101              	.LVL10:
+  42:rt-thread/components/drivers/src/completion.c ****     if (completion->flag != RT_COMPLETED)
+ 102              		.loc 1 42 0
+ 103 0014 2368     		ldr	r3, [r4]
+ 104 0016 012B     		cmp	r3, #1
+ 105 0018 2DD0     		beq	.L7
+  43:rt-thread/components/drivers/src/completion.c ****     {
+  44:rt-thread/components/drivers/src/completion.c ****         /* only one thread can suspend on complete */
+  45:rt-thread/components/drivers/src/completion.c ****         RT_ASSERT(rt_list_isempty(&(completion->suspended_list)));
+  46:rt-thread/components/drivers/src/completion.c **** 
+  47:rt-thread/components/drivers/src/completion.c ****         if (timeout == 0)
+ 106              		.loc 1 47 0
+ 107 001a 019B     		ldr	r3, [sp, #4]
+ 108 001c 6BB3     		cbz	r3, .L8
+  48:rt-thread/components/drivers/src/completion.c ****         {
+  49:rt-thread/components/drivers/src/completion.c ****             result = -RT_ETIMEOUT;
+  50:rt-thread/components/drivers/src/completion.c ****             goto __exit;
+  51:rt-thread/components/drivers/src/completion.c ****         }
+  52:rt-thread/components/drivers/src/completion.c ****         else
+  53:rt-thread/components/drivers/src/completion.c ****         {
+  54:rt-thread/components/drivers/src/completion.c ****             /* reset thread error number */
+  55:rt-thread/components/drivers/src/completion.c ****             thread->error = RT_EOK;
+ 109              		.loc 1 55 0
+ 110 001e 0023     		movs	r3, #0
+ 111 0020 2B63     		str	r3, [r5, #48]
+  56:rt-thread/components/drivers/src/completion.c **** 
+  57:rt-thread/components/drivers/src/completion.c ****             /* suspend thread */
+  58:rt-thread/components/drivers/src/completion.c ****             rt_thread_suspend(thread);
+ 112              		.loc 1 58 0
+ 113 0022 2846     		mov	r0, r5
+ 114              	.LVL11:
+ 115 0024 FFF7FEFF 		bl	rt_thread_suspend
+ 116              	.LVL12:
+  59:rt-thread/components/drivers/src/completion.c ****             /* add to suspended list */
+  60:rt-thread/components/drivers/src/completion.c ****             rt_list_insert_before(&(completion->suspended_list),
+ 117              		.loc 1 60 0
+ 118 0028 221D     		adds	r2, r4, #4
+ 119 002a 05F11403 		add	r3, r5, #20
+ 120              	.LBB11:
+ 121              	.LBB12:
+  50:rt-thread/include/rtservice.h **** }
+ARM GAS  /tmp/cc0KiQ83.s 			page 5
+
+
+  51:rt-thread/include/rtservice.h **** 
+  52:rt-thread/include/rtservice.h **** /**
+  53:rt-thread/include/rtservice.h ****  * @brief insert a node after a list
+  54:rt-thread/include/rtservice.h ****  *
+  55:rt-thread/include/rtservice.h ****  * @param l list to insert it
+  56:rt-thread/include/rtservice.h ****  * @param n new node to be inserted
+  57:rt-thread/include/rtservice.h ****  */
+  58:rt-thread/include/rtservice.h **** rt_inline void rt_list_insert_after(rt_list_t *l, rt_list_t *n)
+  59:rt-thread/include/rtservice.h **** {
+  60:rt-thread/include/rtservice.h ****     l->next->prev = n;
+  61:rt-thread/include/rtservice.h ****     n->next = l->next;
+  62:rt-thread/include/rtservice.h **** 
+  63:rt-thread/include/rtservice.h ****     l->next = n;
+  64:rt-thread/include/rtservice.h ****     n->prev = l;
+  65:rt-thread/include/rtservice.h **** }
+  66:rt-thread/include/rtservice.h **** 
+  67:rt-thread/include/rtservice.h **** /**
+  68:rt-thread/include/rtservice.h ****  * @brief insert a node before a list
+  69:rt-thread/include/rtservice.h ****  *
+  70:rt-thread/include/rtservice.h ****  * @param n new node to be inserted
+  71:rt-thread/include/rtservice.h ****  * @param l list to insert it
+  72:rt-thread/include/rtservice.h ****  */
+  73:rt-thread/include/rtservice.h **** rt_inline void rt_list_insert_before(rt_list_t *l, rt_list_t *n)
+  74:rt-thread/include/rtservice.h **** {
+  75:rt-thread/include/rtservice.h ****     l->prev->next = n;
+ 122              		.loc 2 75 0
+ 123 002e A168     		ldr	r1, [r4, #8]
+ 124 0030 0B60     		str	r3, [r1]
+  76:rt-thread/include/rtservice.h ****     n->prev = l->prev;
+ 125              		.loc 2 76 0
+ 126 0032 A168     		ldr	r1, [r4, #8]
+ 127 0034 A961     		str	r1, [r5, #24]
+  77:rt-thread/include/rtservice.h **** 
+  78:rt-thread/include/rtservice.h ****     l->prev = n;
+ 128              		.loc 2 78 0
+ 129 0036 A360     		str	r3, [r4, #8]
+  79:rt-thread/include/rtservice.h ****     n->next = l;
+ 130              		.loc 2 79 0
+ 131 0038 6A61     		str	r2, [r5, #20]
+ 132              	.LBE12:
+ 133              	.LBE11:
+  61:rt-thread/components/drivers/src/completion.c ****                                   &(thread->tlist));
+  62:rt-thread/components/drivers/src/completion.c **** 
+  63:rt-thread/components/drivers/src/completion.c ****             /* current context checking */
+  64:rt-thread/components/drivers/src/completion.c ****             RT_DEBUG_NOT_IN_INTERRUPT;
+  65:rt-thread/components/drivers/src/completion.c **** 
+  66:rt-thread/components/drivers/src/completion.c ****             /* start timer */
+  67:rt-thread/components/drivers/src/completion.c ****             if (timeout > 0)
+ 134              		.loc 1 67 0
+ 135 003a 019B     		ldr	r3, [sp, #4]
+ 136 003c 002B     		cmp	r3, #0
+ 137 003e 09DD     		ble	.L6
+  68:rt-thread/components/drivers/src/completion.c ****             {
+  69:rt-thread/components/drivers/src/completion.c ****                 /* reset the timeout of thread timer and start it */
+  70:rt-thread/components/drivers/src/completion.c ****                 rt_timer_control(&(thread->thread_timer),
+ 138              		.loc 1 70 0
+ 139 0040 05F14C07 		add	r7, r5, #76
+ARM GAS  /tmp/cc0KiQ83.s 			page 6
+
+
+ 140 0044 01AA     		add	r2, sp, #4
+ 141 0046 0021     		movs	r1, #0
+ 142 0048 3846     		mov	r0, r7
+ 143 004a FFF7FEFF 		bl	rt_timer_control
+ 144              	.LVL13:
+  71:rt-thread/components/drivers/src/completion.c ****                                  RT_TIMER_CTRL_SET_TIME,
+  72:rt-thread/components/drivers/src/completion.c ****                                  &timeout);
+  73:rt-thread/components/drivers/src/completion.c ****                 rt_timer_start(&(thread->thread_timer));
+ 145              		.loc 1 73 0
+ 146 004e 3846     		mov	r0, r7
+ 147 0050 FFF7FEFF 		bl	rt_timer_start
+ 148              	.LVL14:
+ 149              	.L6:
+  74:rt-thread/components/drivers/src/completion.c ****             }
+  75:rt-thread/components/drivers/src/completion.c ****             /* enable interrupt */
+  76:rt-thread/components/drivers/src/completion.c ****             rt_hw_interrupt_enable(level);
+ 150              		.loc 1 76 0
+ 151 0054 3046     		mov	r0, r6
+ 152 0056 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 153              	.LVL15:
+  77:rt-thread/components/drivers/src/completion.c **** 
+  78:rt-thread/components/drivers/src/completion.c ****             /* do schedule */
+  79:rt-thread/components/drivers/src/completion.c ****             rt_schedule();
+ 154              		.loc 1 79 0
+ 155 005a FFF7FEFF 		bl	rt_schedule
+ 156              	.LVL16:
+  80:rt-thread/components/drivers/src/completion.c **** 
+  81:rt-thread/components/drivers/src/completion.c ****             /* thread is waked up */
+  82:rt-thread/components/drivers/src/completion.c ****             result = thread->error;
+ 157              		.loc 1 82 0
+ 158 005e 2D6B     		ldr	r5, [r5, #48]
+ 159              	.LVL17:
+  83:rt-thread/components/drivers/src/completion.c **** 
+  84:rt-thread/components/drivers/src/completion.c ****             level = rt_hw_interrupt_disable();
+ 160              		.loc 1 84 0
+ 161 0060 FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 162              	.LVL18:
+ 163 0064 0646     		mov	r6, r0
+ 164              	.LVL19:
+ 165              	.L4:
+  85:rt-thread/components/drivers/src/completion.c ****         }
+  86:rt-thread/components/drivers/src/completion.c ****     }
+  87:rt-thread/components/drivers/src/completion.c ****     /* clean completed flag */
+  88:rt-thread/components/drivers/src/completion.c ****     completion->flag = RT_UNCOMPLETED;
+ 166              		.loc 1 88 0
+ 167 0066 0023     		movs	r3, #0
+ 168 0068 2360     		str	r3, [r4]
+ 169              	.LVL20:
+ 170              	.L5:
+  89:rt-thread/components/drivers/src/completion.c **** 
+  90:rt-thread/components/drivers/src/completion.c **** __exit:
+  91:rt-thread/components/drivers/src/completion.c ****     rt_hw_interrupt_enable(level);
+ 171              		.loc 1 91 0
+ 172 006a 3046     		mov	r0, r6
+ 173 006c FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 174              	.LVL21:
+  92:rt-thread/components/drivers/src/completion.c **** 
+ARM GAS  /tmp/cc0KiQ83.s 			page 7
+
+
+  93:rt-thread/components/drivers/src/completion.c ****     return result;
+  94:rt-thread/components/drivers/src/completion.c **** }
+ 175              		.loc 1 94 0
+ 176 0070 2846     		mov	r0, r5
+ 177 0072 03B0     		add	sp, sp, #12
+ 178              	.LCFI3:
+ 179              		.cfi_remember_state
+ 180              		.cfi_def_cfa_offset 20
+ 181              		@ sp needed
+ 182 0074 F0BD     		pop	{r4, r5, r6, r7, pc}
+ 183              	.LVL22:
+ 184              	.L7:
+ 185              	.LCFI4:
+ 186              		.cfi_restore_state
+  38:rt-thread/components/drivers/src/completion.c ****     thread = rt_thread_self();
+ 187              		.loc 1 38 0
+ 188 0076 0025     		movs	r5, #0
+ 189              	.LVL23:
+ 190 0078 F5E7     		b	.L4
+ 191              	.LVL24:
+ 192              	.L8:
+  49:rt-thread/components/drivers/src/completion.c ****             goto __exit;
+ 193              		.loc 1 49 0
+ 194 007a 6FF00105 		mvn	r5, #1
+ 195              	.LVL25:
+ 196 007e F4E7     		b	.L5
+ 197              		.cfi_endproc
+ 198              	.LFE20:
+ 200              		.section	.text.rt_completion_done,"ax",%progbits
+ 201              		.align	1
+ 202              		.global	rt_completion_done
+ 203              		.syntax unified
+ 204              		.thumb
+ 205              		.thumb_func
+ 206              		.fpu fpv4-sp-d16
+ 208              	rt_completion_done:
+ 209              	.LFB21:
+  95:rt-thread/components/drivers/src/completion.c **** RTM_EXPORT(rt_completion_wait);
+  96:rt-thread/components/drivers/src/completion.c **** 
+  97:rt-thread/components/drivers/src/completion.c **** void rt_completion_done(struct rt_completion *completion)
+  98:rt-thread/components/drivers/src/completion.c **** {
+ 210              		.loc 1 98 0
+ 211              		.cfi_startproc
+ 212              		@ args = 0, pretend = 0, frame = 0
+ 213              		@ frame_needed = 0, uses_anonymous_args = 0
+ 214              	.LVL26:
+ 215 0000 38B5     		push	{r3, r4, r5, lr}
+ 216              	.LCFI5:
+ 217              		.cfi_def_cfa_offset 16
+ 218              		.cfi_offset 3, -16
+ 219              		.cfi_offset 4, -12
+ 220              		.cfi_offset 5, -8
+ 221              		.cfi_offset 14, -4
+  99:rt-thread/components/drivers/src/completion.c ****     rt_base_t level;
+ 100:rt-thread/components/drivers/src/completion.c ****     RT_ASSERT(completion != RT_NULL);
+ 101:rt-thread/components/drivers/src/completion.c **** 
+ 102:rt-thread/components/drivers/src/completion.c ****     if (completion->flag == RT_COMPLETED)
+ARM GAS  /tmp/cc0KiQ83.s 			page 8
+
+
+ 222              		.loc 1 102 0
+ 223 0002 0368     		ldr	r3, [r0]
+ 224 0004 012B     		cmp	r3, #1
+ 225 0006 16D0     		beq	.L10
+ 226 0008 0446     		mov	r4, r0
+ 103:rt-thread/components/drivers/src/completion.c ****         return;
+ 104:rt-thread/components/drivers/src/completion.c **** 
+ 105:rt-thread/components/drivers/src/completion.c ****     level = rt_hw_interrupt_disable();
+ 227              		.loc 1 105 0
+ 228 000a FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 229              	.LVL27:
+ 230 000e 0546     		mov	r5, r0
+ 231              	.LVL28:
+ 106:rt-thread/components/drivers/src/completion.c ****     completion->flag = RT_COMPLETED;
+ 232              		.loc 1 106 0
+ 233 0010 2346     		mov	r3, r4
+ 234 0012 0122     		movs	r2, #1
+ 235 0014 43F8042B 		str	r2, [r3], #4
+ 236              	.LVL29:
+ 237              	.LBB13:
+ 238              	.LBB14:
+  80:rt-thread/include/rtservice.h **** }
+  81:rt-thread/include/rtservice.h **** 
+  82:rt-thread/include/rtservice.h **** /**
+  83:rt-thread/include/rtservice.h ****  * @brief remove node from list.
+  84:rt-thread/include/rtservice.h ****  * @param n the node to remove from the list.
+  85:rt-thread/include/rtservice.h ****  */
+  86:rt-thread/include/rtservice.h **** rt_inline void rt_list_remove(rt_list_t *n)
+  87:rt-thread/include/rtservice.h **** {
+  88:rt-thread/include/rtservice.h ****     n->next->prev = n->prev;
+  89:rt-thread/include/rtservice.h ****     n->prev->next = n->next;
+  90:rt-thread/include/rtservice.h **** 
+  91:rt-thread/include/rtservice.h ****     n->next = n->prev = n;
+  92:rt-thread/include/rtservice.h **** }
+  93:rt-thread/include/rtservice.h **** 
+  94:rt-thread/include/rtservice.h **** /**
+  95:rt-thread/include/rtservice.h ****  * @brief tests whether a list is empty
+  96:rt-thread/include/rtservice.h ****  * @param l the list to test.
+  97:rt-thread/include/rtservice.h ****  */
+  98:rt-thread/include/rtservice.h **** rt_inline int rt_list_isempty(const rt_list_t *l)
+  99:rt-thread/include/rtservice.h **** {
+ 100:rt-thread/include/rtservice.h ****     return l->next == l;
+ 239              		.loc 2 100 0
+ 240 0018 6068     		ldr	r0, [r4, #4]
+ 241              	.LVL30:
+ 242              	.LBE14:
+ 243              	.LBE13:
+ 107:rt-thread/components/drivers/src/completion.c **** 
+ 108:rt-thread/components/drivers/src/completion.c ****     if (!rt_list_isempty(&(completion->suspended_list)))
+ 244              		.loc 1 108 0
+ 245 001a 8342     		cmp	r3, r0
+ 246 001c 08D0     		beq	.L12
+ 247              	.LVL31:
+ 248              	.LBB15:
+ 109:rt-thread/components/drivers/src/completion.c ****     {
+ 110:rt-thread/components/drivers/src/completion.c ****         /* there is one thread in suspended list */
+ 111:rt-thread/components/drivers/src/completion.c ****         struct rt_thread *thread;
+ARM GAS  /tmp/cc0KiQ83.s 			page 9
+
+
+ 112:rt-thread/components/drivers/src/completion.c **** 
+ 113:rt-thread/components/drivers/src/completion.c ****         /* get thread entry */
+ 114:rt-thread/components/drivers/src/completion.c ****         thread = rt_list_entry(completion->suspended_list.next,
+ 115:rt-thread/components/drivers/src/completion.c ****                                struct rt_thread,
+ 116:rt-thread/components/drivers/src/completion.c ****                                tlist);
+ 117:rt-thread/components/drivers/src/completion.c **** 
+ 118:rt-thread/components/drivers/src/completion.c ****         /* resume it */
+ 119:rt-thread/components/drivers/src/completion.c ****         rt_thread_resume(thread);
+ 249              		.loc 1 119 0
+ 250 001e 1438     		subs	r0, r0, #20
+ 251              	.LVL32:
+ 252 0020 FFF7FEFF 		bl	rt_thread_resume
+ 253              	.LVL33:
+ 120:rt-thread/components/drivers/src/completion.c ****         rt_hw_interrupt_enable(level);
+ 254              		.loc 1 120 0
+ 255 0024 2846     		mov	r0, r5
+ 256 0026 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 257              	.LVL34:
+ 121:rt-thread/components/drivers/src/completion.c **** 
+ 122:rt-thread/components/drivers/src/completion.c ****         /* perform a schedule */
+ 123:rt-thread/components/drivers/src/completion.c ****         rt_schedule();
+ 258              		.loc 1 123 0
+ 259 002a FFF7FEFF 		bl	rt_schedule
+ 260              	.LVL35:
+ 261              	.LBE15:
+ 262 002e 38BD     		pop	{r3, r4, r5, pc}
+ 263              	.LVL36:
+ 264              	.L12:
+ 124:rt-thread/components/drivers/src/completion.c ****     }
+ 125:rt-thread/components/drivers/src/completion.c ****     else
+ 126:rt-thread/components/drivers/src/completion.c ****     {
+ 127:rt-thread/components/drivers/src/completion.c ****         rt_hw_interrupt_enable(level);
+ 265              		.loc 1 127 0
+ 266 0030 2846     		mov	r0, r5
+ 267 0032 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 268              	.LVL37:
+ 269              	.L10:
+ 270 0036 38BD     		pop	{r3, r4, r5, pc}
+ 271              		.cfi_endproc
+ 272              	.LFE21:
+ 274              		.text
+ 275              	.Letext0:
+ 276              		.file 3 "rt-thread/include/rtdef.h"
+ 277              		.file 4 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/lock.h"
+ 278              		.file 5 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_types.h"
+ 279              		.file 6 "/opt/gcc-arm-none-eabi-6-2017-q2-update/lib/gcc/arm-none-eabi/6.3.1/include/stddef.h"
+ 280              		.file 7 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/reent.h"
+ 281              		.file 8 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/time.h"
+ 282              		.file 9 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/errno.h"
+ 283              		.file 10 "rt-thread/components/finsh/finsh_api.h"
+ 284              		.file 11 "rt-thread/components/drivers/include/ipc/completion.h"
+ 285              		.file 12 "rt-thread/include/rtthread.h"
+ 286              		.file 13 "rt-thread/include/rthw.h"
+ARM GAS  /tmp/cc0KiQ83.s 			page 10
+
+
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 completion.c
+     /tmp/cc0KiQ83.s:18     .text.rt_completion_init:0000000000000000 $t
+     /tmp/cc0KiQ83.s:25     .text.rt_completion_init:0000000000000000 rt_completion_init
+     /tmp/cc0KiQ83.s:64     .text.rt_completion_wait:0000000000000000 $t
+     /tmp/cc0KiQ83.s:71     .text.rt_completion_wait:0000000000000000 rt_completion_wait
+     /tmp/cc0KiQ83.s:201    .text.rt_completion_done:0000000000000000 $t
+     /tmp/cc0KiQ83.s:208    .text.rt_completion_done:0000000000000000 rt_completion_done
+                     .debug_frame:0000000000000010 $d
+
+UNDEFINED SYMBOLS
+rt_hw_interrupt_disable
+rt_hw_interrupt_enable
+rt_thread_self
+rt_thread_suspend
+rt_timer_control
+rt_timer_start
+rt_schedule
+rt_thread_resume

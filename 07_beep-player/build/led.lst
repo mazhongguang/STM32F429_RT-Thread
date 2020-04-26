@@ -1,0 +1,218 @@
+ARM GAS  /tmp/ccSK9iuz.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.eabi_attribute 27, 1
+   3              		.eabi_attribute 28, 1
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.file	"led.c"
+  14              		.text
+  15              	.Ltext0:
+  16              		.cfi_sections	.debug_frame
+  17              		.section	.text.led_on,"ax",%progbits
+  18              		.align	1
+  19              		.global	led_on
+  20              		.syntax unified
+  21              		.thumb
+  22              		.thumb_func
+  23              		.fpu fpv4-sp-d16
+  25              	led_on:
+  26              	.LFB139:
+  27              		.file 1 "hardware/LED/led.c"
+   1:hardware/LED/led.c **** #include "led.h"
+   2:hardware/LED/led.c **** #include "pin.h"
+   3:hardware/LED/led.c **** #include "rtdevice.h"
+   4:hardware/LED/led.c **** /********************************************************************************
+   5:hardware/LED/led.c **** 初始化LED IO 口，并使能PB时钟，默认LED0、LED1为高，即LED0、LED1灭
+   6:hardware/LED/led.c **** ********************************************************************************/
+   7:hardware/LED/led.c **** int led_init(void)
+   8:hardware/LED/led.c **** {
+   9:hardware/LED/led.c **** 	rt_pin_mode(LED_Green, PIN_MODE_OUTPUT);
+  10:hardware/LED/led.c **** 	led_off();
+  11:hardware/LED/led.c **** 	return 0;
+  12:hardware/LED/led.c **** }
+  13:hardware/LED/led.c **** 
+  14:hardware/LED/led.c **** int led_on(void)
+  15:hardware/LED/led.c **** {
+  28              		.loc 1 15 0
+  29              		.cfi_startproc
+  30              		@ args = 0, pretend = 0, frame = 0
+  31              		@ frame_needed = 0, uses_anonymous_args = 0
+  32 0000 08B5     		push	{r3, lr}
+  33              	.LCFI0:
+  34              		.cfi_def_cfa_offset 8
+  35              		.cfi_offset 3, -8
+  36              		.cfi_offset 14, -4
+  16:hardware/LED/led.c **** 	rt_pin_write(LED_Green, PIN_LOW);
+  37              		.loc 1 16 0
+  38 0002 0021     		movs	r1, #0
+  39 0004 1020     		movs	r0, #16
+  40 0006 FFF7FEFF 		bl	rt_pin_write
+  41              	.LVL0:
+  17:hardware/LED/led.c **** 	return 0;
+ARM GAS  /tmp/ccSK9iuz.s 			page 2
+
+
+  18:hardware/LED/led.c **** }
+  42              		.loc 1 18 0
+  43 000a 0020     		movs	r0, #0
+  44 000c 08BD     		pop	{r3, pc}
+  45              		.cfi_endproc
+  46              	.LFE139:
+  48              		.section	.text.led_off,"ax",%progbits
+  49              		.align	1
+  50              		.global	led_off
+  51              		.syntax unified
+  52              		.thumb
+  53              		.thumb_func
+  54              		.fpu fpv4-sp-d16
+  56              	led_off:
+  57              	.LFB140:
+  19:hardware/LED/led.c **** 
+  20:hardware/LED/led.c **** int led_off(void)
+  21:hardware/LED/led.c **** {
+  58              		.loc 1 21 0
+  59              		.cfi_startproc
+  60              		@ args = 0, pretend = 0, frame = 0
+  61              		@ frame_needed = 0, uses_anonymous_args = 0
+  62 0000 08B5     		push	{r3, lr}
+  63              	.LCFI1:
+  64              		.cfi_def_cfa_offset 8
+  65              		.cfi_offset 3, -8
+  66              		.cfi_offset 14, -4
+  22:hardware/LED/led.c **** 	rt_pin_write(LED_Green, PIN_HIGH);
+  67              		.loc 1 22 0
+  68 0002 0121     		movs	r1, #1
+  69 0004 1020     		movs	r0, #16
+  70 0006 FFF7FEFF 		bl	rt_pin_write
+  71              	.LVL1:
+  23:hardware/LED/led.c **** 	return 0;
+  24:hardware/LED/led.c **** }
+  72              		.loc 1 24 0
+  73 000a 0020     		movs	r0, #0
+  74 000c 08BD     		pop	{r3, pc}
+  75              		.cfi_endproc
+  76              	.LFE140:
+  78              		.section	.text.led_init,"ax",%progbits
+  79              		.align	1
+  80              		.global	led_init
+  81              		.syntax unified
+  82              		.thumb
+  83              		.thumb_func
+  84              		.fpu fpv4-sp-d16
+  86              	led_init:
+  87              	.LFB138:
+   8:hardware/LED/led.c **** 	rt_pin_mode(LED_Green, PIN_MODE_OUTPUT);
+  88              		.loc 1 8 0
+  89              		.cfi_startproc
+  90              		@ args = 0, pretend = 0, frame = 0
+  91              		@ frame_needed = 0, uses_anonymous_args = 0
+  92 0000 08B5     		push	{r3, lr}
+  93              	.LCFI2:
+  94              		.cfi_def_cfa_offset 8
+ARM GAS  /tmp/ccSK9iuz.s 			page 3
+
+
+  95              		.cfi_offset 3, -8
+  96              		.cfi_offset 14, -4
+   9:hardware/LED/led.c **** 	led_off();
+  97              		.loc 1 9 0
+  98 0002 0021     		movs	r1, #0
+  99 0004 1020     		movs	r0, #16
+ 100 0006 FFF7FEFF 		bl	rt_pin_mode
+ 101              	.LVL2:
+  10:hardware/LED/led.c **** 	return 0;
+ 102              		.loc 1 10 0
+ 103 000a FFF7FEFF 		bl	led_off
+ 104              	.LVL3:
+  12:hardware/LED/led.c **** 
+ 105              		.loc 1 12 0
+ 106 000e 0020     		movs	r0, #0
+ 107 0010 08BD     		pop	{r3, pc}
+ 108              		.cfi_endproc
+ 109              	.LFE138:
+ 111              		.section	.text.led_toggle,"ax",%progbits
+ 112              		.align	1
+ 113              		.global	led_toggle
+ 114              		.syntax unified
+ 115              		.thumb
+ 116              		.thumb_func
+ 117              		.fpu fpv4-sp-d16
+ 119              	led_toggle:
+ 120              	.LFB141:
+  25:hardware/LED/led.c **** 
+  26:hardware/LED/led.c **** int led_toggle(void)
+  27:hardware/LED/led.c **** {
+ 121              		.loc 1 27 0
+ 122              		.cfi_startproc
+ 123              		@ args = 0, pretend = 0, frame = 0
+ 124              		@ frame_needed = 0, uses_anonymous_args = 0
+ 125 0000 08B5     		push	{r3, lr}
+ 126              	.LCFI3:
+ 127              		.cfi_def_cfa_offset 8
+ 128              		.cfi_offset 3, -8
+ 129              		.cfi_offset 14, -4
+  28:hardware/LED/led.c **** 	rt_pin_write(LED_Green, !rt_pin_read(LED_Green));
+ 130              		.loc 1 28 0
+ 131 0002 1020     		movs	r0, #16
+ 132 0004 FFF7FEFF 		bl	rt_pin_read
+ 133              	.LVL4:
+ 134 0008 B0FA80F1 		clz	r1, r0
+ 135 000c 4909     		lsrs	r1, r1, #5
+ 136 000e 1020     		movs	r0, #16
+ 137 0010 FFF7FEFF 		bl	rt_pin_write
+ 138              	.LVL5:
+  29:hardware/LED/led.c **** 	return 0;
+  30:hardware/LED/led.c **** }
+ 139              		.loc 1 30 0
+ 140 0014 0020     		movs	r0, #0
+ 141 0016 08BD     		pop	{r3, pc}
+ 142              		.cfi_endproc
+ 143              	.LFE141:
+ 145              		.text
+ARM GAS  /tmp/ccSK9iuz.s 			page 4
+
+
+ 146              	.Letext0:
+ 147              		.file 2 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/machine/_default_types.h"
+ 148              		.file 3 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_stdint.h"
+ 149              		.file 4 "CORE/core_cm4.h"
+ 150              		.file 5 "USER/system_stm32f4xx.h"
+ 151              		.file 6 "HALLIB/Inc/stm32f4xx_hal.h"
+ 152              		.file 7 "rt-thread/include/rtdef.h"
+ 153              		.file 8 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/lock.h"
+ 154              		.file 9 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_types.h"
+ 155              		.file 10 "/opt/gcc-arm-none-eabi-6-2017-q2-update/lib/gcc/arm-none-eabi/6.3.1/include/stddef.h"
+ 156              		.file 11 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/reent.h"
+ 157              		.file 12 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/time.h"
+ 158              		.file 13 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/errno.h"
+ 159              		.file 14 "rt-thread/components/finsh/finsh_api.h"
+ 160              		.file 15 "board/board.h"
+ 161              		.file 16 "rt-thread/components/drivers/include/drivers/pin.h"
+ARM GAS  /tmp/ccSK9iuz.s 			page 5
+
+
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 led.c
+     /tmp/ccSK9iuz.s:18     .text.led_on:0000000000000000 $t
+     /tmp/ccSK9iuz.s:25     .text.led_on:0000000000000000 led_on
+     /tmp/ccSK9iuz.s:49     .text.led_off:0000000000000000 $t
+     /tmp/ccSK9iuz.s:56     .text.led_off:0000000000000000 led_off
+     /tmp/ccSK9iuz.s:79     .text.led_init:0000000000000000 $t
+     /tmp/ccSK9iuz.s:86     .text.led_init:0000000000000000 led_init
+     /tmp/ccSK9iuz.s:112    .text.led_toggle:0000000000000000 $t
+     /tmp/ccSK9iuz.s:119    .text.led_toggle:0000000000000000 led_toggle
+                     .debug_frame:0000000000000010 $d
+
+UNDEFINED SYMBOLS
+rt_pin_write
+rt_pin_mode
+rt_pin_read

@@ -1,0 +1,2150 @@
+ARM GAS  /tmp/ccEZaTT9.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.eabi_attribute 27, 1
+   3              		.eabi_attribute 28, 1
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.file	"timer.c"
+  14              		.text
+  15              	.Ltext0:
+  16              		.cfi_sections	.debug_frame
+  17              		.section	.text._rt_timer_init,"ax",%progbits
+  18              		.align	1
+  19              		.syntax unified
+  20              		.thumb
+  21              		.thumb_func
+  22              		.fpu fpv4-sp-d16
+  24              	_rt_timer_init:
+  25              	.LFB17:
+  26              		.file 1 "rt-thread/src/timer.c"
+   1:rt-thread/src/timer.c **** /*
+   2:rt-thread/src/timer.c ****  * Copyright (c) 2006-2018, RT-Thread Development Team
+   3:rt-thread/src/timer.c ****  *
+   4:rt-thread/src/timer.c ****  * SPDX-License-Identifier: Apache-2.0
+   5:rt-thread/src/timer.c ****  *
+   6:rt-thread/src/timer.c ****  * Change Logs:
+   7:rt-thread/src/timer.c ****  * Date           Author       Notes
+   8:rt-thread/src/timer.c ****  * 2006-03-12     Bernard      first version
+   9:rt-thread/src/timer.c ****  * 2006-04-29     Bernard      implement thread timer
+  10:rt-thread/src/timer.c ****  * 2006-06-04     Bernard      implement rt_timer_control
+  11:rt-thread/src/timer.c ****  * 2006-08-10     Bernard      fix the periodic timer bug
+  12:rt-thread/src/timer.c ****  * 2006-09-03     Bernard      implement rt_timer_detach
+  13:rt-thread/src/timer.c ****  * 2009-11-11     LiJin        add soft timer
+  14:rt-thread/src/timer.c ****  * 2010-05-12     Bernard      fix the timer check bug.
+  15:rt-thread/src/timer.c ****  * 2010-11-02     Charlie      re-implement tick overflow issue
+  16:rt-thread/src/timer.c ****  * 2012-12-15     Bernard      fix the next timeout issue in soft timer
+  17:rt-thread/src/timer.c ****  * 2014-07-12     Bernard      does not lock scheduler when invoking soft-timer
+  18:rt-thread/src/timer.c ****  *                             timeout function.
+  19:rt-thread/src/timer.c ****  */
+  20:rt-thread/src/timer.c **** 
+  21:rt-thread/src/timer.c **** #include <rtthread.h>
+  22:rt-thread/src/timer.c **** #include <rthw.h>
+  23:rt-thread/src/timer.c **** 
+  24:rt-thread/src/timer.c **** /* hard timer list */
+  25:rt-thread/src/timer.c **** static rt_list_t rt_timer_list[RT_TIMER_SKIP_LIST_LEVEL];
+  26:rt-thread/src/timer.c **** 
+  27:rt-thread/src/timer.c **** #ifdef RT_USING_TIMER_SOFT
+  28:rt-thread/src/timer.c **** #ifndef RT_TIMER_THREAD_STACK_SIZE
+  29:rt-thread/src/timer.c **** #define RT_TIMER_THREAD_STACK_SIZE     512
+  30:rt-thread/src/timer.c **** #endif
+  31:rt-thread/src/timer.c **** 
+  32:rt-thread/src/timer.c **** #ifndef RT_TIMER_THREAD_PRIO
+ARM GAS  /tmp/ccEZaTT9.s 			page 2
+
+
+  33:rt-thread/src/timer.c **** #define RT_TIMER_THREAD_PRIO           0
+  34:rt-thread/src/timer.c **** #endif
+  35:rt-thread/src/timer.c **** 
+  36:rt-thread/src/timer.c **** /* soft timer list */
+  37:rt-thread/src/timer.c **** static rt_list_t rt_soft_timer_list[RT_TIMER_SKIP_LIST_LEVEL];
+  38:rt-thread/src/timer.c **** static struct rt_thread timer_thread;
+  39:rt-thread/src/timer.c **** ALIGN(RT_ALIGN_SIZE)
+  40:rt-thread/src/timer.c **** static rt_uint8_t timer_thread_stack[RT_TIMER_THREAD_STACK_SIZE];
+  41:rt-thread/src/timer.c **** #endif
+  42:rt-thread/src/timer.c **** 
+  43:rt-thread/src/timer.c **** #ifdef RT_USING_HOOK
+  44:rt-thread/src/timer.c **** extern void (*rt_object_take_hook)(struct rt_object *object);
+  45:rt-thread/src/timer.c **** extern void (*rt_object_put_hook)(struct rt_object *object);
+  46:rt-thread/src/timer.c **** static void (*rt_timer_enter_hook)(struct rt_timer *timer);
+  47:rt-thread/src/timer.c **** static void (*rt_timer_exit_hook)(struct rt_timer *timer);
+  48:rt-thread/src/timer.c **** 
+  49:rt-thread/src/timer.c **** /**
+  50:rt-thread/src/timer.c ****  * @addtogroup Hook
+  51:rt-thread/src/timer.c ****  */
+  52:rt-thread/src/timer.c **** 
+  53:rt-thread/src/timer.c **** /**@{*/
+  54:rt-thread/src/timer.c **** 
+  55:rt-thread/src/timer.c **** /**
+  56:rt-thread/src/timer.c ****  * This function will set a hook function, which will be invoked when enter
+  57:rt-thread/src/timer.c ****  * timer timeout callback function.
+  58:rt-thread/src/timer.c ****  *
+  59:rt-thread/src/timer.c ****  * @param hook the hook function
+  60:rt-thread/src/timer.c ****  */
+  61:rt-thread/src/timer.c **** void rt_timer_enter_sethook(void (*hook)(struct rt_timer *timer))
+  62:rt-thread/src/timer.c **** {
+  63:rt-thread/src/timer.c ****     rt_timer_enter_hook = hook;
+  64:rt-thread/src/timer.c **** }
+  65:rt-thread/src/timer.c **** 
+  66:rt-thread/src/timer.c **** /**
+  67:rt-thread/src/timer.c ****  * This function will set a hook function, which will be invoked when exit
+  68:rt-thread/src/timer.c ****  * timer timeout callback function.
+  69:rt-thread/src/timer.c ****  *
+  70:rt-thread/src/timer.c ****  * @param hook the hook function
+  71:rt-thread/src/timer.c ****  */
+  72:rt-thread/src/timer.c **** void rt_timer_exit_sethook(void (*hook)(struct rt_timer *timer))
+  73:rt-thread/src/timer.c **** {
+  74:rt-thread/src/timer.c ****     rt_timer_exit_hook = hook;
+  75:rt-thread/src/timer.c **** }
+  76:rt-thread/src/timer.c **** 
+  77:rt-thread/src/timer.c **** /**@}*/
+  78:rt-thread/src/timer.c **** #endif
+  79:rt-thread/src/timer.c **** 
+  80:rt-thread/src/timer.c **** static void _rt_timer_init(rt_timer_t timer,
+  81:rt-thread/src/timer.c ****                            void (*timeout)(void *parameter),
+  82:rt-thread/src/timer.c ****                            void      *parameter,
+  83:rt-thread/src/timer.c ****                            rt_tick_t  time,
+  84:rt-thread/src/timer.c ****                            rt_uint8_t flag)
+  85:rt-thread/src/timer.c **** {
+  27              		.loc 1 85 0
+  28              		.cfi_startproc
+  29              		@ args = 4, pretend = 0, frame = 0
+  30              		@ frame_needed = 0, uses_anonymous_args = 0
+ARM GAS  /tmp/ccEZaTT9.s 			page 3
+
+
+  31              		@ link register save eliminated.
+  32              	.LVL0:
+  33 0000 10B4     		push	{r4}
+  34              	.LCFI0:
+  35              		.cfi_def_cfa_offset 4
+  36              		.cfi_offset 4, -4
+  86:rt-thread/src/timer.c ****     int i;
+  87:rt-thread/src/timer.c **** 
+  88:rt-thread/src/timer.c ****     /* set flag */
+  89:rt-thread/src/timer.c ****     timer->parent.flag  = flag;
+  90:rt-thread/src/timer.c **** 
+  91:rt-thread/src/timer.c ****     /* set deactivated */
+  92:rt-thread/src/timer.c ****     timer->parent.flag &= ~RT_TIMER_FLAG_ACTIVATED;
+  37              		.loc 1 92 0
+  38 0002 9DF80440 		ldrb	r4, [sp, #4]	@ zero_extendqisi2
+  39 0006 24F00104 		bic	r4, r4, #1
+  40 000a 4472     		strb	r4, [r0, #9]
+  93:rt-thread/src/timer.c **** 
+  94:rt-thread/src/timer.c ****     timer->timeout_func = timeout;
+  41              		.loc 1 94 0
+  42 000c C161     		str	r1, [r0, #28]
+  95:rt-thread/src/timer.c ****     timer->parameter    = parameter;
+  43              		.loc 1 95 0
+  44 000e 0262     		str	r2, [r0, #32]
+  96:rt-thread/src/timer.c **** 
+  97:rt-thread/src/timer.c ****     timer->timeout_tick = 0;
+  45              		.loc 1 97 0
+  46 0010 0022     		movs	r2, #0
+  47              	.LVL1:
+  48 0012 8262     		str	r2, [r0, #40]
+  98:rt-thread/src/timer.c ****     timer->init_tick    = time;
+  49              		.loc 1 98 0
+  50 0014 4362     		str	r3, [r0, #36]
+  51              	.LVL2:
+  99:rt-thread/src/timer.c **** 
+ 100:rt-thread/src/timer.c ****     /* initialize timer list */
+ 101:rt-thread/src/timer.c ****     for (i = 0; i < RT_TIMER_SKIP_LIST_LEVEL; i++)
+  52              		.loc 1 101 0
+  53 0016 1346     		mov	r3, r2
+  54              	.LVL3:
+  55              	.L2:
+  56              		.loc 1 101 0 is_stmt 0 discriminator 1
+  57 0018 002B     		cmp	r3, #0
+  58 001a 02DD     		ble	.L3
+ 102:rt-thread/src/timer.c ****     {
+ 103:rt-thread/src/timer.c ****         rt_list_init(&(timer->row[i]));
+ 104:rt-thread/src/timer.c ****     }
+ 105:rt-thread/src/timer.c **** }
+  59              		.loc 1 105 0 is_stmt 1
+  60 001c 5DF8044B 		ldr	r4, [sp], #4
+  61              	.LCFI1:
+  62              		.cfi_remember_state
+  63              		.cfi_restore 4
+  64              		.cfi_def_cfa_offset 0
+  65              	.LVL4:
+  66 0020 7047     		bx	lr
+  67              	.LVL5:
+ARM GAS  /tmp/ccEZaTT9.s 			page 4
+
+
+  68              	.L3:
+  69              	.LCFI2:
+  70              		.cfi_restore_state
+ 103:rt-thread/src/timer.c ****     }
+  71              		.loc 1 103 0 discriminator 3
+  72 0022 9A1C     		adds	r2, r3, #2
+  73 0024 00EBC202 		add	r2, r0, r2, lsl #3
+  74 0028 111D     		adds	r1, r2, #4
+  75              	.LVL6:
+  76              	.LBB37:
+  77              	.LBB38:
+  78              		.file 2 "rt-thread/include/rtservice.h"
+   1:rt-thread/include/rtservice.h **** /*
+   2:rt-thread/include/rtservice.h ****  * Copyright (c) 2006-2018, RT-Thread Development Team
+   3:rt-thread/include/rtservice.h ****  *
+   4:rt-thread/include/rtservice.h ****  * SPDX-License-Identifier: Apache-2.0
+   5:rt-thread/include/rtservice.h ****  *
+   6:rt-thread/include/rtservice.h ****  * Change Logs:
+   7:rt-thread/include/rtservice.h ****  * Date           Author       Notes
+   8:rt-thread/include/rtservice.h ****  * 2006-03-16     Bernard      the first version
+   9:rt-thread/include/rtservice.h ****  * 2006-09-07     Bernard      move the kservice APIs to rtthread.h
+  10:rt-thread/include/rtservice.h ****  * 2007-06-27     Bernard      fix the rt_list_remove bug
+  11:rt-thread/include/rtservice.h ****  * 2012-03-22     Bernard      rename kservice.h to rtservice.h
+  12:rt-thread/include/rtservice.h ****  * 2017-11-15     JasonJia     Modify rt_slist_foreach to rt_slist_for_each_entry.
+  13:rt-thread/include/rtservice.h ****  *                             Make code cleanup.
+  14:rt-thread/include/rtservice.h ****  */
+  15:rt-thread/include/rtservice.h **** 
+  16:rt-thread/include/rtservice.h **** #ifndef __RT_SERVICE_H__
+  17:rt-thread/include/rtservice.h **** #define __RT_SERVICE_H__
+  18:rt-thread/include/rtservice.h **** 
+  19:rt-thread/include/rtservice.h **** #ifdef __cplusplus
+  20:rt-thread/include/rtservice.h **** extern "C" {
+  21:rt-thread/include/rtservice.h **** #endif
+  22:rt-thread/include/rtservice.h **** 
+  23:rt-thread/include/rtservice.h **** /**
+  24:rt-thread/include/rtservice.h ****  * @addtogroup KernelService
+  25:rt-thread/include/rtservice.h ****  */
+  26:rt-thread/include/rtservice.h **** 
+  27:rt-thread/include/rtservice.h **** /**@{*/
+  28:rt-thread/include/rtservice.h **** 
+  29:rt-thread/include/rtservice.h **** /**
+  30:rt-thread/include/rtservice.h ****  * rt_container_of - return the member address of ptr, if the type of ptr is the
+  31:rt-thread/include/rtservice.h ****  * struct type.
+  32:rt-thread/include/rtservice.h ****  */
+  33:rt-thread/include/rtservice.h **** #define rt_container_of(ptr, type, member) \
+  34:rt-thread/include/rtservice.h ****     ((type *)((char *)(ptr) - (unsigned long)(&((type *)0)->member)))
+  35:rt-thread/include/rtservice.h **** 
+  36:rt-thread/include/rtservice.h **** 
+  37:rt-thread/include/rtservice.h **** /**
+  38:rt-thread/include/rtservice.h ****  * @brief initialize a list object
+  39:rt-thread/include/rtservice.h ****  */
+  40:rt-thread/include/rtservice.h **** #define RT_LIST_OBJECT_INIT(object) { &(object), &(object) }
+  41:rt-thread/include/rtservice.h **** 
+  42:rt-thread/include/rtservice.h **** /**
+  43:rt-thread/include/rtservice.h ****  * @brief initialize a list
+  44:rt-thread/include/rtservice.h ****  *
+  45:rt-thread/include/rtservice.h ****  * @param l list to be initialized
+ARM GAS  /tmp/ccEZaTT9.s 			page 5
+
+
+  46:rt-thread/include/rtservice.h ****  */
+  47:rt-thread/include/rtservice.h **** rt_inline void rt_list_init(rt_list_t *l)
+  48:rt-thread/include/rtservice.h **** {
+  49:rt-thread/include/rtservice.h ****     l->next = l->prev = l;
+  79              		.loc 2 49 0 discriminator 3
+  80 002a 9160     		str	r1, [r2, #8]
+  81 002c 5160     		str	r1, [r2, #4]
+  82              	.LVL7:
+  83              	.LBE38:
+  84              	.LBE37:
+ 101:rt-thread/src/timer.c ****     {
+  85              		.loc 1 101 0 discriminator 3
+  86 002e 0133     		adds	r3, r3, #1
+  87              	.LVL8:
+  88 0030 F2E7     		b	.L2
+  89              		.cfi_endproc
+  90              	.LFE17:
+  92              		.section	.text.rt_timer_list_next_timeout,"ax",%progbits
+  93              		.align	1
+  94              		.syntax unified
+  95              		.thumb
+  96              		.thumb_func
+  97              		.fpu fpv4-sp-d16
+  99              	rt_timer_list_next_timeout:
+ 100              	.LFB18:
+ 106:rt-thread/src/timer.c **** 
+ 107:rt-thread/src/timer.c **** /* the fist timer always in the last row */
+ 108:rt-thread/src/timer.c **** static rt_tick_t rt_timer_list_next_timeout(rt_list_t timer_list[])
+ 109:rt-thread/src/timer.c **** {
+ 101              		.loc 1 109 0
+ 102              		.cfi_startproc
+ 103              		@ args = 0, pretend = 0, frame = 0
+ 104              		@ frame_needed = 0, uses_anonymous_args = 0
+ 105              		@ link register save eliminated.
+ 106              	.LVL9:
+ 107              	.LBB39:
+ 108              	.LBB40:
+  50:rt-thread/include/rtservice.h **** }
+  51:rt-thread/include/rtservice.h **** 
+  52:rt-thread/include/rtservice.h **** /**
+  53:rt-thread/include/rtservice.h ****  * @brief insert a node after a list
+  54:rt-thread/include/rtservice.h ****  *
+  55:rt-thread/include/rtservice.h ****  * @param l list to insert it
+  56:rt-thread/include/rtservice.h ****  * @param n new node to be inserted
+  57:rt-thread/include/rtservice.h ****  */
+  58:rt-thread/include/rtservice.h **** rt_inline void rt_list_insert_after(rt_list_t *l, rt_list_t *n)
+  59:rt-thread/include/rtservice.h **** {
+  60:rt-thread/include/rtservice.h ****     l->next->prev = n;
+  61:rt-thread/include/rtservice.h ****     n->next = l->next;
+  62:rt-thread/include/rtservice.h **** 
+  63:rt-thread/include/rtservice.h ****     l->next = n;
+  64:rt-thread/include/rtservice.h ****     n->prev = l;
+  65:rt-thread/include/rtservice.h **** }
+  66:rt-thread/include/rtservice.h **** 
+  67:rt-thread/include/rtservice.h **** /**
+  68:rt-thread/include/rtservice.h ****  * @brief insert a node before a list
+  69:rt-thread/include/rtservice.h ****  *
+ARM GAS  /tmp/ccEZaTT9.s 			page 6
+
+
+  70:rt-thread/include/rtservice.h ****  * @param n new node to be inserted
+  71:rt-thread/include/rtservice.h ****  * @param l list to insert it
+  72:rt-thread/include/rtservice.h ****  */
+  73:rt-thread/include/rtservice.h **** rt_inline void rt_list_insert_before(rt_list_t *l, rt_list_t *n)
+  74:rt-thread/include/rtservice.h **** {
+  75:rt-thread/include/rtservice.h ****     l->prev->next = n;
+  76:rt-thread/include/rtservice.h ****     n->prev = l->prev;
+  77:rt-thread/include/rtservice.h **** 
+  78:rt-thread/include/rtservice.h ****     l->prev = n;
+  79:rt-thread/include/rtservice.h ****     n->next = l;
+  80:rt-thread/include/rtservice.h **** }
+  81:rt-thread/include/rtservice.h **** 
+  82:rt-thread/include/rtservice.h **** /**
+  83:rt-thread/include/rtservice.h ****  * @brief remove node from list.
+  84:rt-thread/include/rtservice.h ****  * @param n the node to remove from the list.
+  85:rt-thread/include/rtservice.h ****  */
+  86:rt-thread/include/rtservice.h **** rt_inline void rt_list_remove(rt_list_t *n)
+  87:rt-thread/include/rtservice.h **** {
+  88:rt-thread/include/rtservice.h ****     n->next->prev = n->prev;
+  89:rt-thread/include/rtservice.h ****     n->prev->next = n->next;
+  90:rt-thread/include/rtservice.h **** 
+  91:rt-thread/include/rtservice.h ****     n->next = n->prev = n;
+  92:rt-thread/include/rtservice.h **** }
+  93:rt-thread/include/rtservice.h **** 
+  94:rt-thread/include/rtservice.h **** /**
+  95:rt-thread/include/rtservice.h ****  * @brief tests whether a list is empty
+  96:rt-thread/include/rtservice.h ****  * @param l the list to test.
+  97:rt-thread/include/rtservice.h ****  */
+  98:rt-thread/include/rtservice.h **** rt_inline int rt_list_isempty(const rt_list_t *l)
+  99:rt-thread/include/rtservice.h **** {
+ 100:rt-thread/include/rtservice.h ****     return l->next == l;
+ 109              		.loc 2 100 0
+ 110 0000 0368     		ldr	r3, [r0]
+ 111              	.LVL10:
+ 112              	.LBE40:
+ 113              	.LBE39:
+ 110:rt-thread/src/timer.c ****     struct rt_timer *timer;
+ 111:rt-thread/src/timer.c **** 
+ 112:rt-thread/src/timer.c ****     if (rt_list_isempty(&timer_list[RT_TIMER_SKIP_LIST_LEVEL - 1]))
+ 114              		.loc 1 112 0
+ 115 0002 9842     		cmp	r0, r3
+ 116 0004 01D0     		beq	.L7
+ 117              	.LVL11:
+ 113:rt-thread/src/timer.c ****         return RT_TICK_MAX;
+ 114:rt-thread/src/timer.c **** 
+ 115:rt-thread/src/timer.c ****     timer = rt_list_entry(timer_list[RT_TIMER_SKIP_LIST_LEVEL - 1].next,
+ 116:rt-thread/src/timer.c ****                           struct rt_timer, row[RT_TIMER_SKIP_LIST_LEVEL - 1]);
+ 117:rt-thread/src/timer.c **** 
+ 118:rt-thread/src/timer.c ****     return timer->timeout_tick;
+ 118              		.loc 1 118 0
+ 119 0006 5869     		ldr	r0, [r3, #20]
+ 120              	.LVL12:
+ 121 0008 7047     		bx	lr
+ 122              	.LVL13:
+ 123              	.L7:
+ 113:rt-thread/src/timer.c ****         return RT_TICK_MAX;
+ 124              		.loc 1 113 0
+ARM GAS  /tmp/ccEZaTT9.s 			page 7
+
+
+ 125 000a 4FF0FF30 		mov	r0, #-1
+ 126              	.LVL14:
+ 119:rt-thread/src/timer.c **** }
+ 127              		.loc 1 119 0
+ 128 000e 7047     		bx	lr
+ 129              		.cfi_endproc
+ 130              	.LFE18:
+ 132              		.section	.text.rt_timer_enter_sethook,"ax",%progbits
+ 133              		.align	1
+ 134              		.global	rt_timer_enter_sethook
+ 135              		.syntax unified
+ 136              		.thumb
+ 137              		.thumb_func
+ 138              		.fpu fpv4-sp-d16
+ 140              	rt_timer_enter_sethook:
+ 141              	.LFB15:
+  62:rt-thread/src/timer.c ****     rt_timer_enter_hook = hook;
+ 142              		.loc 1 62 0
+ 143              		.cfi_startproc
+ 144              		@ args = 0, pretend = 0, frame = 0
+ 145              		@ frame_needed = 0, uses_anonymous_args = 0
+ 146              		@ link register save eliminated.
+ 147              	.LVL15:
+  63:rt-thread/src/timer.c **** }
+ 148              		.loc 1 63 0
+ 149 0000 014B     		ldr	r3, .L9
+ 150 0002 1860     		str	r0, [r3]
+ 151 0004 7047     		bx	lr
+ 152              	.L10:
+ 153 0006 00BF     		.align	2
+ 154              	.L9:
+ 155 0008 00000000 		.word	.LANCHOR0
+ 156              		.cfi_endproc
+ 157              	.LFE15:
+ 159              		.section	.text.rt_timer_exit_sethook,"ax",%progbits
+ 160              		.align	1
+ 161              		.global	rt_timer_exit_sethook
+ 162              		.syntax unified
+ 163              		.thumb
+ 164              		.thumb_func
+ 165              		.fpu fpv4-sp-d16
+ 167              	rt_timer_exit_sethook:
+ 168              	.LFB16:
+  73:rt-thread/src/timer.c ****     rt_timer_exit_hook = hook;
+ 169              		.loc 1 73 0
+ 170              		.cfi_startproc
+ 171              		@ args = 0, pretend = 0, frame = 0
+ 172              		@ frame_needed = 0, uses_anonymous_args = 0
+ 173              		@ link register save eliminated.
+ 174              	.LVL16:
+  74:rt-thread/src/timer.c **** }
+ 175              		.loc 1 74 0
+ 176 0000 014B     		ldr	r3, .L12
+ 177 0002 1860     		str	r0, [r3]
+ 178 0004 7047     		bx	lr
+ 179              	.L13:
+ 180 0006 00BF     		.align	2
+ARM GAS  /tmp/ccEZaTT9.s 			page 8
+
+
+ 181              	.L12:
+ 182 0008 00000000 		.word	.LANCHOR1
+ 183              		.cfi_endproc
+ 184              	.LFE16:
+ 186              		.section	.text.rt_timer_init,"ax",%progbits
+ 187              		.align	1
+ 188              		.global	rt_timer_init
+ 189              		.syntax unified
+ 190              		.thumb
+ 191              		.thumb_func
+ 192              		.fpu fpv4-sp-d16
+ 194              	rt_timer_init:
+ 195              	.LFB20:
+ 120:rt-thread/src/timer.c **** 
+ 121:rt-thread/src/timer.c **** rt_inline void _rt_timer_remove(rt_timer_t timer)
+ 122:rt-thread/src/timer.c **** {
+ 123:rt-thread/src/timer.c ****     int i;
+ 124:rt-thread/src/timer.c **** 
+ 125:rt-thread/src/timer.c ****     for (i = 0; i < RT_TIMER_SKIP_LIST_LEVEL; i++)
+ 126:rt-thread/src/timer.c ****     {
+ 127:rt-thread/src/timer.c ****         rt_list_remove(&timer->row[i]);
+ 128:rt-thread/src/timer.c ****     }
+ 129:rt-thread/src/timer.c **** }
+ 130:rt-thread/src/timer.c **** 
+ 131:rt-thread/src/timer.c **** #if RT_DEBUG_TIMER
+ 132:rt-thread/src/timer.c **** static int rt_timer_count_height(struct rt_timer *timer)
+ 133:rt-thread/src/timer.c **** {
+ 134:rt-thread/src/timer.c ****     int i, cnt = 0;
+ 135:rt-thread/src/timer.c **** 
+ 136:rt-thread/src/timer.c ****     for (i = 0; i < RT_TIMER_SKIP_LIST_LEVEL; i++)
+ 137:rt-thread/src/timer.c ****     {
+ 138:rt-thread/src/timer.c ****         if (!rt_list_isempty(&timer->row[i]))
+ 139:rt-thread/src/timer.c ****             cnt++;
+ 140:rt-thread/src/timer.c ****     }
+ 141:rt-thread/src/timer.c ****     return cnt;
+ 142:rt-thread/src/timer.c **** }
+ 143:rt-thread/src/timer.c **** 
+ 144:rt-thread/src/timer.c **** void rt_timer_dump(rt_list_t timer_heads[])
+ 145:rt-thread/src/timer.c **** {
+ 146:rt-thread/src/timer.c ****     rt_list_t *list;
+ 147:rt-thread/src/timer.c **** 
+ 148:rt-thread/src/timer.c ****     for (list = timer_heads[RT_TIMER_SKIP_LIST_LEVEL - 1].next;
+ 149:rt-thread/src/timer.c ****          list != &timer_heads[RT_TIMER_SKIP_LIST_LEVEL - 1];
+ 150:rt-thread/src/timer.c ****          list = list->next)
+ 151:rt-thread/src/timer.c ****     {
+ 152:rt-thread/src/timer.c ****         struct rt_timer *timer = rt_list_entry(list,
+ 153:rt-thread/src/timer.c ****                                                struct rt_timer,
+ 154:rt-thread/src/timer.c ****                                                row[RT_TIMER_SKIP_LIST_LEVEL - 1]);
+ 155:rt-thread/src/timer.c ****         rt_kprintf("%d", rt_timer_count_height(timer));
+ 156:rt-thread/src/timer.c ****     }
+ 157:rt-thread/src/timer.c ****     rt_kprintf("\n");
+ 158:rt-thread/src/timer.c **** }
+ 159:rt-thread/src/timer.c **** #endif
+ 160:rt-thread/src/timer.c **** 
+ 161:rt-thread/src/timer.c **** /**
+ 162:rt-thread/src/timer.c ****  * @addtogroup Clock
+ 163:rt-thread/src/timer.c ****  */
+ARM GAS  /tmp/ccEZaTT9.s 			page 9
+
+
+ 164:rt-thread/src/timer.c **** 
+ 165:rt-thread/src/timer.c **** /**@{*/
+ 166:rt-thread/src/timer.c **** 
+ 167:rt-thread/src/timer.c **** /**
+ 168:rt-thread/src/timer.c ****  * This function will initialize a timer, normally this function is used to
+ 169:rt-thread/src/timer.c ****  * initialize a static timer object.
+ 170:rt-thread/src/timer.c ****  *
+ 171:rt-thread/src/timer.c ****  * @param timer the static timer object
+ 172:rt-thread/src/timer.c ****  * @param name the name of timer
+ 173:rt-thread/src/timer.c ****  * @param timeout the timeout function
+ 174:rt-thread/src/timer.c ****  * @param parameter the parameter of timeout function
+ 175:rt-thread/src/timer.c ****  * @param time the tick of timer
+ 176:rt-thread/src/timer.c ****  * @param flag the flag of timer
+ 177:rt-thread/src/timer.c ****  */
+ 178:rt-thread/src/timer.c **** void rt_timer_init(rt_timer_t  timer,
+ 179:rt-thread/src/timer.c ****                    const char *name,
+ 180:rt-thread/src/timer.c ****                    void (*timeout)(void *parameter),
+ 181:rt-thread/src/timer.c ****                    void       *parameter,
+ 182:rt-thread/src/timer.c ****                    rt_tick_t   time,
+ 183:rt-thread/src/timer.c ****                    rt_uint8_t  flag)
+ 184:rt-thread/src/timer.c **** {
+ 196              		.loc 1 184 0
+ 197              		.cfi_startproc
+ 198              		@ args = 8, pretend = 0, frame = 0
+ 199              		@ frame_needed = 0, uses_anonymous_args = 0
+ 200              	.LVL17:
+ 201 0000 70B5     		push	{r4, r5, r6, lr}
+ 202              	.LCFI3:
+ 203              		.cfi_def_cfa_offset 16
+ 204              		.cfi_offset 4, -16
+ 205              		.cfi_offset 5, -12
+ 206              		.cfi_offset 6, -8
+ 207              		.cfi_offset 14, -4
+ 208 0002 82B0     		sub	sp, sp, #8
+ 209              	.LCFI4:
+ 210              		.cfi_def_cfa_offset 24
+ 211 0004 0446     		mov	r4, r0
+ 212 0006 1546     		mov	r5, r2
+ 213 0008 1E46     		mov	r6, r3
+ 185:rt-thread/src/timer.c ****     /* timer check */
+ 186:rt-thread/src/timer.c ****     RT_ASSERT(timer != RT_NULL);
+ 187:rt-thread/src/timer.c **** 
+ 188:rt-thread/src/timer.c ****     /* timer object initialization */
+ 189:rt-thread/src/timer.c ****     rt_object_init((rt_object_t)timer, RT_Object_Class_Timer, name);
+ 214              		.loc 1 189 0
+ 215 000a 0A46     		mov	r2, r1
+ 216              	.LVL18:
+ 217 000c 0A21     		movs	r1, #10
+ 218              	.LVL19:
+ 219 000e FFF7FEFF 		bl	rt_object_init
+ 220              	.LVL20:
+ 190:rt-thread/src/timer.c **** 
+ 191:rt-thread/src/timer.c ****     _rt_timer_init(timer, timeout, parameter, time, flag);
+ 221              		.loc 1 191 0
+ 222 0012 9DF81C30 		ldrb	r3, [sp, #28]	@ zero_extendqisi2
+ 223 0016 0093     		str	r3, [sp]
+ 224 0018 069B     		ldr	r3, [sp, #24]
+ARM GAS  /tmp/ccEZaTT9.s 			page 10
+
+
+ 225 001a 3246     		mov	r2, r6
+ 226 001c 2946     		mov	r1, r5
+ 227 001e 2046     		mov	r0, r4
+ 228 0020 FFF7FEFF 		bl	_rt_timer_init
+ 229              	.LVL21:
+ 192:rt-thread/src/timer.c **** }
+ 230              		.loc 1 192 0
+ 231 0024 02B0     		add	sp, sp, #8
+ 232              	.LCFI5:
+ 233              		.cfi_def_cfa_offset 16
+ 234              		@ sp needed
+ 235 0026 70BD     		pop	{r4, r5, r6, pc}
+ 236              		.cfi_endproc
+ 237              	.LFE20:
+ 239              		.section	.text.rt_timer_detach,"ax",%progbits
+ 240              		.align	1
+ 241              		.global	rt_timer_detach
+ 242              		.syntax unified
+ 243              		.thumb
+ 244              		.thumb_func
+ 245              		.fpu fpv4-sp-d16
+ 247              	rt_timer_detach:
+ 248              	.LFB21:
+ 193:rt-thread/src/timer.c **** RTM_EXPORT(rt_timer_init);
+ 194:rt-thread/src/timer.c **** 
+ 195:rt-thread/src/timer.c **** /**
+ 196:rt-thread/src/timer.c ****  * This function will detach a timer from timer management.
+ 197:rt-thread/src/timer.c ****  *
+ 198:rt-thread/src/timer.c ****  * @param timer the static timer object
+ 199:rt-thread/src/timer.c ****  *
+ 200:rt-thread/src/timer.c ****  * @return the operation status, RT_EOK on OK; RT_ERROR on error
+ 201:rt-thread/src/timer.c ****  */
+ 202:rt-thread/src/timer.c **** rt_err_t rt_timer_detach(rt_timer_t timer)
+ 203:rt-thread/src/timer.c **** {
+ 249              		.loc 1 203 0
+ 250              		.cfi_startproc
+ 251              		@ args = 0, pretend = 0, frame = 0
+ 252              		@ frame_needed = 0, uses_anonymous_args = 0
+ 253              	.LVL22:
+ 254 0000 70B5     		push	{r4, r5, r6, lr}
+ 255              	.LCFI6:
+ 256              		.cfi_def_cfa_offset 16
+ 257              		.cfi_offset 4, -16
+ 258              		.cfi_offset 5, -12
+ 259              		.cfi_offset 6, -8
+ 260              		.cfi_offset 14, -4
+ 261 0002 0446     		mov	r4, r0
+ 204:rt-thread/src/timer.c ****     register rt_base_t level;
+ 205:rt-thread/src/timer.c **** 
+ 206:rt-thread/src/timer.c ****     /* timer check */
+ 207:rt-thread/src/timer.c ****     RT_ASSERT(timer != RT_NULL);
+ 208:rt-thread/src/timer.c ****     RT_ASSERT(rt_object_get_type(&timer->parent) == RT_Object_Class_Timer);
+ 209:rt-thread/src/timer.c ****     RT_ASSERT(rt_object_is_systemobject(&timer->parent));
+ 210:rt-thread/src/timer.c **** 
+ 211:rt-thread/src/timer.c ****     /* disable interrupt */
+ 212:rt-thread/src/timer.c ****     level = rt_hw_interrupt_disable();
+ 262              		.loc 1 212 0
+ARM GAS  /tmp/ccEZaTT9.s 			page 11
+
+
+ 263 0004 FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 264              	.LVL23:
+ 265              	.LBB41:
+ 266              	.LBB42:
+ 125:rt-thread/src/timer.c ****     {
+ 267              		.loc 1 125 0
+ 268 0008 0022     		movs	r2, #0
+ 269              	.LVL24:
+ 270              	.L17:
+ 271 000a 002A     		cmp	r2, #0
+ 272 000c 06DD     		ble	.L18
+ 273              	.LVL25:
+ 274              	.LBE42:
+ 275              	.LBE41:
+ 213:rt-thread/src/timer.c **** 
+ 214:rt-thread/src/timer.c ****     _rt_timer_remove(timer);
+ 215:rt-thread/src/timer.c **** 
+ 216:rt-thread/src/timer.c ****     /* enable interrupt */
+ 217:rt-thread/src/timer.c ****     rt_hw_interrupt_enable(level);
+ 276              		.loc 1 217 0
+ 277 000e FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 278              	.LVL26:
+ 218:rt-thread/src/timer.c **** 
+ 219:rt-thread/src/timer.c ****     rt_object_detach((rt_object_t)timer);
+ 279              		.loc 1 219 0
+ 280 0012 2046     		mov	r0, r4
+ 281 0014 FFF7FEFF 		bl	rt_object_detach
+ 282              	.LVL27:
+ 220:rt-thread/src/timer.c **** 
+ 221:rt-thread/src/timer.c ****     return RT_EOK;
+ 222:rt-thread/src/timer.c **** }
+ 283              		.loc 1 222 0
+ 284 0018 0020     		movs	r0, #0
+ 285 001a 70BD     		pop	{r4, r5, r6, pc}
+ 286              	.LVL28:
+ 287              	.L18:
+ 288              	.LBB46:
+ 289              	.LBB45:
+ 127:rt-thread/src/timer.c ****     }
+ 290              		.loc 1 127 0
+ 291 001c 931C     		adds	r3, r2, #2
+ 292 001e 04EBC303 		add	r3, r4, r3, lsl #3
+ 293 0022 191D     		adds	r1, r3, #4
+ 294              	.LVL29:
+ 295              	.LBB43:
+ 296              	.LBB44:
+  88:rt-thread/include/rtservice.h ****     n->prev->next = n->next;
+ 297              		.loc 2 88 0
+ 298 0024 5D68     		ldr	r5, [r3, #4]
+ 299 0026 9E68     		ldr	r6, [r3, #8]
+ 300 0028 6E60     		str	r6, [r5, #4]
+  89:rt-thread/include/rtservice.h **** 
+ 301              		.loc 2 89 0
+ 302 002a 9D68     		ldr	r5, [r3, #8]
+ 303 002c 5E68     		ldr	r6, [r3, #4]
+ 304 002e 2E60     		str	r6, [r5]
+  91:rt-thread/include/rtservice.h **** }
+ARM GAS  /tmp/ccEZaTT9.s 			page 12
+
+
+ 305              		.loc 2 91 0
+ 306 0030 9960     		str	r1, [r3, #8]
+ 307 0032 5960     		str	r1, [r3, #4]
+ 308              	.LVL30:
+ 309              	.LBE44:
+ 310              	.LBE43:
+ 125:rt-thread/src/timer.c ****     {
+ 311              		.loc 1 125 0
+ 312 0034 0132     		adds	r2, r2, #1
+ 313              	.LVL31:
+ 314 0036 E8E7     		b	.L17
+ 315              	.LBE45:
+ 316              	.LBE46:
+ 317              		.cfi_endproc
+ 318              	.LFE21:
+ 320              		.section	.text.rt_timer_create,"ax",%progbits
+ 321              		.align	1
+ 322              		.global	rt_timer_create
+ 323              		.syntax unified
+ 324              		.thumb
+ 325              		.thumb_func
+ 326              		.fpu fpv4-sp-d16
+ 328              	rt_timer_create:
+ 329              	.LFB22:
+ 223:rt-thread/src/timer.c **** RTM_EXPORT(rt_timer_detach);
+ 224:rt-thread/src/timer.c **** 
+ 225:rt-thread/src/timer.c **** #ifdef RT_USING_HEAP
+ 226:rt-thread/src/timer.c **** /**
+ 227:rt-thread/src/timer.c ****  * This function will create a timer
+ 228:rt-thread/src/timer.c ****  *
+ 229:rt-thread/src/timer.c ****  * @param name the name of timer
+ 230:rt-thread/src/timer.c ****  * @param timeout the timeout function
+ 231:rt-thread/src/timer.c ****  * @param parameter the parameter of timeout function
+ 232:rt-thread/src/timer.c ****  * @param time the tick of timer
+ 233:rt-thread/src/timer.c ****  * @param flag the flag of timer
+ 234:rt-thread/src/timer.c ****  *
+ 235:rt-thread/src/timer.c ****  * @return the created timer object
+ 236:rt-thread/src/timer.c ****  */
+ 237:rt-thread/src/timer.c **** rt_timer_t rt_timer_create(const char *name,
+ 238:rt-thread/src/timer.c ****                            void (*timeout)(void *parameter),
+ 239:rt-thread/src/timer.c ****                            void       *parameter,
+ 240:rt-thread/src/timer.c ****                            rt_tick_t   time,
+ 241:rt-thread/src/timer.c ****                            rt_uint8_t  flag)
+ 242:rt-thread/src/timer.c **** {
+ 330              		.loc 1 242 0
+ 331              		.cfi_startproc
+ 332              		@ args = 4, pretend = 0, frame = 0
+ 333              		@ frame_needed = 0, uses_anonymous_args = 0
+ 334              	.LVL32:
+ 335 0000 F0B5     		push	{r4, r5, r6, r7, lr}
+ 336              	.LCFI7:
+ 337              		.cfi_def_cfa_offset 20
+ 338              		.cfi_offset 4, -20
+ 339              		.cfi_offset 5, -16
+ 340              		.cfi_offset 6, -12
+ 341              		.cfi_offset 7, -8
+ 342              		.cfi_offset 14, -4
+ARM GAS  /tmp/ccEZaTT9.s 			page 13
+
+
+ 343 0002 83B0     		sub	sp, sp, #12
+ 344              	.LCFI8:
+ 345              		.cfi_def_cfa_offset 32
+ 346 0004 0D46     		mov	r5, r1
+ 347 0006 1646     		mov	r6, r2
+ 348 0008 1F46     		mov	r7, r3
+ 243:rt-thread/src/timer.c ****     struct rt_timer *timer;
+ 244:rt-thread/src/timer.c **** 
+ 245:rt-thread/src/timer.c ****     /* allocate a object */
+ 246:rt-thread/src/timer.c ****     timer = (struct rt_timer *)rt_object_allocate(RT_Object_Class_Timer, name);
+ 349              		.loc 1 246 0
+ 350 000a 0146     		mov	r1, r0
+ 351              	.LVL33:
+ 352 000c 0A20     		movs	r0, #10
+ 353              	.LVL34:
+ 354 000e FFF7FEFF 		bl	rt_object_allocate
+ 355              	.LVL35:
+ 247:rt-thread/src/timer.c ****     if (timer == RT_NULL)
+ 356              		.loc 1 247 0
+ 357 0012 58B1     		cbz	r0, .L22
+ 358 0014 0446     		mov	r4, r0
+ 248:rt-thread/src/timer.c ****     {
+ 249:rt-thread/src/timer.c ****         return RT_NULL;
+ 250:rt-thread/src/timer.c ****     }
+ 251:rt-thread/src/timer.c **** 
+ 252:rt-thread/src/timer.c ****     _rt_timer_init(timer, timeout, parameter, time, flag);
+ 359              		.loc 1 252 0
+ 360 0016 9DF82030 		ldrb	r3, [sp, #32]	@ zero_extendqisi2
+ 361 001a 0093     		str	r3, [sp]
+ 362 001c 3B46     		mov	r3, r7
+ 363 001e 3246     		mov	r2, r6
+ 364 0020 2946     		mov	r1, r5
+ 365 0022 FFF7FEFF 		bl	_rt_timer_init
+ 366              	.LVL36:
+ 367              	.L20:
+ 253:rt-thread/src/timer.c **** 
+ 254:rt-thread/src/timer.c ****     return timer;
+ 255:rt-thread/src/timer.c **** }
+ 368              		.loc 1 255 0
+ 369 0026 2046     		mov	r0, r4
+ 370 0028 03B0     		add	sp, sp, #12
+ 371              	.LCFI9:
+ 372              		.cfi_remember_state
+ 373              		.cfi_def_cfa_offset 20
+ 374              		@ sp needed
+ 375 002a F0BD     		pop	{r4, r5, r6, r7, pc}
+ 376              	.LVL37:
+ 377              	.L22:
+ 378              	.LCFI10:
+ 379              		.cfi_restore_state
+ 249:rt-thread/src/timer.c ****     }
+ 380              		.loc 1 249 0
+ 381 002c 0024     		movs	r4, #0
+ 382 002e FAE7     		b	.L20
+ 383              		.cfi_endproc
+ 384              	.LFE22:
+ 386              		.section	.text.rt_timer_delete,"ax",%progbits
+ARM GAS  /tmp/ccEZaTT9.s 			page 14
+
+
+ 387              		.align	1
+ 388              		.global	rt_timer_delete
+ 389              		.syntax unified
+ 390              		.thumb
+ 391              		.thumb_func
+ 392              		.fpu fpv4-sp-d16
+ 394              	rt_timer_delete:
+ 395              	.LFB23:
+ 256:rt-thread/src/timer.c **** RTM_EXPORT(rt_timer_create);
+ 257:rt-thread/src/timer.c **** 
+ 258:rt-thread/src/timer.c **** /**
+ 259:rt-thread/src/timer.c ****  * This function will delete a timer and release timer memory
+ 260:rt-thread/src/timer.c ****  *
+ 261:rt-thread/src/timer.c ****  * @param timer the timer to be deleted
+ 262:rt-thread/src/timer.c ****  *
+ 263:rt-thread/src/timer.c ****  * @return the operation status, RT_EOK on OK; RT_ERROR on error
+ 264:rt-thread/src/timer.c ****  */
+ 265:rt-thread/src/timer.c **** rt_err_t rt_timer_delete(rt_timer_t timer)
+ 266:rt-thread/src/timer.c **** {
+ 396              		.loc 1 266 0
+ 397              		.cfi_startproc
+ 398              		@ args = 0, pretend = 0, frame = 0
+ 399              		@ frame_needed = 0, uses_anonymous_args = 0
+ 400              	.LVL38:
+ 401 0000 70B5     		push	{r4, r5, r6, lr}
+ 402              	.LCFI11:
+ 403              		.cfi_def_cfa_offset 16
+ 404              		.cfi_offset 4, -16
+ 405              		.cfi_offset 5, -12
+ 406              		.cfi_offset 6, -8
+ 407              		.cfi_offset 14, -4
+ 408 0002 0446     		mov	r4, r0
+ 267:rt-thread/src/timer.c ****     register rt_base_t level;
+ 268:rt-thread/src/timer.c **** 
+ 269:rt-thread/src/timer.c ****     /* timer check */
+ 270:rt-thread/src/timer.c ****     RT_ASSERT(timer != RT_NULL);
+ 271:rt-thread/src/timer.c ****     RT_ASSERT(rt_object_get_type(&timer->parent) == RT_Object_Class_Timer);
+ 272:rt-thread/src/timer.c ****     RT_ASSERT(rt_object_is_systemobject(&timer->parent) == RT_FALSE);
+ 273:rt-thread/src/timer.c **** 
+ 274:rt-thread/src/timer.c ****     /* disable interrupt */
+ 275:rt-thread/src/timer.c ****     level = rt_hw_interrupt_disable();
+ 409              		.loc 1 275 0
+ 410 0004 FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 411              	.LVL39:
+ 412              	.LBB47:
+ 413              	.LBB48:
+ 125:rt-thread/src/timer.c ****     {
+ 414              		.loc 1 125 0
+ 415 0008 0022     		movs	r2, #0
+ 416              	.LVL40:
+ 417              	.L25:
+ 418 000a 002A     		cmp	r2, #0
+ 419 000c 06DD     		ble	.L26
+ 420              	.LVL41:
+ 421              	.LBE48:
+ 422              	.LBE47:
+ 276:rt-thread/src/timer.c **** 
+ARM GAS  /tmp/ccEZaTT9.s 			page 15
+
+
+ 277:rt-thread/src/timer.c ****     _rt_timer_remove(timer);
+ 278:rt-thread/src/timer.c **** 
+ 279:rt-thread/src/timer.c ****     /* enable interrupt */
+ 280:rt-thread/src/timer.c ****     rt_hw_interrupt_enable(level);
+ 423              		.loc 1 280 0
+ 424 000e FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 425              	.LVL42:
+ 281:rt-thread/src/timer.c **** 
+ 282:rt-thread/src/timer.c ****     rt_object_delete((rt_object_t)timer);
+ 426              		.loc 1 282 0
+ 427 0012 2046     		mov	r0, r4
+ 428 0014 FFF7FEFF 		bl	rt_object_delete
+ 429              	.LVL43:
+ 283:rt-thread/src/timer.c **** 
+ 284:rt-thread/src/timer.c ****     return RT_EOK;
+ 285:rt-thread/src/timer.c **** }
+ 430              		.loc 1 285 0
+ 431 0018 0020     		movs	r0, #0
+ 432 001a 70BD     		pop	{r4, r5, r6, pc}
+ 433              	.LVL44:
+ 434              	.L26:
+ 435              	.LBB52:
+ 436              	.LBB51:
+ 127:rt-thread/src/timer.c ****     }
+ 437              		.loc 1 127 0
+ 438 001c 931C     		adds	r3, r2, #2
+ 439 001e 04EBC303 		add	r3, r4, r3, lsl #3
+ 440 0022 191D     		adds	r1, r3, #4
+ 441              	.LVL45:
+ 442              	.LBB49:
+ 443              	.LBB50:
+  88:rt-thread/include/rtservice.h ****     n->prev->next = n->next;
+ 444              		.loc 2 88 0
+ 445 0024 5D68     		ldr	r5, [r3, #4]
+ 446 0026 9E68     		ldr	r6, [r3, #8]
+ 447 0028 6E60     		str	r6, [r5, #4]
+  89:rt-thread/include/rtservice.h **** 
+ 448              		.loc 2 89 0
+ 449 002a 9D68     		ldr	r5, [r3, #8]
+ 450 002c 5E68     		ldr	r6, [r3, #4]
+ 451 002e 2E60     		str	r6, [r5]
+  91:rt-thread/include/rtservice.h **** }
+ 452              		.loc 2 91 0
+ 453 0030 9960     		str	r1, [r3, #8]
+ 454 0032 5960     		str	r1, [r3, #4]
+ 455              	.LVL46:
+ 456              	.LBE50:
+ 457              	.LBE49:
+ 125:rt-thread/src/timer.c ****     {
+ 458              		.loc 1 125 0
+ 459 0034 0132     		adds	r2, r2, #1
+ 460              	.LVL47:
+ 461 0036 E8E7     		b	.L25
+ 462              	.LBE51:
+ 463              	.LBE52:
+ 464              		.cfi_endproc
+ 465              	.LFE23:
+ARM GAS  /tmp/ccEZaTT9.s 			page 16
+
+
+ 467              		.section	.text.rt_timer_start,"ax",%progbits
+ 468              		.align	1
+ 469              		.global	rt_timer_start
+ 470              		.syntax unified
+ 471              		.thumb
+ 472              		.thumb_func
+ 473              		.fpu fpv4-sp-d16
+ 475              	rt_timer_start:
+ 476              	.LFB24:
+ 286:rt-thread/src/timer.c **** RTM_EXPORT(rt_timer_delete);
+ 287:rt-thread/src/timer.c **** #endif
+ 288:rt-thread/src/timer.c **** 
+ 289:rt-thread/src/timer.c **** /**
+ 290:rt-thread/src/timer.c ****  * This function will start the timer
+ 291:rt-thread/src/timer.c ****  *
+ 292:rt-thread/src/timer.c ****  * @param timer the timer to be started
+ 293:rt-thread/src/timer.c ****  *
+ 294:rt-thread/src/timer.c ****  * @return the operation status, RT_EOK on OK, -RT_ERROR on error
+ 295:rt-thread/src/timer.c ****  */
+ 296:rt-thread/src/timer.c **** rt_err_t rt_timer_start(rt_timer_t timer)
+ 297:rt-thread/src/timer.c **** {
+ 477              		.loc 1 297 0
+ 478              		.cfi_startproc
+ 479              		@ args = 0, pretend = 0, frame = 8
+ 480              		@ frame_needed = 0, uses_anonymous_args = 0
+ 481              	.LVL48:
+ 482 0000 70B5     		push	{r4, r5, r6, lr}
+ 483              	.LCFI12:
+ 484              		.cfi_def_cfa_offset 16
+ 485              		.cfi_offset 4, -16
+ 486              		.cfi_offset 5, -12
+ 487              		.cfi_offset 6, -8
+ 488              		.cfi_offset 14, -4
+ 489 0002 82B0     		sub	sp, sp, #8
+ 490              	.LCFI13:
+ 491              		.cfi_def_cfa_offset 24
+ 492 0004 0446     		mov	r4, r0
+ 298:rt-thread/src/timer.c ****     unsigned int row_lvl;
+ 299:rt-thread/src/timer.c ****     rt_list_t *timer_list;
+ 300:rt-thread/src/timer.c ****     register rt_base_t level;
+ 301:rt-thread/src/timer.c ****     rt_list_t *row_head[RT_TIMER_SKIP_LIST_LEVEL];
+ 302:rt-thread/src/timer.c ****     unsigned int tst_nr;
+ 303:rt-thread/src/timer.c ****     static unsigned int random_nr;
+ 304:rt-thread/src/timer.c **** 
+ 305:rt-thread/src/timer.c ****     /* timer check */
+ 306:rt-thread/src/timer.c ****     RT_ASSERT(timer != RT_NULL);
+ 307:rt-thread/src/timer.c ****     RT_ASSERT(rt_object_get_type(&timer->parent) == RT_Object_Class_Timer);
+ 308:rt-thread/src/timer.c **** 
+ 309:rt-thread/src/timer.c ****     /* stop timer firstly */
+ 310:rt-thread/src/timer.c ****     level = rt_hw_interrupt_disable();
+ 493              		.loc 1 310 0
+ 494 0006 FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 495              	.LVL49:
+ 496              	.LBB53:
+ 497              	.LBB54:
+ 125:rt-thread/src/timer.c ****     {
+ 498              		.loc 1 125 0
+ARM GAS  /tmp/ccEZaTT9.s 			page 17
+
+
+ 499 000a 0022     		movs	r2, #0
+ 500              	.LVL50:
+ 501              	.L29:
+ 502 000c 002A     		cmp	r2, #0
+ 503 000e 2BDD     		ble	.L30
+ 504              	.LVL51:
+ 505              	.LBE54:
+ 506              	.LBE53:
+ 311:rt-thread/src/timer.c ****     /* remove timer from list */
+ 312:rt-thread/src/timer.c ****     _rt_timer_remove(timer);
+ 313:rt-thread/src/timer.c ****     /* change status of timer */
+ 314:rt-thread/src/timer.c ****     timer->parent.flag &= ~RT_TIMER_FLAG_ACTIVATED;
+ 507              		.loc 1 314 0
+ 508 0010 637A     		ldrb	r3, [r4, #9]	@ zero_extendqisi2
+ 509 0012 23F00103 		bic	r3, r3, #1
+ 510 0016 6372     		strb	r3, [r4, #9]
+ 315:rt-thread/src/timer.c ****     rt_hw_interrupt_enable(level);
+ 511              		.loc 1 315 0
+ 512 0018 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 513              	.LVL52:
+ 316:rt-thread/src/timer.c **** 
+ 317:rt-thread/src/timer.c ****     RT_OBJECT_HOOK_CALL(rt_object_take_hook, (&(timer->parent)));
+ 514              		.loc 1 317 0
+ 515 001c 284B     		ldr	r3, .L38
+ 516 001e 1B68     		ldr	r3, [r3]
+ 517 0020 0BB1     		cbz	r3, .L31
+ 518              		.loc 1 317 0 is_stmt 0 discriminator 1
+ 519 0022 2046     		mov	r0, r4
+ 520 0024 9847     		blx	r3
+ 521              	.LVL53:
+ 522              	.L31:
+ 318:rt-thread/src/timer.c **** 
+ 319:rt-thread/src/timer.c ****     /*
+ 320:rt-thread/src/timer.c ****      * get timeout tick,
+ 321:rt-thread/src/timer.c ****      * the max timeout tick shall not great than RT_TICK_MAX/2
+ 322:rt-thread/src/timer.c ****      */
+ 323:rt-thread/src/timer.c ****     RT_ASSERT(timer->init_tick < RT_TICK_MAX / 2);
+ 324:rt-thread/src/timer.c ****     timer->timeout_tick = rt_tick_get() + timer->init_tick;
+ 523              		.loc 1 324 0 is_stmt 1
+ 524 0026 FFF7FEFF 		bl	rt_tick_get
+ 525              	.LVL54:
+ 526 002a 636A     		ldr	r3, [r4, #36]
+ 527 002c 1844     		add	r0, r0, r3
+ 528 002e A062     		str	r0, [r4, #40]
+ 325:rt-thread/src/timer.c **** 
+ 326:rt-thread/src/timer.c ****     /* disable interrupt */
+ 327:rt-thread/src/timer.c ****     level = rt_hw_interrupt_disable();
+ 529              		.loc 1 327 0
+ 530 0030 FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 531              	.LVL55:
+ 328:rt-thread/src/timer.c **** 
+ 329:rt-thread/src/timer.c **** #ifdef RT_USING_TIMER_SOFT
+ 330:rt-thread/src/timer.c ****     if (timer->parent.flag & RT_TIMER_FLAG_SOFT_TIMER)
+ 331:rt-thread/src/timer.c ****     {
+ 332:rt-thread/src/timer.c ****         /* insert timer to soft timer list */
+ 333:rt-thread/src/timer.c ****         timer_list = rt_soft_timer_list;
+ 334:rt-thread/src/timer.c ****     }
+ARM GAS  /tmp/ccEZaTT9.s 			page 18
+
+
+ 335:rt-thread/src/timer.c ****     else
+ 336:rt-thread/src/timer.c **** #endif
+ 337:rt-thread/src/timer.c ****     {
+ 338:rt-thread/src/timer.c ****         /* insert timer to system timer list */
+ 339:rt-thread/src/timer.c ****         timer_list = rt_timer_list;
+ 340:rt-thread/src/timer.c ****     }
+ 341:rt-thread/src/timer.c **** 
+ 342:rt-thread/src/timer.c ****     row_head[0]  = &timer_list[0];
+ 532              		.loc 1 342 0
+ 533 0034 234B     		ldr	r3, .L38+4
+ 534 0036 0193     		str	r3, [sp, #4]
+ 535              	.LVL56:
+ 343:rt-thread/src/timer.c ****     for (row_lvl = 0; row_lvl < RT_TIMER_SKIP_LIST_LEVEL; row_lvl++)
+ 536              		.loc 1 343 0
+ 537 0038 0021     		movs	r1, #0
+ 538              	.LVL57:
+ 539              	.L32:
+ 540              		.loc 1 343 0 is_stmt 0 discriminator 1
+ 541 003a 41B3     		cbz	r1, .L36
+ 344:rt-thread/src/timer.c ****     {
+ 345:rt-thread/src/timer.c ****         for (; row_head[row_lvl] != timer_list[row_lvl].prev;
+ 346:rt-thread/src/timer.c ****              row_head[row_lvl]  = row_head[row_lvl]->next)
+ 347:rt-thread/src/timer.c ****         {
+ 348:rt-thread/src/timer.c ****             struct rt_timer *t;
+ 349:rt-thread/src/timer.c ****             rt_list_t *p = row_head[row_lvl]->next;
+ 350:rt-thread/src/timer.c **** 
+ 351:rt-thread/src/timer.c ****             /* fix up the entry pointer */
+ 352:rt-thread/src/timer.c ****             t = rt_list_entry(p, struct rt_timer, row[row_lvl]);
+ 353:rt-thread/src/timer.c **** 
+ 354:rt-thread/src/timer.c ****             /* If we have two timers that timeout at the same time, it's
+ 355:rt-thread/src/timer.c ****              * preferred that the timer inserted early get called early.
+ 356:rt-thread/src/timer.c ****              * So insert the new timer to the end the the some-timeout timer
+ 357:rt-thread/src/timer.c ****              * list.
+ 358:rt-thread/src/timer.c ****              */
+ 359:rt-thread/src/timer.c ****             if ((t->timeout_tick - timer->timeout_tick) == 0)
+ 360:rt-thread/src/timer.c ****             {
+ 361:rt-thread/src/timer.c ****                 continue;
+ 362:rt-thread/src/timer.c ****             }
+ 363:rt-thread/src/timer.c ****             else if ((t->timeout_tick - timer->timeout_tick) < RT_TICK_MAX / 2)
+ 364:rt-thread/src/timer.c ****             {
+ 365:rt-thread/src/timer.c ****                 break;
+ 366:rt-thread/src/timer.c ****             }
+ 367:rt-thread/src/timer.c ****         }
+ 368:rt-thread/src/timer.c ****         if (row_lvl != RT_TIMER_SKIP_LIST_LEVEL - 1)
+ 369:rt-thread/src/timer.c ****             row_head[row_lvl + 1] = row_head[row_lvl] + 1;
+ 370:rt-thread/src/timer.c ****     }
+ 371:rt-thread/src/timer.c **** 
+ 372:rt-thread/src/timer.c ****     /* Interestingly, this super simple timer insert counter works very very
+ 373:rt-thread/src/timer.c ****      * well on distributing the list height uniformly. By means of "very very
+ 374:rt-thread/src/timer.c ****      * well", I mean it beats the randomness of timer->timeout_tick very easily
+ 375:rt-thread/src/timer.c ****      * (actually, the timeout_tick is not random and easy to be attacked). */
+ 376:rt-thread/src/timer.c ****     random_nr++;
+ 542              		.loc 1 376 0 is_stmt 1
+ 543 003c 224A     		ldr	r2, .L38+8
+ 544 003e 1368     		ldr	r3, [r2]
+ 545 0040 0133     		adds	r3, r3, #1
+ 546 0042 1360     		str	r3, [r2]
+ARM GAS  /tmp/ccEZaTT9.s 			page 19
+
+
+ 547              	.LVL58:
+ 377:rt-thread/src/timer.c ****     tst_nr = random_nr;
+ 378:rt-thread/src/timer.c **** 
+ 379:rt-thread/src/timer.c ****     rt_list_insert_after(row_head[RT_TIMER_SKIP_LIST_LEVEL - 1],
+ 548              		.loc 1 379 0
+ 549 0044 019B     		ldr	r3, [sp, #4]
+ 550              	.LVL59:
+ 551 0046 04F11402 		add	r2, r4, #20
+ 552              	.LVL60:
+ 553              	.LBB58:
+ 554              	.LBB59:
+  60:rt-thread/include/rtservice.h ****     n->next = l->next;
+ 555              		.loc 2 60 0
+ 556 004a 1968     		ldr	r1, [r3]
+ 557              	.LVL61:
+ 558 004c 4A60     		str	r2, [r1, #4]
+  61:rt-thread/include/rtservice.h **** 
+ 559              		.loc 2 61 0
+ 560 004e 1968     		ldr	r1, [r3]
+ 561 0050 6161     		str	r1, [r4, #20]
+  63:rt-thread/include/rtservice.h ****     n->prev = l;
+ 562              		.loc 2 63 0
+ 563 0052 1A60     		str	r2, [r3]
+  64:rt-thread/include/rtservice.h **** }
+ 564              		.loc 2 64 0
+ 565 0054 A361     		str	r3, [r4, #24]
+ 566              	.LVL62:
+ 567              	.LBE59:
+ 568              	.LBE58:
+ 380:rt-thread/src/timer.c ****                          &(timer->row[RT_TIMER_SKIP_LIST_LEVEL - 1]));
+ 381:rt-thread/src/timer.c ****     for (row_lvl = 2; row_lvl <= RT_TIMER_SKIP_LIST_LEVEL; row_lvl++)
+ 382:rt-thread/src/timer.c ****     {
+ 383:rt-thread/src/timer.c ****         if (!(tst_nr & RT_TIMER_SKIP_LIST_MASK))
+ 384:rt-thread/src/timer.c ****             rt_list_insert_after(row_head[RT_TIMER_SKIP_LIST_LEVEL - row_lvl],
+ 385:rt-thread/src/timer.c ****                                  &(timer->row[RT_TIMER_SKIP_LIST_LEVEL - row_lvl]));
+ 386:rt-thread/src/timer.c ****         else
+ 387:rt-thread/src/timer.c ****             break;
+ 388:rt-thread/src/timer.c ****         /* Shift over the bits we have tested. Works well with 1 bit and 2
+ 389:rt-thread/src/timer.c ****          * bits. */
+ 390:rt-thread/src/timer.c ****         tst_nr >>= (RT_TIMER_SKIP_LIST_MASK + 1) >> 1;
+ 391:rt-thread/src/timer.c ****     }
+ 392:rt-thread/src/timer.c **** 
+ 393:rt-thread/src/timer.c ****     timer->parent.flag |= RT_TIMER_FLAG_ACTIVATED;
+ 569              		.loc 1 393 0
+ 570 0056 637A     		ldrb	r3, [r4, #9]	@ zero_extendqisi2
+ 571 0058 43F00103 		orr	r3, r3, #1
+ 572 005c 6372     		strb	r3, [r4, #9]
+ 394:rt-thread/src/timer.c **** 
+ 395:rt-thread/src/timer.c ****     /* enable interrupt */
+ 396:rt-thread/src/timer.c ****     rt_hw_interrupt_enable(level);
+ 573              		.loc 1 396 0
+ 574 005e FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 575              	.LVL63:
+ 397:rt-thread/src/timer.c **** 
+ 398:rt-thread/src/timer.c **** #ifdef RT_USING_TIMER_SOFT
+ 399:rt-thread/src/timer.c ****     if (timer->parent.flag & RT_TIMER_FLAG_SOFT_TIMER)
+ 400:rt-thread/src/timer.c ****     {
+ARM GAS  /tmp/ccEZaTT9.s 			page 20
+
+
+ 401:rt-thread/src/timer.c ****         /* check whether timer thread is ready */
+ 402:rt-thread/src/timer.c ****         if ((timer_thread.stat & RT_THREAD_STAT_MASK) == RT_THREAD_SUSPEND)
+ 403:rt-thread/src/timer.c ****         {
+ 404:rt-thread/src/timer.c ****             /* resume timer thread to check soft timer */
+ 405:rt-thread/src/timer.c ****             rt_thread_resume(&timer_thread);
+ 406:rt-thread/src/timer.c ****             rt_schedule();
+ 407:rt-thread/src/timer.c ****         }
+ 408:rt-thread/src/timer.c ****     }
+ 409:rt-thread/src/timer.c **** #endif
+ 410:rt-thread/src/timer.c **** 
+ 411:rt-thread/src/timer.c ****     return RT_EOK;
+ 412:rt-thread/src/timer.c **** }
+ 576              		.loc 1 412 0
+ 577 0062 0020     		movs	r0, #0
+ 578 0064 02B0     		add	sp, sp, #8
+ 579              	.LCFI14:
+ 580              		.cfi_remember_state
+ 581              		.cfi_def_cfa_offset 16
+ 582              		@ sp needed
+ 583 0066 70BD     		pop	{r4, r5, r6, pc}
+ 584              	.LVL64:
+ 585              	.L30:
+ 586              	.LCFI15:
+ 587              		.cfi_restore_state
+ 588              	.LBB60:
+ 589              	.LBB57:
+ 127:rt-thread/src/timer.c ****     }
+ 590              		.loc 1 127 0
+ 591 0068 931C     		adds	r3, r2, #2
+ 592 006a 04EBC303 		add	r3, r4, r3, lsl #3
+ 593 006e 191D     		adds	r1, r3, #4
+ 594              	.LVL65:
+ 595              	.LBB55:
+ 596              	.LBB56:
+  88:rt-thread/include/rtservice.h ****     n->prev->next = n->next;
+ 597              		.loc 2 88 0
+ 598 0070 5D68     		ldr	r5, [r3, #4]
+ 599 0072 9E68     		ldr	r6, [r3, #8]
+ 600 0074 6E60     		str	r6, [r5, #4]
+  89:rt-thread/include/rtservice.h **** 
+ 601              		.loc 2 89 0
+ 602 0076 9D68     		ldr	r5, [r3, #8]
+ 603 0078 5E68     		ldr	r6, [r3, #4]
+ 604 007a 2E60     		str	r6, [r5]
+  91:rt-thread/include/rtservice.h **** }
+ 605              		.loc 2 91 0
+ 606 007c 9960     		str	r1, [r3, #8]
+ 607 007e 5960     		str	r1, [r3, #4]
+ 608              	.LVL66:
+ 609              	.LBE56:
+ 610              	.LBE55:
+ 125:rt-thread/src/timer.c ****     {
+ 611              		.loc 1 125 0
+ 612 0080 0132     		adds	r2, r2, #1
+ 613              	.LVL67:
+ 614 0082 C3E7     		b	.L29
+ 615              	.LVL68:
+ARM GAS  /tmp/ccEZaTT9.s 			page 21
+
+
+ 616              	.L33:
+ 617              	.LBE57:
+ 618              	.LBE60:
+ 346:rt-thread/src/timer.c ****         {
+ 619              		.loc 1 346 0
+ 620 0084 02AB     		add	r3, sp, #8
+ 621 0086 03EB8103 		add	r3, r3, r1, lsl #2
+ 622 008a 43F8042C 		str	r2, [r3, #-4]
+ 623              	.LVL69:
+ 624              	.L36:
+ 345:rt-thread/src/timer.c ****              row_head[row_lvl]  = row_head[row_lvl]->next)
+ 625              		.loc 1 345 0
+ 626 008e 02AB     		add	r3, sp, #8
+ 627 0090 03EB8103 		add	r3, r3, r1, lsl #2
+ 628 0094 53F8045C 		ldr	r5, [r3, #-4]
+ 629 0098 CB00     		lsls	r3, r1, #3
+ 630 009a 0A4A     		ldr	r2, .L38+4
+ 631 009c 1A44     		add	r2, r2, r3
+ 632 009e 5268     		ldr	r2, [r2, #4]
+ 633 00a0 9542     		cmp	r5, r2
+ 634 00a2 0AD0     		beq	.L34
+ 635              	.LBB61:
+ 349:rt-thread/src/timer.c **** 
+ 636              		.loc 1 349 0
+ 637 00a4 2A68     		ldr	r2, [r5]
+ 638              	.LVL70:
+ 352:rt-thread/src/timer.c **** 
+ 639              		.loc 1 352 0
+ 640 00a6 1433     		adds	r3, r3, #20
+ 641 00a8 D31A     		subs	r3, r2, r3
+ 642              	.LVL71:
+ 359:rt-thread/src/timer.c ****             {
+ 643              		.loc 1 359 0
+ 644 00aa 9B6A     		ldr	r3, [r3, #40]
+ 645              	.LVL72:
+ 646 00ac A56A     		ldr	r5, [r4, #40]
+ 647 00ae AB42     		cmp	r3, r5
+ 648 00b0 E8D0     		beq	.L33
+ 363:rt-thread/src/timer.c ****             {
+ 649              		.loc 1 363 0
+ 650 00b2 5B1B     		subs	r3, r3, r5
+ 651 00b4 054D     		ldr	r5, .L38+12
+ 652 00b6 AB42     		cmp	r3, r5
+ 653 00b8 E4D8     		bhi	.L33
+ 654              	.LVL73:
+ 655              	.L34:
+ 656              	.LBE61:
+ 343:rt-thread/src/timer.c ****     {
+ 657              		.loc 1 343 0 discriminator 2
+ 658 00ba 0131     		adds	r1, r1, #1
+ 659              	.LVL74:
+ 660 00bc BDE7     		b	.L32
+ 661              	.L39:
+ 662 00be 00BF     		.align	2
+ 663              	.L38:
+ 664 00c0 00000000 		.word	rt_object_take_hook
+ 665 00c4 00000000 		.word	.LANCHOR2
+ARM GAS  /tmp/ccEZaTT9.s 			page 22
+
+
+ 666 00c8 00000000 		.word	.LANCHOR3
+ 667 00cc FEFFFF7F 		.word	2147483646
+ 668              		.cfi_endproc
+ 669              	.LFE24:
+ 671              		.section	.text.rt_timer_stop,"ax",%progbits
+ 672              		.align	1
+ 673              		.global	rt_timer_stop
+ 674              		.syntax unified
+ 675              		.thumb
+ 676              		.thumb_func
+ 677              		.fpu fpv4-sp-d16
+ 679              	rt_timer_stop:
+ 680              	.LFB25:
+ 413:rt-thread/src/timer.c **** RTM_EXPORT(rt_timer_start);
+ 414:rt-thread/src/timer.c **** 
+ 415:rt-thread/src/timer.c **** /**
+ 416:rt-thread/src/timer.c ****  * This function will stop the timer
+ 417:rt-thread/src/timer.c ****  *
+ 418:rt-thread/src/timer.c ****  * @param timer the timer to be stopped
+ 419:rt-thread/src/timer.c ****  *
+ 420:rt-thread/src/timer.c ****  * @return the operation status, RT_EOK on OK, -RT_ERROR on error
+ 421:rt-thread/src/timer.c ****  */
+ 422:rt-thread/src/timer.c **** rt_err_t rt_timer_stop(rt_timer_t timer)
+ 423:rt-thread/src/timer.c **** {
+ 681              		.loc 1 423 0
+ 682              		.cfi_startproc
+ 683              		@ args = 0, pretend = 0, frame = 0
+ 684              		@ frame_needed = 0, uses_anonymous_args = 0
+ 685              	.LVL75:
+ 424:rt-thread/src/timer.c ****     register rt_base_t level;
+ 425:rt-thread/src/timer.c **** 
+ 426:rt-thread/src/timer.c ****     /* timer check */
+ 427:rt-thread/src/timer.c ****     RT_ASSERT(timer != RT_NULL);
+ 428:rt-thread/src/timer.c ****     RT_ASSERT(rt_object_get_type(&timer->parent) == RT_Object_Class_Timer);
+ 429:rt-thread/src/timer.c **** 
+ 430:rt-thread/src/timer.c ****     if (!(timer->parent.flag & RT_TIMER_FLAG_ACTIVATED))
+ 686              		.loc 1 430 0
+ 687 0000 437A     		ldrb	r3, [r0, #9]	@ zero_extendqisi2
+ 688 0002 13F0010F 		tst	r3, #1
+ 689 0006 20D0     		beq	.L45
+ 423:rt-thread/src/timer.c ****     register rt_base_t level;
+ 690              		.loc 1 423 0
+ 691 0008 70B5     		push	{r4, r5, r6, lr}
+ 692              	.LCFI16:
+ 693              		.cfi_def_cfa_offset 16
+ 694              		.cfi_offset 4, -16
+ 695              		.cfi_offset 5, -12
+ 696              		.cfi_offset 6, -8
+ 697              		.cfi_offset 14, -4
+ 698 000a 0446     		mov	r4, r0
+ 431:rt-thread/src/timer.c ****         return -RT_ERROR;
+ 432:rt-thread/src/timer.c **** 
+ 433:rt-thread/src/timer.c ****     RT_OBJECT_HOOK_CALL(rt_object_put_hook, (&(timer->parent)));
+ 699              		.loc 1 433 0
+ 700 000c 104B     		ldr	r3, .L50
+ 701 000e 1B68     		ldr	r3, [r3]
+ 702 0010 03B1     		cbz	r3, .L42
+ARM GAS  /tmp/ccEZaTT9.s 			page 23
+
+
+ 703              		.loc 1 433 0 is_stmt 0 discriminator 1
+ 704 0012 9847     		blx	r3
+ 705              	.LVL76:
+ 706              	.L42:
+ 434:rt-thread/src/timer.c **** 
+ 435:rt-thread/src/timer.c ****     /* disable interrupt */
+ 436:rt-thread/src/timer.c ****     level = rt_hw_interrupt_disable();
+ 707              		.loc 1 436 0 is_stmt 1
+ 708 0014 FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 709              	.LVL77:
+ 710              	.LBB62:
+ 711              	.LBB63:
+ 125:rt-thread/src/timer.c ****     {
+ 712              		.loc 1 125 0
+ 713 0018 0022     		movs	r2, #0
+ 714              	.LVL78:
+ 715              	.L43:
+ 716 001a 002A     		cmp	r2, #0
+ 717 001c 07DD     		ble	.L44
+ 718              	.LVL79:
+ 719              	.LBE63:
+ 720              	.LBE62:
+ 437:rt-thread/src/timer.c **** 
+ 438:rt-thread/src/timer.c ****     _rt_timer_remove(timer);
+ 439:rt-thread/src/timer.c **** 
+ 440:rt-thread/src/timer.c ****     /* enable interrupt */
+ 441:rt-thread/src/timer.c ****     rt_hw_interrupt_enable(level);
+ 721              		.loc 1 441 0
+ 722 001e FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 723              	.LVL80:
+ 442:rt-thread/src/timer.c **** 
+ 443:rt-thread/src/timer.c ****     /* change stat */
+ 444:rt-thread/src/timer.c ****     timer->parent.flag &= ~RT_TIMER_FLAG_ACTIVATED;
+ 724              		.loc 1 444 0
+ 725 0022 637A     		ldrb	r3, [r4, #9]	@ zero_extendqisi2
+ 726 0024 23F00103 		bic	r3, r3, #1
+ 727 0028 6372     		strb	r3, [r4, #9]
+ 445:rt-thread/src/timer.c **** 
+ 446:rt-thread/src/timer.c ****     return RT_EOK;
+ 728              		.loc 1 446 0
+ 729 002a 0020     		movs	r0, #0
+ 730 002c 70BD     		pop	{r4, r5, r6, pc}
+ 731              	.LVL81:
+ 732              	.L44:
+ 733              	.LBB67:
+ 734              	.LBB66:
+ 127:rt-thread/src/timer.c ****     }
+ 735              		.loc 1 127 0
+ 736 002e 931C     		adds	r3, r2, #2
+ 737 0030 04EBC303 		add	r3, r4, r3, lsl #3
+ 738 0034 191D     		adds	r1, r3, #4
+ 739              	.LVL82:
+ 740              	.LBB64:
+ 741              	.LBB65:
+  88:rt-thread/include/rtservice.h ****     n->prev->next = n->next;
+ 742              		.loc 2 88 0
+ 743 0036 5D68     		ldr	r5, [r3, #4]
+ARM GAS  /tmp/ccEZaTT9.s 			page 24
+
+
+ 744 0038 9E68     		ldr	r6, [r3, #8]
+ 745 003a 6E60     		str	r6, [r5, #4]
+  89:rt-thread/include/rtservice.h **** 
+ 746              		.loc 2 89 0
+ 747 003c 9D68     		ldr	r5, [r3, #8]
+ 748 003e 5E68     		ldr	r6, [r3, #4]
+ 749 0040 2E60     		str	r6, [r5]
+  91:rt-thread/include/rtservice.h **** }
+ 750              		.loc 2 91 0
+ 751 0042 9960     		str	r1, [r3, #8]
+ 752 0044 5960     		str	r1, [r3, #4]
+ 753              	.LVL83:
+ 754              	.LBE65:
+ 755              	.LBE64:
+ 125:rt-thread/src/timer.c ****     {
+ 756              		.loc 1 125 0
+ 757 0046 0132     		adds	r2, r2, #1
+ 758              	.LVL84:
+ 759 0048 E7E7     		b	.L43
+ 760              	.LVL85:
+ 761              	.L45:
+ 762              	.LCFI17:
+ 763              		.cfi_def_cfa_offset 0
+ 764              		.cfi_restore 4
+ 765              		.cfi_restore 5
+ 766              		.cfi_restore 6
+ 767              		.cfi_restore 14
+ 768              	.LBE66:
+ 769              	.LBE67:
+ 431:rt-thread/src/timer.c **** 
+ 770              		.loc 1 431 0
+ 771 004a 4FF0FF30 		mov	r0, #-1
+ 772              	.LVL86:
+ 773 004e 7047     		bx	lr
+ 774              	.L51:
+ 775              		.align	2
+ 776              	.L50:
+ 777 0050 00000000 		.word	rt_object_put_hook
+ 778              		.cfi_endproc
+ 779              	.LFE25:
+ 781              		.section	.text.rt_timer_control,"ax",%progbits
+ 782              		.align	1
+ 783              		.global	rt_timer_control
+ 784              		.syntax unified
+ 785              		.thumb
+ 786              		.thumb_func
+ 787              		.fpu fpv4-sp-d16
+ 789              	rt_timer_control:
+ 790              	.LFB26:
+ 447:rt-thread/src/timer.c **** }
+ 448:rt-thread/src/timer.c **** RTM_EXPORT(rt_timer_stop);
+ 449:rt-thread/src/timer.c **** 
+ 450:rt-thread/src/timer.c **** /**
+ 451:rt-thread/src/timer.c ****  * This function will get or set some options of the timer
+ 452:rt-thread/src/timer.c ****  *
+ 453:rt-thread/src/timer.c ****  * @param timer the timer to be get or set
+ 454:rt-thread/src/timer.c ****  * @param cmd the control command
+ARM GAS  /tmp/ccEZaTT9.s 			page 25
+
+
+ 455:rt-thread/src/timer.c ****  * @param arg the argument
+ 456:rt-thread/src/timer.c ****  *
+ 457:rt-thread/src/timer.c ****  * @return RT_EOK
+ 458:rt-thread/src/timer.c ****  */
+ 459:rt-thread/src/timer.c **** rt_err_t rt_timer_control(rt_timer_t timer, int cmd, void *arg)
+ 460:rt-thread/src/timer.c **** {
+ 791              		.loc 1 460 0
+ 792              		.cfi_startproc
+ 793              		@ args = 0, pretend = 0, frame = 0
+ 794              		@ frame_needed = 0, uses_anonymous_args = 0
+ 795              		@ link register save eliminated.
+ 796              	.LVL87:
+ 461:rt-thread/src/timer.c ****     /* timer check */
+ 462:rt-thread/src/timer.c ****     RT_ASSERT(timer != RT_NULL);
+ 463:rt-thread/src/timer.c ****     RT_ASSERT(rt_object_get_type(&timer->parent) == RT_Object_Class_Timer);
+ 464:rt-thread/src/timer.c **** 
+ 465:rt-thread/src/timer.c ****     switch (cmd)
+ 797              		.loc 1 465 0
+ 798 0000 0329     		cmp	r1, #3
+ 799 0002 05D8     		bhi	.L53
+ 800 0004 DFE801F0 		tbb	[pc, r1]
+ 801              	.L55:
+ 802 0008 06       		.byte	(.L54-.L55)/2
+ 803 0009 02       		.byte	(.L56-.L55)/2
+ 804 000a 09       		.byte	(.L57-.L55)/2
+ 805 000b 0E       		.byte	(.L58-.L55)/2
+ 806              		.p2align 1
+ 807              	.L56:
+ 466:rt-thread/src/timer.c ****     {
+ 467:rt-thread/src/timer.c ****     case RT_TIMER_CTRL_GET_TIME:
+ 468:rt-thread/src/timer.c ****         *(rt_tick_t *)arg = timer->init_tick;
+ 808              		.loc 1 468 0
+ 809 000c 436A     		ldr	r3, [r0, #36]
+ 810 000e 1360     		str	r3, [r2]
+ 811              	.L53:
+ 469:rt-thread/src/timer.c ****         break;
+ 470:rt-thread/src/timer.c **** 
+ 471:rt-thread/src/timer.c ****     case RT_TIMER_CTRL_SET_TIME:
+ 472:rt-thread/src/timer.c ****         timer->init_tick = *(rt_tick_t *)arg;
+ 473:rt-thread/src/timer.c ****         break;
+ 474:rt-thread/src/timer.c **** 
+ 475:rt-thread/src/timer.c ****     case RT_TIMER_CTRL_SET_ONESHOT:
+ 476:rt-thread/src/timer.c ****         timer->parent.flag &= ~RT_TIMER_FLAG_PERIODIC;
+ 477:rt-thread/src/timer.c ****         break;
+ 478:rt-thread/src/timer.c **** 
+ 479:rt-thread/src/timer.c ****     case RT_TIMER_CTRL_SET_PERIODIC:
+ 480:rt-thread/src/timer.c ****         timer->parent.flag |= RT_TIMER_FLAG_PERIODIC;
+ 481:rt-thread/src/timer.c ****         break;
+ 482:rt-thread/src/timer.c ****     }
+ 483:rt-thread/src/timer.c **** 
+ 484:rt-thread/src/timer.c ****     return RT_EOK;
+ 485:rt-thread/src/timer.c **** }
+ 812              		.loc 1 485 0
+ 813 0010 0020     		movs	r0, #0
+ 814              	.LVL88:
+ 815 0012 7047     		bx	lr
+ 816              	.LVL89:
+ARM GAS  /tmp/ccEZaTT9.s 			page 26
+
+
+ 817              	.L54:
+ 472:rt-thread/src/timer.c ****         break;
+ 818              		.loc 1 472 0
+ 819 0014 1368     		ldr	r3, [r2]
+ 820 0016 4362     		str	r3, [r0, #36]
+ 473:rt-thread/src/timer.c **** 
+ 821              		.loc 1 473 0
+ 822 0018 FAE7     		b	.L53
+ 823              	.L57:
+ 476:rt-thread/src/timer.c ****         break;
+ 824              		.loc 1 476 0
+ 825 001a 437A     		ldrb	r3, [r0, #9]	@ zero_extendqisi2
+ 826 001c 23F00203 		bic	r3, r3, #2
+ 827 0020 4372     		strb	r3, [r0, #9]
+ 477:rt-thread/src/timer.c **** 
+ 828              		.loc 1 477 0
+ 829 0022 F5E7     		b	.L53
+ 830              	.L58:
+ 480:rt-thread/src/timer.c ****         break;
+ 831              		.loc 1 480 0
+ 832 0024 437A     		ldrb	r3, [r0, #9]	@ zero_extendqisi2
+ 833 0026 43F00203 		orr	r3, r3, #2
+ 834 002a 4372     		strb	r3, [r0, #9]
+ 481:rt-thread/src/timer.c ****     }
+ 835              		.loc 1 481 0
+ 836 002c F0E7     		b	.L53
+ 837              		.cfi_endproc
+ 838              	.LFE26:
+ 840              		.section	.text.rt_timer_check,"ax",%progbits
+ 841              		.align	1
+ 842              		.global	rt_timer_check
+ 843              		.syntax unified
+ 844              		.thumb
+ 845              		.thumb_func
+ 846              		.fpu fpv4-sp-d16
+ 848              	rt_timer_check:
+ 849              	.LFB27:
+ 486:rt-thread/src/timer.c **** RTM_EXPORT(rt_timer_control);
+ 487:rt-thread/src/timer.c **** 
+ 488:rt-thread/src/timer.c **** /**
+ 489:rt-thread/src/timer.c ****  * This function will check timer list, if a timeout event happens, the
+ 490:rt-thread/src/timer.c ****  * corresponding timeout function will be invoked.
+ 491:rt-thread/src/timer.c ****  *
+ 492:rt-thread/src/timer.c ****  * @note this function shall be invoked in operating system timer interrupt.
+ 493:rt-thread/src/timer.c ****  */
+ 494:rt-thread/src/timer.c **** void rt_timer_check(void)
+ 495:rt-thread/src/timer.c **** {
+ 850              		.loc 1 495 0
+ 851              		.cfi_startproc
+ 852              		@ args = 0, pretend = 0, frame = 0
+ 853              		@ frame_needed = 0, uses_anonymous_args = 0
+ 854 0000 F8B5     		push	{r3, r4, r5, r6, r7, lr}
+ 855              	.LCFI18:
+ 856              		.cfi_def_cfa_offset 24
+ 857              		.cfi_offset 3, -24
+ 858              		.cfi_offset 4, -20
+ 859              		.cfi_offset 5, -16
+ARM GAS  /tmp/ccEZaTT9.s 			page 27
+
+
+ 860              		.cfi_offset 6, -12
+ 861              		.cfi_offset 7, -8
+ 862              		.cfi_offset 14, -4
+ 496:rt-thread/src/timer.c ****     struct rt_timer *t;
+ 497:rt-thread/src/timer.c ****     rt_tick_t current_tick;
+ 498:rt-thread/src/timer.c ****     register rt_base_t level;
+ 499:rt-thread/src/timer.c **** 
+ 500:rt-thread/src/timer.c ****     RT_DEBUG_LOG(RT_DEBUG_TIMER, ("timer check enter\n"));
+ 501:rt-thread/src/timer.c **** 
+ 502:rt-thread/src/timer.c ****     current_tick = rt_tick_get();
+ 863              		.loc 1 502 0
+ 864 0002 FFF7FEFF 		bl	rt_tick_get
+ 865              	.LVL90:
+ 866 0006 0746     		mov	r7, r0
+ 867              	.LVL91:
+ 503:rt-thread/src/timer.c **** 
+ 504:rt-thread/src/timer.c ****     /* disable interrupt */
+ 505:rt-thread/src/timer.c ****     level = rt_hw_interrupt_disable();
+ 868              		.loc 1 505 0
+ 869 0008 FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 870              	.LVL92:
+ 871 000c 0646     		mov	r6, r0
+ 872              	.LVL93:
+ 506:rt-thread/src/timer.c **** 
+ 507:rt-thread/src/timer.c ****     while (!rt_list_isempty(&rt_timer_list[RT_TIMER_SKIP_LIST_LEVEL - 1]))
+ 873              		.loc 1 507 0
+ 874 000e 20E0     		b	.L60
+ 875              	.LVL94:
+ 876              	.L64:
+ 877              	.LBB68:
+ 878              	.LBB69:
+ 127:rt-thread/src/timer.c ****     }
+ 879              		.loc 1 127 0
+ 880 0010 A4F11402 		sub	r2, r4, #20
+ 881 0014 8B1C     		adds	r3, r1, #2
+ 882 0016 DB00     		lsls	r3, r3, #3
+ 883 0018 1A44     		add	r2, r2, r3
+ 884 001a 0432     		adds	r2, r2, #4
+ 885              	.LVL95:
+ 886              	.LBB70:
+ 887              	.LBB71:
+  88:rt-thread/include/rtservice.h ****     n->prev->next = n->next;
+ 888              		.loc 2 88 0
+ 889 001c 2344     		add	r3, r3, r4
+ 890 001e 53F8100C 		ldr	r0, [r3, #-16]
+ 891 0022 53F80C7C 		ldr	r7, [r3, #-12]
+ 892 0026 4760     		str	r7, [r0, #4]
+  89:rt-thread/include/rtservice.h **** 
+ 893              		.loc 2 89 0
+ 894 0028 53F80C0C 		ldr	r0, [r3, #-12]
+ 895 002c 53F8107C 		ldr	r7, [r3, #-16]
+ 896 0030 0760     		str	r7, [r0]
+  91:rt-thread/include/rtservice.h **** }
+ 897              		.loc 2 91 0
+ 898 0032 43F80C2C 		str	r2, [r3, #-12]
+ 899 0036 43F8102C 		str	r2, [r3, #-16]
+ 900              	.LVL96:
+ARM GAS  /tmp/ccEZaTT9.s 			page 28
+
+
+ 901              	.LBE71:
+ 902              	.LBE70:
+ 125:rt-thread/src/timer.c ****     {
+ 903              		.loc 1 125 0
+ 904 003a 0131     		adds	r1, r1, #1
+ 905              	.LVL97:
+ 906 003c 1AE0     		b	.L63
+ 907              	.LVL98:
+ 908              	.L65:
+ 909              	.LBE69:
+ 910              	.LBE68:
+ 508:rt-thread/src/timer.c ****     {
+ 509:rt-thread/src/timer.c ****         t = rt_list_entry(rt_timer_list[RT_TIMER_SKIP_LIST_LEVEL - 1].next,
+ 510:rt-thread/src/timer.c ****                           struct rt_timer, row[RT_TIMER_SKIP_LIST_LEVEL - 1]);
+ 511:rt-thread/src/timer.c **** 
+ 512:rt-thread/src/timer.c ****         /*
+ 513:rt-thread/src/timer.c ****          * It supposes that the new tick shall less than the half duration of
+ 514:rt-thread/src/timer.c ****          * tick max.
+ 515:rt-thread/src/timer.c ****          */
+ 516:rt-thread/src/timer.c ****         if ((current_tick - t->timeout_tick) < RT_TICK_MAX / 2)
+ 517:rt-thread/src/timer.c ****         {
+ 518:rt-thread/src/timer.c ****             RT_OBJECT_HOOK_CALL(rt_timer_enter_hook, (t));
+ 519:rt-thread/src/timer.c **** 
+ 520:rt-thread/src/timer.c ****             /* remove timer from timer list firstly */
+ 521:rt-thread/src/timer.c ****             _rt_timer_remove(t);
+ 522:rt-thread/src/timer.c **** 
+ 523:rt-thread/src/timer.c ****             /* call timeout function */
+ 524:rt-thread/src/timer.c ****             t->timeout_func(t->parameter);
+ 525:rt-thread/src/timer.c **** 
+ 526:rt-thread/src/timer.c ****             /* re-get tick */
+ 527:rt-thread/src/timer.c ****             current_tick = rt_tick_get();
+ 528:rt-thread/src/timer.c **** 
+ 529:rt-thread/src/timer.c ****             RT_OBJECT_HOOK_CALL(rt_timer_exit_hook, (t));
+ 530:rt-thread/src/timer.c ****             RT_DEBUG_LOG(RT_DEBUG_TIMER, ("current tick: %d\n", current_tick));
+ 531:rt-thread/src/timer.c **** 
+ 532:rt-thread/src/timer.c ****             if ((t->parent.flag & RT_TIMER_FLAG_PERIODIC) &&
+ 911              		.loc 1 532 0
+ 912 003e 14F80B3C 		ldrb	r3, [r4, #-11]	@ zero_extendqisi2
+ 913 0042 03F00302 		and	r2, r3, #3
+ 914 0046 032A     		cmp	r2, #3
+ 915 0048 23D0     		beq	.L70
+ 533:rt-thread/src/timer.c ****                 (t->parent.flag & RT_TIMER_FLAG_ACTIVATED))
+ 534:rt-thread/src/timer.c ****             {
+ 535:rt-thread/src/timer.c ****                 /* start it */
+ 536:rt-thread/src/timer.c ****                 t->parent.flag &= ~RT_TIMER_FLAG_ACTIVATED;
+ 537:rt-thread/src/timer.c ****                 rt_timer_start(t);
+ 538:rt-thread/src/timer.c ****             }
+ 539:rt-thread/src/timer.c ****             else
+ 540:rt-thread/src/timer.c ****             {
+ 541:rt-thread/src/timer.c ****                 /* stop timer */
+ 542:rt-thread/src/timer.c ****                 t->parent.flag &= ~RT_TIMER_FLAG_ACTIVATED;
+ 916              		.loc 1 542 0
+ 917 004a 23F00103 		bic	r3, r3, #1
+ 918 004e 04F80B3C 		strb	r3, [r4, #-11]
+ 919              	.LVL99:
+ 920              	.L60:
+ 921              	.LBB73:
+ARM GAS  /tmp/ccEZaTT9.s 			page 29
+
+
+ 922              	.LBB74:
+ 923              		.loc 2 100 0
+ 924 0052 164B     		ldr	r3, .L71
+ 925 0054 1C68     		ldr	r4, [r3]
+ 926              	.LVL100:
+ 927              	.LBE74:
+ 928              	.LBE73:
+ 507:rt-thread/src/timer.c ****     {
+ 929              		.loc 1 507 0
+ 930 0056 9C42     		cmp	r4, r3
+ 931 0058 23D0     		beq	.L61
+ 509:rt-thread/src/timer.c ****                           struct rt_timer, row[RT_TIMER_SKIP_LIST_LEVEL - 1]);
+ 932              		.loc 1 509 0
+ 933 005a A4F11405 		sub	r5, r4, #20
+ 934              	.LVL101:
+ 516:rt-thread/src/timer.c ****         {
+ 935              		.loc 1 516 0
+ 936 005e 6069     		ldr	r0, [r4, #20]
+ 937 0060 381A     		subs	r0, r7, r0
+ 938 0062 134B     		ldr	r3, .L71+4
+ 939 0064 9842     		cmp	r0, r3
+ 940 0066 1CD8     		bhi	.L61
+ 518:rt-thread/src/timer.c **** 
+ 941              		.loc 1 518 0
+ 942 0068 124B     		ldr	r3, .L71+8
+ 943 006a 1B68     		ldr	r3, [r3]
+ 944 006c 0BB1     		cbz	r3, .L62
+ 518:rt-thread/src/timer.c **** 
+ 945              		.loc 1 518 0 is_stmt 0 discriminator 1
+ 946 006e 2846     		mov	r0, r5
+ 947 0070 9847     		blx	r3
+ 948              	.LVL102:
+ 949              	.L62:
+ 495:rt-thread/src/timer.c ****     struct rt_timer *t;
+ 950              		.loc 1 495 0 is_stmt 1
+ 951 0072 0021     		movs	r1, #0
+ 952              	.LVL103:
+ 953              	.L63:
+ 954              	.LBB75:
+ 955              	.LBB72:
+ 125:rt-thread/src/timer.c ****     {
+ 956              		.loc 1 125 0
+ 957 0074 0029     		cmp	r1, #0
+ 958 0076 CBDD     		ble	.L64
+ 959              	.LVL104:
+ 960              	.LBE72:
+ 961              	.LBE75:
+ 524:rt-thread/src/timer.c **** 
+ 962              		.loc 1 524 0
+ 963 0078 A368     		ldr	r3, [r4, #8]
+ 964 007a E068     		ldr	r0, [r4, #12]
+ 965 007c 9847     		blx	r3
+ 966              	.LVL105:
+ 527:rt-thread/src/timer.c **** 
+ 967              		.loc 1 527 0
+ 968 007e FFF7FEFF 		bl	rt_tick_get
+ 969              	.LVL106:
+ARM GAS  /tmp/ccEZaTT9.s 			page 30
+
+
+ 970 0082 0746     		mov	r7, r0
+ 971              	.LVL107:
+ 529:rt-thread/src/timer.c ****             RT_DEBUG_LOG(RT_DEBUG_TIMER, ("current tick: %d\n", current_tick));
+ 972              		.loc 1 529 0
+ 973 0084 0C4B     		ldr	r3, .L71+12
+ 974 0086 1B68     		ldr	r3, [r3]
+ 975 0088 002B     		cmp	r3, #0
+ 976 008a D8D0     		beq	.L65
+ 529:rt-thread/src/timer.c ****             RT_DEBUG_LOG(RT_DEBUG_TIMER, ("current tick: %d\n", current_tick));
+ 977              		.loc 1 529 0 is_stmt 0 discriminator 1
+ 978 008c 2846     		mov	r0, r5
+ 979              	.LVL108:
+ 980 008e 9847     		blx	r3
+ 981              	.LVL109:
+ 982 0090 D5E7     		b	.L65
+ 983              	.L70:
+ 536:rt-thread/src/timer.c ****                 rt_timer_start(t);
+ 984              		.loc 1 536 0 is_stmt 1
+ 985 0092 23F00103 		bic	r3, r3, #1
+ 986 0096 04F80B3C 		strb	r3, [r4, #-11]
+ 537:rt-thread/src/timer.c ****             }
+ 987              		.loc 1 537 0
+ 988 009a 2846     		mov	r0, r5
+ 989 009c FFF7FEFF 		bl	rt_timer_start
+ 990              	.LVL110:
+ 991 00a0 D7E7     		b	.L60
+ 992              	.LVL111:
+ 993              	.L61:
+ 543:rt-thread/src/timer.c ****             }
+ 544:rt-thread/src/timer.c ****         }
+ 545:rt-thread/src/timer.c ****         else
+ 546:rt-thread/src/timer.c ****             break;
+ 547:rt-thread/src/timer.c ****     }
+ 548:rt-thread/src/timer.c **** 
+ 549:rt-thread/src/timer.c ****     /* enable interrupt */
+ 550:rt-thread/src/timer.c ****     rt_hw_interrupt_enable(level);
+ 994              		.loc 1 550 0
+ 995 00a2 3046     		mov	r0, r6
+ 996 00a4 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 997              	.LVL112:
+ 998 00a8 F8BD     		pop	{r3, r4, r5, r6, r7, pc}
+ 999              	.LVL113:
+ 1000              	.L72:
+ 1001 00aa 00BF     		.align	2
+ 1002              	.L71:
+ 1003 00ac 00000000 		.word	.LANCHOR2
+ 1004 00b0 FEFFFF7F 		.word	2147483646
+ 1005 00b4 00000000 		.word	.LANCHOR0
+ 1006 00b8 00000000 		.word	.LANCHOR1
+ 1007              		.cfi_endproc
+ 1008              	.LFE27:
+ 1010              		.section	.text.rt_timer_next_timeout_tick,"ax",%progbits
+ 1011              		.align	1
+ 1012              		.global	rt_timer_next_timeout_tick
+ 1013              		.syntax unified
+ 1014              		.thumb
+ 1015              		.thumb_func
+ARM GAS  /tmp/ccEZaTT9.s 			page 31
+
+
+ 1016              		.fpu fpv4-sp-d16
+ 1018              	rt_timer_next_timeout_tick:
+ 1019              	.LFB28:
+ 551:rt-thread/src/timer.c **** 
+ 552:rt-thread/src/timer.c ****     RT_DEBUG_LOG(RT_DEBUG_TIMER, ("timer check leave\n"));
+ 553:rt-thread/src/timer.c **** }
+ 554:rt-thread/src/timer.c **** 
+ 555:rt-thread/src/timer.c **** /**
+ 556:rt-thread/src/timer.c ****  * This function will return the next timeout tick in the system.
+ 557:rt-thread/src/timer.c ****  *
+ 558:rt-thread/src/timer.c ****  * @return the next timeout tick in the system
+ 559:rt-thread/src/timer.c ****  */
+ 560:rt-thread/src/timer.c **** rt_tick_t rt_timer_next_timeout_tick(void)
+ 561:rt-thread/src/timer.c **** {
+ 1020              		.loc 1 561 0
+ 1021              		.cfi_startproc
+ 1022              		@ args = 0, pretend = 0, frame = 0
+ 1023              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1024 0000 08B5     		push	{r3, lr}
+ 1025              	.LCFI19:
+ 1026              		.cfi_def_cfa_offset 8
+ 1027              		.cfi_offset 3, -8
+ 1028              		.cfi_offset 14, -4
+ 562:rt-thread/src/timer.c ****     return rt_timer_list_next_timeout(rt_timer_list);
+ 1029              		.loc 1 562 0
+ 1030 0002 0248     		ldr	r0, .L75
+ 1031 0004 FFF7FEFF 		bl	rt_timer_list_next_timeout
+ 1032              	.LVL114:
+ 563:rt-thread/src/timer.c **** }
+ 1033              		.loc 1 563 0
+ 1034 0008 08BD     		pop	{r3, pc}
+ 1035              	.L76:
+ 1036 000a 00BF     		.align	2
+ 1037              	.L75:
+ 1038 000c 00000000 		.word	.LANCHOR2
+ 1039              		.cfi_endproc
+ 1040              	.LFE28:
+ 1042              		.section	.text.rt_system_timer_init,"ax",%progbits
+ 1043              		.align	1
+ 1044              		.global	rt_system_timer_init
+ 1045              		.syntax unified
+ 1046              		.thumb
+ 1047              		.thumb_func
+ 1048              		.fpu fpv4-sp-d16
+ 1050              	rt_system_timer_init:
+ 1051              	.LFB29:
+ 564:rt-thread/src/timer.c **** 
+ 565:rt-thread/src/timer.c **** #ifdef RT_USING_TIMER_SOFT
+ 566:rt-thread/src/timer.c **** /**
+ 567:rt-thread/src/timer.c ****  * This function will check timer list, if a timeout event happens, the
+ 568:rt-thread/src/timer.c ****  * corresponding timeout function will be invoked.
+ 569:rt-thread/src/timer.c ****  */
+ 570:rt-thread/src/timer.c **** void rt_soft_timer_check(void)
+ 571:rt-thread/src/timer.c **** {
+ 572:rt-thread/src/timer.c ****     rt_tick_t current_tick;
+ 573:rt-thread/src/timer.c ****     rt_list_t *n;
+ 574:rt-thread/src/timer.c ****     struct rt_timer *t;
+ARM GAS  /tmp/ccEZaTT9.s 			page 32
+
+
+ 575:rt-thread/src/timer.c **** 
+ 576:rt-thread/src/timer.c ****     RT_DEBUG_LOG(RT_DEBUG_TIMER, ("software timer check enter\n"));
+ 577:rt-thread/src/timer.c **** 
+ 578:rt-thread/src/timer.c ****     current_tick = rt_tick_get();
+ 579:rt-thread/src/timer.c **** 
+ 580:rt-thread/src/timer.c ****     /* lock scheduler */
+ 581:rt-thread/src/timer.c ****     rt_enter_critical();
+ 582:rt-thread/src/timer.c **** 
+ 583:rt-thread/src/timer.c ****     for (n = rt_soft_timer_list[RT_TIMER_SKIP_LIST_LEVEL - 1].next;
+ 584:rt-thread/src/timer.c ****          n != &(rt_soft_timer_list[RT_TIMER_SKIP_LIST_LEVEL - 1]);)
+ 585:rt-thread/src/timer.c ****     {
+ 586:rt-thread/src/timer.c ****         t = rt_list_entry(n, struct rt_timer, row[RT_TIMER_SKIP_LIST_LEVEL - 1]);
+ 587:rt-thread/src/timer.c **** 
+ 588:rt-thread/src/timer.c ****         /*
+ 589:rt-thread/src/timer.c ****          * It supposes that the new tick shall less than the half duration of
+ 590:rt-thread/src/timer.c ****          * tick max.
+ 591:rt-thread/src/timer.c ****          */
+ 592:rt-thread/src/timer.c ****         if ((current_tick - t->timeout_tick) < RT_TICK_MAX / 2)
+ 593:rt-thread/src/timer.c ****         {
+ 594:rt-thread/src/timer.c ****             RT_OBJECT_HOOK_CALL(rt_timer_enter_hook, (t));
+ 595:rt-thread/src/timer.c **** 
+ 596:rt-thread/src/timer.c ****             /* move node to the next */
+ 597:rt-thread/src/timer.c ****             n = n->next;
+ 598:rt-thread/src/timer.c **** 
+ 599:rt-thread/src/timer.c ****             /* remove timer from timer list firstly */
+ 600:rt-thread/src/timer.c ****             _rt_timer_remove(t);
+ 601:rt-thread/src/timer.c **** 
+ 602:rt-thread/src/timer.c ****             /* not lock scheduler when performing timeout function */
+ 603:rt-thread/src/timer.c ****             rt_exit_critical();
+ 604:rt-thread/src/timer.c ****             /* call timeout function */
+ 605:rt-thread/src/timer.c ****             t->timeout_func(t->parameter);
+ 606:rt-thread/src/timer.c **** 
+ 607:rt-thread/src/timer.c ****             /* re-get tick */
+ 608:rt-thread/src/timer.c ****             current_tick = rt_tick_get();
+ 609:rt-thread/src/timer.c **** 
+ 610:rt-thread/src/timer.c ****             RT_OBJECT_HOOK_CALL(rt_timer_exit_hook, (t));
+ 611:rt-thread/src/timer.c ****             RT_DEBUG_LOG(RT_DEBUG_TIMER, ("current tick: %d\n", current_tick));
+ 612:rt-thread/src/timer.c **** 
+ 613:rt-thread/src/timer.c ****             /* lock scheduler */
+ 614:rt-thread/src/timer.c ****             rt_enter_critical();
+ 615:rt-thread/src/timer.c **** 
+ 616:rt-thread/src/timer.c ****             if ((t->parent.flag & RT_TIMER_FLAG_PERIODIC) &&
+ 617:rt-thread/src/timer.c ****                 (t->parent.flag & RT_TIMER_FLAG_ACTIVATED))
+ 618:rt-thread/src/timer.c ****             {
+ 619:rt-thread/src/timer.c ****                 /* start it */
+ 620:rt-thread/src/timer.c ****                 t->parent.flag &= ~RT_TIMER_FLAG_ACTIVATED;
+ 621:rt-thread/src/timer.c ****                 rt_timer_start(t);
+ 622:rt-thread/src/timer.c ****             }
+ 623:rt-thread/src/timer.c ****             else
+ 624:rt-thread/src/timer.c ****             {
+ 625:rt-thread/src/timer.c ****                 /* stop timer */
+ 626:rt-thread/src/timer.c ****                 t->parent.flag &= ~RT_TIMER_FLAG_ACTIVATED;
+ 627:rt-thread/src/timer.c ****             }
+ 628:rt-thread/src/timer.c ****         }
+ 629:rt-thread/src/timer.c ****         else break; /* not check anymore */
+ 630:rt-thread/src/timer.c ****     }
+ 631:rt-thread/src/timer.c **** 
+ARM GAS  /tmp/ccEZaTT9.s 			page 33
+
+
+ 632:rt-thread/src/timer.c ****     /* unlock scheduler */
+ 633:rt-thread/src/timer.c ****     rt_exit_critical();
+ 634:rt-thread/src/timer.c **** 
+ 635:rt-thread/src/timer.c ****     RT_DEBUG_LOG(RT_DEBUG_TIMER, ("software timer check leave\n"));
+ 636:rt-thread/src/timer.c **** }
+ 637:rt-thread/src/timer.c **** 
+ 638:rt-thread/src/timer.c **** /* system timer thread entry */
+ 639:rt-thread/src/timer.c **** static void rt_thread_timer_entry(void *parameter)
+ 640:rt-thread/src/timer.c **** {
+ 641:rt-thread/src/timer.c ****     rt_tick_t next_timeout;
+ 642:rt-thread/src/timer.c **** 
+ 643:rt-thread/src/timer.c ****     while (1)
+ 644:rt-thread/src/timer.c ****     {
+ 645:rt-thread/src/timer.c ****         /* get the next timeout tick */
+ 646:rt-thread/src/timer.c ****         next_timeout = rt_timer_list_next_timeout(rt_soft_timer_list);
+ 647:rt-thread/src/timer.c ****         if (next_timeout == RT_TICK_MAX)
+ 648:rt-thread/src/timer.c ****         {
+ 649:rt-thread/src/timer.c ****             /* no software timer exist, suspend self. */
+ 650:rt-thread/src/timer.c ****             rt_thread_suspend(rt_thread_self());
+ 651:rt-thread/src/timer.c ****             rt_schedule();
+ 652:rt-thread/src/timer.c ****         }
+ 653:rt-thread/src/timer.c ****         else
+ 654:rt-thread/src/timer.c ****         {
+ 655:rt-thread/src/timer.c ****             rt_tick_t current_tick;
+ 656:rt-thread/src/timer.c **** 
+ 657:rt-thread/src/timer.c ****             /* get current tick */
+ 658:rt-thread/src/timer.c ****             current_tick = rt_tick_get();
+ 659:rt-thread/src/timer.c **** 
+ 660:rt-thread/src/timer.c ****             if ((next_timeout - current_tick) < RT_TICK_MAX / 2)
+ 661:rt-thread/src/timer.c ****             {
+ 662:rt-thread/src/timer.c ****                 /* get the delta timeout tick */
+ 663:rt-thread/src/timer.c ****                 next_timeout = next_timeout - current_tick;
+ 664:rt-thread/src/timer.c ****                 rt_thread_delay(next_timeout);
+ 665:rt-thread/src/timer.c ****             }
+ 666:rt-thread/src/timer.c ****         }
+ 667:rt-thread/src/timer.c **** 
+ 668:rt-thread/src/timer.c ****         /* check software timer */
+ 669:rt-thread/src/timer.c ****         rt_soft_timer_check();
+ 670:rt-thread/src/timer.c ****     }
+ 671:rt-thread/src/timer.c **** }
+ 672:rt-thread/src/timer.c **** #endif
+ 673:rt-thread/src/timer.c **** 
+ 674:rt-thread/src/timer.c **** /**
+ 675:rt-thread/src/timer.c ****  * @ingroup SystemInit
+ 676:rt-thread/src/timer.c ****  *
+ 677:rt-thread/src/timer.c ****  * This function will initialize system timer
+ 678:rt-thread/src/timer.c ****  */
+ 679:rt-thread/src/timer.c **** void rt_system_timer_init(void)
+ 680:rt-thread/src/timer.c **** {
+ 1052              		.loc 1 680 0
+ 1053              		.cfi_startproc
+ 1054              		@ args = 0, pretend = 0, frame = 0
+ 1055              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1056              		@ link register save eliminated.
+ 1057              	.LVL115:
+ 681:rt-thread/src/timer.c ****     int i;
+ 682:rt-thread/src/timer.c **** 
+ARM GAS  /tmp/ccEZaTT9.s 			page 34
+
+
+ 683:rt-thread/src/timer.c ****     for (i = 0; i < sizeof(rt_timer_list) / sizeof(rt_timer_list[0]); i++)
+ 1058              		.loc 1 683 0
+ 1059 0000 0023     		movs	r3, #0
+ 1060              	.LVL116:
+ 1061              	.L78:
+ 1062              		.loc 1 683 0 is_stmt 0 discriminator 1
+ 1063 0002 03B1     		cbz	r3, .L79
+ 684:rt-thread/src/timer.c ****     {
+ 685:rt-thread/src/timer.c ****         rt_list_init(rt_timer_list + i);
+ 686:rt-thread/src/timer.c ****     }
+ 687:rt-thread/src/timer.c **** }
+ 1064              		.loc 1 687 0 is_stmt 1
+ 1065 0004 7047     		bx	lr
+ 1066              	.L79:
+ 685:rt-thread/src/timer.c ****     }
+ 1067              		.loc 1 685 0 discriminator 3
+ 1068 0006 0449     		ldr	r1, .L80
+ 1069 0008 01EBC302 		add	r2, r1, r3, lsl #3
+ 1070              	.LVL117:
+ 1071              	.LBB76:
+ 1072              	.LBB77:
+  49:rt-thread/include/rtservice.h **** }
+ 1073              		.loc 2 49 0 discriminator 3
+ 1074 000c 5260     		str	r2, [r2, #4]
+ 1075 000e 41F83320 		str	r2, [r1, r3, lsl #3]
+ 1076              	.LVL118:
+ 1077              	.LBE77:
+ 1078              	.LBE76:
+ 683:rt-thread/src/timer.c ****     {
+ 1079              		.loc 1 683 0 discriminator 3
+ 1080 0012 0133     		adds	r3, r3, #1
+ 1081              	.LVL119:
+ 1082 0014 F5E7     		b	.L78
+ 1083              	.L81:
+ 1084 0016 00BF     		.align	2
+ 1085              	.L80:
+ 1086 0018 00000000 		.word	.LANCHOR2
+ 1087              		.cfi_endproc
+ 1088              	.LFE29:
+ 1090              		.section	.text.rt_system_timer_thread_init,"ax",%progbits
+ 1091              		.align	1
+ 1092              		.global	rt_system_timer_thread_init
+ 1093              		.syntax unified
+ 1094              		.thumb
+ 1095              		.thumb_func
+ 1096              		.fpu fpv4-sp-d16
+ 1098              	rt_system_timer_thread_init:
+ 1099              	.LFB30:
+ 688:rt-thread/src/timer.c **** 
+ 689:rt-thread/src/timer.c **** /**
+ 690:rt-thread/src/timer.c ****  * @ingroup SystemInit
+ 691:rt-thread/src/timer.c ****  *
+ 692:rt-thread/src/timer.c ****  * This function will initialize system timer thread
+ 693:rt-thread/src/timer.c ****  */
+ 694:rt-thread/src/timer.c **** void rt_system_timer_thread_init(void)
+ 695:rt-thread/src/timer.c **** {
+ 1100              		.loc 1 695 0
+ARM GAS  /tmp/ccEZaTT9.s 			page 35
+
+
+ 1101              		.cfi_startproc
+ 1102              		@ args = 0, pretend = 0, frame = 0
+ 1103              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1104              		@ link register save eliminated.
+ 1105 0000 7047     		bx	lr
+ 1106              		.cfi_endproc
+ 1107              	.LFE30:
+ 1109              		.section	.bss.random_nr.6723,"aw",%nobits
+ 1110              		.align	2
+ 1111              		.set	.LANCHOR3,. + 0
+ 1114              	random_nr.6723:
+ 1115 0000 00000000 		.space	4
+ 1116              		.section	.bss.rt_timer_enter_hook,"aw",%nobits
+ 1117              		.align	2
+ 1118              		.set	.LANCHOR0,. + 0
+ 1121              	rt_timer_enter_hook:
+ 1122 0000 00000000 		.space	4
+ 1123              		.section	.bss.rt_timer_exit_hook,"aw",%nobits
+ 1124              		.align	2
+ 1125              		.set	.LANCHOR1,. + 0
+ 1128              	rt_timer_exit_hook:
+ 1129 0000 00000000 		.space	4
+ 1130              		.section	.bss.rt_timer_list,"aw",%nobits
+ 1131              		.align	2
+ 1132              		.set	.LANCHOR2,. + 0
+ 1135              	rt_timer_list:
+ 1136 0000 00000000 		.space	8
+ 1136      00000000 
+ 1137              		.text
+ 1138              	.Letext0:
+ 1139              		.file 3 "rt-thread/include/rtdef.h"
+ 1140              		.file 4 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/lock.h"
+ 1141              		.file 5 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_types.h"
+ 1142              		.file 6 "/opt/gcc-arm-none-eabi-6-2017-q2-update/lib/gcc/arm-none-eabi/6.3.1/include/stddef.h"
+ 1143              		.file 7 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/reent.h"
+ 1144              		.file 8 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/time.h"
+ 1145              		.file 9 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/errno.h"
+ 1146              		.file 10 "rt-thread/components/finsh/finsh_api.h"
+ 1147              		.file 11 "rt-thread/include/rtthread.h"
+ 1148              		.file 12 "rt-thread/include/rthw.h"
+ARM GAS  /tmp/ccEZaTT9.s 			page 36
+
+
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 timer.c
+     /tmp/ccEZaTT9.s:18     .text._rt_timer_init:0000000000000000 $t
+     /tmp/ccEZaTT9.s:24     .text._rt_timer_init:0000000000000000 _rt_timer_init
+     /tmp/ccEZaTT9.s:93     .text.rt_timer_list_next_timeout:0000000000000000 $t
+     /tmp/ccEZaTT9.s:99     .text.rt_timer_list_next_timeout:0000000000000000 rt_timer_list_next_timeout
+     /tmp/ccEZaTT9.s:133    .text.rt_timer_enter_sethook:0000000000000000 $t
+     /tmp/ccEZaTT9.s:140    .text.rt_timer_enter_sethook:0000000000000000 rt_timer_enter_sethook
+     /tmp/ccEZaTT9.s:155    .text.rt_timer_enter_sethook:0000000000000008 $d
+     /tmp/ccEZaTT9.s:160    .text.rt_timer_exit_sethook:0000000000000000 $t
+     /tmp/ccEZaTT9.s:167    .text.rt_timer_exit_sethook:0000000000000000 rt_timer_exit_sethook
+     /tmp/ccEZaTT9.s:182    .text.rt_timer_exit_sethook:0000000000000008 $d
+     /tmp/ccEZaTT9.s:187    .text.rt_timer_init:0000000000000000 $t
+     /tmp/ccEZaTT9.s:194    .text.rt_timer_init:0000000000000000 rt_timer_init
+     /tmp/ccEZaTT9.s:240    .text.rt_timer_detach:0000000000000000 $t
+     /tmp/ccEZaTT9.s:247    .text.rt_timer_detach:0000000000000000 rt_timer_detach
+     /tmp/ccEZaTT9.s:321    .text.rt_timer_create:0000000000000000 $t
+     /tmp/ccEZaTT9.s:328    .text.rt_timer_create:0000000000000000 rt_timer_create
+     /tmp/ccEZaTT9.s:387    .text.rt_timer_delete:0000000000000000 $t
+     /tmp/ccEZaTT9.s:394    .text.rt_timer_delete:0000000000000000 rt_timer_delete
+     /tmp/ccEZaTT9.s:468    .text.rt_timer_start:0000000000000000 $t
+     /tmp/ccEZaTT9.s:475    .text.rt_timer_start:0000000000000000 rt_timer_start
+     /tmp/ccEZaTT9.s:664    .text.rt_timer_start:00000000000000c0 $d
+     /tmp/ccEZaTT9.s:672    .text.rt_timer_stop:0000000000000000 $t
+     /tmp/ccEZaTT9.s:679    .text.rt_timer_stop:0000000000000000 rt_timer_stop
+     /tmp/ccEZaTT9.s:777    .text.rt_timer_stop:0000000000000050 $d
+     /tmp/ccEZaTT9.s:782    .text.rt_timer_control:0000000000000000 $t
+     /tmp/ccEZaTT9.s:789    .text.rt_timer_control:0000000000000000 rt_timer_control
+     /tmp/ccEZaTT9.s:802    .text.rt_timer_control:0000000000000008 $d
+     /tmp/ccEZaTT9.s:806    .text.rt_timer_control:000000000000000c $t
+     /tmp/ccEZaTT9.s:841    .text.rt_timer_check:0000000000000000 $t
+     /tmp/ccEZaTT9.s:848    .text.rt_timer_check:0000000000000000 rt_timer_check
+     /tmp/ccEZaTT9.s:1003   .text.rt_timer_check:00000000000000ac $d
+     /tmp/ccEZaTT9.s:1011   .text.rt_timer_next_timeout_tick:0000000000000000 $t
+     /tmp/ccEZaTT9.s:1018   .text.rt_timer_next_timeout_tick:0000000000000000 rt_timer_next_timeout_tick
+     /tmp/ccEZaTT9.s:1038   .text.rt_timer_next_timeout_tick:000000000000000c $d
+     /tmp/ccEZaTT9.s:1043   .text.rt_system_timer_init:0000000000000000 $t
+     /tmp/ccEZaTT9.s:1050   .text.rt_system_timer_init:0000000000000000 rt_system_timer_init
+     /tmp/ccEZaTT9.s:1086   .text.rt_system_timer_init:0000000000000018 $d
+     /tmp/ccEZaTT9.s:1091   .text.rt_system_timer_thread_init:0000000000000000 $t
+     /tmp/ccEZaTT9.s:1098   .text.rt_system_timer_thread_init:0000000000000000 rt_system_timer_thread_init
+     /tmp/ccEZaTT9.s:1110   .bss.random_nr.6723:0000000000000000 $d
+     /tmp/ccEZaTT9.s:1114   .bss.random_nr.6723:0000000000000000 random_nr.6723
+     /tmp/ccEZaTT9.s:1117   .bss.rt_timer_enter_hook:0000000000000000 $d
+     /tmp/ccEZaTT9.s:1121   .bss.rt_timer_enter_hook:0000000000000000 rt_timer_enter_hook
+     /tmp/ccEZaTT9.s:1124   .bss.rt_timer_exit_hook:0000000000000000 $d
+     /tmp/ccEZaTT9.s:1128   .bss.rt_timer_exit_hook:0000000000000000 rt_timer_exit_hook
+     /tmp/ccEZaTT9.s:1131   .bss.rt_timer_list:0000000000000000 $d
+     /tmp/ccEZaTT9.s:1135   .bss.rt_timer_list:0000000000000000 rt_timer_list
+                     .debug_frame:0000000000000010 $d
+
+UNDEFINED SYMBOLS
+rt_object_init
+rt_hw_interrupt_disable
+rt_hw_interrupt_enable
+rt_object_detach
+rt_object_allocate
+ARM GAS  /tmp/ccEZaTT9.s 			page 37
+
+
+rt_object_delete
+rt_tick_get
+rt_object_take_hook
+rt_object_put_hook

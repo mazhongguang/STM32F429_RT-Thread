@@ -1,0 +1,289 @@
+ARM GAS  /tmp/ccGmR17J.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.eabi_attribute 27, 1
+   3              		.eabi_attribute 28, 1
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.file	"beep.c"
+  14              		.text
+  15              	.Ltext0:
+  16              		.cfi_sections	.debug_frame
+  17              		.section	.text.beep_init,"ax",%progbits
+  18              		.align	1
+  19              		.global	beep_init
+  20              		.syntax unified
+  21              		.thumb
+  22              		.thumb_func
+  23              		.fpu fpv4-sp-d16
+  25              	beep_init:
+  26              	.LFB138:
+  27              		.file 1 "hardware/beep/beep.c"
+   1:hardware/beep/beep.c **** #include "beep.h"
+   2:hardware/beep/beep.c **** #include "rt_drv_pwm.h"
+   3:hardware/beep/beep.c **** #include "rtthread.h"
+   4:hardware/beep/beep.c **** #include <rtdevice.h>
+   5:hardware/beep/beep.c **** 
+   6:hardware/beep/beep.c **** struct rt_device_pwm *pwm_device = RT_NULL;		//define pwm device ptr
+   7:hardware/beep/beep.c **** 
+   8:hardware/beep/beep.c **** int beep_init(void)
+   9:hardware/beep/beep.c **** {
+  28              		.loc 1 9 0
+  29              		.cfi_startproc
+  30              		@ args = 0, pretend = 0, frame = 0
+  31              		@ frame_needed = 0, uses_anonymous_args = 0
+  32 0000 08B5     		push	{r3, lr}
+  33              	.LCFI0:
+  34              		.cfi_def_cfa_offset 8
+  35              		.cfi_offset 3, -8
+  36              		.cfi_offset 14, -4
+  10:hardware/beep/beep.c **** 	/* find pwm device */
+  11:hardware/beep/beep.c **** 	pwm_device = (struct rt_device_pwm *)rt_device_find(BEEP_PWM_DEVICE);	
+  37              		.loc 1 11 0
+  38 0002 0548     		ldr	r0, .L6
+  39 0004 FFF7FEFF 		bl	rt_device_find
+  40              	.LVL0:
+  41 0008 044B     		ldr	r3, .L6+4
+  42 000a 1860     		str	r0, [r3]
+  12:hardware/beep/beep.c **** 	if (pwm_device == RT_NULL)
+  43              		.loc 1 12 0
+  44 000c 08B1     		cbz	r0, .L5
+  13:hardware/beep/beep.c **** 	{
+  14:hardware/beep/beep.c **** 		return -RT_ERROR;
+ARM GAS  /tmp/ccGmR17J.s 			page 2
+
+
+  15:hardware/beep/beep.c **** 	}
+  16:hardware/beep/beep.c **** 	return 0;
+  45              		.loc 1 16 0
+  46 000e 0020     		movs	r0, #0
+  17:hardware/beep/beep.c **** }
+  47              		.loc 1 17 0
+  48 0010 08BD     		pop	{r3, pc}
+  49              	.L5:
+  14:hardware/beep/beep.c **** 	}
+  50              		.loc 1 14 0
+  51 0012 4FF0FF30 		mov	r0, #-1
+  52 0016 08BD     		pop	{r3, pc}
+  53              	.L7:
+  54              		.align	2
+  55              	.L6:
+  56 0018 00000000 		.word	.LC0
+  57 001c 00000000 		.word	.LANCHOR0
+  58              		.cfi_endproc
+  59              	.LFE138:
+  61              		.section	.text.beep_on,"ax",%progbits
+  62              		.align	1
+  63              		.global	beep_on
+  64              		.syntax unified
+  65              		.thumb
+  66              		.thumb_func
+  67              		.fpu fpv4-sp-d16
+  69              	beep_on:
+  70              	.LFB139:
+  18:hardware/beep/beep.c **** 
+  19:hardware/beep/beep.c **** int beep_on(void)
+  20:hardware/beep/beep.c **** {
+  71              		.loc 1 20 0
+  72              		.cfi_startproc
+  73              		@ args = 0, pretend = 0, frame = 0
+  74              		@ frame_needed = 0, uses_anonymous_args = 0
+  75 0000 08B5     		push	{r3, lr}
+  76              	.LCFI1:
+  77              		.cfi_def_cfa_offset 8
+  78              		.cfi_offset 3, -8
+  79              		.cfi_offset 14, -4
+  21:hardware/beep/beep.c **** 	rt_pwm_enable(pwm_device, BEEP_PWM_CH);		/* enable beep->pwm channel */
+  80              		.loc 1 21 0
+  81 0002 0421     		movs	r1, #4
+  82 0004 024B     		ldr	r3, .L10
+  83 0006 1868     		ldr	r0, [r3]
+  84 0008 FFF7FEFF 		bl	rt_pwm_enable
+  85              	.LVL1:
+  22:hardware/beep/beep.c **** 	return 0;
+  23:hardware/beep/beep.c **** }
+  86              		.loc 1 23 0
+  87 000c 0020     		movs	r0, #0
+  88 000e 08BD     		pop	{r3, pc}
+  89              	.L11:
+  90              		.align	2
+  91              	.L10:
+  92 0010 00000000 		.word	.LANCHOR0
+  93              		.cfi_endproc
+ARM GAS  /tmp/ccGmR17J.s 			page 3
+
+
+  94              	.LFE139:
+  96              		.section	.text.beep_off,"ax",%progbits
+  97              		.align	1
+  98              		.global	beep_off
+  99              		.syntax unified
+ 100              		.thumb
+ 101              		.thumb_func
+ 102              		.fpu fpv4-sp-d16
+ 104              	beep_off:
+ 105              	.LFB140:
+  24:hardware/beep/beep.c **** 		
+  25:hardware/beep/beep.c **** int beep_off(void)
+  26:hardware/beep/beep.c **** {
+ 106              		.loc 1 26 0
+ 107              		.cfi_startproc
+ 108              		@ args = 0, pretend = 0, frame = 0
+ 109              		@ frame_needed = 0, uses_anonymous_args = 0
+ 110 0000 08B5     		push	{r3, lr}
+ 111              	.LCFI2:
+ 112              		.cfi_def_cfa_offset 8
+ 113              		.cfi_offset 3, -8
+ 114              		.cfi_offset 14, -4
+  27:hardware/beep/beep.c **** 	rt_pwm_disable(pwm_device, BEEP_PWM_CH);	/* disable bee->pwm channel */
+ 115              		.loc 1 27 0
+ 116 0002 0421     		movs	r1, #4
+ 117 0004 024B     		ldr	r3, .L14
+ 118 0006 1868     		ldr	r0, [r3]
+ 119 0008 FFF7FEFF 		bl	rt_pwm_disable
+ 120              	.LVL2:
+  28:hardware/beep/beep.c **** 	return 0;
+  29:hardware/beep/beep.c **** }
+ 121              		.loc 1 29 0
+ 122 000c 0020     		movs	r0, #0
+ 123 000e 08BD     		pop	{r3, pc}
+ 124              	.L15:
+ 125              		.align	2
+ 126              	.L14:
+ 127 0010 00000000 		.word	.LANCHOR0
+ 128              		.cfi_endproc
+ 129              	.LFE140:
+ 131              		.section	.text.beep_set,"ax",%progbits
+ 132              		.align	1
+ 133              		.global	beep_set
+ 134              		.syntax unified
+ 135              		.thumb
+ 136              		.thumb_func
+ 137              		.fpu fpv4-sp-d16
+ 139              	beep_set:
+ 140              	.LFB141:
+  30:hardware/beep/beep.c **** 
+  31:hardware/beep/beep.c **** int beep_set(uint16_t freq, uint8_t volume)
+  32:hardware/beep/beep.c **** {
+ 141              		.loc 1 32 0
+ 142              		.cfi_startproc
+ 143              		@ args = 0, pretend = 0, frame = 0
+ 144              		@ frame_needed = 0, uses_anonymous_args = 0
+ 145              	.LVL3:
+ARM GAS  /tmp/ccGmR17J.s 			page 4
+
+
+ 146 0000 08B5     		push	{r3, lr}
+ 147              	.LCFI3:
+ 148              		.cfi_def_cfa_offset 8
+ 149              		.cfi_offset 3, -8
+ 150              		.cfi_offset 14, -4
+  33:hardware/beep/beep.c **** 	rt_uint32_t period, pulse;
+  34:hardware/beep/beep.c **** 
+  35:hardware/beep/beep.c **** 	/* frequency to periodic , frequency uint :Hz , period uint : ns */
+  36:hardware/beep/beep.c **** 	period = 1000000000 / freq;		/* unit:ns  1/Hz*10^9 = ns */
+ 151              		.loc 1 36 0
+ 152 0002 084A     		ldr	r2, .L18
+ 153 0004 92FBF0F2 		sdiv	r2, r2, r0
+ 154              	.LVL4:
+  37:hardware/beep/beep.c **** 
+  38:hardware/beep/beep.c **** 	/* 根据声音大小计算占空比，蜂鸣器低电平触发 */
+  39:hardware/beep/beep.c **** 	pulse = period - period	/ 100 * volume;
+ 155              		.loc 1 39 0
+ 156 0008 074B     		ldr	r3, .L18+4
+ 157 000a A3FB0203 		umull	r0, r3, r3, r2
+ 158              	.LVL5:
+ 159 000e 5B09     		lsrs	r3, r3, #5
+ 160              	.LVL6:
+  40:hardware/beep/beep.c **** 
+  41:hardware/beep/beep.c **** 	/* 利用PWM API 设定周期和占空比 */
+  42:hardware/beep/beep.c **** 	rt_pwm_set(pwm_device, BEEP_PWM_CH, period, pulse);		/* channel period pulse */
+ 161              		.loc 1 42 0
+ 162 0010 03FB1123 		mls	r3, r3, r1, r2
+ 163              	.LVL7:
+ 164 0014 0421     		movs	r1, #4
+ 165              	.LVL8:
+ 166 0016 0548     		ldr	r0, .L18+8
+ 167 0018 0068     		ldr	r0, [r0]
+ 168 001a FFF7FEFF 		bl	rt_pwm_set
+ 169              	.LVL9:
+  43:hardware/beep/beep.c **** 
+  44:hardware/beep/beep.c **** 	return 0;
+  45:hardware/beep/beep.c **** }
+ 170              		.loc 1 45 0
+ 171 001e 0020     		movs	r0, #0
+ 172 0020 08BD     		pop	{r3, pc}
+ 173              	.L19:
+ 174 0022 00BF     		.align	2
+ 175              	.L18:
+ 176 0024 00CA9A3B 		.word	1000000000
+ 177 0028 1F85EB51 		.word	1374389535
+ 178 002c 00000000 		.word	.LANCHOR0
+ 179              		.cfi_endproc
+ 180              	.LFE141:
+ 182              		.global	pwm_device
+ 183              		.section	.bss.pwm_device,"aw",%nobits
+ 184              		.align	2
+ 185              		.set	.LANCHOR0,. + 0
+ 188              	pwm_device:
+ 189 0000 00000000 		.space	4
+ 190              		.section	.rodata.beep_init.str1.4,"aMS",%progbits,1
+ 191              		.align	2
+ 192              	.LC0:
+ARM GAS  /tmp/ccGmR17J.s 			page 5
+
+
+ 193 0000 70776D33 		.ascii	"pwm3\000"
+ 193      00
+ 194              		.text
+ 195              	.Letext0:
+ 196              		.file 2 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/machine/_default_types.h"
+ 197              		.file 3 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_stdint.h"
+ 198              		.file 4 "CORE/core_cm4.h"
+ 199              		.file 5 "USER/system_stm32f4xx.h"
+ 200              		.file 6 "HALLIB/Inc/stm32f4xx_hal.h"
+ 201              		.file 7 "rt-thread/include/rtdef.h"
+ 202              		.file 8 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/lock.h"
+ 203              		.file 9 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_types.h"
+ 204              		.file 10 "/opt/gcc-arm-none-eabi-6-2017-q2-update/lib/gcc/arm-none-eabi/6.3.1/include/stddef.h"
+ 205              		.file 11 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/reent.h"
+ 206              		.file 12 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/time.h"
+ 207              		.file 13 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/errno.h"
+ 208              		.file 14 "rt-thread/components/finsh/finsh_api.h"
+ 209              		.file 15 "rt-thread/components/drivers/include/drivers/rt_drv_pwm.h"
+ 210              		.file 16 "rt-thread/include/rtthread.h"
+ARM GAS  /tmp/ccGmR17J.s 			page 6
+
+
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 beep.c
+     /tmp/ccGmR17J.s:18     .text.beep_init:0000000000000000 $t
+     /tmp/ccGmR17J.s:25     .text.beep_init:0000000000000000 beep_init
+     /tmp/ccGmR17J.s:56     .text.beep_init:0000000000000018 $d
+     /tmp/ccGmR17J.s:62     .text.beep_on:0000000000000000 $t
+     /tmp/ccGmR17J.s:69     .text.beep_on:0000000000000000 beep_on
+     /tmp/ccGmR17J.s:92     .text.beep_on:0000000000000010 $d
+     /tmp/ccGmR17J.s:97     .text.beep_off:0000000000000000 $t
+     /tmp/ccGmR17J.s:104    .text.beep_off:0000000000000000 beep_off
+     /tmp/ccGmR17J.s:127    .text.beep_off:0000000000000010 $d
+     /tmp/ccGmR17J.s:132    .text.beep_set:0000000000000000 $t
+     /tmp/ccGmR17J.s:139    .text.beep_set:0000000000000000 beep_set
+     /tmp/ccGmR17J.s:176    .text.beep_set:0000000000000024 $d
+     /tmp/ccGmR17J.s:188    .bss.pwm_device:0000000000000000 pwm_device
+     /tmp/ccGmR17J.s:184    .bss.pwm_device:0000000000000000 $d
+     /tmp/ccGmR17J.s:191    .rodata.beep_init.str1.4:0000000000000000 $d
+                     .debug_frame:0000000000000010 $d
+
+UNDEFINED SYMBOLS
+rt_device_find
+rt_pwm_enable
+rt_pwm_disable
+rt_pwm_set

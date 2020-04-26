@@ -1,0 +1,4239 @@
+ARM GAS  /tmp/ccsLNend.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.eabi_attribute 27, 1
+   3              		.eabi_attribute 28, 1
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.file	"cmd.c"
+  14              		.text
+  15              	.Ltext0:
+  16              		.cfi_sections	.debug_frame
+  17              		.section	.text.hello,"ax",%progbits
+  18              		.align	1
+  19              		.global	hello
+  20              		.syntax unified
+  21              		.thumb
+  22              		.thumb_func
+  23              		.fpu fpv4-sp-d16
+  25              	hello:
+  26              	.LFB16:
+  27              		.file 1 "rt-thread/components/finsh/cmd.c"
+   1:rt-thread/components/finsh/cmd.c **** 
+   2:rt-thread/components/finsh/cmd.c **** /*
+   3:rt-thread/components/finsh/cmd.c ****  * Copyright (c) 2006-2018, RT-Thread Development Team
+   4:rt-thread/components/finsh/cmd.c ****  *
+   5:rt-thread/components/finsh/cmd.c ****  * SPDX-License-Identifier: Apache-2.0
+   6:rt-thread/components/finsh/cmd.c ****  *
+   7:rt-thread/components/finsh/cmd.c ****  * Change Logs:
+   8:rt-thread/components/finsh/cmd.c ****  * Date           Author       Notes
+   9:rt-thread/components/finsh/cmd.c ****  * 2006-04-30     Bernard      first implementation
+  10:rt-thread/components/finsh/cmd.c ****  * 2006-05-04     Bernard      add list_thread,
+  11:rt-thread/components/finsh/cmd.c ****  *                                 list_sem,
+  12:rt-thread/components/finsh/cmd.c ****  *                                 list_timer
+  13:rt-thread/components/finsh/cmd.c ****  * 2006-05-20     Bernard      add list_mutex,
+  14:rt-thread/components/finsh/cmd.c ****  *                                 list_mailbox,
+  15:rt-thread/components/finsh/cmd.c ****  *                                 list_msgqueue,
+  16:rt-thread/components/finsh/cmd.c ****  *                                 list_event,
+  17:rt-thread/components/finsh/cmd.c ****  *                                 list_fevent,
+  18:rt-thread/components/finsh/cmd.c ****  *                                 list_mempool
+  19:rt-thread/components/finsh/cmd.c ****  * 2006-06-03     Bernard      display stack information in list_thread
+  20:rt-thread/components/finsh/cmd.c ****  * 2006-08-10     Bernard      change version to invoke rt_show_version
+  21:rt-thread/components/finsh/cmd.c ****  * 2008-09-10     Bernard      update the list function for finsh syscall
+  22:rt-thread/components/finsh/cmd.c ****  *                                 list and sysvar list
+  23:rt-thread/components/finsh/cmd.c ****  * 2009-05-30     Bernard      add list_device
+  24:rt-thread/components/finsh/cmd.c ****  * 2010-04-21     yi.qiu       add list_module
+  25:rt-thread/components/finsh/cmd.c ****  * 2012-04-29     goprife      improve the command line auto-complete feature.
+  26:rt-thread/components/finsh/cmd.c ****  * 2012-06-02     lgnq         add list_memheap
+  27:rt-thread/components/finsh/cmd.c ****  * 2012-10-22     Bernard      add MS VC++ patch.
+  28:rt-thread/components/finsh/cmd.c ****  * 2016-06-02     armink       beautify the list_thread command
+  29:rt-thread/components/finsh/cmd.c ****  * 2018-11-22     Jesven       list_thread add smp support
+  30:rt-thread/components/finsh/cmd.c ****  * 2018-12-27     Jesven       Fix the problem that disable interrupt too long in list_thread 
+  31:rt-thread/components/finsh/cmd.c ****  *                             Provide protection for the "first layer of objects" when list_*
+ARM GAS  /tmp/ccsLNend.s 			page 2
+
+
+  32:rt-thread/components/finsh/cmd.c ****  */
+  33:rt-thread/components/finsh/cmd.c **** 
+  34:rt-thread/components/finsh/cmd.c **** #include <rthw.h>
+  35:rt-thread/components/finsh/cmd.c **** #include <rtthread.h>
+  36:rt-thread/components/finsh/cmd.c **** 
+  37:rt-thread/components/finsh/cmd.c **** #ifdef RT_USING_FINSH
+  38:rt-thread/components/finsh/cmd.c **** 
+  39:rt-thread/components/finsh/cmd.c **** #include "finsh.h"
+  40:rt-thread/components/finsh/cmd.c **** 
+  41:rt-thread/components/finsh/cmd.c **** #define LIST_FIND_OBJ_NR 8
+  42:rt-thread/components/finsh/cmd.c **** 
+  43:rt-thread/components/finsh/cmd.c **** long hello(void)
+  44:rt-thread/components/finsh/cmd.c **** {
+  28              		.loc 1 44 0
+  29              		.cfi_startproc
+  30              		@ args = 0, pretend = 0, frame = 0
+  31              		@ frame_needed = 0, uses_anonymous_args = 0
+  32 0000 08B5     		push	{r3, lr}
+  33              	.LCFI0:
+  34              		.cfi_def_cfa_offset 8
+  35              		.cfi_offset 3, -8
+  36              		.cfi_offset 14, -4
+  45:rt-thread/components/finsh/cmd.c ****     rt_kprintf("Hello RT-Thread!\n");
+  37              		.loc 1 45 0
+  38 0002 0248     		ldr	r0, .L3
+  39 0004 FFF7FEFF 		bl	rt_kprintf
+  40              	.LVL0:
+  46:rt-thread/components/finsh/cmd.c **** 
+  47:rt-thread/components/finsh/cmd.c ****     return 0;
+  48:rt-thread/components/finsh/cmd.c **** }
+  41              		.loc 1 48 0
+  42 0008 0020     		movs	r0, #0
+  43 000a 08BD     		pop	{r3, pc}
+  44              	.L4:
+  45              		.align	2
+  46              	.L3:
+  47 000c 00000000 		.word	.LC0
+  48              		.cfi_endproc
+  49              	.LFE16:
+  51              		.section	.text.show_wait_queue,"ax",%progbits
+  52              		.align	1
+  53              		.syntax unified
+  54              		.thumb
+  55              		.thumb_func
+  56              		.fpu fpv4-sp-d16
+  58              	show_wait_queue:
+  59              	.LFB22:
+  49:rt-thread/components/finsh/cmd.c **** FINSH_FUNCTION_EXPORT(hello, say hello world);
+  50:rt-thread/components/finsh/cmd.c **** 
+  51:rt-thread/components/finsh/cmd.c **** extern void rt_show_version(void);
+  52:rt-thread/components/finsh/cmd.c **** long version(void)
+  53:rt-thread/components/finsh/cmd.c **** {
+  54:rt-thread/components/finsh/cmd.c ****     rt_show_version();
+  55:rt-thread/components/finsh/cmd.c **** 
+  56:rt-thread/components/finsh/cmd.c ****     return 0;
+  57:rt-thread/components/finsh/cmd.c **** }
+  58:rt-thread/components/finsh/cmd.c **** FINSH_FUNCTION_EXPORT(version, show RT-Thread version information);
+ARM GAS  /tmp/ccsLNend.s 			page 3
+
+
+  59:rt-thread/components/finsh/cmd.c **** MSH_CMD_EXPORT(version, show RT-Thread version information);
+  60:rt-thread/components/finsh/cmd.c **** 
+  61:rt-thread/components/finsh/cmd.c **** rt_inline void object_split(int len)
+  62:rt-thread/components/finsh/cmd.c **** {
+  63:rt-thread/components/finsh/cmd.c ****     while (len--) rt_kprintf("-");
+  64:rt-thread/components/finsh/cmd.c **** }
+  65:rt-thread/components/finsh/cmd.c **** 
+  66:rt-thread/components/finsh/cmd.c **** typedef struct
+  67:rt-thread/components/finsh/cmd.c **** {
+  68:rt-thread/components/finsh/cmd.c ****     rt_list_t *list;
+  69:rt-thread/components/finsh/cmd.c ****     rt_list_t **array;
+  70:rt-thread/components/finsh/cmd.c ****     rt_uint8_t type;
+  71:rt-thread/components/finsh/cmd.c ****     int nr;             /* input: max nr, can't be 0 */
+  72:rt-thread/components/finsh/cmd.c ****     int nr_out;         /* out: got nr */
+  73:rt-thread/components/finsh/cmd.c **** } list_get_next_t;
+  74:rt-thread/components/finsh/cmd.c **** 
+  75:rt-thread/components/finsh/cmd.c **** static void list_find_init(list_get_next_t *p, rt_uint8_t type, rt_list_t **array, int nr)
+  76:rt-thread/components/finsh/cmd.c **** {
+  77:rt-thread/components/finsh/cmd.c ****     struct rt_object_information *info;
+  78:rt-thread/components/finsh/cmd.c ****     rt_list_t *list;
+  79:rt-thread/components/finsh/cmd.c **** 
+  80:rt-thread/components/finsh/cmd.c ****     info = rt_object_get_information((enum rt_object_class_type)type);
+  81:rt-thread/components/finsh/cmd.c ****     list = &info->object_list;
+  82:rt-thread/components/finsh/cmd.c **** 
+  83:rt-thread/components/finsh/cmd.c ****     p->list = list;
+  84:rt-thread/components/finsh/cmd.c ****     p->type = type;
+  85:rt-thread/components/finsh/cmd.c ****     p->array = array;
+  86:rt-thread/components/finsh/cmd.c ****     p->nr = nr;
+  87:rt-thread/components/finsh/cmd.c ****     p->nr_out = 0;
+  88:rt-thread/components/finsh/cmd.c **** }
+  89:rt-thread/components/finsh/cmd.c **** 
+  90:rt-thread/components/finsh/cmd.c **** static rt_list_t *list_get_next(rt_list_t *current, list_get_next_t *arg)
+  91:rt-thread/components/finsh/cmd.c **** {
+  92:rt-thread/components/finsh/cmd.c ****     int first_flag = 0;
+  93:rt-thread/components/finsh/cmd.c ****     rt_ubase_t level;
+  94:rt-thread/components/finsh/cmd.c ****     rt_list_t *node, *list;
+  95:rt-thread/components/finsh/cmd.c ****     rt_list_t **array;
+  96:rt-thread/components/finsh/cmd.c ****     int nr;
+  97:rt-thread/components/finsh/cmd.c **** 
+  98:rt-thread/components/finsh/cmd.c ****     arg->nr_out = 0;
+  99:rt-thread/components/finsh/cmd.c **** 
+ 100:rt-thread/components/finsh/cmd.c ****     if (!arg->nr || !arg->type)
+ 101:rt-thread/components/finsh/cmd.c ****     {
+ 102:rt-thread/components/finsh/cmd.c ****         return (rt_list_t *)RT_NULL;
+ 103:rt-thread/components/finsh/cmd.c ****     }
+ 104:rt-thread/components/finsh/cmd.c **** 
+ 105:rt-thread/components/finsh/cmd.c ****     list = arg->list;
+ 106:rt-thread/components/finsh/cmd.c **** 
+ 107:rt-thread/components/finsh/cmd.c ****     if (!current) /* find first */
+ 108:rt-thread/components/finsh/cmd.c ****     {
+ 109:rt-thread/components/finsh/cmd.c ****         node = list;
+ 110:rt-thread/components/finsh/cmd.c ****         first_flag = 1;
+ 111:rt-thread/components/finsh/cmd.c ****     }
+ 112:rt-thread/components/finsh/cmd.c ****     else
+ 113:rt-thread/components/finsh/cmd.c ****     {
+ 114:rt-thread/components/finsh/cmd.c ****         node = current;
+ 115:rt-thread/components/finsh/cmd.c ****     }
+ARM GAS  /tmp/ccsLNend.s 			page 4
+
+
+ 116:rt-thread/components/finsh/cmd.c **** 
+ 117:rt-thread/components/finsh/cmd.c ****     level = rt_hw_interrupt_disable();
+ 118:rt-thread/components/finsh/cmd.c **** 
+ 119:rt-thread/components/finsh/cmd.c ****     if (!first_flag)
+ 120:rt-thread/components/finsh/cmd.c ****     {
+ 121:rt-thread/components/finsh/cmd.c ****         struct rt_object *obj;
+ 122:rt-thread/components/finsh/cmd.c ****         /* The node in the list? */
+ 123:rt-thread/components/finsh/cmd.c ****         obj = rt_list_entry(node, struct rt_object, list);
+ 124:rt-thread/components/finsh/cmd.c ****         if ((obj->type & ~RT_Object_Class_Static) != arg->type)
+ 125:rt-thread/components/finsh/cmd.c ****         {
+ 126:rt-thread/components/finsh/cmd.c ****             rt_hw_interrupt_enable(level);
+ 127:rt-thread/components/finsh/cmd.c ****             return (rt_list_t *)RT_NULL;
+ 128:rt-thread/components/finsh/cmd.c ****         }
+ 129:rt-thread/components/finsh/cmd.c ****     }
+ 130:rt-thread/components/finsh/cmd.c **** 
+ 131:rt-thread/components/finsh/cmd.c ****     nr = 0;
+ 132:rt-thread/components/finsh/cmd.c ****     array = arg->array;
+ 133:rt-thread/components/finsh/cmd.c ****     while (1)
+ 134:rt-thread/components/finsh/cmd.c ****     {
+ 135:rt-thread/components/finsh/cmd.c ****         node = node->next;
+ 136:rt-thread/components/finsh/cmd.c **** 
+ 137:rt-thread/components/finsh/cmd.c ****         if (node == list)
+ 138:rt-thread/components/finsh/cmd.c ****         {
+ 139:rt-thread/components/finsh/cmd.c ****             node = (rt_list_t *)RT_NULL;
+ 140:rt-thread/components/finsh/cmd.c ****             break;
+ 141:rt-thread/components/finsh/cmd.c ****         }
+ 142:rt-thread/components/finsh/cmd.c ****         nr++;
+ 143:rt-thread/components/finsh/cmd.c ****         *array++ = node;
+ 144:rt-thread/components/finsh/cmd.c ****         if (nr == arg->nr)
+ 145:rt-thread/components/finsh/cmd.c ****         {
+ 146:rt-thread/components/finsh/cmd.c ****             break;
+ 147:rt-thread/components/finsh/cmd.c ****         }
+ 148:rt-thread/components/finsh/cmd.c ****     }
+ 149:rt-thread/components/finsh/cmd.c ****     
+ 150:rt-thread/components/finsh/cmd.c ****     rt_hw_interrupt_enable(level);
+ 151:rt-thread/components/finsh/cmd.c ****     arg->nr_out = nr;
+ 152:rt-thread/components/finsh/cmd.c ****     return node;
+ 153:rt-thread/components/finsh/cmd.c **** }
+ 154:rt-thread/components/finsh/cmd.c **** 
+ 155:rt-thread/components/finsh/cmd.c **** long list_thread(void)
+ 156:rt-thread/components/finsh/cmd.c **** {
+ 157:rt-thread/components/finsh/cmd.c ****     rt_ubase_t level;
+ 158:rt-thread/components/finsh/cmd.c ****     list_get_next_t find_arg;
+ 159:rt-thread/components/finsh/cmd.c ****     rt_list_t *obj_list[LIST_FIND_OBJ_NR];
+ 160:rt-thread/components/finsh/cmd.c ****     rt_list_t *next = (rt_list_t*)RT_NULL;
+ 161:rt-thread/components/finsh/cmd.c ****     const char *item_title = "thread";
+ 162:rt-thread/components/finsh/cmd.c ****     int maxlen;
+ 163:rt-thread/components/finsh/cmd.c **** 
+ 164:rt-thread/components/finsh/cmd.c ****     list_find_init(&find_arg, RT_Object_Class_Thread, obj_list, sizeof(obj_list)/sizeof(obj_list[0]
+ 165:rt-thread/components/finsh/cmd.c **** 
+ 166:rt-thread/components/finsh/cmd.c ****     maxlen = RT_NAME_MAX;
+ 167:rt-thread/components/finsh/cmd.c **** 
+ 168:rt-thread/components/finsh/cmd.c **** #ifdef RT_USING_SMP
+ 169:rt-thread/components/finsh/cmd.c ****     rt_kprintf("%-*.s cpu pri  status      sp     stack size max used left tick  error\n", maxlen, 
+ 170:rt-thread/components/finsh/cmd.c ****     rt_kprintf(     " --- ---  ------- ---------- ----------  ------  ---------- ---\n");
+ 171:rt-thread/components/finsh/cmd.c **** #else
+ 172:rt-thread/components/finsh/cmd.c ****     rt_kprintf("%-*.s pri  status      sp     stack size max used left tick  error\n", maxlen, item
+ARM GAS  /tmp/ccsLNend.s 			page 5
+
+
+ 173:rt-thread/components/finsh/cmd.c ****     rt_kprintf(     " ---  ------- ---------- ----------  ------  ---------- ---\n");
+ 174:rt-thread/components/finsh/cmd.c **** #endif /*RT_USING_SMP*/
+ 175:rt-thread/components/finsh/cmd.c **** 
+ 176:rt-thread/components/finsh/cmd.c ****     do
+ 177:rt-thread/components/finsh/cmd.c ****     {
+ 178:rt-thread/components/finsh/cmd.c ****         next = list_get_next(next, &find_arg);
+ 179:rt-thread/components/finsh/cmd.c ****         {
+ 180:rt-thread/components/finsh/cmd.c ****             int i;
+ 181:rt-thread/components/finsh/cmd.c ****             for (i = 0; i < find_arg.nr_out; i++)
+ 182:rt-thread/components/finsh/cmd.c ****             {
+ 183:rt-thread/components/finsh/cmd.c ****                 struct rt_object *obj;
+ 184:rt-thread/components/finsh/cmd.c ****                 struct rt_thread thread_info, *thread;
+ 185:rt-thread/components/finsh/cmd.c **** 
+ 186:rt-thread/components/finsh/cmd.c ****                 obj = rt_list_entry(obj_list[i], struct rt_object, list);
+ 187:rt-thread/components/finsh/cmd.c ****                 level = rt_hw_interrupt_disable();
+ 188:rt-thread/components/finsh/cmd.c **** 
+ 189:rt-thread/components/finsh/cmd.c ****                 if ((obj->type & ~RT_Object_Class_Static) != find_arg.type)
+ 190:rt-thread/components/finsh/cmd.c ****                 {
+ 191:rt-thread/components/finsh/cmd.c ****                     rt_hw_interrupt_enable(level);
+ 192:rt-thread/components/finsh/cmd.c ****                     continue;
+ 193:rt-thread/components/finsh/cmd.c ****                 }
+ 194:rt-thread/components/finsh/cmd.c ****                 /* copy info */
+ 195:rt-thread/components/finsh/cmd.c ****                 memcpy(&thread_info, obj, sizeof thread_info);
+ 196:rt-thread/components/finsh/cmd.c ****                 rt_hw_interrupt_enable(level);
+ 197:rt-thread/components/finsh/cmd.c **** 
+ 198:rt-thread/components/finsh/cmd.c ****                 thread = (struct rt_thread*)obj;
+ 199:rt-thread/components/finsh/cmd.c ****                 {
+ 200:rt-thread/components/finsh/cmd.c ****                     rt_uint8_t stat;
+ 201:rt-thread/components/finsh/cmd.c ****                     rt_uint8_t *ptr;
+ 202:rt-thread/components/finsh/cmd.c **** 
+ 203:rt-thread/components/finsh/cmd.c **** #ifdef RT_USING_SMP
+ 204:rt-thread/components/finsh/cmd.c ****                     if (thread->oncpu != RT_CPU_DETACHED)
+ 205:rt-thread/components/finsh/cmd.c ****                         rt_kprintf("%-*.*s %3d %3d ", maxlen, RT_NAME_MAX, thread->name, thread->on
+ 206:rt-thread/components/finsh/cmd.c ****                     else
+ 207:rt-thread/components/finsh/cmd.c ****                         rt_kprintf("%-*.*s N/A %3d ", maxlen, RT_NAME_MAX, thread->name, thread->cu
+ 208:rt-thread/components/finsh/cmd.c **** 
+ 209:rt-thread/components/finsh/cmd.c **** #else
+ 210:rt-thread/components/finsh/cmd.c ****                     rt_kprintf("%-*.*s %3d ", maxlen, RT_NAME_MAX, thread->name, thread->current_pr
+ 211:rt-thread/components/finsh/cmd.c **** #endif /*RT_USING_SMP*/
+ 212:rt-thread/components/finsh/cmd.c ****                     stat = (thread->stat & RT_THREAD_STAT_MASK);
+ 213:rt-thread/components/finsh/cmd.c ****                     if (stat == RT_THREAD_READY)        rt_kprintf(" ready  ");
+ 214:rt-thread/components/finsh/cmd.c ****                     else if (stat == RT_THREAD_SUSPEND) rt_kprintf(" suspend");
+ 215:rt-thread/components/finsh/cmd.c ****                     else if (stat == RT_THREAD_INIT)    rt_kprintf(" init   ");
+ 216:rt-thread/components/finsh/cmd.c ****                     else if (stat == RT_THREAD_CLOSE)   rt_kprintf(" close  ");
+ 217:rt-thread/components/finsh/cmd.c ****                     else if (stat == RT_THREAD_RUNNING) rt_kprintf(" running");
+ 218:rt-thread/components/finsh/cmd.c **** 
+ 219:rt-thread/components/finsh/cmd.c **** #if defined(ARCH_CPU_STACK_GROWS_UPWARD)
+ 220:rt-thread/components/finsh/cmd.c ****                     ptr = (rt_uint8_t *)thread->stack_addr + thread->stack_size - 1;
+ 221:rt-thread/components/finsh/cmd.c ****                     while (*ptr == '#')ptr --;
+ 222:rt-thread/components/finsh/cmd.c **** 
+ 223:rt-thread/components/finsh/cmd.c ****                     rt_kprintf(" 0x%08x 0x%08x    %02d%%   0x%08x %03d\n",
+ 224:rt-thread/components/finsh/cmd.c ****                             ((rt_ubase_t)thread->sp - (rt_ubase_t)thread->stack_addr),
+ 225:rt-thread/components/finsh/cmd.c ****                             thread->stack_size,
+ 226:rt-thread/components/finsh/cmd.c ****                             ((rt_ubase_t)ptr - (rt_ubase_t)thread->stack_addr) * 100 / thread->stac
+ 227:rt-thread/components/finsh/cmd.c ****                             thread->remaining_tick,
+ 228:rt-thread/components/finsh/cmd.c ****                             thread->error);
+ 229:rt-thread/components/finsh/cmd.c **** #else
+ARM GAS  /tmp/ccsLNend.s 			page 6
+
+
+ 230:rt-thread/components/finsh/cmd.c ****                     ptr = (rt_uint8_t *)thread->stack_addr;
+ 231:rt-thread/components/finsh/cmd.c ****                     while (*ptr == '#')ptr ++;
+ 232:rt-thread/components/finsh/cmd.c **** 
+ 233:rt-thread/components/finsh/cmd.c ****                     rt_kprintf(" 0x%08x 0x%08x    %02d%%   0x%08x %03d\n",
+ 234:rt-thread/components/finsh/cmd.c ****                             thread->stack_size + ((rt_ubase_t)thread->stack_addr - (rt_ubase_t)thre
+ 235:rt-thread/components/finsh/cmd.c ****                             thread->stack_size,
+ 236:rt-thread/components/finsh/cmd.c ****                             (thread->stack_size - ((rt_ubase_t) ptr - (rt_ubase_t) thread->stack_ad
+ 237:rt-thread/components/finsh/cmd.c ****                             / thread->stack_size,
+ 238:rt-thread/components/finsh/cmd.c ****                             thread->remaining_tick,
+ 239:rt-thread/components/finsh/cmd.c ****                             thread->error);
+ 240:rt-thread/components/finsh/cmd.c **** #endif
+ 241:rt-thread/components/finsh/cmd.c ****                 }
+ 242:rt-thread/components/finsh/cmd.c ****             }
+ 243:rt-thread/components/finsh/cmd.c ****         }
+ 244:rt-thread/components/finsh/cmd.c ****     }
+ 245:rt-thread/components/finsh/cmd.c ****     while (next != (rt_list_t*)RT_NULL);
+ 246:rt-thread/components/finsh/cmd.c **** 
+ 247:rt-thread/components/finsh/cmd.c ****     return 0;
+ 248:rt-thread/components/finsh/cmd.c **** }
+ 249:rt-thread/components/finsh/cmd.c **** FINSH_FUNCTION_EXPORT(list_thread, list thread);
+ 250:rt-thread/components/finsh/cmd.c **** MSH_CMD_EXPORT(list_thread, list thread);
+ 251:rt-thread/components/finsh/cmd.c **** 
+ 252:rt-thread/components/finsh/cmd.c **** static void show_wait_queue(struct rt_list_node *list)
+ 253:rt-thread/components/finsh/cmd.c **** {
+  60              		.loc 1 253 0
+  61              		.cfi_startproc
+  62              		@ args = 0, pretend = 0, frame = 0
+  63              		@ frame_needed = 0, uses_anonymous_args = 0
+  64              	.LVL1:
+  65 0000 38B5     		push	{r3, r4, r5, lr}
+  66              	.LCFI1:
+  67              		.cfi_def_cfa_offset 16
+  68              		.cfi_offset 3, -16
+  69              		.cfi_offset 4, -12
+  70              		.cfi_offset 5, -8
+  71              		.cfi_offset 14, -4
+  72 0002 0546     		mov	r5, r0
+ 254:rt-thread/components/finsh/cmd.c ****     struct rt_thread *thread;
+ 255:rt-thread/components/finsh/cmd.c ****     struct rt_list_node *node;
+ 256:rt-thread/components/finsh/cmd.c **** 
+ 257:rt-thread/components/finsh/cmd.c ****     for (node = list->next; node != list; node = node->next)
+  73              		.loc 1 257 0
+  74 0004 0468     		ldr	r4, [r0]
+  75              	.LVL2:
+  76 0006 00E0     		b	.L6
+  77              	.LVL3:
+  78              	.L7:
+  79              		.loc 1 257 0 is_stmt 0 discriminator 2
+  80 0008 2468     		ldr	r4, [r4]
+  81              	.LVL4:
+  82              	.L6:
+  83              		.loc 1 257 0 discriminator 1
+  84 000a AC42     		cmp	r4, r5
+  85 000c 0BD0     		beq	.L10
+  86              	.LVL5:
+ 258:rt-thread/components/finsh/cmd.c ****     {
+ 259:rt-thread/components/finsh/cmd.c ****         thread = rt_list_entry(node, struct rt_thread, tlist);
+ARM GAS  /tmp/ccsLNend.s 			page 7
+
+
+ 260:rt-thread/components/finsh/cmd.c ****         rt_kprintf("%s", thread->name);
+  87              		.loc 1 260 0 is_stmt 1
+  88 000e A4F11401 		sub	r1, r4, #20
+  89              	.LVL6:
+  90 0012 0548     		ldr	r0, .L11
+  91 0014 FFF7FEFF 		bl	rt_kprintf
+  92              	.LVL7:
+ 261:rt-thread/components/finsh/cmd.c **** 
+ 262:rt-thread/components/finsh/cmd.c ****         if (node->next != list)
+  93              		.loc 1 262 0
+  94 0018 2368     		ldr	r3, [r4]
+  95 001a 9D42     		cmp	r5, r3
+  96 001c F4D0     		beq	.L7
+ 263:rt-thread/components/finsh/cmd.c ****             rt_kprintf("/");
+  97              		.loc 1 263 0
+  98 001e 0348     		ldr	r0, .L11+4
+  99 0020 FFF7FEFF 		bl	rt_kprintf
+ 100              	.LVL8:
+ 101 0024 F0E7     		b	.L7
+ 102              	.LVL9:
+ 103              	.L10:
+ 264:rt-thread/components/finsh/cmd.c ****     }
+ 265:rt-thread/components/finsh/cmd.c **** }
+ 104              		.loc 1 265 0
+ 105 0026 38BD     		pop	{r3, r4, r5, pc}
+ 106              	.LVL10:
+ 107              	.L12:
+ 108              		.align	2
+ 109              	.L11:
+ 110 0028 00000000 		.word	.LC1
+ 111 002c 04000000 		.word	.LC2
+ 112              		.cfi_endproc
+ 113              	.LFE22:
+ 115              		.section	.text.version,"ax",%progbits
+ 116              		.align	1
+ 117              		.global	version
+ 118              		.syntax unified
+ 119              		.thumb
+ 120              		.thumb_func
+ 121              		.fpu fpv4-sp-d16
+ 123              	version:
+ 124              	.LFB17:
+  53:rt-thread/components/finsh/cmd.c ****     rt_show_version();
+ 125              		.loc 1 53 0
+ 126              		.cfi_startproc
+ 127              		@ args = 0, pretend = 0, frame = 0
+ 128              		@ frame_needed = 0, uses_anonymous_args = 0
+ 129 0000 08B5     		push	{r3, lr}
+ 130              	.LCFI2:
+ 131              		.cfi_def_cfa_offset 8
+ 132              		.cfi_offset 3, -8
+ 133              		.cfi_offset 14, -4
+  54:rt-thread/components/finsh/cmd.c **** 
+ 134              		.loc 1 54 0
+ 135 0002 FFF7FEFF 		bl	rt_show_version
+ 136              	.LVL11:
+  57:rt-thread/components/finsh/cmd.c **** FINSH_FUNCTION_EXPORT(version, show RT-Thread version information);
+ARM GAS  /tmp/ccsLNend.s 			page 8
+
+
+ 137              		.loc 1 57 0
+ 138 0006 0020     		movs	r0, #0
+ 139 0008 08BD     		pop	{r3, pc}
+ 140              		.cfi_endproc
+ 141              	.LFE17:
+ 143              		.section	.text.list_get_next,"ax",%progbits
+ 144              		.align	1
+ 145              		.syntax unified
+ 146              		.thumb
+ 147              		.thumb_func
+ 148              		.fpu fpv4-sp-d16
+ 150              	list_get_next:
+ 151              	.LFB20:
+  91:rt-thread/components/finsh/cmd.c ****     int first_flag = 0;
+ 152              		.loc 1 91 0
+ 153              		.cfi_startproc
+ 154              		@ args = 0, pretend = 0, frame = 0
+ 155              		@ frame_needed = 0, uses_anonymous_args = 0
+ 156              	.LVL12:
+ 157 0000 F8B5     		push	{r3, r4, r5, r6, r7, lr}
+ 158              	.LCFI3:
+ 159              		.cfi_def_cfa_offset 24
+ 160              		.cfi_offset 3, -24
+ 161              		.cfi_offset 4, -20
+ 162              		.cfi_offset 5, -16
+ 163              		.cfi_offset 6, -12
+ 164              		.cfi_offset 7, -8
+ 165              		.cfi_offset 14, -4
+ 166              	.LVL13:
+  98:rt-thread/components/finsh/cmd.c **** 
+ 167              		.loc 1 98 0
+ 168 0002 0023     		movs	r3, #0
+ 169 0004 0B61     		str	r3, [r1, #16]
+ 100:rt-thread/components/finsh/cmd.c ****     {
+ 170              		.loc 1 100 0
+ 171 0006 CB68     		ldr	r3, [r1, #12]
+ 172 0008 5BB3     		cbz	r3, .L21
+ 173 000a 0446     		mov	r4, r0
+ 174 000c 0E46     		mov	r6, r1
+ 100:rt-thread/components/finsh/cmd.c ****     {
+ 175              		.loc 1 100 0 is_stmt 0 discriminator 1
+ 176 000e 0B7A     		ldrb	r3, [r1, #8]	@ zero_extendqisi2
+ 177 0010 4BB3     		cbz	r3, .L22
+ 105:rt-thread/components/finsh/cmd.c **** 
+ 178              		.loc 1 105 0 is_stmt 1
+ 179 0012 0F68     		ldr	r7, [r1]
+ 180              	.LVL14:
+ 107:rt-thread/components/finsh/cmd.c ****     {
+ 181              		.loc 1 107 0
+ 182 0014 68B1     		cbz	r0, .L27
+  92:rt-thread/components/finsh/cmd.c ****     rt_ubase_t level;
+ 183              		.loc 1 92 0
+ 184 0016 0025     		movs	r5, #0
+ 185              	.L17:
+ 186              	.LVL15:
+ 117:rt-thread/components/finsh/cmd.c **** 
+ 187              		.loc 1 117 0
+ARM GAS  /tmp/ccsLNend.s 			page 9
+
+
+ 188 0018 FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 189              	.LVL16:
+ 119:rt-thread/components/finsh/cmd.c ****     {
+ 190              		.loc 1 119 0
+ 191 001c 35B9     		cbnz	r5, .L18
+ 192              	.LVL17:
+ 193              	.LBB49:
+ 124:rt-thread/components/finsh/cmd.c ****         {
+ 194              		.loc 1 124 0
+ 195 001e 14F8043C 		ldrb	r3, [r4, #-4]	@ zero_extendqisi2
+ 196 0022 23F08003 		bic	r3, r3, #128
+ 197 0026 327A     		ldrb	r2, [r6, #8]	@ zero_extendqisi2
+ 198 0028 9342     		cmp	r3, r2
+ 199 002a 05D1     		bne	.L28
+ 200              	.LVL18:
+ 201              	.L18:
+ 202              	.LBE49:
+ 132:rt-thread/components/finsh/cmd.c ****     while (1)
+ 203              		.loc 1 132 0
+ 204 002c 7368     		ldr	r3, [r6, #4]
+ 205              	.LVL19:
+ 131:rt-thread/components/finsh/cmd.c ****     array = arg->array;
+ 206              		.loc 1 131 0
+ 207 002e 0025     		movs	r5, #0
+ 208              	.LVL20:
+ 209 0030 07E0     		b	.L20
+ 210              	.LVL21:
+ 211              	.L27:
+ 109:rt-thread/components/finsh/cmd.c ****         first_flag = 1;
+ 212              		.loc 1 109 0
+ 213 0032 3C46     		mov	r4, r7
+ 110:rt-thread/components/finsh/cmd.c ****     }
+ 214              		.loc 1 110 0
+ 215 0034 0125     		movs	r5, #1
+ 216 0036 EFE7     		b	.L17
+ 217              	.LVL22:
+ 218              	.L28:
+ 219              	.LBB50:
+ 126:rt-thread/components/finsh/cmd.c ****             return (rt_list_t *)RT_NULL;
+ 220              		.loc 1 126 0
+ 221 0038 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 222              	.LVL23:
+ 127:rt-thread/components/finsh/cmd.c ****         }
+ 223              		.loc 1 127 0
+ 224 003c 0024     		movs	r4, #0
+ 225              	.LVL24:
+ 226 003e 0EE0     		b	.L15
+ 227              	.LVL25:
+ 228              	.L25:
+ 229              	.LBE50:
+ 143:rt-thread/components/finsh/cmd.c ****         if (nr == arg->nr)
+ 230              		.loc 1 143 0
+ 231 0040 1346     		mov	r3, r2
+ 232              	.LVL26:
+ 233              	.L20:
+ 135:rt-thread/components/finsh/cmd.c **** 
+ 234              		.loc 1 135 0
+ARM GAS  /tmp/ccsLNend.s 			page 10
+
+
+ 235 0042 2468     		ldr	r4, [r4]
+ 236              	.LVL27:
+ 137:rt-thread/components/finsh/cmd.c ****         {
+ 237              		.loc 1 137 0
+ 238 0044 A742     		cmp	r7, r4
+ 239 0046 06D0     		beq	.L24
+ 142:rt-thread/components/finsh/cmd.c ****         *array++ = node;
+ 240              		.loc 1 142 0
+ 241 0048 0135     		adds	r5, r5, #1
+ 242              	.LVL28:
+ 143:rt-thread/components/finsh/cmd.c ****         if (nr == arg->nr)
+ 243              		.loc 1 143 0
+ 244 004a 1A1D     		adds	r2, r3, #4
+ 245              	.LVL29:
+ 246 004c 1C60     		str	r4, [r3]
+ 144:rt-thread/components/finsh/cmd.c ****         {
+ 247              		.loc 1 144 0
+ 248 004e F368     		ldr	r3, [r6, #12]
+ 249 0050 9D42     		cmp	r5, r3
+ 250 0052 F5D1     		bne	.L25
+ 251 0054 00E0     		b	.L19
+ 252              	.LVL30:
+ 253              	.L24:
+ 139:rt-thread/components/finsh/cmd.c ****             break;
+ 254              		.loc 1 139 0
+ 255 0056 0024     		movs	r4, #0
+ 256              	.LVL31:
+ 257              	.L19:
+ 150:rt-thread/components/finsh/cmd.c ****     arg->nr_out = nr;
+ 258              		.loc 1 150 0
+ 259 0058 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 260              	.LVL32:
+ 151:rt-thread/components/finsh/cmd.c ****     return node;
+ 261              		.loc 1 151 0
+ 262 005c 3561     		str	r5, [r6, #16]
+ 263              	.LVL33:
+ 264              	.L15:
+ 153:rt-thread/components/finsh/cmd.c **** 
+ 265              		.loc 1 153 0
+ 266 005e 2046     		mov	r0, r4
+ 267 0060 F8BD     		pop	{r3, r4, r5, r6, r7, pc}
+ 268              	.LVL34:
+ 269              	.L21:
+ 102:rt-thread/components/finsh/cmd.c ****     }
+ 270              		.loc 1 102 0
+ 271 0062 0024     		movs	r4, #0
+ 272 0064 FBE7     		b	.L15
+ 273              	.L22:
+ 274 0066 0024     		movs	r4, #0
+ 275 0068 F9E7     		b	.L15
+ 276              		.cfi_endproc
+ 277              	.LFE20:
+ 279              		.section	.text.list_find_init,"ax",%progbits
+ 280              		.align	1
+ 281              		.syntax unified
+ 282              		.thumb
+ 283              		.thumb_func
+ARM GAS  /tmp/ccsLNend.s 			page 11
+
+
+ 284              		.fpu fpv4-sp-d16
+ 286              	list_find_init:
+ 287              	.LFB19:
+  76:rt-thread/components/finsh/cmd.c ****     struct rt_object_information *info;
+ 288              		.loc 1 76 0
+ 289              		.cfi_startproc
+ 290              		@ args = 0, pretend = 0, frame = 0
+ 291              		@ frame_needed = 0, uses_anonymous_args = 0
+ 292              	.LVL35:
+ 293 0000 F8B5     		push	{r3, r4, r5, r6, r7, lr}
+ 294              	.LCFI4:
+ 295              		.cfi_def_cfa_offset 24
+ 296              		.cfi_offset 3, -24
+ 297              		.cfi_offset 4, -20
+ 298              		.cfi_offset 5, -16
+ 299              		.cfi_offset 6, -12
+ 300              		.cfi_offset 7, -8
+ 301              		.cfi_offset 14, -4
+ 302 0002 0446     		mov	r4, r0
+ 303 0004 0D46     		mov	r5, r1
+ 304 0006 1746     		mov	r7, r2
+ 305 0008 1E46     		mov	r6, r3
+  80:rt-thread/components/finsh/cmd.c ****     list = &info->object_list;
+ 306              		.loc 1 80 0
+ 307 000a 0846     		mov	r0, r1
+ 308              	.LVL36:
+ 309 000c FFF7FEFF 		bl	rt_object_get_information
+ 310              	.LVL37:
+  81:rt-thread/components/finsh/cmd.c **** 
+ 311              		.loc 1 81 0
+ 312 0010 0430     		adds	r0, r0, #4
+ 313              	.LVL38:
+  83:rt-thread/components/finsh/cmd.c ****     p->type = type;
+ 314              		.loc 1 83 0
+ 315 0012 2060     		str	r0, [r4]
+  84:rt-thread/components/finsh/cmd.c ****     p->array = array;
+ 316              		.loc 1 84 0
+ 317 0014 2572     		strb	r5, [r4, #8]
+  85:rt-thread/components/finsh/cmd.c ****     p->nr = nr;
+ 318              		.loc 1 85 0
+ 319 0016 6760     		str	r7, [r4, #4]
+  86:rt-thread/components/finsh/cmd.c ****     p->nr_out = 0;
+ 320              		.loc 1 86 0
+ 321 0018 E660     		str	r6, [r4, #12]
+  87:rt-thread/components/finsh/cmd.c **** }
+ 322              		.loc 1 87 0
+ 323 001a 0023     		movs	r3, #0
+ 324 001c 2361     		str	r3, [r4, #16]
+ 325 001e F8BD     		pop	{r3, r4, r5, r6, r7, pc}
+ 326              		.cfi_endproc
+ 327              	.LFE19:
+ 329              		.section	.text.list_thread,"ax",%progbits
+ 330              		.align	1
+ 331              		.global	list_thread
+ 332              		.syntax unified
+ 333              		.thumb
+ 334              		.thumb_func
+ARM GAS  /tmp/ccsLNend.s 			page 12
+
+
+ 335              		.fpu fpv4-sp-d16
+ 337              	list_thread:
+ 338              	.LFB21:
+ 156:rt-thread/components/finsh/cmd.c ****     rt_ubase_t level;
+ 339              		.loc 1 156 0
+ 340              		.cfi_startproc
+ 341              		@ args = 0, pretend = 0, frame = 184
+ 342              		@ frame_needed = 0, uses_anonymous_args = 0
+ 343 0000 2DE9F043 		push	{r4, r5, r6, r7, r8, r9, lr}
+ 344              	.LCFI5:
+ 345              		.cfi_def_cfa_offset 28
+ 346              		.cfi_offset 4, -28
+ 347              		.cfi_offset 5, -24
+ 348              		.cfi_offset 6, -20
+ 349              		.cfi_offset 7, -16
+ 350              		.cfi_offset 8, -12
+ 351              		.cfi_offset 9, -8
+ 352              		.cfi_offset 14, -4
+ 353 0004 B1B0     		sub	sp, sp, #196
+ 354              	.LCFI6:
+ 355              		.cfi_def_cfa_offset 224
+ 356              	.LVL39:
+ 164:rt-thread/components/finsh/cmd.c **** 
+ 357              		.loc 1 164 0
+ 358 0006 0823     		movs	r3, #8
+ 359 0008 23AA     		add	r2, sp, #140
+ 360 000a 0121     		movs	r1, #1
+ 361 000c 2BA8     		add	r0, sp, #172
+ 362 000e FFF7FEFF 		bl	list_find_init
+ 363              	.LVL40:
+ 172:rt-thread/components/finsh/cmd.c ****     rt_kprintf(     " ---  ------- ---------- ----------  ------  ---------- ---\n");
+ 364              		.loc 1 172 0
+ 365 0012 434A     		ldr	r2, .L54
+ 366 0014 0821     		movs	r1, #8
+ 367 0016 4348     		ldr	r0, .L54+4
+ 368 0018 FFF7FEFF 		bl	rt_kprintf
+ 369              	.LVL41:
+ 370 001c 0826     		movs	r6, #8
+ 371 001e 03E0     		b	.L32
+ 372              	.LVL42:
+ 373              	.L33:
+ 374              	.LBB51:
+ 375              	.LBB52:
+  63:rt-thread/components/finsh/cmd.c **** }
+ 376              		.loc 1 63 0
+ 377 0020 4148     		ldr	r0, .L54+8
+ 378 0022 FFF7FEFF 		bl	rt_kprintf
+ 379              	.LVL43:
+ 380 0026 2646     		mov	r6, r4
+ 381              	.LVL44:
+ 382              	.L32:
+ 383 0028 741E     		subs	r4, r6, #1
+ 384              	.LVL45:
+ 385 002a 002E     		cmp	r6, #0
+ 386 002c F8D1     		bne	.L33
+ 387              	.LVL46:
+ 388              	.LBE52:
+ARM GAS  /tmp/ccsLNend.s 			page 13
+
+
+ 389              	.LBE51:
+ 173:rt-thread/components/finsh/cmd.c **** #endif /*RT_USING_SMP*/
+ 390              		.loc 1 173 0
+ 391 002e 3F48     		ldr	r0, .L54+12
+ 392 0030 FFF7FEFF 		bl	rt_kprintf
+ 393              	.LVL47:
+ 160:rt-thread/components/finsh/cmd.c ****     const char *item_title = "thread";
+ 394              		.loc 1 160 0
+ 395 0034 0027     		movs	r7, #0
+ 396 0036 67E0     		b	.L45
+ 397              	.LVL48:
+ 398              	.L35:
+ 399              	.LBB53:
+ 400              	.LBB54:
+ 195:rt-thread/components/finsh/cmd.c ****                 rt_hw_interrupt_enable(level);
+ 401              		.loc 1 195 0
+ 402 0038 8022     		movs	r2, #128
+ 403 003a 4946     		mov	r1, r9
+ 404 003c 03A8     		add	r0, sp, #12
+ 405              	.LVL49:
+ 406 003e FFF7FEFF 		bl	memcpy
+ 407              	.LVL50:
+ 196:rt-thread/components/finsh/cmd.c **** 
+ 408              		.loc 1 196 0
+ 409 0042 4046     		mov	r0, r8
+ 410 0044 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 411              	.LVL51:
+ 412              	.LBB55:
+ 210:rt-thread/components/finsh/cmd.c **** #endif /*RT_USING_SMP*/
+ 413              		.loc 1 210 0
+ 414 0048 94F82930 		ldrb	r3, [r4, #41]	@ zero_extendqisi2
+ 415 004c 0093     		str	r3, [sp]
+ 416 004e A4F10C03 		sub	r3, r4, #12
+ 417 0052 0822     		movs	r2, #8
+ 418 0054 1146     		mov	r1, r2
+ 419 0056 3648     		ldr	r0, .L54+16
+ 420 0058 FFF7FEFF 		bl	rt_kprintf
+ 421              	.LVL52:
+ 212:rt-thread/components/finsh/cmd.c ****                     if (stat == RT_THREAD_READY)        rt_kprintf(" ready  ");
+ 422              		.loc 1 212 0
+ 423 005c 94F82830 		ldrb	r3, [r4, #40]	@ zero_extendqisi2
+ 424 0060 03F00703 		and	r3, r3, #7
+ 425              	.LVL53:
+ 213:rt-thread/components/finsh/cmd.c ****                     else if (stat == RT_THREAD_SUSPEND) rt_kprintf(" suspend");
+ 426              		.loc 1 213 0
+ 427 0064 012B     		cmp	r3, #1
+ 428 0066 09D0     		beq	.L47
+ 214:rt-thread/components/finsh/cmd.c ****                     else if (stat == RT_THREAD_INIT)    rt_kprintf(" init   ");
+ 429              		.loc 1 214 0
+ 430 0068 022B     		cmp	r3, #2
+ 431 006a 0BD0     		beq	.L48
+ 215:rt-thread/components/finsh/cmd.c ****                     else if (stat == RT_THREAD_CLOSE)   rt_kprintf(" close  ");
+ 432              		.loc 1 215 0
+ 433 006c 73B1     		cbz	r3, .L49
+ 216:rt-thread/components/finsh/cmd.c ****                     else if (stat == RT_THREAD_RUNNING) rt_kprintf(" running");
+ 434              		.loc 1 216 0
+ 435 006e 042B     		cmp	r3, #4
+ARM GAS  /tmp/ccsLNend.s 			page 14
+
+
+ 436 0070 10D0     		beq	.L50
+ 217:rt-thread/components/finsh/cmd.c **** 
+ 437              		.loc 1 217 0
+ 438 0072 032B     		cmp	r3, #3
+ 439 0074 12D0     		beq	.L51
+ 440              	.LVL54:
+ 441              	.L38:
+ 230:rt-thread/components/finsh/cmd.c ****                     while (*ptr == '#')ptr ++;
+ 442              		.loc 1 230 0
+ 443 0076 E069     		ldr	r0, [r4, #28]
+ 444              	.LVL55:
+ 445 0078 0346     		mov	r3, r0
+ 231:rt-thread/components/finsh/cmd.c **** 
+ 446              		.loc 1 231 0
+ 447 007a 14E0     		b	.L42
+ 448              	.LVL56:
+ 449              	.L47:
+ 213:rt-thread/components/finsh/cmd.c ****                     else if (stat == RT_THREAD_SUSPEND) rt_kprintf(" suspend");
+ 450              		.loc 1 213 0 discriminator 1
+ 451 007c 2D48     		ldr	r0, .L54+20
+ 452 007e FFF7FEFF 		bl	rt_kprintf
+ 453              	.LVL57:
+ 454 0082 F8E7     		b	.L38
+ 455              	.LVL58:
+ 456              	.L48:
+ 214:rt-thread/components/finsh/cmd.c ****                     else if (stat == RT_THREAD_INIT)    rt_kprintf(" init   ");
+ 457              		.loc 1 214 0 discriminator 1
+ 458 0084 2C48     		ldr	r0, .L54+24
+ 459 0086 FFF7FEFF 		bl	rt_kprintf
+ 460              	.LVL59:
+ 461 008a F4E7     		b	.L38
+ 462              	.LVL60:
+ 463              	.L49:
+ 215:rt-thread/components/finsh/cmd.c ****                     else if (stat == RT_THREAD_CLOSE)   rt_kprintf(" close  ");
+ 464              		.loc 1 215 0 discriminator 1
+ 465 008c 2B48     		ldr	r0, .L54+28
+ 466 008e FFF7FEFF 		bl	rt_kprintf
+ 467              	.LVL61:
+ 468 0092 F0E7     		b	.L38
+ 469              	.LVL62:
+ 470              	.L50:
+ 216:rt-thread/components/finsh/cmd.c ****                     else if (stat == RT_THREAD_RUNNING) rt_kprintf(" running");
+ 471              		.loc 1 216 0 discriminator 1
+ 472 0094 2A48     		ldr	r0, .L54+32
+ 473 0096 FFF7FEFF 		bl	rt_kprintf
+ 474              	.LVL63:
+ 475 009a ECE7     		b	.L38
+ 476              	.LVL64:
+ 477              	.L51:
+ 217:rt-thread/components/finsh/cmd.c **** 
+ 478              		.loc 1 217 0 discriminator 1
+ 479 009c 2948     		ldr	r0, .L54+36
+ 480 009e FFF7FEFF 		bl	rt_kprintf
+ 481              	.LVL65:
+ 482 00a2 E8E7     		b	.L38
+ 483              	.LVL66:
+ 484              	.L43:
+ARM GAS  /tmp/ccsLNend.s 			page 15
+
+
+ 231:rt-thread/components/finsh/cmd.c **** 
+ 485              		.loc 1 231 0 discriminator 2
+ 486 00a4 0133     		adds	r3, r3, #1
+ 487              	.LVL67:
+ 488              	.L42:
+ 231:rt-thread/components/finsh/cmd.c **** 
+ 489              		.loc 1 231 0 is_stmt 0 discriminator 1
+ 490 00a6 1A78     		ldrb	r2, [r3]	@ zero_extendqisi2
+ 491 00a8 232A     		cmp	r2, #35
+ 492 00aa FBD0     		beq	.L43
+ 234:rt-thread/components/finsh/cmd.c ****                             thread->stack_size,
+ 493              		.loc 1 234 0 is_stmt 1
+ 494 00ac 216A     		ldr	r1, [r4, #32]
+ 495 00ae 2269     		ldr	r2, [r4, #16]
+ 496 00b0 A0EB020E 		sub	lr, r0, r2
+ 236:rt-thread/components/finsh/cmd.c ****                             / thread->stack_size,
+ 497              		.loc 1 236 0
+ 498 00b4 C31A     		subs	r3, r0, r3
+ 499              	.LVL68:
+ 500 00b6 0B44     		add	r3, r3, r1
+ 501 00b8 6420     		movs	r0, #100
+ 502 00ba 00FB03F3 		mul	r3, r0, r3
+ 233:rt-thread/components/finsh/cmd.c ****                             thread->stack_size + ((rt_ubase_t)thread->stack_addr - (rt_ubase_t)thre
+ 503              		.loc 1 233 0
+ 504 00be 626A     		ldr	r2, [r4, #36]
+ 505 00c0 0192     		str	r2, [sp, #4]
+ 506 00c2 E26B     		ldr	r2, [r4, #60]
+ 507 00c4 0092     		str	r2, [sp]
+ 508 00c6 B3FBF1F3 		udiv	r3, r3, r1
+ 509 00ca 0A46     		mov	r2, r1
+ 510 00cc 7144     		add	r1, r1, lr
+ 511 00ce 1E48     		ldr	r0, .L54+40
+ 512 00d0 FFF7FEFF 		bl	rt_kprintf
+ 513              	.LVL69:
+ 514              	.L36:
+ 515              	.LBE55:
+ 516              	.LBE54:
+ 181:rt-thread/components/finsh/cmd.c ****             {
+ 517              		.loc 1 181 0 discriminator 2
+ 518 00d4 0135     		adds	r5, r5, #1
+ 519              	.LVL70:
+ 520              	.L34:
+ 181:rt-thread/components/finsh/cmd.c ****             {
+ 521              		.loc 1 181 0 is_stmt 0 discriminator 1
+ 522 00d6 2F9B     		ldr	r3, [sp, #188]
+ 523 00d8 9D42     		cmp	r5, r3
+ 524 00da 14DA     		bge	.L52
+ 525              	.LBB56:
+ 186:rt-thread/components/finsh/cmd.c ****                 level = rt_hw_interrupt_disable();
+ 526              		.loc 1 186 0 is_stmt 1
+ 527 00dc 30AB     		add	r3, sp, #192
+ 528 00de 03EB8503 		add	r3, r3, r5, lsl #2
+ 529 00e2 53F8344C 		ldr	r4, [r3, #-52]
+ 530 00e6 A4F10C09 		sub	r9, r4, #12
+ 531              	.LVL71:
+ 187:rt-thread/components/finsh/cmd.c **** 
+ 532              		.loc 1 187 0
+ARM GAS  /tmp/ccsLNend.s 			page 16
+
+
+ 533 00ea FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 534              	.LVL72:
+ 535 00ee 8046     		mov	r8, r0
+ 536              	.LVL73:
+ 189:rt-thread/components/finsh/cmd.c ****                 {
+ 537              		.loc 1 189 0
+ 538 00f0 14F8043C 		ldrb	r3, [r4, #-4]	@ zero_extendqisi2
+ 539 00f4 23F08003 		bic	r3, r3, #128
+ 540 00f8 9DF8B420 		ldrb	r2, [sp, #180]	@ zero_extendqisi2
+ 541 00fc 9342     		cmp	r3, r2
+ 542 00fe 9BD0     		beq	.L35
+ 191:rt-thread/components/finsh/cmd.c ****                     continue;
+ 543              		.loc 1 191 0
+ 544 0100 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 545              	.LVL74:
+ 546 0104 E6E7     		b	.L36
+ 547              	.LVL75:
+ 548              	.L52:
+ 549              	.LBE56:
+ 550              	.LBE53:
+ 245:rt-thread/components/finsh/cmd.c **** 
+ 551              		.loc 1 245 0
+ 552 0106 37B1     		cbz	r7, .L53
+ 553              	.LVL76:
+ 554              	.L45:
+ 178:rt-thread/components/finsh/cmd.c ****         {
+ 555              		.loc 1 178 0
+ 556 0108 2BA9     		add	r1, sp, #172
+ 557 010a 3846     		mov	r0, r7
+ 558 010c FFF7FEFF 		bl	list_get_next
+ 559              	.LVL77:
+ 560 0110 0746     		mov	r7, r0
+ 561              	.LVL78:
+ 562              	.LBB57:
+ 181:rt-thread/components/finsh/cmd.c ****             {
+ 563              		.loc 1 181 0
+ 564 0112 3546     		mov	r5, r6
+ 565 0114 DFE7     		b	.L34
+ 566              	.LVL79:
+ 567              	.L53:
+ 568              	.LBE57:
+ 248:rt-thread/components/finsh/cmd.c **** FINSH_FUNCTION_EXPORT(list_thread, list thread);
+ 569              		.loc 1 248 0
+ 570 0116 0020     		movs	r0, #0
+ 571 0118 31B0     		add	sp, sp, #196
+ 572              	.LCFI7:
+ 573              		.cfi_def_cfa_offset 28
+ 574              		@ sp needed
+ 575 011a BDE8F083 		pop	{r4, r5, r6, r7, r8, r9, pc}
+ 576              	.LVL80:
+ 577              	.L55:
+ 578 011e 00BF     		.align	2
+ 579              	.L54:
+ 580 0120 00000000 		.word	.LC3
+ 581 0124 08000000 		.word	.LC4
+ 582 0128 4C000000 		.word	.LC5
+ 583 012c 50000000 		.word	.LC6
+ARM GAS  /tmp/ccsLNend.s 			page 17
+
+
+ 584 0130 90000000 		.word	.LC7
+ 585 0134 9C000000 		.word	.LC8
+ 586 0138 A8000000 		.word	.LC9
+ 587 013c B4000000 		.word	.LC10
+ 588 0140 C0000000 		.word	.LC11
+ 589 0144 CC000000 		.word	.LC12
+ 590 0148 D8000000 		.word	.LC13
+ 591              		.cfi_endproc
+ 592              	.LFE21:
+ 594              		.section	.text.list_sem,"ax",%progbits
+ 595              		.align	1
+ 596              		.global	list_sem
+ 597              		.syntax unified
+ 598              		.thumb
+ 599              		.thumb_func
+ 600              		.fpu fpv4-sp-d16
+ 602              	list_sem:
+ 603              	.LFB23:
+ 266:rt-thread/components/finsh/cmd.c **** 
+ 267:rt-thread/components/finsh/cmd.c **** #ifdef RT_USING_SEMAPHORE
+ 268:rt-thread/components/finsh/cmd.c **** long list_sem(void)
+ 269:rt-thread/components/finsh/cmd.c **** {
+ 604              		.loc 1 269 0
+ 605              		.cfi_startproc
+ 606              		@ args = 0, pretend = 0, frame = 56
+ 607              		@ frame_needed = 0, uses_anonymous_args = 0
+ 608 0000 2DE9F041 		push	{r4, r5, r6, r7, r8, lr}
+ 609              	.LCFI8:
+ 610              		.cfi_def_cfa_offset 24
+ 611              		.cfi_offset 4, -24
+ 612              		.cfi_offset 5, -20
+ 613              		.cfi_offset 6, -16
+ 614              		.cfi_offset 7, -12
+ 615              		.cfi_offset 8, -8
+ 616              		.cfi_offset 14, -4
+ 617 0004 90B0     		sub	sp, sp, #64
+ 618              	.LCFI9:
+ 619              		.cfi_def_cfa_offset 88
+ 620              	.LVL81:
+ 270:rt-thread/components/finsh/cmd.c ****     rt_ubase_t level;
+ 271:rt-thread/components/finsh/cmd.c ****     list_get_next_t find_arg;
+ 272:rt-thread/components/finsh/cmd.c ****     rt_list_t *obj_list[LIST_FIND_OBJ_NR];
+ 273:rt-thread/components/finsh/cmd.c ****     rt_list_t *next = (rt_list_t*)RT_NULL;
+ 274:rt-thread/components/finsh/cmd.c **** 
+ 275:rt-thread/components/finsh/cmd.c ****     int maxlen;
+ 276:rt-thread/components/finsh/cmd.c ****     const char *item_title = "semaphore";
+ 277:rt-thread/components/finsh/cmd.c **** 
+ 278:rt-thread/components/finsh/cmd.c ****     list_find_init(&find_arg, RT_Object_Class_Semaphore, obj_list, sizeof(obj_list)/sizeof(obj_list
+ 621              		.loc 1 278 0
+ 622 0006 0823     		movs	r3, #8
+ 623 0008 03AA     		add	r2, sp, #12
+ 624 000a 0221     		movs	r1, #2
+ 625 000c 0BA8     		add	r0, sp, #44
+ 626 000e FFF7FEFF 		bl	list_find_init
+ 627              	.LVL82:
+ 279:rt-thread/components/finsh/cmd.c **** 
+ 280:rt-thread/components/finsh/cmd.c ****     maxlen = RT_NAME_MAX;
+ARM GAS  /tmp/ccsLNend.s 			page 18
+
+
+ 281:rt-thread/components/finsh/cmd.c **** 
+ 282:rt-thread/components/finsh/cmd.c ****     rt_kprintf("%-*.s v   suspend thread\n", maxlen, item_title); object_split(maxlen);
+ 628              		.loc 1 282 0
+ 629 0012 344A     		ldr	r2, .L72
+ 630 0014 0821     		movs	r1, #8
+ 631 0016 3448     		ldr	r0, .L72+4
+ 632 0018 FFF7FEFF 		bl	rt_kprintf
+ 633              	.LVL83:
+ 634 001c 0826     		movs	r6, #8
+ 635 001e 03E0     		b	.L57
+ 636              	.LVL84:
+ 637              	.L58:
+ 638              	.LBB58:
+ 639              	.LBB59:
+  63:rt-thread/components/finsh/cmd.c **** }
+ 640              		.loc 1 63 0
+ 641 0020 3248     		ldr	r0, .L72+8
+ 642 0022 FFF7FEFF 		bl	rt_kprintf
+ 643              	.LVL85:
+ 644 0026 2646     		mov	r6, r4
+ 645              	.LVL86:
+ 646              	.L57:
+ 647 0028 741E     		subs	r4, r6, #1
+ 648              	.LVL87:
+ 649 002a 002E     		cmp	r6, #0
+ 650 002c F8D1     		bne	.L58
+ 651              	.LVL88:
+ 652              	.LBE59:
+ 653              	.LBE58:
+ 283:rt-thread/components/finsh/cmd.c ****     rt_kprintf(     " --- --------------\n");
+ 654              		.loc 1 283 0
+ 655 002e 3048     		ldr	r0, .L72+12
+ 656 0030 FFF7FEFF 		bl	rt_kprintf
+ 657              	.LVL89:
+ 273:rt-thread/components/finsh/cmd.c **** 
+ 658              		.loc 1 273 0
+ 659 0034 4FF00008 		mov	r8, #0
+ 660 0038 48E0     		b	.L68
+ 661              	.LVL90:
+ 662              	.L60:
+ 663              	.LBB60:
+ 664              	.LBB61:
+ 284:rt-thread/components/finsh/cmd.c **** 
+ 285:rt-thread/components/finsh/cmd.c ****     do
+ 286:rt-thread/components/finsh/cmd.c ****     {
+ 287:rt-thread/components/finsh/cmd.c ****         next = list_get_next(next, &find_arg);
+ 288:rt-thread/components/finsh/cmd.c ****         {
+ 289:rt-thread/components/finsh/cmd.c ****             int i;
+ 290:rt-thread/components/finsh/cmd.c ****             for (i = 0; i < find_arg.nr_out; i++)
+ 291:rt-thread/components/finsh/cmd.c ****             {
+ 292:rt-thread/components/finsh/cmd.c ****                 struct rt_object *obj;
+ 293:rt-thread/components/finsh/cmd.c ****                 struct rt_semaphore *sem;
+ 294:rt-thread/components/finsh/cmd.c **** 
+ 295:rt-thread/components/finsh/cmd.c ****                 obj = rt_list_entry(obj_list[i], struct rt_object, list);
+ 296:rt-thread/components/finsh/cmd.c ****                 level = rt_hw_interrupt_disable();
+ 297:rt-thread/components/finsh/cmd.c ****                 if ((obj->type & ~RT_Object_Class_Static) != find_arg.type)
+ 298:rt-thread/components/finsh/cmd.c ****                 {
+ARM GAS  /tmp/ccsLNend.s 			page 19
+
+
+ 299:rt-thread/components/finsh/cmd.c ****                     rt_hw_interrupt_enable(level);
+ 300:rt-thread/components/finsh/cmd.c ****                     continue;
+ 301:rt-thread/components/finsh/cmd.c ****                 }
+ 302:rt-thread/components/finsh/cmd.c ****                 rt_hw_interrupt_enable(level);
+ 665              		.loc 1 302 0
+ 666 003a FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 667              	.LVL91:
+ 303:rt-thread/components/finsh/cmd.c **** 
+ 304:rt-thread/components/finsh/cmd.c ****                 sem = (struct rt_semaphore*)obj;
+ 305:rt-thread/components/finsh/cmd.c ****                 if (!rt_list_isempty(&sem->parent.suspend_thread))
+ 668              		.loc 1 305 0
+ 669 003e 07F10805 		add	r5, r7, #8
+ 670              	.LVL92:
+ 671              	.LBB62:
+ 672              	.LBB63:
+ 673              		.file 2 "rt-thread/include/rtservice.h"
+   1:rt-thread/include/rtservice.h **** /*
+   2:rt-thread/include/rtservice.h ****  * Copyright (c) 2006-2018, RT-Thread Development Team
+   3:rt-thread/include/rtservice.h ****  *
+   4:rt-thread/include/rtservice.h ****  * SPDX-License-Identifier: Apache-2.0
+   5:rt-thread/include/rtservice.h ****  *
+   6:rt-thread/include/rtservice.h ****  * Change Logs:
+   7:rt-thread/include/rtservice.h ****  * Date           Author       Notes
+   8:rt-thread/include/rtservice.h ****  * 2006-03-16     Bernard      the first version
+   9:rt-thread/include/rtservice.h ****  * 2006-09-07     Bernard      move the kservice APIs to rtthread.h
+  10:rt-thread/include/rtservice.h ****  * 2007-06-27     Bernard      fix the rt_list_remove bug
+  11:rt-thread/include/rtservice.h ****  * 2012-03-22     Bernard      rename kservice.h to rtservice.h
+  12:rt-thread/include/rtservice.h ****  * 2017-11-15     JasonJia     Modify rt_slist_foreach to rt_slist_for_each_entry.
+  13:rt-thread/include/rtservice.h ****  *                             Make code cleanup.
+  14:rt-thread/include/rtservice.h ****  */
+  15:rt-thread/include/rtservice.h **** 
+  16:rt-thread/include/rtservice.h **** #ifndef __RT_SERVICE_H__
+  17:rt-thread/include/rtservice.h **** #define __RT_SERVICE_H__
+  18:rt-thread/include/rtservice.h **** 
+  19:rt-thread/include/rtservice.h **** #ifdef __cplusplus
+  20:rt-thread/include/rtservice.h **** extern "C" {
+  21:rt-thread/include/rtservice.h **** #endif
+  22:rt-thread/include/rtservice.h **** 
+  23:rt-thread/include/rtservice.h **** /**
+  24:rt-thread/include/rtservice.h ****  * @addtogroup KernelService
+  25:rt-thread/include/rtservice.h ****  */
+  26:rt-thread/include/rtservice.h **** 
+  27:rt-thread/include/rtservice.h **** /**@{*/
+  28:rt-thread/include/rtservice.h **** 
+  29:rt-thread/include/rtservice.h **** /**
+  30:rt-thread/include/rtservice.h ****  * rt_container_of - return the member address of ptr, if the type of ptr is the
+  31:rt-thread/include/rtservice.h ****  * struct type.
+  32:rt-thread/include/rtservice.h ****  */
+  33:rt-thread/include/rtservice.h **** #define rt_container_of(ptr, type, member) \
+  34:rt-thread/include/rtservice.h ****     ((type *)((char *)(ptr) - (unsigned long)(&((type *)0)->member)))
+  35:rt-thread/include/rtservice.h **** 
+  36:rt-thread/include/rtservice.h **** 
+  37:rt-thread/include/rtservice.h **** /**
+  38:rt-thread/include/rtservice.h ****  * @brief initialize a list object
+  39:rt-thread/include/rtservice.h ****  */
+  40:rt-thread/include/rtservice.h **** #define RT_LIST_OBJECT_INIT(object) { &(object), &(object) }
+  41:rt-thread/include/rtservice.h **** 
+ARM GAS  /tmp/ccsLNend.s 			page 20
+
+
+  42:rt-thread/include/rtservice.h **** /**
+  43:rt-thread/include/rtservice.h ****  * @brief initialize a list
+  44:rt-thread/include/rtservice.h ****  *
+  45:rt-thread/include/rtservice.h ****  * @param l list to be initialized
+  46:rt-thread/include/rtservice.h ****  */
+  47:rt-thread/include/rtservice.h **** rt_inline void rt_list_init(rt_list_t *l)
+  48:rt-thread/include/rtservice.h **** {
+  49:rt-thread/include/rtservice.h ****     l->next = l->prev = l;
+  50:rt-thread/include/rtservice.h **** }
+  51:rt-thread/include/rtservice.h **** 
+  52:rt-thread/include/rtservice.h **** /**
+  53:rt-thread/include/rtservice.h ****  * @brief insert a node after a list
+  54:rt-thread/include/rtservice.h ****  *
+  55:rt-thread/include/rtservice.h ****  * @param l list to insert it
+  56:rt-thread/include/rtservice.h ****  * @param n new node to be inserted
+  57:rt-thread/include/rtservice.h ****  */
+  58:rt-thread/include/rtservice.h **** rt_inline void rt_list_insert_after(rt_list_t *l, rt_list_t *n)
+  59:rt-thread/include/rtservice.h **** {
+  60:rt-thread/include/rtservice.h ****     l->next->prev = n;
+  61:rt-thread/include/rtservice.h ****     n->next = l->next;
+  62:rt-thread/include/rtservice.h **** 
+  63:rt-thread/include/rtservice.h ****     l->next = n;
+  64:rt-thread/include/rtservice.h ****     n->prev = l;
+  65:rt-thread/include/rtservice.h **** }
+  66:rt-thread/include/rtservice.h **** 
+  67:rt-thread/include/rtservice.h **** /**
+  68:rt-thread/include/rtservice.h ****  * @brief insert a node before a list
+  69:rt-thread/include/rtservice.h ****  *
+  70:rt-thread/include/rtservice.h ****  * @param n new node to be inserted
+  71:rt-thread/include/rtservice.h ****  * @param l list to insert it
+  72:rt-thread/include/rtservice.h ****  */
+  73:rt-thread/include/rtservice.h **** rt_inline void rt_list_insert_before(rt_list_t *l, rt_list_t *n)
+  74:rt-thread/include/rtservice.h **** {
+  75:rt-thread/include/rtservice.h ****     l->prev->next = n;
+  76:rt-thread/include/rtservice.h ****     n->prev = l->prev;
+  77:rt-thread/include/rtservice.h **** 
+  78:rt-thread/include/rtservice.h ****     l->prev = n;
+  79:rt-thread/include/rtservice.h ****     n->next = l;
+  80:rt-thread/include/rtservice.h **** }
+  81:rt-thread/include/rtservice.h **** 
+  82:rt-thread/include/rtservice.h **** /**
+  83:rt-thread/include/rtservice.h ****  * @brief remove node from list.
+  84:rt-thread/include/rtservice.h ****  * @param n the node to remove from the list.
+  85:rt-thread/include/rtservice.h ****  */
+  86:rt-thread/include/rtservice.h **** rt_inline void rt_list_remove(rt_list_t *n)
+  87:rt-thread/include/rtservice.h **** {
+  88:rt-thread/include/rtservice.h ****     n->next->prev = n->prev;
+  89:rt-thread/include/rtservice.h ****     n->prev->next = n->next;
+  90:rt-thread/include/rtservice.h **** 
+  91:rt-thread/include/rtservice.h ****     n->next = n->prev = n;
+  92:rt-thread/include/rtservice.h **** }
+  93:rt-thread/include/rtservice.h **** 
+  94:rt-thread/include/rtservice.h **** /**
+  95:rt-thread/include/rtservice.h ****  * @brief tests whether a list is empty
+  96:rt-thread/include/rtservice.h ****  * @param l the list to test.
+  97:rt-thread/include/rtservice.h ****  */
+  98:rt-thread/include/rtservice.h **** rt_inline int rt_list_isempty(const rt_list_t *l)
+ARM GAS  /tmp/ccsLNend.s 			page 21
+
+
+  99:rt-thread/include/rtservice.h **** {
+ 100:rt-thread/include/rtservice.h ****     return l->next == l;
+ 674              		.loc 2 100 0
+ 675 0042 BB68     		ldr	r3, [r7, #8]
+ 676              	.LVL93:
+ 677              	.LBE63:
+ 678              	.LBE62:
+ 679              		.loc 1 305 0
+ 680 0044 9D42     		cmp	r5, r3
+ 681 0046 2CD0     		beq	.L62
+ 306:rt-thread/components/finsh/cmd.c ****                 {
+ 307:rt-thread/components/finsh/cmd.c ****                     rt_kprintf("%-*.*s %03d %d:",
+ 308:rt-thread/components/finsh/cmd.c ****                             maxlen, RT_NAME_MAX,
+ 309:rt-thread/components/finsh/cmd.c ****                             sem->parent.parent.name,
+ 682              		.loc 1 309 0
+ 683 0048 A7F10C03 		sub	r3, r7, #12
+ 310:rt-thread/components/finsh/cmd.c ****                             sem->value,
+ 684              		.loc 1 310 0
+ 685 004c 388A     		ldrh	r0, [r7, #16]
+ 686              	.LVL94:
+ 687              	.LBB64:
+ 688              	.LBB65:
+ 101:rt-thread/include/rtservice.h **** }
+ 102:rt-thread/include/rtservice.h **** 
+ 103:rt-thread/include/rtservice.h **** /**
+ 104:rt-thread/include/rtservice.h ****  * @brief get the list length
+ 105:rt-thread/include/rtservice.h ****  * @param l the list to get.
+ 106:rt-thread/include/rtservice.h ****  */
+ 107:rt-thread/include/rtservice.h **** rt_inline unsigned int rt_list_len(const rt_list_t *l)
+ 108:rt-thread/include/rtservice.h **** {
+ 109:rt-thread/include/rtservice.h ****     unsigned int len = 0;
+ 110:rt-thread/include/rtservice.h ****     const rt_list_t *p = l;
+ 689              		.loc 2 110 0
+ 690 004e 2A46     		mov	r2, r5
+ 109:rt-thread/include/rtservice.h ****     const rt_list_t *p = l;
+ 691              		.loc 2 109 0
+ 692 0050 0021     		movs	r1, #0
+ 693 0052 00E0     		b	.L63
+ 694              	.LVL95:
+ 695              	.L64:
+ 111:rt-thread/include/rtservice.h ****     while (p->next != l)
+ 112:rt-thread/include/rtservice.h ****     {
+ 113:rt-thread/include/rtservice.h ****         p = p->next;
+ 114:rt-thread/include/rtservice.h ****         len ++;
+ 696              		.loc 2 114 0
+ 697 0054 0131     		adds	r1, r1, #1
+ 698              	.LVL96:
+ 699              	.L63:
+ 111:rt-thread/include/rtservice.h ****     while (p->next != l)
+ 700              		.loc 2 111 0
+ 701 0056 1268     		ldr	r2, [r2]
+ 702              	.LVL97:
+ 703 0058 9542     		cmp	r5, r2
+ 704 005a FBD1     		bne	.L64
+ 705              	.LVL98:
+ 706              	.LBE65:
+ 707              	.LBE64:
+ARM GAS  /tmp/ccsLNend.s 			page 22
+
+
+ 307:rt-thread/components/finsh/cmd.c ****                             maxlen, RT_NAME_MAX,
+ 708              		.loc 1 307 0
+ 709 005c 0191     		str	r1, [sp, #4]
+ 710 005e 0090     		str	r0, [sp]
+ 711 0060 0822     		movs	r2, #8
+ 712 0062 1146     		mov	r1, r2
+ 713 0064 2348     		ldr	r0, .L72+16
+ 714 0066 FFF7FEFF 		bl	rt_kprintf
+ 715              	.LVL99:
+ 311:rt-thread/components/finsh/cmd.c ****                             rt_list_len(&sem->parent.suspend_thread));
+ 312:rt-thread/components/finsh/cmd.c ****                     show_wait_queue(&(sem->parent.suspend_thread));
+ 716              		.loc 1 312 0
+ 717 006a 2846     		mov	r0, r5
+ 718 006c FFF7FEFF 		bl	show_wait_queue
+ 719              	.LVL100:
+ 313:rt-thread/components/finsh/cmd.c ****                     rt_kprintf("\n");
+ 720              		.loc 1 313 0
+ 721 0070 2148     		ldr	r0, .L72+20
+ 722 0072 FFF7FEFF 		bl	rt_kprintf
+ 723              	.LVL101:
+ 724              	.L61:
+ 725              	.LBE61:
+ 290:rt-thread/components/finsh/cmd.c ****             {
+ 726              		.loc 1 290 0 discriminator 2
+ 727 0076 0134     		adds	r4, r4, #1
+ 728              	.LVL102:
+ 729              	.L59:
+ 290:rt-thread/components/finsh/cmd.c ****             {
+ 730              		.loc 1 290 0 is_stmt 0 discriminator 1
+ 731 0078 0F9B     		ldr	r3, [sp, #60]
+ 732 007a 9C42     		cmp	r4, r3
+ 733 007c 23DA     		bge	.L70
+ 734              	.LBB68:
+ 295:rt-thread/components/finsh/cmd.c ****                 level = rt_hw_interrupt_disable();
+ 735              		.loc 1 295 0 is_stmt 1
+ 736 007e 10AB     		add	r3, sp, #64
+ 737 0080 03EB8403 		add	r3, r3, r4, lsl #2
+ 738 0084 53F8347C 		ldr	r7, [r3, #-52]
+ 739              	.LVL103:
+ 296:rt-thread/components/finsh/cmd.c ****                 if ((obj->type & ~RT_Object_Class_Static) != find_arg.type)
+ 740              		.loc 1 296 0
+ 741 0088 FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 742              	.LVL104:
+ 297:rt-thread/components/finsh/cmd.c ****                 {
+ 743              		.loc 1 297 0
+ 744 008c 17F8043C 		ldrb	r3, [r7, #-4]	@ zero_extendqisi2
+ 745 0090 23F08003 		bic	r3, r3, #128
+ 746 0094 9DF83420 		ldrb	r2, [sp, #52]	@ zero_extendqisi2
+ 747 0098 9342     		cmp	r3, r2
+ 748 009a CED0     		beq	.L60
+ 299:rt-thread/components/finsh/cmd.c ****                     continue;
+ 749              		.loc 1 299 0
+ 750 009c FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 751              	.LVL105:
+ 300:rt-thread/components/finsh/cmd.c ****                 }
+ 752              		.loc 1 300 0
+ 753 00a0 E9E7     		b	.L61
+ARM GAS  /tmp/ccsLNend.s 			page 23
+
+
+ 754              	.LVL106:
+ 755              	.L62:
+ 314:rt-thread/components/finsh/cmd.c ****                 }
+ 315:rt-thread/components/finsh/cmd.c ****                 else
+ 316:rt-thread/components/finsh/cmd.c ****                 {
+ 317:rt-thread/components/finsh/cmd.c ****                     rt_kprintf("%-*.*s %03d %d\n",
+ 318:rt-thread/components/finsh/cmd.c ****                             maxlen, RT_NAME_MAX,
+ 319:rt-thread/components/finsh/cmd.c ****                             sem->parent.parent.name,
+ 756              		.loc 1 319 0
+ 757 00a2 A7F10C03 		sub	r3, r7, #12
+ 320:rt-thread/components/finsh/cmd.c ****                             sem->value,
+ 758              		.loc 1 320 0
+ 759 00a6 388A     		ldrh	r0, [r7, #16]
+ 760              	.LVL107:
+ 761              	.LBB66:
+ 762              	.LBB67:
+ 110:rt-thread/include/rtservice.h ****     while (p->next != l)
+ 763              		.loc 2 110 0
+ 764 00a8 2A46     		mov	r2, r5
+ 109:rt-thread/include/rtservice.h ****     const rt_list_t *p = l;
+ 765              		.loc 2 109 0
+ 766 00aa 0021     		movs	r1, #0
+ 767 00ac 00E0     		b	.L65
+ 768              	.LVL108:
+ 769              	.L66:
+ 770              		.loc 2 114 0
+ 771 00ae 0131     		adds	r1, r1, #1
+ 772              	.LVL109:
+ 773              	.L65:
+ 111:rt-thread/include/rtservice.h ****     {
+ 774              		.loc 2 111 0
+ 775 00b0 1268     		ldr	r2, [r2]
+ 776              	.LVL110:
+ 777 00b2 9542     		cmp	r5, r2
+ 778 00b4 FBD1     		bne	.L66
+ 779              	.LVL111:
+ 780              	.LBE67:
+ 781              	.LBE66:
+ 317:rt-thread/components/finsh/cmd.c ****                             maxlen, RT_NAME_MAX,
+ 782              		.loc 1 317 0
+ 783 00b6 0191     		str	r1, [sp, #4]
+ 784 00b8 0090     		str	r0, [sp]
+ 785 00ba 0822     		movs	r2, #8
+ 786 00bc 1146     		mov	r1, r2
+ 787 00be 0F48     		ldr	r0, .L72+24
+ 788 00c0 FFF7FEFF 		bl	rt_kprintf
+ 789              	.LVL112:
+ 790 00c4 D7E7     		b	.L61
+ 791              	.LVL113:
+ 792              	.L70:
+ 793              	.LBE68:
+ 794              	.LBE60:
+ 321:rt-thread/components/finsh/cmd.c ****                             rt_list_len(&sem->parent.suspend_thread));
+ 322:rt-thread/components/finsh/cmd.c ****                 }
+ 323:rt-thread/components/finsh/cmd.c ****             }
+ 324:rt-thread/components/finsh/cmd.c ****         }
+ 325:rt-thread/components/finsh/cmd.c ****     }
+ARM GAS  /tmp/ccsLNend.s 			page 24
+
+
+ 326:rt-thread/components/finsh/cmd.c ****     while (next != (rt_list_t*)RT_NULL);
+ 795              		.loc 1 326 0
+ 796 00c6 B8F1000F 		cmp	r8, #0
+ 797 00ca 06D0     		beq	.L71
+ 798              	.LVL114:
+ 799              	.L68:
+ 287:rt-thread/components/finsh/cmd.c ****         {
+ 800              		.loc 1 287 0
+ 801 00cc 0BA9     		add	r1, sp, #44
+ 802 00ce 4046     		mov	r0, r8
+ 803 00d0 FFF7FEFF 		bl	list_get_next
+ 804              	.LVL115:
+ 805 00d4 8046     		mov	r8, r0
+ 806              	.LVL116:
+ 807              	.LBB69:
+ 290:rt-thread/components/finsh/cmd.c ****             {
+ 808              		.loc 1 290 0
+ 809 00d6 3446     		mov	r4, r6
+ 810 00d8 CEE7     		b	.L59
+ 811              	.LVL117:
+ 812              	.L71:
+ 813              	.LBE69:
+ 327:rt-thread/components/finsh/cmd.c **** 
+ 328:rt-thread/components/finsh/cmd.c ****     return 0;
+ 329:rt-thread/components/finsh/cmd.c **** }
+ 814              		.loc 1 329 0
+ 815 00da 0020     		movs	r0, #0
+ 816 00dc 10B0     		add	sp, sp, #64
+ 817              	.LCFI10:
+ 818              		.cfi_def_cfa_offset 24
+ 819              		@ sp needed
+ 820 00de BDE8F081 		pop	{r4, r5, r6, r7, r8, pc}
+ 821              	.LVL118:
+ 822              	.L73:
+ 823 00e2 00BF     		.align	2
+ 824              	.L72:
+ 825 00e4 00000000 		.word	.LC14
+ 826 00e8 0C000000 		.word	.LC15
+ 827 00ec 4C000000 		.word	.LC5
+ 828 00f0 28000000 		.word	.LC16
+ 829 00f4 40000000 		.word	.LC17
+ 830 00f8 50000000 		.word	.LC18
+ 831 00fc 54000000 		.word	.LC19
+ 832              		.cfi_endproc
+ 833              	.LFE23:
+ 835              		.section	.text.list_event,"ax",%progbits
+ 836              		.align	1
+ 837              		.global	list_event
+ 838              		.syntax unified
+ 839              		.thumb
+ 840              		.thumb_func
+ 841              		.fpu fpv4-sp-d16
+ 843              	list_event:
+ 844              	.LFB24:
+ 330:rt-thread/components/finsh/cmd.c **** FINSH_FUNCTION_EXPORT(list_sem, list semaphore in system);
+ 331:rt-thread/components/finsh/cmd.c **** MSH_CMD_EXPORT(list_sem, list semaphore in system);
+ 332:rt-thread/components/finsh/cmd.c **** #endif
+ARM GAS  /tmp/ccsLNend.s 			page 25
+
+
+ 333:rt-thread/components/finsh/cmd.c **** 
+ 334:rt-thread/components/finsh/cmd.c **** #ifdef RT_USING_EVENT
+ 335:rt-thread/components/finsh/cmd.c **** long list_event(void)
+ 336:rt-thread/components/finsh/cmd.c **** {
+ 845              		.loc 1 336 0
+ 846              		.cfi_startproc
+ 847              		@ args = 0, pretend = 0, frame = 56
+ 848              		@ frame_needed = 0, uses_anonymous_args = 0
+ 849 0000 2DE9F041 		push	{r4, r5, r6, r7, r8, lr}
+ 850              	.LCFI11:
+ 851              		.cfi_def_cfa_offset 24
+ 852              		.cfi_offset 4, -24
+ 853              		.cfi_offset 5, -20
+ 854              		.cfi_offset 6, -16
+ 855              		.cfi_offset 7, -12
+ 856              		.cfi_offset 8, -8
+ 857              		.cfi_offset 14, -4
+ 858 0004 90B0     		sub	sp, sp, #64
+ 859              	.LCFI12:
+ 860              		.cfi_def_cfa_offset 88
+ 861              	.LVL119:
+ 337:rt-thread/components/finsh/cmd.c ****     rt_ubase_t level;
+ 338:rt-thread/components/finsh/cmd.c ****     list_get_next_t find_arg;
+ 339:rt-thread/components/finsh/cmd.c ****     rt_list_t *obj_list[LIST_FIND_OBJ_NR];
+ 340:rt-thread/components/finsh/cmd.c ****     rt_list_t *next = (rt_list_t*)RT_NULL;
+ 341:rt-thread/components/finsh/cmd.c **** 
+ 342:rt-thread/components/finsh/cmd.c ****     int maxlen;
+ 343:rt-thread/components/finsh/cmd.c ****     const char *item_title = "event";
+ 344:rt-thread/components/finsh/cmd.c **** 
+ 345:rt-thread/components/finsh/cmd.c ****     list_find_init(&find_arg, RT_Object_Class_Event, obj_list, sizeof(obj_list)/sizeof(obj_list[0])
+ 862              		.loc 1 345 0
+ 863 0006 0823     		movs	r3, #8
+ 864 0008 03AA     		add	r2, sp, #12
+ 865 000a 0421     		movs	r1, #4
+ 866 000c 0BA8     		add	r0, sp, #44
+ 867 000e FFF7FEFF 		bl	list_find_init
+ 868              	.LVL120:
+ 346:rt-thread/components/finsh/cmd.c **** 
+ 347:rt-thread/components/finsh/cmd.c ****     maxlen = RT_NAME_MAX;
+ 348:rt-thread/components/finsh/cmd.c **** 
+ 349:rt-thread/components/finsh/cmd.c ****     rt_kprintf("%-*.s      set    suspend thread\n", maxlen, item_title); object_split(maxlen);
+ 869              		.loc 1 349 0
+ 870 0012 304A     		ldr	r2, .L88
+ 871 0014 0821     		movs	r1, #8
+ 872 0016 3048     		ldr	r0, .L88+4
+ 873 0018 FFF7FEFF 		bl	rt_kprintf
+ 874              	.LVL121:
+ 875 001c 0825     		movs	r5, #8
+ 876 001e 03E0     		b	.L75
+ 877              	.LVL122:
+ 878              	.L76:
+ 879              	.LBB70:
+ 880              	.LBB71:
+  63:rt-thread/components/finsh/cmd.c **** }
+ 881              		.loc 1 63 0
+ 882 0020 2E48     		ldr	r0, .L88+8
+ 883 0022 FFF7FEFF 		bl	rt_kprintf
+ARM GAS  /tmp/ccsLNend.s 			page 26
+
+
+ 884              	.LVL123:
+ 885 0026 2546     		mov	r5, r4
+ 886              	.LVL124:
+ 887              	.L75:
+ 888 0028 6C1E     		subs	r4, r5, #1
+ 889              	.LVL125:
+ 890 002a 002D     		cmp	r5, #0
+ 891 002c F8D1     		bne	.L76
+ 892              	.LVL126:
+ 893              	.LBE71:
+ 894              	.LBE70:
+ 350:rt-thread/components/finsh/cmd.c ****     rt_kprintf(     "  ---------- --------------\n");
+ 895              		.loc 1 350 0
+ 896 002e 2C48     		ldr	r0, .L88+12
+ 897 0030 FFF7FEFF 		bl	rt_kprintf
+ 898              	.LVL127:
+ 340:rt-thread/components/finsh/cmd.c **** 
+ 899              		.loc 1 340 0
+ 900 0034 4FF00008 		mov	r8, #0
+ 901 0038 40E0     		b	.L84
+ 902              	.LVL128:
+ 903              	.L78:
+ 904              	.LBB72:
+ 905              	.LBB73:
+ 351:rt-thread/components/finsh/cmd.c **** 
+ 352:rt-thread/components/finsh/cmd.c ****     do
+ 353:rt-thread/components/finsh/cmd.c ****     {
+ 354:rt-thread/components/finsh/cmd.c ****         next = list_get_next(next, &find_arg);
+ 355:rt-thread/components/finsh/cmd.c ****         {
+ 356:rt-thread/components/finsh/cmd.c ****             int i;
+ 357:rt-thread/components/finsh/cmd.c ****             for (i = 0; i < find_arg.nr_out; i++)
+ 358:rt-thread/components/finsh/cmd.c ****             {
+ 359:rt-thread/components/finsh/cmd.c ****                 struct rt_object *obj;
+ 360:rt-thread/components/finsh/cmd.c ****                 struct rt_event *e;
+ 361:rt-thread/components/finsh/cmd.c **** 
+ 362:rt-thread/components/finsh/cmd.c ****                 obj = rt_list_entry(obj_list[i], struct rt_object, list);
+ 363:rt-thread/components/finsh/cmd.c ****                 level = rt_hw_interrupt_disable();
+ 364:rt-thread/components/finsh/cmd.c ****                 if ((obj->type & ~RT_Object_Class_Static) != find_arg.type)
+ 365:rt-thread/components/finsh/cmd.c ****                 {
+ 366:rt-thread/components/finsh/cmd.c ****                     rt_hw_interrupt_enable(level);
+ 367:rt-thread/components/finsh/cmd.c ****                     continue;
+ 368:rt-thread/components/finsh/cmd.c ****                 }
+ 369:rt-thread/components/finsh/cmd.c **** 
+ 370:rt-thread/components/finsh/cmd.c ****                 rt_hw_interrupt_enable(level);
+ 906              		.loc 1 370 0
+ 907 003a FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 908              	.LVL129:
+ 371:rt-thread/components/finsh/cmd.c **** 
+ 372:rt-thread/components/finsh/cmd.c ****                 e = (struct rt_event *)obj;
+ 373:rt-thread/components/finsh/cmd.c ****                 if (!rt_list_isempty(&e->parent.suspend_thread))
+ 909              		.loc 1 373 0
+ 910 003e 06F10807 		add	r7, r6, #8
+ 911              	.LVL130:
+ 912              	.LBB74:
+ 913              	.LBB75:
+ 100:rt-thread/include/rtservice.h **** }
+ 914              		.loc 2 100 0
+ARM GAS  /tmp/ccsLNend.s 			page 27
+
+
+ 915 0042 B368     		ldr	r3, [r6, #8]
+ 916              	.LVL131:
+ 917              	.LBE75:
+ 918              	.LBE74:
+ 919              		.loc 1 373 0
+ 920 0044 9F42     		cmp	r7, r3
+ 921 0046 2CD0     		beq	.L80
+ 374:rt-thread/components/finsh/cmd.c ****                 {
+ 375:rt-thread/components/finsh/cmd.c ****                     rt_kprintf("%-*.*s  0x%08x %03d:",
+ 376:rt-thread/components/finsh/cmd.c ****                             maxlen, RT_NAME_MAX,
+ 377:rt-thread/components/finsh/cmd.c ****                             e->parent.parent.name,
+ 922              		.loc 1 377 0
+ 923 0048 A6F10C03 		sub	r3, r6, #12
+ 375:rt-thread/components/finsh/cmd.c ****                             maxlen, RT_NAME_MAX,
+ 924              		.loc 1 375 0
+ 925 004c 3069     		ldr	r0, [r6, #16]
+ 926              	.LVL132:
+ 927              	.LBB76:
+ 928              	.LBB77:
+ 110:rt-thread/include/rtservice.h ****     while (p->next != l)
+ 929              		.loc 2 110 0
+ 930 004e 3A46     		mov	r2, r7
+ 109:rt-thread/include/rtservice.h ****     const rt_list_t *p = l;
+ 931              		.loc 2 109 0
+ 932 0050 0021     		movs	r1, #0
+ 933 0052 00E0     		b	.L81
+ 934              	.LVL133:
+ 935              	.L82:
+ 936              		.loc 2 114 0
+ 937 0054 0131     		adds	r1, r1, #1
+ 938              	.LVL134:
+ 939              	.L81:
+ 111:rt-thread/include/rtservice.h ****     {
+ 940              		.loc 2 111 0
+ 941 0056 1268     		ldr	r2, [r2]
+ 942              	.LVL135:
+ 943 0058 9742     		cmp	r7, r2
+ 944 005a FBD1     		bne	.L82
+ 945              	.LVL136:
+ 946              	.LBE77:
+ 947              	.LBE76:
+ 375:rt-thread/components/finsh/cmd.c ****                             maxlen, RT_NAME_MAX,
+ 948              		.loc 1 375 0
+ 949 005c 0191     		str	r1, [sp, #4]
+ 950 005e 0090     		str	r0, [sp]
+ 951 0060 0822     		movs	r2, #8
+ 952 0062 1146     		mov	r1, r2
+ 953 0064 1F48     		ldr	r0, .L88+16
+ 954 0066 FFF7FEFF 		bl	rt_kprintf
+ 955              	.LVL137:
+ 378:rt-thread/components/finsh/cmd.c ****                             e->set,
+ 379:rt-thread/components/finsh/cmd.c ****                             rt_list_len(&e->parent.suspend_thread));
+ 380:rt-thread/components/finsh/cmd.c ****                     show_wait_queue(&(e->parent.suspend_thread));
+ 956              		.loc 1 380 0
+ 957 006a 3846     		mov	r0, r7
+ 958 006c FFF7FEFF 		bl	show_wait_queue
+ 959              	.LVL138:
+ARM GAS  /tmp/ccsLNend.s 			page 28
+
+
+ 381:rt-thread/components/finsh/cmd.c ****                     rt_kprintf("\n");
+ 960              		.loc 1 381 0
+ 961 0070 1D48     		ldr	r0, .L88+20
+ 962 0072 FFF7FEFF 		bl	rt_kprintf
+ 963              	.LVL139:
+ 964              	.L79:
+ 965              	.LBE73:
+ 357:rt-thread/components/finsh/cmd.c ****             {
+ 966              		.loc 1 357 0 discriminator 2
+ 967 0076 0134     		adds	r4, r4, #1
+ 968              	.LVL140:
+ 969              	.L77:
+ 357:rt-thread/components/finsh/cmd.c ****             {
+ 970              		.loc 1 357 0 is_stmt 0 discriminator 1
+ 971 0078 0F9B     		ldr	r3, [sp, #60]
+ 972 007a 9C42     		cmp	r4, r3
+ 973 007c 1BDA     		bge	.L86
+ 974              	.LBB78:
+ 362:rt-thread/components/finsh/cmd.c ****                 level = rt_hw_interrupt_disable();
+ 975              		.loc 1 362 0 is_stmt 1
+ 976 007e 10AB     		add	r3, sp, #64
+ 977 0080 03EB8403 		add	r3, r3, r4, lsl #2
+ 978 0084 53F8346C 		ldr	r6, [r3, #-52]
+ 979              	.LVL141:
+ 363:rt-thread/components/finsh/cmd.c ****                 if ((obj->type & ~RT_Object_Class_Static) != find_arg.type)
+ 980              		.loc 1 363 0
+ 981 0088 FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 982              	.LVL142:
+ 364:rt-thread/components/finsh/cmd.c ****                 {
+ 983              		.loc 1 364 0
+ 984 008c 16F8043C 		ldrb	r3, [r6, #-4]	@ zero_extendqisi2
+ 985 0090 23F08003 		bic	r3, r3, #128
+ 986 0094 9DF83420 		ldrb	r2, [sp, #52]	@ zero_extendqisi2
+ 987 0098 9342     		cmp	r3, r2
+ 988 009a CED0     		beq	.L78
+ 366:rt-thread/components/finsh/cmd.c ****                     continue;
+ 989              		.loc 1 366 0
+ 990 009c FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 991              	.LVL143:
+ 367:rt-thread/components/finsh/cmd.c ****                 }
+ 992              		.loc 1 367 0
+ 993 00a0 E9E7     		b	.L79
+ 994              	.LVL144:
+ 995              	.L80:
+ 382:rt-thread/components/finsh/cmd.c ****                 }
+ 383:rt-thread/components/finsh/cmd.c ****                 else
+ 384:rt-thread/components/finsh/cmd.c ****                 {
+ 385:rt-thread/components/finsh/cmd.c ****                     rt_kprintf("%-*.*s  0x%08x 0\n",
+ 996              		.loc 1 385 0
+ 997 00a2 3369     		ldr	r3, [r6, #16]
+ 998 00a4 0093     		str	r3, [sp]
+ 999 00a6 A6F10C03 		sub	r3, r6, #12
+ 1000 00aa 0822     		movs	r2, #8
+ 1001 00ac 1146     		mov	r1, r2
+ 1002 00ae 0F48     		ldr	r0, .L88+24
+ 1003 00b0 FFF7FEFF 		bl	rt_kprintf
+ 1004              	.LVL145:
+ARM GAS  /tmp/ccsLNend.s 			page 29
+
+
+ 1005 00b4 DFE7     		b	.L79
+ 1006              	.LVL146:
+ 1007              	.L86:
+ 1008              	.LBE78:
+ 1009              	.LBE72:
+ 386:rt-thread/components/finsh/cmd.c ****                             maxlen, RT_NAME_MAX, e->parent.parent.name, e->set);
+ 387:rt-thread/components/finsh/cmd.c ****                 }
+ 388:rt-thread/components/finsh/cmd.c ****             }
+ 389:rt-thread/components/finsh/cmd.c ****         }
+ 390:rt-thread/components/finsh/cmd.c ****     }
+ 391:rt-thread/components/finsh/cmd.c ****     while (next != (rt_list_t*)RT_NULL);
+ 1010              		.loc 1 391 0
+ 1011 00b6 B8F1000F 		cmp	r8, #0
+ 1012 00ba 06D0     		beq	.L87
+ 1013              	.LVL147:
+ 1014              	.L84:
+ 354:rt-thread/components/finsh/cmd.c ****         {
+ 1015              		.loc 1 354 0
+ 1016 00bc 0BA9     		add	r1, sp, #44
+ 1017 00be 4046     		mov	r0, r8
+ 1018 00c0 FFF7FEFF 		bl	list_get_next
+ 1019              	.LVL148:
+ 1020 00c4 8046     		mov	r8, r0
+ 1021              	.LVL149:
+ 1022              	.LBB79:
+ 357:rt-thread/components/finsh/cmd.c ****             {
+ 1023              		.loc 1 357 0
+ 1024 00c6 2C46     		mov	r4, r5
+ 1025 00c8 D6E7     		b	.L77
+ 1026              	.LVL150:
+ 1027              	.L87:
+ 1028              	.LBE79:
+ 392:rt-thread/components/finsh/cmd.c **** 
+ 393:rt-thread/components/finsh/cmd.c ****     return 0;
+ 394:rt-thread/components/finsh/cmd.c **** }
+ 1029              		.loc 1 394 0
+ 1030 00ca 0020     		movs	r0, #0
+ 1031 00cc 10B0     		add	sp, sp, #64
+ 1032              	.LCFI13:
+ 1033              		.cfi_def_cfa_offset 24
+ 1034              		@ sp needed
+ 1035 00ce BDE8F081 		pop	{r4, r5, r6, r7, r8, pc}
+ 1036              	.LVL151:
+ 1037              	.L89:
+ 1038 00d2 00BF     		.align	2
+ 1039              	.L88:
+ 1040 00d4 00000000 		.word	.LC20
+ 1041 00d8 08000000 		.word	.LC21
+ 1042 00dc 4C000000 		.word	.LC5
+ 1043 00e0 2C000000 		.word	.LC22
+ 1044 00e4 4C000000 		.word	.LC23
+ 1045 00e8 50000000 		.word	.LC18
+ 1046 00ec 64000000 		.word	.LC24
+ 1047              		.cfi_endproc
+ 1048              	.LFE24:
+ 1050              		.section	.text.list_mutex,"ax",%progbits
+ 1051              		.align	1
+ARM GAS  /tmp/ccsLNend.s 			page 30
+
+
+ 1052              		.global	list_mutex
+ 1053              		.syntax unified
+ 1054              		.thumb
+ 1055              		.thumb_func
+ 1056              		.fpu fpv4-sp-d16
+ 1058              	list_mutex:
+ 1059              	.LFB25:
+ 395:rt-thread/components/finsh/cmd.c **** FINSH_FUNCTION_EXPORT(list_event, list event in system);
+ 396:rt-thread/components/finsh/cmd.c **** MSH_CMD_EXPORT(list_event, list event in system);
+ 397:rt-thread/components/finsh/cmd.c **** #endif
+ 398:rt-thread/components/finsh/cmd.c **** 
+ 399:rt-thread/components/finsh/cmd.c **** #ifdef RT_USING_MUTEX
+ 400:rt-thread/components/finsh/cmd.c **** long list_mutex(void)
+ 401:rt-thread/components/finsh/cmd.c **** {
+ 1060              		.loc 1 401 0
+ 1061              		.cfi_startproc
+ 1062              		@ args = 0, pretend = 0, frame = 56
+ 1063              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1064 0000 F0B5     		push	{r4, r5, r6, r7, lr}
+ 1065              	.LCFI14:
+ 1066              		.cfi_def_cfa_offset 20
+ 1067              		.cfi_offset 4, -20
+ 1068              		.cfi_offset 5, -16
+ 1069              		.cfi_offset 6, -12
+ 1070              		.cfi_offset 7, -8
+ 1071              		.cfi_offset 14, -4
+ 1072 0002 93B0     		sub	sp, sp, #76
+ 1073              	.LCFI15:
+ 1074              		.cfi_def_cfa_offset 96
+ 1075              	.LVL152:
+ 402:rt-thread/components/finsh/cmd.c ****     rt_ubase_t level;
+ 403:rt-thread/components/finsh/cmd.c ****     list_get_next_t find_arg;
+ 404:rt-thread/components/finsh/cmd.c ****     rt_list_t *obj_list[LIST_FIND_OBJ_NR];
+ 405:rt-thread/components/finsh/cmd.c ****     rt_list_t *next = (rt_list_t*)RT_NULL;
+ 406:rt-thread/components/finsh/cmd.c **** 
+ 407:rt-thread/components/finsh/cmd.c ****     int maxlen;
+ 408:rt-thread/components/finsh/cmd.c ****     const char *item_title = "mutex";
+ 409:rt-thread/components/finsh/cmd.c **** 
+ 410:rt-thread/components/finsh/cmd.c ****     list_find_init(&find_arg, RT_Object_Class_Mutex, obj_list, sizeof(obj_list)/sizeof(obj_list[0])
+ 1076              		.loc 1 410 0
+ 1077 0004 0823     		movs	r3, #8
+ 1078 0006 05AA     		add	r2, sp, #20
+ 1079 0008 0321     		movs	r1, #3
+ 1080 000a 0DA8     		add	r0, sp, #52
+ 1081 000c FFF7FEFF 		bl	list_find_init
+ 1082              	.LVL153:
+ 411:rt-thread/components/finsh/cmd.c **** 
+ 412:rt-thread/components/finsh/cmd.c ****     maxlen = RT_NAME_MAX;
+ 413:rt-thread/components/finsh/cmd.c **** 
+ 414:rt-thread/components/finsh/cmd.c ****     rt_kprintf("%-*.s   owner  hold suspend thread\n", maxlen, item_title); object_split(maxlen);
+ 1083              		.loc 1 414 0
+ 1084 0010 274A     		ldr	r2, .L103
+ 1085 0012 0821     		movs	r1, #8
+ 1086 0014 2748     		ldr	r0, .L103+4
+ 1087 0016 FFF7FEFF 		bl	rt_kprintf
+ 1088              	.LVL154:
+ 1089 001a 0826     		movs	r6, #8
+ARM GAS  /tmp/ccsLNend.s 			page 31
+
+
+ 1090 001c 03E0     		b	.L91
+ 1091              	.LVL155:
+ 1092              	.L92:
+ 1093              	.LBB80:
+ 1094              	.LBB81:
+  63:rt-thread/components/finsh/cmd.c **** }
+ 1095              		.loc 1 63 0
+ 1096 001e 2648     		ldr	r0, .L103+8
+ 1097 0020 FFF7FEFF 		bl	rt_kprintf
+ 1098              	.LVL156:
+ 1099 0024 2646     		mov	r6, r4
+ 1100              	.LVL157:
+ 1101              	.L91:
+ 1102 0026 741E     		subs	r4, r6, #1
+ 1103              	.LVL158:
+ 1104 0028 002E     		cmp	r6, #0
+ 1105 002a F8D1     		bne	.L92
+ 1106              	.LVL159:
+ 1107              	.LBE81:
+ 1108              	.LBE80:
+ 415:rt-thread/components/finsh/cmd.c ****     rt_kprintf(     " -------- ---- --------------\n");
+ 1109              		.loc 1 415 0
+ 1110 002c 2348     		ldr	r0, .L103+12
+ 1111 002e FFF7FEFF 		bl	rt_kprintf
+ 1112              	.LVL160:
+ 405:rt-thread/components/finsh/cmd.c **** 
+ 1113              		.loc 1 405 0
+ 1114 0032 0027     		movs	r7, #0
+ 1115 0034 32E0     		b	.L99
+ 1116              	.LVL161:
+ 1117              	.L94:
+ 1118              	.LBB82:
+ 1119              	.LBB83:
+ 416:rt-thread/components/finsh/cmd.c **** 
+ 417:rt-thread/components/finsh/cmd.c ****     do
+ 418:rt-thread/components/finsh/cmd.c ****     {
+ 419:rt-thread/components/finsh/cmd.c ****         next = list_get_next(next, &find_arg);
+ 420:rt-thread/components/finsh/cmd.c ****         {
+ 421:rt-thread/components/finsh/cmd.c ****             int i;
+ 422:rt-thread/components/finsh/cmd.c ****             for (i = 0; i < find_arg.nr_out; i++)
+ 423:rt-thread/components/finsh/cmd.c ****             {
+ 424:rt-thread/components/finsh/cmd.c ****                 struct rt_object *obj;
+ 425:rt-thread/components/finsh/cmd.c ****                 struct rt_mutex *m;
+ 426:rt-thread/components/finsh/cmd.c **** 
+ 427:rt-thread/components/finsh/cmd.c ****                 obj = rt_list_entry(obj_list[i], struct rt_object, list);
+ 428:rt-thread/components/finsh/cmd.c ****                 level = rt_hw_interrupt_disable();
+ 429:rt-thread/components/finsh/cmd.c ****                 if ((obj->type & ~RT_Object_Class_Static) != find_arg.type)
+ 430:rt-thread/components/finsh/cmd.c ****                 {
+ 431:rt-thread/components/finsh/cmd.c ****                     rt_hw_interrupt_enable(level);
+ 432:rt-thread/components/finsh/cmd.c ****                     continue;
+ 433:rt-thread/components/finsh/cmd.c ****                 }
+ 434:rt-thread/components/finsh/cmd.c **** 
+ 435:rt-thread/components/finsh/cmd.c ****                 rt_hw_interrupt_enable(level);
+ 1120              		.loc 1 435 0
+ 1121 0036 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 1122              	.LVL162:
+ 436:rt-thread/components/finsh/cmd.c **** 
+ARM GAS  /tmp/ccsLNend.s 			page 32
+
+
+ 437:rt-thread/components/finsh/cmd.c ****                 m = (struct rt_mutex *)obj;
+ 438:rt-thread/components/finsh/cmd.c ****                 rt_kprintf("%-*.*s %-8.*s %04d %d\n",
+ 439:rt-thread/components/finsh/cmd.c ****                         maxlen, RT_NAME_MAX,
+ 440:rt-thread/components/finsh/cmd.c ****                         m->parent.parent.name,
+ 1123              		.loc 1 440 0
+ 1124 003a A4F10C03 		sub	r3, r4, #12
+ 441:rt-thread/components/finsh/cmd.c ****                         RT_NAME_MAX,
+ 442:rt-thread/components/finsh/cmd.c ****                         m->owner->name,
+ 1125              		.loc 1 442 0
+ 1126 003e D4F814E0 		ldr	lr, [r4, #20]
+ 443:rt-thread/components/finsh/cmd.c ****                         m->hold,
+ 1127              		.loc 1 443 0
+ 1128 0042 94F813C0 		ldrb	ip, [r4, #19]	@ zero_extendqisi2
+ 444:rt-thread/components/finsh/cmd.c ****                         rt_list_len(&m->parent.suspend_thread));
+ 1129              		.loc 1 444 0
+ 1130 0046 04F10801 		add	r1, r4, #8
+ 1131              	.LVL163:
+ 1132              	.LBB84:
+ 1133              	.LBB85:
+ 110:rt-thread/include/rtservice.h ****     while (p->next != l)
+ 1134              		.loc 2 110 0
+ 1135 004a 0A46     		mov	r2, r1
+ 109:rt-thread/include/rtservice.h ****     const rt_list_t *p = l;
+ 1136              		.loc 2 109 0
+ 1137 004c 0020     		movs	r0, #0
+ 1138 004e 00E0     		b	.L96
+ 1139              	.LVL164:
+ 1140              	.L97:
+ 1141              		.loc 2 114 0
+ 1142 0050 0130     		adds	r0, r0, #1
+ 1143              	.LVL165:
+ 1144              	.L96:
+ 111:rt-thread/include/rtservice.h ****     {
+ 1145              		.loc 2 111 0
+ 1146 0052 1268     		ldr	r2, [r2]
+ 1147              	.LVL166:
+ 1148 0054 9142     		cmp	r1, r2
+ 1149 0056 FBD1     		bne	.L97
+ 1150              	.LVL167:
+ 1151              	.LBE85:
+ 1152              	.LBE84:
+ 438:rt-thread/components/finsh/cmd.c ****                         maxlen, RT_NAME_MAX,
+ 1153              		.loc 1 438 0
+ 1154 0058 0390     		str	r0, [sp, #12]
+ 1155 005a CDF808C0 		str	ip, [sp, #8]
+ 1156 005e CDF804E0 		str	lr, [sp, #4]
+ 1157 0062 0821     		movs	r1, #8
+ 1158 0064 0091     		str	r1, [sp]
+ 1159 0066 0A46     		mov	r2, r1
+ 1160 0068 1548     		ldr	r0, .L103+16
+ 1161 006a FFF7FEFF 		bl	rt_kprintf
+ 1162              	.LVL168:
+ 1163              	.L95:
+ 1164              	.LBE83:
+ 422:rt-thread/components/finsh/cmd.c ****             {
+ 1165              		.loc 1 422 0 discriminator 2
+ 1166 006e 0135     		adds	r5, r5, #1
+ARM GAS  /tmp/ccsLNend.s 			page 33
+
+
+ 1167              	.LVL169:
+ 1168              	.L93:
+ 422:rt-thread/components/finsh/cmd.c ****             {
+ 1169              		.loc 1 422 0 is_stmt 0 discriminator 1
+ 1170 0070 119B     		ldr	r3, [sp, #68]
+ 1171 0072 9D42     		cmp	r5, r3
+ 1172 0074 11DA     		bge	.L101
+ 1173              	.LBB86:
+ 427:rt-thread/components/finsh/cmd.c ****                 level = rt_hw_interrupt_disable();
+ 1174              		.loc 1 427 0 is_stmt 1
+ 1175 0076 12AB     		add	r3, sp, #72
+ 1176 0078 03EB8503 		add	r3, r3, r5, lsl #2
+ 1177 007c 53F8344C 		ldr	r4, [r3, #-52]
+ 1178              	.LVL170:
+ 428:rt-thread/components/finsh/cmd.c ****                 if ((obj->type & ~RT_Object_Class_Static) != find_arg.type)
+ 1179              		.loc 1 428 0
+ 1180 0080 FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 1181              	.LVL171:
+ 429:rt-thread/components/finsh/cmd.c ****                 {
+ 1182              		.loc 1 429 0
+ 1183 0084 14F8043C 		ldrb	r3, [r4, #-4]	@ zero_extendqisi2
+ 1184 0088 23F08003 		bic	r3, r3, #128
+ 1185 008c 9DF83C20 		ldrb	r2, [sp, #60]	@ zero_extendqisi2
+ 1186 0090 9342     		cmp	r3, r2
+ 1187 0092 D0D0     		beq	.L94
+ 431:rt-thread/components/finsh/cmd.c ****                     continue;
+ 1188              		.loc 1 431 0
+ 1189 0094 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 1190              	.LVL172:
+ 432:rt-thread/components/finsh/cmd.c ****                 }
+ 1191              		.loc 1 432 0
+ 1192 0098 E9E7     		b	.L95
+ 1193              	.LVL173:
+ 1194              	.L101:
+ 1195              	.LBE86:
+ 1196              	.LBE82:
+ 445:rt-thread/components/finsh/cmd.c **** 
+ 446:rt-thread/components/finsh/cmd.c ****             }
+ 447:rt-thread/components/finsh/cmd.c ****         }
+ 448:rt-thread/components/finsh/cmd.c ****     }
+ 449:rt-thread/components/finsh/cmd.c ****     while (next != (rt_list_t*)RT_NULL);
+ 1197              		.loc 1 449 0
+ 1198 009a 37B1     		cbz	r7, .L102
+ 1199              	.LVL174:
+ 1200              	.L99:
+ 419:rt-thread/components/finsh/cmd.c ****         {
+ 1201              		.loc 1 419 0
+ 1202 009c 0DA9     		add	r1, sp, #52
+ 1203 009e 3846     		mov	r0, r7
+ 1204 00a0 FFF7FEFF 		bl	list_get_next
+ 1205              	.LVL175:
+ 1206 00a4 0746     		mov	r7, r0
+ 1207              	.LVL176:
+ 1208              	.LBB87:
+ 422:rt-thread/components/finsh/cmd.c ****             {
+ 1209              		.loc 1 422 0
+ 1210 00a6 3546     		mov	r5, r6
+ARM GAS  /tmp/ccsLNend.s 			page 34
+
+
+ 1211 00a8 E2E7     		b	.L93
+ 1212              	.LVL177:
+ 1213              	.L102:
+ 1214              	.LBE87:
+ 450:rt-thread/components/finsh/cmd.c **** 
+ 451:rt-thread/components/finsh/cmd.c ****     return 0;
+ 452:rt-thread/components/finsh/cmd.c **** }
+ 1215              		.loc 1 452 0
+ 1216 00aa 0020     		movs	r0, #0
+ 1217 00ac 13B0     		add	sp, sp, #76
+ 1218              	.LCFI16:
+ 1219              		.cfi_def_cfa_offset 20
+ 1220              		@ sp needed
+ 1221 00ae F0BD     		pop	{r4, r5, r6, r7, pc}
+ 1222              	.LVL178:
+ 1223              	.L104:
+ 1224              		.align	2
+ 1225              	.L103:
+ 1226 00b0 00000000 		.word	.LC25
+ 1227 00b4 08000000 		.word	.LC26
+ 1228 00b8 4C000000 		.word	.LC5
+ 1229 00bc 2C000000 		.word	.LC27
+ 1230 00c0 4C000000 		.word	.LC28
+ 1231              		.cfi_endproc
+ 1232              	.LFE25:
+ 1234              		.section	.text.list_msgqueue,"ax",%progbits
+ 1235              		.align	1
+ 1236              		.global	list_msgqueue
+ 1237              		.syntax unified
+ 1238              		.thumb
+ 1239              		.thumb_func
+ 1240              		.fpu fpv4-sp-d16
+ 1242              	list_msgqueue:
+ 1243              	.LFB26:
+ 453:rt-thread/components/finsh/cmd.c **** FINSH_FUNCTION_EXPORT(list_mutex, list mutex in system);
+ 454:rt-thread/components/finsh/cmd.c **** MSH_CMD_EXPORT(list_mutex, list mutex in system);
+ 455:rt-thread/components/finsh/cmd.c **** #endif
+ 456:rt-thread/components/finsh/cmd.c **** 
+ 457:rt-thread/components/finsh/cmd.c **** #ifdef RT_USING_MAILBOX
+ 458:rt-thread/components/finsh/cmd.c **** long list_mailbox(void)
+ 459:rt-thread/components/finsh/cmd.c **** {
+ 460:rt-thread/components/finsh/cmd.c ****     rt_ubase_t level;
+ 461:rt-thread/components/finsh/cmd.c ****     list_get_next_t find_arg;
+ 462:rt-thread/components/finsh/cmd.c ****     rt_list_t *obj_list[LIST_FIND_OBJ_NR];
+ 463:rt-thread/components/finsh/cmd.c ****     rt_list_t *next = (rt_list_t*)RT_NULL;
+ 464:rt-thread/components/finsh/cmd.c **** 
+ 465:rt-thread/components/finsh/cmd.c ****     int maxlen;
+ 466:rt-thread/components/finsh/cmd.c ****     const char *item_title = "mailbox";
+ 467:rt-thread/components/finsh/cmd.c **** 
+ 468:rt-thread/components/finsh/cmd.c ****     list_find_init(&find_arg, RT_Object_Class_MailBox, obj_list, sizeof(obj_list)/sizeof(obj_list[0
+ 469:rt-thread/components/finsh/cmd.c **** 
+ 470:rt-thread/components/finsh/cmd.c ****     maxlen = RT_NAME_MAX;
+ 471:rt-thread/components/finsh/cmd.c **** 
+ 472:rt-thread/components/finsh/cmd.c ****     rt_kprintf("%-*.s entry size suspend thread\n", maxlen, item_title); object_split(maxlen);
+ 473:rt-thread/components/finsh/cmd.c ****     rt_kprintf(     " ----  ---- --------------\n");
+ 474:rt-thread/components/finsh/cmd.c **** 
+ 475:rt-thread/components/finsh/cmd.c ****     do
+ARM GAS  /tmp/ccsLNend.s 			page 35
+
+
+ 476:rt-thread/components/finsh/cmd.c ****     {
+ 477:rt-thread/components/finsh/cmd.c ****         next = list_get_next(next, &find_arg);
+ 478:rt-thread/components/finsh/cmd.c ****         {
+ 479:rt-thread/components/finsh/cmd.c ****             int i;
+ 480:rt-thread/components/finsh/cmd.c ****             for (i = 0; i < find_arg.nr_out; i++)
+ 481:rt-thread/components/finsh/cmd.c ****             {
+ 482:rt-thread/components/finsh/cmd.c ****                 struct rt_object *obj;
+ 483:rt-thread/components/finsh/cmd.c ****                 struct rt_mailbox *m;
+ 484:rt-thread/components/finsh/cmd.c **** 
+ 485:rt-thread/components/finsh/cmd.c ****                 obj = rt_list_entry(obj_list[i], struct rt_object, list);
+ 486:rt-thread/components/finsh/cmd.c ****                 level = rt_hw_interrupt_disable();
+ 487:rt-thread/components/finsh/cmd.c ****                 if ((obj->type & ~RT_Object_Class_Static) != find_arg.type)
+ 488:rt-thread/components/finsh/cmd.c ****                 {
+ 489:rt-thread/components/finsh/cmd.c ****                     rt_hw_interrupt_enable(level);
+ 490:rt-thread/components/finsh/cmd.c ****                     continue;
+ 491:rt-thread/components/finsh/cmd.c ****                 }
+ 492:rt-thread/components/finsh/cmd.c **** 
+ 493:rt-thread/components/finsh/cmd.c ****                 rt_hw_interrupt_enable(level);
+ 494:rt-thread/components/finsh/cmd.c **** 
+ 495:rt-thread/components/finsh/cmd.c ****                 m = (struct rt_mailbox *)obj;
+ 496:rt-thread/components/finsh/cmd.c ****                 if (!rt_list_isempty(&m->parent.suspend_thread))
+ 497:rt-thread/components/finsh/cmd.c ****                 {
+ 498:rt-thread/components/finsh/cmd.c ****                     rt_kprintf("%-*.*s %04d  %04d %d:",
+ 499:rt-thread/components/finsh/cmd.c ****                             maxlen, RT_NAME_MAX,
+ 500:rt-thread/components/finsh/cmd.c ****                             m->parent.parent.name,
+ 501:rt-thread/components/finsh/cmd.c ****                             m->entry,
+ 502:rt-thread/components/finsh/cmd.c ****                             m->size,
+ 503:rt-thread/components/finsh/cmd.c ****                             rt_list_len(&m->parent.suspend_thread));
+ 504:rt-thread/components/finsh/cmd.c ****                     show_wait_queue(&(m->parent.suspend_thread));
+ 505:rt-thread/components/finsh/cmd.c ****                     rt_kprintf("\n");
+ 506:rt-thread/components/finsh/cmd.c ****                 }
+ 507:rt-thread/components/finsh/cmd.c ****                 else
+ 508:rt-thread/components/finsh/cmd.c ****                 {
+ 509:rt-thread/components/finsh/cmd.c ****                     rt_kprintf("%-*.*s %04d  %04d %d\n",
+ 510:rt-thread/components/finsh/cmd.c ****                             maxlen, RT_NAME_MAX,
+ 511:rt-thread/components/finsh/cmd.c ****                             m->parent.parent.name,
+ 512:rt-thread/components/finsh/cmd.c ****                             m->entry,
+ 513:rt-thread/components/finsh/cmd.c ****                             m->size,
+ 514:rt-thread/components/finsh/cmd.c ****                             rt_list_len(&m->parent.suspend_thread));
+ 515:rt-thread/components/finsh/cmd.c ****                 }
+ 516:rt-thread/components/finsh/cmd.c **** 
+ 517:rt-thread/components/finsh/cmd.c ****             }
+ 518:rt-thread/components/finsh/cmd.c ****         }
+ 519:rt-thread/components/finsh/cmd.c ****     }
+ 520:rt-thread/components/finsh/cmd.c ****     while (next != (rt_list_t*)RT_NULL);
+ 521:rt-thread/components/finsh/cmd.c **** 
+ 522:rt-thread/components/finsh/cmd.c ****     return 0;
+ 523:rt-thread/components/finsh/cmd.c **** }
+ 524:rt-thread/components/finsh/cmd.c **** FINSH_FUNCTION_EXPORT(list_mailbox, list mail box in system);
+ 525:rt-thread/components/finsh/cmd.c **** MSH_CMD_EXPORT(list_mailbox, list mail box in system);
+ 526:rt-thread/components/finsh/cmd.c **** #endif
+ 527:rt-thread/components/finsh/cmd.c **** 
+ 528:rt-thread/components/finsh/cmd.c **** #ifdef RT_USING_MESSAGEQUEUE
+ 529:rt-thread/components/finsh/cmd.c **** long list_msgqueue(void)
+ 530:rt-thread/components/finsh/cmd.c **** {
+ 1244              		.loc 1 530 0
+ 1245              		.cfi_startproc
+ARM GAS  /tmp/ccsLNend.s 			page 36
+
+
+ 1246              		@ args = 0, pretend = 0, frame = 56
+ 1247              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1248 0000 2DE9F041 		push	{r4, r5, r6, r7, r8, lr}
+ 1249              	.LCFI17:
+ 1250              		.cfi_def_cfa_offset 24
+ 1251              		.cfi_offset 4, -24
+ 1252              		.cfi_offset 5, -20
+ 1253              		.cfi_offset 6, -16
+ 1254              		.cfi_offset 7, -12
+ 1255              		.cfi_offset 8, -8
+ 1256              		.cfi_offset 14, -4
+ 1257 0004 90B0     		sub	sp, sp, #64
+ 1258              	.LCFI18:
+ 1259              		.cfi_def_cfa_offset 88
+ 1260              	.LVL179:
+ 531:rt-thread/components/finsh/cmd.c ****     rt_ubase_t level;
+ 532:rt-thread/components/finsh/cmd.c ****     list_get_next_t find_arg;
+ 533:rt-thread/components/finsh/cmd.c ****     rt_list_t *obj_list[LIST_FIND_OBJ_NR];
+ 534:rt-thread/components/finsh/cmd.c ****     rt_list_t *next = (rt_list_t*)RT_NULL;
+ 535:rt-thread/components/finsh/cmd.c **** 
+ 536:rt-thread/components/finsh/cmd.c ****     int maxlen;
+ 537:rt-thread/components/finsh/cmd.c ****     const char *item_title = "msgqueue";
+ 538:rt-thread/components/finsh/cmd.c **** 
+ 539:rt-thread/components/finsh/cmd.c ****     list_find_init(&find_arg, RT_Object_Class_MessageQueue, obj_list, sizeof(obj_list)/sizeof(obj_l
+ 1261              		.loc 1 539 0
+ 1262 0006 0823     		movs	r3, #8
+ 1263 0008 03AA     		add	r2, sp, #12
+ 1264 000a 0621     		movs	r1, #6
+ 1265 000c 0BA8     		add	r0, sp, #44
+ 1266 000e FFF7FEFF 		bl	list_find_init
+ 1267              	.LVL180:
+ 540:rt-thread/components/finsh/cmd.c **** 
+ 541:rt-thread/components/finsh/cmd.c ****     maxlen = RT_NAME_MAX;
+ 542:rt-thread/components/finsh/cmd.c **** 
+ 543:rt-thread/components/finsh/cmd.c ****     rt_kprintf("%-*.s entry suspend thread\n", maxlen, item_title); object_split(maxlen);
+ 1268              		.loc 1 543 0
+ 1269 0012 344A     		ldr	r2, .L121
+ 1270 0014 0821     		movs	r1, #8
+ 1271 0016 3448     		ldr	r0, .L121+4
+ 1272 0018 FFF7FEFF 		bl	rt_kprintf
+ 1273              	.LVL181:
+ 1274 001c 0826     		movs	r6, #8
+ 1275 001e 03E0     		b	.L106
+ 1276              	.LVL182:
+ 1277              	.L107:
+ 1278              	.LBB88:
+ 1279              	.LBB89:
+  63:rt-thread/components/finsh/cmd.c **** }
+ 1280              		.loc 1 63 0
+ 1281 0020 3248     		ldr	r0, .L121+8
+ 1282 0022 FFF7FEFF 		bl	rt_kprintf
+ 1283              	.LVL183:
+ 1284 0026 2646     		mov	r6, r4
+ 1285              	.LVL184:
+ 1286              	.L106:
+ 1287 0028 741E     		subs	r4, r6, #1
+ 1288              	.LVL185:
+ARM GAS  /tmp/ccsLNend.s 			page 37
+
+
+ 1289 002a 002E     		cmp	r6, #0
+ 1290 002c F8D1     		bne	.L107
+ 1291              	.LVL186:
+ 1292              	.LBE89:
+ 1293              	.LBE88:
+ 544:rt-thread/components/finsh/cmd.c ****     rt_kprintf(     " ----  --------------\n");
+ 1294              		.loc 1 544 0
+ 1295 002e 3048     		ldr	r0, .L121+12
+ 1296 0030 FFF7FEFF 		bl	rt_kprintf
+ 1297              	.LVL187:
+ 534:rt-thread/components/finsh/cmd.c **** 
+ 1298              		.loc 1 534 0
+ 1299 0034 4FF00008 		mov	r8, #0
+ 1300 0038 48E0     		b	.L117
+ 1301              	.LVL188:
+ 1302              	.L109:
+ 1303              	.LBB90:
+ 1304              	.LBB91:
+ 545:rt-thread/components/finsh/cmd.c ****     do
+ 546:rt-thread/components/finsh/cmd.c ****     {
+ 547:rt-thread/components/finsh/cmd.c ****         next = list_get_next(next, &find_arg);
+ 548:rt-thread/components/finsh/cmd.c ****         {
+ 549:rt-thread/components/finsh/cmd.c ****             int i;
+ 550:rt-thread/components/finsh/cmd.c ****             for (i = 0; i < find_arg.nr_out; i++)
+ 551:rt-thread/components/finsh/cmd.c ****             {
+ 552:rt-thread/components/finsh/cmd.c ****                 struct rt_object *obj;
+ 553:rt-thread/components/finsh/cmd.c ****                 struct rt_messagequeue *m;
+ 554:rt-thread/components/finsh/cmd.c **** 
+ 555:rt-thread/components/finsh/cmd.c ****                 obj = rt_list_entry(obj_list[i], struct rt_object, list);
+ 556:rt-thread/components/finsh/cmd.c ****                 level = rt_hw_interrupt_disable();
+ 557:rt-thread/components/finsh/cmd.c ****                 if ((obj->type & ~RT_Object_Class_Static) != find_arg.type)
+ 558:rt-thread/components/finsh/cmd.c ****                 {
+ 559:rt-thread/components/finsh/cmd.c ****                     rt_hw_interrupt_enable(level);
+ 560:rt-thread/components/finsh/cmd.c ****                     continue;
+ 561:rt-thread/components/finsh/cmd.c ****                 }
+ 562:rt-thread/components/finsh/cmd.c **** 
+ 563:rt-thread/components/finsh/cmd.c ****                 rt_hw_interrupt_enable(level);
+ 1305              		.loc 1 563 0
+ 1306 003a FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 1307              	.LVL189:
+ 564:rt-thread/components/finsh/cmd.c **** 
+ 565:rt-thread/components/finsh/cmd.c ****                 m = (struct rt_messagequeue *)obj;
+ 566:rt-thread/components/finsh/cmd.c ****                 if (!rt_list_isempty(&m->parent.suspend_thread))
+ 1308              		.loc 1 566 0
+ 1309 003e 07F10805 		add	r5, r7, #8
+ 1310              	.LVL190:
+ 1311              	.LBB92:
+ 1312              	.LBB93:
+ 100:rt-thread/include/rtservice.h **** }
+ 1313              		.loc 2 100 0
+ 1314 0042 BB68     		ldr	r3, [r7, #8]
+ 1315              	.LVL191:
+ 1316              	.LBE93:
+ 1317              	.LBE92:
+ 1318              		.loc 1 566 0
+ 1319 0044 9D42     		cmp	r5, r3
+ 1320 0046 2CD0     		beq	.L111
+ARM GAS  /tmp/ccsLNend.s 			page 38
+
+
+ 567:rt-thread/components/finsh/cmd.c ****                 {
+ 568:rt-thread/components/finsh/cmd.c ****                     rt_kprintf("%-*.*s %04d  %d:",
+ 569:rt-thread/components/finsh/cmd.c ****                             maxlen, RT_NAME_MAX,
+ 570:rt-thread/components/finsh/cmd.c ****                             m->parent.parent.name,
+ 1321              		.loc 1 570 0
+ 1322 0048 A7F10C03 		sub	r3, r7, #12
+ 571:rt-thread/components/finsh/cmd.c ****                             m->entry,
+ 1323              		.loc 1 571 0
+ 1324 004c 388B     		ldrh	r0, [r7, #24]
+ 1325              	.LVL192:
+ 1326              	.LBB94:
+ 1327              	.LBB95:
+ 110:rt-thread/include/rtservice.h ****     while (p->next != l)
+ 1328              		.loc 2 110 0
+ 1329 004e 2A46     		mov	r2, r5
+ 109:rt-thread/include/rtservice.h ****     const rt_list_t *p = l;
+ 1330              		.loc 2 109 0
+ 1331 0050 0021     		movs	r1, #0
+ 1332 0052 00E0     		b	.L112
+ 1333              	.LVL193:
+ 1334              	.L113:
+ 1335              		.loc 2 114 0
+ 1336 0054 0131     		adds	r1, r1, #1
+ 1337              	.LVL194:
+ 1338              	.L112:
+ 111:rt-thread/include/rtservice.h ****     {
+ 1339              		.loc 2 111 0
+ 1340 0056 1268     		ldr	r2, [r2]
+ 1341              	.LVL195:
+ 1342 0058 9542     		cmp	r5, r2
+ 1343 005a FBD1     		bne	.L113
+ 1344              	.LVL196:
+ 1345              	.LBE95:
+ 1346              	.LBE94:
+ 568:rt-thread/components/finsh/cmd.c ****                             maxlen, RT_NAME_MAX,
+ 1347              		.loc 1 568 0
+ 1348 005c 0191     		str	r1, [sp, #4]
+ 1349 005e 0090     		str	r0, [sp]
+ 1350 0060 0822     		movs	r2, #8
+ 1351 0062 1146     		mov	r1, r2
+ 1352 0064 2348     		ldr	r0, .L121+16
+ 1353 0066 FFF7FEFF 		bl	rt_kprintf
+ 1354              	.LVL197:
+ 572:rt-thread/components/finsh/cmd.c ****                             rt_list_len(&m->parent.suspend_thread));
+ 573:rt-thread/components/finsh/cmd.c ****                     show_wait_queue(&(m->parent.suspend_thread));
+ 1355              		.loc 1 573 0
+ 1356 006a 2846     		mov	r0, r5
+ 1357 006c FFF7FEFF 		bl	show_wait_queue
+ 1358              	.LVL198:
+ 574:rt-thread/components/finsh/cmd.c ****                     rt_kprintf("\n");
+ 1359              		.loc 1 574 0
+ 1360 0070 2148     		ldr	r0, .L121+20
+ 1361 0072 FFF7FEFF 		bl	rt_kprintf
+ 1362              	.LVL199:
+ 1363              	.L110:
+ 1364              	.LBE91:
+ 550:rt-thread/components/finsh/cmd.c ****             {
+ARM GAS  /tmp/ccsLNend.s 			page 39
+
+
+ 1365              		.loc 1 550 0 discriminator 2
+ 1366 0076 0134     		adds	r4, r4, #1
+ 1367              	.LVL200:
+ 1368              	.L108:
+ 550:rt-thread/components/finsh/cmd.c ****             {
+ 1369              		.loc 1 550 0 is_stmt 0 discriminator 1
+ 1370 0078 0F9B     		ldr	r3, [sp, #60]
+ 1371 007a 9C42     		cmp	r4, r3
+ 1372 007c 23DA     		bge	.L119
+ 1373              	.LBB98:
+ 555:rt-thread/components/finsh/cmd.c ****                 level = rt_hw_interrupt_disable();
+ 1374              		.loc 1 555 0 is_stmt 1
+ 1375 007e 10AB     		add	r3, sp, #64
+ 1376 0080 03EB8403 		add	r3, r3, r4, lsl #2
+ 1377 0084 53F8347C 		ldr	r7, [r3, #-52]
+ 1378              	.LVL201:
+ 556:rt-thread/components/finsh/cmd.c ****                 if ((obj->type & ~RT_Object_Class_Static) != find_arg.type)
+ 1379              		.loc 1 556 0
+ 1380 0088 FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 1381              	.LVL202:
+ 557:rt-thread/components/finsh/cmd.c ****                 {
+ 1382              		.loc 1 557 0
+ 1383 008c 17F8043C 		ldrb	r3, [r7, #-4]	@ zero_extendqisi2
+ 1384 0090 23F08003 		bic	r3, r3, #128
+ 1385 0094 9DF83420 		ldrb	r2, [sp, #52]	@ zero_extendqisi2
+ 1386 0098 9342     		cmp	r3, r2
+ 1387 009a CED0     		beq	.L109
+ 559:rt-thread/components/finsh/cmd.c ****                     continue;
+ 1388              		.loc 1 559 0
+ 1389 009c FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 1390              	.LVL203:
+ 560:rt-thread/components/finsh/cmd.c ****                 }
+ 1391              		.loc 1 560 0
+ 1392 00a0 E9E7     		b	.L110
+ 1393              	.LVL204:
+ 1394              	.L111:
+ 575:rt-thread/components/finsh/cmd.c ****                 }
+ 576:rt-thread/components/finsh/cmd.c ****                 else
+ 577:rt-thread/components/finsh/cmd.c ****                 {
+ 578:rt-thread/components/finsh/cmd.c ****                     rt_kprintf("%-*.*s %04d  %d\n",
+ 579:rt-thread/components/finsh/cmd.c ****                             maxlen, RT_NAME_MAX,
+ 580:rt-thread/components/finsh/cmd.c ****                             m->parent.parent.name,
+ 1395              		.loc 1 580 0
+ 1396 00a2 A7F10C03 		sub	r3, r7, #12
+ 581:rt-thread/components/finsh/cmd.c ****                             m->entry,
+ 1397              		.loc 1 581 0
+ 1398 00a6 388B     		ldrh	r0, [r7, #24]
+ 1399              	.LVL205:
+ 1400              	.LBB96:
+ 1401              	.LBB97:
+ 110:rt-thread/include/rtservice.h ****     while (p->next != l)
+ 1402              		.loc 2 110 0
+ 1403 00a8 2A46     		mov	r2, r5
+ 109:rt-thread/include/rtservice.h ****     const rt_list_t *p = l;
+ 1404              		.loc 2 109 0
+ 1405 00aa 0021     		movs	r1, #0
+ 1406 00ac 00E0     		b	.L114
+ARM GAS  /tmp/ccsLNend.s 			page 40
+
+
+ 1407              	.LVL206:
+ 1408              	.L115:
+ 1409              		.loc 2 114 0
+ 1410 00ae 0131     		adds	r1, r1, #1
+ 1411              	.LVL207:
+ 1412              	.L114:
+ 111:rt-thread/include/rtservice.h ****     {
+ 1413              		.loc 2 111 0
+ 1414 00b0 1268     		ldr	r2, [r2]
+ 1415              	.LVL208:
+ 1416 00b2 9542     		cmp	r5, r2
+ 1417 00b4 FBD1     		bne	.L115
+ 1418              	.LVL209:
+ 1419              	.LBE97:
+ 1420              	.LBE96:
+ 578:rt-thread/components/finsh/cmd.c ****                             maxlen, RT_NAME_MAX,
+ 1421              		.loc 1 578 0
+ 1422 00b6 0191     		str	r1, [sp, #4]
+ 1423 00b8 0090     		str	r0, [sp]
+ 1424 00ba 0822     		movs	r2, #8
+ 1425 00bc 1146     		mov	r1, r2
+ 1426 00be 0F48     		ldr	r0, .L121+24
+ 1427 00c0 FFF7FEFF 		bl	rt_kprintf
+ 1428              	.LVL210:
+ 1429 00c4 D7E7     		b	.L110
+ 1430              	.LVL211:
+ 1431              	.L119:
+ 1432              	.LBE98:
+ 1433              	.LBE90:
+ 582:rt-thread/components/finsh/cmd.c ****                             rt_list_len(&m->parent.suspend_thread));
+ 583:rt-thread/components/finsh/cmd.c ****                 }
+ 584:rt-thread/components/finsh/cmd.c ****             }
+ 585:rt-thread/components/finsh/cmd.c ****         }
+ 586:rt-thread/components/finsh/cmd.c ****     }
+ 587:rt-thread/components/finsh/cmd.c ****     while (next != (rt_list_t*)RT_NULL);
+ 1434              		.loc 1 587 0
+ 1435 00c6 B8F1000F 		cmp	r8, #0
+ 1436 00ca 06D0     		beq	.L120
+ 1437              	.LVL212:
+ 1438              	.L117:
+ 547:rt-thread/components/finsh/cmd.c ****         {
+ 1439              		.loc 1 547 0
+ 1440 00cc 0BA9     		add	r1, sp, #44
+ 1441 00ce 4046     		mov	r0, r8
+ 1442 00d0 FFF7FEFF 		bl	list_get_next
+ 1443              	.LVL213:
+ 1444 00d4 8046     		mov	r8, r0
+ 1445              	.LVL214:
+ 1446              	.LBB99:
+ 550:rt-thread/components/finsh/cmd.c ****             {
+ 1447              		.loc 1 550 0
+ 1448 00d6 3446     		mov	r4, r6
+ 1449 00d8 CEE7     		b	.L108
+ 1450              	.LVL215:
+ 1451              	.L120:
+ 1452              	.LBE99:
+ 588:rt-thread/components/finsh/cmd.c **** 
+ARM GAS  /tmp/ccsLNend.s 			page 41
+
+
+ 589:rt-thread/components/finsh/cmd.c ****     return 0;
+ 590:rt-thread/components/finsh/cmd.c **** }
+ 1453              		.loc 1 590 0
+ 1454 00da 0020     		movs	r0, #0
+ 1455 00dc 10B0     		add	sp, sp, #64
+ 1456              	.LCFI19:
+ 1457              		.cfi_def_cfa_offset 24
+ 1458              		@ sp needed
+ 1459 00de BDE8F081 		pop	{r4, r5, r6, r7, r8, pc}
+ 1460              	.LVL216:
+ 1461              	.L122:
+ 1462 00e2 00BF     		.align	2
+ 1463              	.L121:
+ 1464 00e4 00000000 		.word	.LC29
+ 1465 00e8 0C000000 		.word	.LC30
+ 1466 00ec 4C000000 		.word	.LC5
+ 1467 00f0 28000000 		.word	.LC31
+ 1468 00f4 40000000 		.word	.LC32
+ 1469 00f8 50000000 		.word	.LC18
+ 1470 00fc 54000000 		.word	.LC33
+ 1471              		.cfi_endproc
+ 1472              	.LFE26:
+ 1474              		.section	.text.list_device,"ax",%progbits
+ 1475              		.align	1
+ 1476              		.global	list_device
+ 1477              		.syntax unified
+ 1478              		.thumb
+ 1479              		.thumb_func
+ 1480              		.fpu fpv4-sp-d16
+ 1482              	list_device:
+ 1483              	.LFB28:
+ 591:rt-thread/components/finsh/cmd.c **** FINSH_FUNCTION_EXPORT(list_msgqueue, list message queue in system);
+ 592:rt-thread/components/finsh/cmd.c **** MSH_CMD_EXPORT(list_msgqueue, list message queue in system);
+ 593:rt-thread/components/finsh/cmd.c **** #endif
+ 594:rt-thread/components/finsh/cmd.c **** 
+ 595:rt-thread/components/finsh/cmd.c **** #ifdef RT_USING_MEMHEAP
+ 596:rt-thread/components/finsh/cmd.c **** long list_memheap(void)
+ 597:rt-thread/components/finsh/cmd.c **** {
+ 598:rt-thread/components/finsh/cmd.c ****     rt_ubase_t level;
+ 599:rt-thread/components/finsh/cmd.c ****     list_get_next_t find_arg;
+ 600:rt-thread/components/finsh/cmd.c ****     rt_list_t *obj_list[LIST_FIND_OBJ_NR];
+ 601:rt-thread/components/finsh/cmd.c ****     rt_list_t *next = (rt_list_t*)RT_NULL;
+ 602:rt-thread/components/finsh/cmd.c **** 
+ 603:rt-thread/components/finsh/cmd.c ****     int maxlen;
+ 604:rt-thread/components/finsh/cmd.c ****     const char *item_title = "memheap";
+ 605:rt-thread/components/finsh/cmd.c **** 
+ 606:rt-thread/components/finsh/cmd.c ****     list_find_init(&find_arg, RT_Object_Class_MemHeap, obj_list, sizeof(obj_list)/sizeof(obj_list[0
+ 607:rt-thread/components/finsh/cmd.c **** 
+ 608:rt-thread/components/finsh/cmd.c ****     maxlen = RT_NAME_MAX;
+ 609:rt-thread/components/finsh/cmd.c **** 
+ 610:rt-thread/components/finsh/cmd.c ****     rt_kprintf("%-*.s  pool size  max used size available size\n", maxlen, item_title); object_spli
+ 611:rt-thread/components/finsh/cmd.c ****     rt_kprintf(      " ---------- ------------- --------------\n");
+ 612:rt-thread/components/finsh/cmd.c ****     do
+ 613:rt-thread/components/finsh/cmd.c ****     {
+ 614:rt-thread/components/finsh/cmd.c ****         next = list_get_next(next, &find_arg);
+ 615:rt-thread/components/finsh/cmd.c ****         {
+ 616:rt-thread/components/finsh/cmd.c ****             int i;
+ARM GAS  /tmp/ccsLNend.s 			page 42
+
+
+ 617:rt-thread/components/finsh/cmd.c ****             for (i = 0; i < find_arg.nr_out; i++)
+ 618:rt-thread/components/finsh/cmd.c ****             {
+ 619:rt-thread/components/finsh/cmd.c ****                 struct rt_object *obj;
+ 620:rt-thread/components/finsh/cmd.c ****                 struct rt_memheap *mh;
+ 621:rt-thread/components/finsh/cmd.c **** 
+ 622:rt-thread/components/finsh/cmd.c ****                 obj = rt_list_entry(obj_list[i], struct rt_object, list);
+ 623:rt-thread/components/finsh/cmd.c ****                 level = rt_hw_interrupt_disable();
+ 624:rt-thread/components/finsh/cmd.c ****                 if ((obj->type & ~RT_Object_Class_Static) != find_arg.type)
+ 625:rt-thread/components/finsh/cmd.c ****                 {
+ 626:rt-thread/components/finsh/cmd.c ****                     rt_hw_interrupt_enable(level);
+ 627:rt-thread/components/finsh/cmd.c ****                     continue;
+ 628:rt-thread/components/finsh/cmd.c ****                 }
+ 629:rt-thread/components/finsh/cmd.c **** 
+ 630:rt-thread/components/finsh/cmd.c ****                 rt_hw_interrupt_enable(level);
+ 631:rt-thread/components/finsh/cmd.c **** 
+ 632:rt-thread/components/finsh/cmd.c ****                 mh = (struct rt_memheap *)obj;
+ 633:rt-thread/components/finsh/cmd.c **** 
+ 634:rt-thread/components/finsh/cmd.c ****                 rt_kprintf("%-*.*s %-010d %-013d %-05d\n",
+ 635:rt-thread/components/finsh/cmd.c ****                         maxlen, RT_NAME_MAX,
+ 636:rt-thread/components/finsh/cmd.c ****                         mh->parent.name,
+ 637:rt-thread/components/finsh/cmd.c ****                         mh->pool_size,
+ 638:rt-thread/components/finsh/cmd.c ****                         mh->max_used_size,
+ 639:rt-thread/components/finsh/cmd.c ****                         mh->available_size);
+ 640:rt-thread/components/finsh/cmd.c **** 
+ 641:rt-thread/components/finsh/cmd.c ****             }
+ 642:rt-thread/components/finsh/cmd.c ****         }
+ 643:rt-thread/components/finsh/cmd.c ****     }
+ 644:rt-thread/components/finsh/cmd.c ****     while (next != (rt_list_t*)RT_NULL);
+ 645:rt-thread/components/finsh/cmd.c **** 
+ 646:rt-thread/components/finsh/cmd.c ****     return 0;
+ 647:rt-thread/components/finsh/cmd.c **** }
+ 648:rt-thread/components/finsh/cmd.c **** FINSH_FUNCTION_EXPORT(list_memheap, list memory heap in system);
+ 649:rt-thread/components/finsh/cmd.c **** MSH_CMD_EXPORT(list_memheap, list memory heap in system);
+ 650:rt-thread/components/finsh/cmd.c **** #endif
+ 651:rt-thread/components/finsh/cmd.c **** 
+ 652:rt-thread/components/finsh/cmd.c **** #ifdef RT_USING_MEMPOOL
+ 653:rt-thread/components/finsh/cmd.c **** long list_mempool(void)
+ 654:rt-thread/components/finsh/cmd.c **** {
+ 655:rt-thread/components/finsh/cmd.c ****     rt_ubase_t level;
+ 656:rt-thread/components/finsh/cmd.c ****     list_get_next_t find_arg;
+ 657:rt-thread/components/finsh/cmd.c ****     rt_list_t *obj_list[LIST_FIND_OBJ_NR];
+ 658:rt-thread/components/finsh/cmd.c ****     rt_list_t *next = (rt_list_t*)RT_NULL;
+ 659:rt-thread/components/finsh/cmd.c **** 
+ 660:rt-thread/components/finsh/cmd.c ****     int maxlen;
+ 661:rt-thread/components/finsh/cmd.c ****     const char *item_title = "mempool";
+ 662:rt-thread/components/finsh/cmd.c **** 
+ 663:rt-thread/components/finsh/cmd.c ****     list_find_init(&find_arg, RT_Object_Class_MemPool, obj_list, sizeof(obj_list)/sizeof(obj_list[0
+ 664:rt-thread/components/finsh/cmd.c **** 
+ 665:rt-thread/components/finsh/cmd.c ****     maxlen = RT_NAME_MAX;
+ 666:rt-thread/components/finsh/cmd.c **** 
+ 667:rt-thread/components/finsh/cmd.c ****     rt_kprintf("%-*.s block total free suspend thread\n", maxlen, item_title); object_split(maxlen)
+ 668:rt-thread/components/finsh/cmd.c ****     rt_kprintf(     " ----  ----  ---- --------------\n");
+ 669:rt-thread/components/finsh/cmd.c ****     do
+ 670:rt-thread/components/finsh/cmd.c ****     {
+ 671:rt-thread/components/finsh/cmd.c ****         next = list_get_next(next, &find_arg);
+ 672:rt-thread/components/finsh/cmd.c ****         {
+ 673:rt-thread/components/finsh/cmd.c ****             int i;
+ARM GAS  /tmp/ccsLNend.s 			page 43
+
+
+ 674:rt-thread/components/finsh/cmd.c ****             for (i = 0; i < find_arg.nr_out; i++)
+ 675:rt-thread/components/finsh/cmd.c ****             {
+ 676:rt-thread/components/finsh/cmd.c ****                 struct rt_object *obj;
+ 677:rt-thread/components/finsh/cmd.c ****                 struct rt_mempool *mp;
+ 678:rt-thread/components/finsh/cmd.c ****                 int suspend_thread_count;
+ 679:rt-thread/components/finsh/cmd.c ****                 rt_list_t *node;
+ 680:rt-thread/components/finsh/cmd.c **** 
+ 681:rt-thread/components/finsh/cmd.c ****                 obj = rt_list_entry(obj_list[i], struct rt_object, list);
+ 682:rt-thread/components/finsh/cmd.c ****                 level = rt_hw_interrupt_disable();
+ 683:rt-thread/components/finsh/cmd.c ****                 if ((obj->type & ~RT_Object_Class_Static) != find_arg.type)
+ 684:rt-thread/components/finsh/cmd.c ****                 {
+ 685:rt-thread/components/finsh/cmd.c ****                     rt_hw_interrupt_enable(level);
+ 686:rt-thread/components/finsh/cmd.c ****                     continue;
+ 687:rt-thread/components/finsh/cmd.c ****                 }
+ 688:rt-thread/components/finsh/cmd.c **** 
+ 689:rt-thread/components/finsh/cmd.c ****                 rt_hw_interrupt_enable(level);
+ 690:rt-thread/components/finsh/cmd.c **** 
+ 691:rt-thread/components/finsh/cmd.c ****                 mp = (struct rt_mempool *)obj;
+ 692:rt-thread/components/finsh/cmd.c **** 
+ 693:rt-thread/components/finsh/cmd.c ****                 suspend_thread_count = 0;
+ 694:rt-thread/components/finsh/cmd.c ****                 rt_list_for_each(node, &mp->suspend_thread)
+ 695:rt-thread/components/finsh/cmd.c ****                 {
+ 696:rt-thread/components/finsh/cmd.c ****                     suspend_thread_count++;
+ 697:rt-thread/components/finsh/cmd.c ****                 }
+ 698:rt-thread/components/finsh/cmd.c **** 
+ 699:rt-thread/components/finsh/cmd.c ****                 if (suspend_thread_count > 0)
+ 700:rt-thread/components/finsh/cmd.c ****                 {
+ 701:rt-thread/components/finsh/cmd.c ****                     rt_kprintf("%-*.*s %04d  %04d  %04d %d:",
+ 702:rt-thread/components/finsh/cmd.c ****                             maxlen, RT_NAME_MAX,
+ 703:rt-thread/components/finsh/cmd.c ****                             mp->parent.name,
+ 704:rt-thread/components/finsh/cmd.c ****                             mp->block_size,
+ 705:rt-thread/components/finsh/cmd.c ****                             mp->block_total_count,
+ 706:rt-thread/components/finsh/cmd.c ****                             mp->block_free_count,
+ 707:rt-thread/components/finsh/cmd.c ****                             suspend_thread_count);
+ 708:rt-thread/components/finsh/cmd.c ****                     show_wait_queue(&(mp->suspend_thread));
+ 709:rt-thread/components/finsh/cmd.c ****                     rt_kprintf("\n");
+ 710:rt-thread/components/finsh/cmd.c ****                 }
+ 711:rt-thread/components/finsh/cmd.c ****                 else
+ 712:rt-thread/components/finsh/cmd.c ****                 {
+ 713:rt-thread/components/finsh/cmd.c ****                     rt_kprintf("%-*.*s %04d  %04d  %04d %d\n",
+ 714:rt-thread/components/finsh/cmd.c ****                             maxlen, RT_NAME_MAX,
+ 715:rt-thread/components/finsh/cmd.c ****                             mp->parent.name,
+ 716:rt-thread/components/finsh/cmd.c ****                             mp->block_size,
+ 717:rt-thread/components/finsh/cmd.c ****                             mp->block_total_count,
+ 718:rt-thread/components/finsh/cmd.c ****                             mp->block_free_count,
+ 719:rt-thread/components/finsh/cmd.c ****                             suspend_thread_count);
+ 720:rt-thread/components/finsh/cmd.c ****                 }
+ 721:rt-thread/components/finsh/cmd.c ****             }
+ 722:rt-thread/components/finsh/cmd.c ****         }
+ 723:rt-thread/components/finsh/cmd.c ****     }
+ 724:rt-thread/components/finsh/cmd.c ****     while (next != (rt_list_t*)RT_NULL);
+ 725:rt-thread/components/finsh/cmd.c **** 
+ 726:rt-thread/components/finsh/cmd.c ****     return 0;
+ 727:rt-thread/components/finsh/cmd.c **** }
+ 728:rt-thread/components/finsh/cmd.c **** FINSH_FUNCTION_EXPORT(list_mempool, list memory pool in system)
+ 729:rt-thread/components/finsh/cmd.c **** MSH_CMD_EXPORT(list_mempool, list memory pool in system);
+ 730:rt-thread/components/finsh/cmd.c **** #endif
+ARM GAS  /tmp/ccsLNend.s 			page 44
+
+
+ 731:rt-thread/components/finsh/cmd.c **** 
+ 732:rt-thread/components/finsh/cmd.c **** long list_timer(void)
+ 733:rt-thread/components/finsh/cmd.c **** {
+ 734:rt-thread/components/finsh/cmd.c ****     rt_ubase_t level;
+ 735:rt-thread/components/finsh/cmd.c ****     list_get_next_t find_arg;
+ 736:rt-thread/components/finsh/cmd.c ****     rt_list_t *obj_list[LIST_FIND_OBJ_NR];
+ 737:rt-thread/components/finsh/cmd.c ****     rt_list_t *next = (rt_list_t*)RT_NULL;
+ 738:rt-thread/components/finsh/cmd.c **** 
+ 739:rt-thread/components/finsh/cmd.c ****     int maxlen;
+ 740:rt-thread/components/finsh/cmd.c ****     const char *item_title = "timer";
+ 741:rt-thread/components/finsh/cmd.c **** 
+ 742:rt-thread/components/finsh/cmd.c ****     list_find_init(&find_arg, RT_Object_Class_Timer, obj_list, sizeof(obj_list)/sizeof(obj_list[0])
+ 743:rt-thread/components/finsh/cmd.c **** 
+ 744:rt-thread/components/finsh/cmd.c ****     maxlen = RT_NAME_MAX;
+ 745:rt-thread/components/finsh/cmd.c **** 
+ 746:rt-thread/components/finsh/cmd.c ****     rt_kprintf("%-*.s  periodic   timeout       flag\n", maxlen, item_title); object_split(maxlen);
+ 747:rt-thread/components/finsh/cmd.c ****     rt_kprintf(     " ---------- ---------- -----------\n");
+ 748:rt-thread/components/finsh/cmd.c ****     do {
+ 749:rt-thread/components/finsh/cmd.c ****         next = list_get_next(next, &find_arg);
+ 750:rt-thread/components/finsh/cmd.c ****         {
+ 751:rt-thread/components/finsh/cmd.c ****             int i;
+ 752:rt-thread/components/finsh/cmd.c ****             for (i = 0; i < find_arg.nr_out; i++)
+ 753:rt-thread/components/finsh/cmd.c ****             {
+ 754:rt-thread/components/finsh/cmd.c ****                 struct rt_object *obj;
+ 755:rt-thread/components/finsh/cmd.c ****                 struct rt_timer *timer;
+ 756:rt-thread/components/finsh/cmd.c **** 
+ 757:rt-thread/components/finsh/cmd.c ****                 obj = rt_list_entry(obj_list[i], struct rt_object, list);
+ 758:rt-thread/components/finsh/cmd.c ****                 level = rt_hw_interrupt_disable();
+ 759:rt-thread/components/finsh/cmd.c ****                 if ((obj->type & ~RT_Object_Class_Static) != find_arg.type)
+ 760:rt-thread/components/finsh/cmd.c ****                 {
+ 761:rt-thread/components/finsh/cmd.c ****                     rt_hw_interrupt_enable(level);
+ 762:rt-thread/components/finsh/cmd.c ****                     continue;
+ 763:rt-thread/components/finsh/cmd.c ****                 }
+ 764:rt-thread/components/finsh/cmd.c **** 
+ 765:rt-thread/components/finsh/cmd.c ****                 rt_hw_interrupt_enable(level);
+ 766:rt-thread/components/finsh/cmd.c **** 
+ 767:rt-thread/components/finsh/cmd.c ****                 timer = (struct rt_timer *)obj;
+ 768:rt-thread/components/finsh/cmd.c ****                 rt_kprintf("%-*.*s 0x%08x 0x%08x ",
+ 769:rt-thread/components/finsh/cmd.c ****                         maxlen, RT_NAME_MAX,
+ 770:rt-thread/components/finsh/cmd.c ****                         timer->parent.name,
+ 771:rt-thread/components/finsh/cmd.c ****                         timer->init_tick,
+ 772:rt-thread/components/finsh/cmd.c ****                         timer->timeout_tick);
+ 773:rt-thread/components/finsh/cmd.c ****                 if (timer->parent.flag & RT_TIMER_FLAG_ACTIVATED)
+ 774:rt-thread/components/finsh/cmd.c ****                     rt_kprintf("activated\n");
+ 775:rt-thread/components/finsh/cmd.c ****                 else
+ 776:rt-thread/components/finsh/cmd.c ****                     rt_kprintf("deactivated\n");
+ 777:rt-thread/components/finsh/cmd.c **** 
+ 778:rt-thread/components/finsh/cmd.c ****             }
+ 779:rt-thread/components/finsh/cmd.c ****         }
+ 780:rt-thread/components/finsh/cmd.c ****     }
+ 781:rt-thread/components/finsh/cmd.c ****     while (next != (rt_list_t*)RT_NULL);
+ 782:rt-thread/components/finsh/cmd.c **** 
+ 783:rt-thread/components/finsh/cmd.c ****     rt_kprintf("current tick:0x%08x\n", rt_tick_get());
+ 784:rt-thread/components/finsh/cmd.c **** 
+ 785:rt-thread/components/finsh/cmd.c ****     return 0;
+ 786:rt-thread/components/finsh/cmd.c **** }
+ 787:rt-thread/components/finsh/cmd.c **** FINSH_FUNCTION_EXPORT(list_timer, list timer in system);
+ARM GAS  /tmp/ccsLNend.s 			page 45
+
+
+ 788:rt-thread/components/finsh/cmd.c **** MSH_CMD_EXPORT(list_timer, list timer in system);
+ 789:rt-thread/components/finsh/cmd.c **** 
+ 790:rt-thread/components/finsh/cmd.c **** #ifdef RT_USING_DEVICE
+ 791:rt-thread/components/finsh/cmd.c **** static char *const device_type_str[] =
+ 792:rt-thread/components/finsh/cmd.c **** {
+ 793:rt-thread/components/finsh/cmd.c ****     "Character Device",
+ 794:rt-thread/components/finsh/cmd.c ****     "Block Device",
+ 795:rt-thread/components/finsh/cmd.c ****     "Network Interface",
+ 796:rt-thread/components/finsh/cmd.c ****     "MTD Device",
+ 797:rt-thread/components/finsh/cmd.c ****     "CAN Device",
+ 798:rt-thread/components/finsh/cmd.c ****     "RTC",
+ 799:rt-thread/components/finsh/cmd.c ****     "Sound Device",
+ 800:rt-thread/components/finsh/cmd.c ****     "Graphic Device",
+ 801:rt-thread/components/finsh/cmd.c ****     "I2C Bus",
+ 802:rt-thread/components/finsh/cmd.c ****     "USB Slave Device",
+ 803:rt-thread/components/finsh/cmd.c ****     "USB Host Bus",
+ 804:rt-thread/components/finsh/cmd.c ****     "SPI Bus",
+ 805:rt-thread/components/finsh/cmd.c ****     "SPI Device",
+ 806:rt-thread/components/finsh/cmd.c ****     "SDIO Bus",
+ 807:rt-thread/components/finsh/cmd.c ****     "PM Pseudo Device",
+ 808:rt-thread/components/finsh/cmd.c ****     "Pipe",
+ 809:rt-thread/components/finsh/cmd.c ****     "Portal Device",
+ 810:rt-thread/components/finsh/cmd.c ****     "Timer Device",
+ 811:rt-thread/components/finsh/cmd.c ****     "Miscellaneous Device",
+ 812:rt-thread/components/finsh/cmd.c ****     "Sensor Device",
+ 813:rt-thread/components/finsh/cmd.c ****     "Touch Device",
+ 814:rt-thread/components/finsh/cmd.c ****     "Unknown"
+ 815:rt-thread/components/finsh/cmd.c **** };
+ 816:rt-thread/components/finsh/cmd.c **** 
+ 817:rt-thread/components/finsh/cmd.c **** long list_device(void)
+ 818:rt-thread/components/finsh/cmd.c **** {
+ 1484              		.loc 1 818 0
+ 1485              		.cfi_startproc
+ 1486              		@ args = 0, pretend = 0, frame = 56
+ 1487              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1488 0000 F0B5     		push	{r4, r5, r6, r7, lr}
+ 1489              	.LCFI20:
+ 1490              		.cfi_def_cfa_offset 20
+ 1491              		.cfi_offset 4, -20
+ 1492              		.cfi_offset 5, -16
+ 1493              		.cfi_offset 6, -12
+ 1494              		.cfi_offset 7, -8
+ 1495              		.cfi_offset 14, -4
+ 1496 0002 91B0     		sub	sp, sp, #68
+ 1497              	.LCFI21:
+ 1498              		.cfi_def_cfa_offset 88
+ 1499              	.LVL217:
+ 819:rt-thread/components/finsh/cmd.c ****     rt_ubase_t level;
+ 820:rt-thread/components/finsh/cmd.c ****     list_get_next_t find_arg;
+ 821:rt-thread/components/finsh/cmd.c ****     rt_list_t *obj_list[LIST_FIND_OBJ_NR];
+ 822:rt-thread/components/finsh/cmd.c ****     rt_list_t *next = (rt_list_t*)RT_NULL;
+ 823:rt-thread/components/finsh/cmd.c **** 
+ 824:rt-thread/components/finsh/cmd.c ****     int maxlen;
+ 825:rt-thread/components/finsh/cmd.c ****     const char *item_title = "device";
+ 826:rt-thread/components/finsh/cmd.c **** 
+ 827:rt-thread/components/finsh/cmd.c ****     list_find_init(&find_arg, RT_Object_Class_Device, obj_list, sizeof(obj_list)/sizeof(obj_list[0]
+ 1500              		.loc 1 827 0
+ARM GAS  /tmp/ccsLNend.s 			page 46
+
+
+ 1501 0004 0823     		movs	r3, #8
+ 1502 0006 03AA     		add	r2, sp, #12
+ 1503 0008 0921     		movs	r1, #9
+ 1504 000a 0BA8     		add	r0, sp, #44
+ 1505 000c FFF7FEFF 		bl	list_find_init
+ 1506              	.LVL218:
+ 828:rt-thread/components/finsh/cmd.c **** 
+ 829:rt-thread/components/finsh/cmd.c ****     maxlen = RT_NAME_MAX;
+ 830:rt-thread/components/finsh/cmd.c **** 
+ 831:rt-thread/components/finsh/cmd.c ****     rt_kprintf("%-*.s         type         ref count\n", maxlen, item_title); object_split(maxlen);
+ 1507              		.loc 1 831 0
+ 1508 0010 234A     		ldr	r2, .L136
+ 1509 0012 0821     		movs	r1, #8
+ 1510 0014 2348     		ldr	r0, .L136+4
+ 1511 0016 FFF7FEFF 		bl	rt_kprintf
+ 1512              	.LVL219:
+ 1513 001a 0826     		movs	r6, #8
+ 1514 001c 03E0     		b	.L124
+ 1515              	.LVL220:
+ 1516              	.L125:
+ 1517              	.LBB100:
+ 1518              	.LBB101:
+  63:rt-thread/components/finsh/cmd.c **** }
+ 1519              		.loc 1 63 0
+ 1520 001e 2248     		ldr	r0, .L136+8
+ 1521 0020 FFF7FEFF 		bl	rt_kprintf
+ 1522              	.LVL221:
+ 1523 0024 2646     		mov	r6, r4
+ 1524              	.LVL222:
+ 1525              	.L124:
+ 1526 0026 741E     		subs	r4, r6, #1
+ 1527              	.LVL223:
+ 1528 0028 002E     		cmp	r6, #0
+ 1529 002a F8D1     		bne	.L125
+ 1530              	.LVL224:
+ 1531              	.LBE101:
+ 1532              	.LBE100:
+ 832:rt-thread/components/finsh/cmd.c ****     rt_kprintf(     " -------------------- ----------\n");
+ 1533              		.loc 1 832 0
+ 1534 002c 1F48     		ldr	r0, .L136+12
+ 1535 002e FFF7FEFF 		bl	rt_kprintf
+ 1536              	.LVL225:
+ 822:rt-thread/components/finsh/cmd.c **** 
+ 1537              		.loc 1 822 0
+ 1538 0032 0027     		movs	r7, #0
+ 1539 0034 2AE0     		b	.L131
+ 1540              	.LVL226:
+ 1541              	.L127:
+ 1542              	.LBB102:
+ 1543              	.LBB103:
+ 833:rt-thread/components/finsh/cmd.c ****     do
+ 834:rt-thread/components/finsh/cmd.c ****     {
+ 835:rt-thread/components/finsh/cmd.c ****         next = list_get_next(next, &find_arg);
+ 836:rt-thread/components/finsh/cmd.c ****         {
+ 837:rt-thread/components/finsh/cmd.c ****             int i;
+ 838:rt-thread/components/finsh/cmd.c ****             for (i = 0; i < find_arg.nr_out; i++)
+ 839:rt-thread/components/finsh/cmd.c ****             {
+ARM GAS  /tmp/ccsLNend.s 			page 47
+
+
+ 840:rt-thread/components/finsh/cmd.c ****                 struct rt_object *obj;
+ 841:rt-thread/components/finsh/cmd.c ****                 struct rt_device *device;
+ 842:rt-thread/components/finsh/cmd.c **** 
+ 843:rt-thread/components/finsh/cmd.c ****                 obj = rt_list_entry(obj_list[i], struct rt_object, list);
+ 844:rt-thread/components/finsh/cmd.c ****                 level = rt_hw_interrupt_disable();
+ 845:rt-thread/components/finsh/cmd.c ****                 if ((obj->type & ~RT_Object_Class_Static) != find_arg.type)
+ 846:rt-thread/components/finsh/cmd.c ****                 {
+ 847:rt-thread/components/finsh/cmd.c ****                     rt_hw_interrupt_enable(level);
+ 848:rt-thread/components/finsh/cmd.c ****                     continue;
+ 849:rt-thread/components/finsh/cmd.c ****                 }
+ 850:rt-thread/components/finsh/cmd.c **** 
+ 851:rt-thread/components/finsh/cmd.c ****                 rt_hw_interrupt_enable(level);
+ 1544              		.loc 1 851 0
+ 1545 0036 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 1546              	.LVL227:
+ 852:rt-thread/components/finsh/cmd.c **** 
+ 853:rt-thread/components/finsh/cmd.c ****                 device = (struct rt_device *)obj;
+ 854:rt-thread/components/finsh/cmd.c ****                 rt_kprintf("%-*.*s %-20s %-8d\n",
+ 855:rt-thread/components/finsh/cmd.c ****                         maxlen, RT_NAME_MAX,
+ 856:rt-thread/components/finsh/cmd.c ****                         device->parent.name,
+ 1547              		.loc 1 856 0
+ 1548 003a A5F10C03 		sub	r3, r5, #12
+ 857:rt-thread/components/finsh/cmd.c ****                         (device->type <= RT_Device_Class_Unknown) ?
+ 1549              		.loc 1 857 0
+ 1550 003e 2A7A     		ldrb	r2, [r5, #8]	@ zero_extendqisi2
+ 854:rt-thread/components/finsh/cmd.c ****                         maxlen, RT_NAME_MAX,
+ 1551              		.loc 1 854 0
+ 1552 0040 152A     		cmp	r2, #21
+ 1553 0042 20D8     		bhi	.L132
+ 854:rt-thread/components/finsh/cmd.c ****                         maxlen, RT_NAME_MAX,
+ 1554              		.loc 1 854 0 is_stmt 0 discriminator 1
+ 1555 0044 1A49     		ldr	r1, .L136+16
+ 1556 0046 51F82210 		ldr	r1, [r1, r2, lsl #2]
+ 1557              	.L129:
+ 858:rt-thread/components/finsh/cmd.c ****                         device_type_str[device->type] :
+ 859:rt-thread/components/finsh/cmd.c ****                         device_type_str[RT_Device_Class_Unknown],
+ 860:rt-thread/components/finsh/cmd.c ****                         device->ref_count);
+ 1558              		.loc 1 860 0 is_stmt 1 discriminator 4
+ 1559 004a AA7B     		ldrb	r2, [r5, #14]	@ zero_extendqisi2
+ 854:rt-thread/components/finsh/cmd.c ****                         maxlen, RT_NAME_MAX,
+ 1560              		.loc 1 854 0 discriminator 4
+ 1561 004c 0192     		str	r2, [sp, #4]
+ 1562 004e 0091     		str	r1, [sp]
+ 1563 0050 0822     		movs	r2, #8
+ 1564 0052 1146     		mov	r1, r2
+ 1565 0054 1748     		ldr	r0, .L136+20
+ 1566 0056 FFF7FEFF 		bl	rt_kprintf
+ 1567              	.LVL228:
+ 1568              	.L128:
+ 1569              	.LBE103:
+ 838:rt-thread/components/finsh/cmd.c ****             {
+ 1570              		.loc 1 838 0 discriminator 2
+ 1571 005a 0134     		adds	r4, r4, #1
+ 1572              	.LVL229:
+ 1573              	.L126:
+ 838:rt-thread/components/finsh/cmd.c ****             {
+ 1574              		.loc 1 838 0 is_stmt 0 discriminator 1
+ARM GAS  /tmp/ccsLNend.s 			page 48
+
+
+ 1575 005c 0F9B     		ldr	r3, [sp, #60]
+ 1576 005e 9C42     		cmp	r4, r3
+ 1577 0060 13DA     		bge	.L134
+ 1578              	.LBB104:
+ 843:rt-thread/components/finsh/cmd.c ****                 level = rt_hw_interrupt_disable();
+ 1579              		.loc 1 843 0 is_stmt 1
+ 1580 0062 10AB     		add	r3, sp, #64
+ 1581 0064 03EB8403 		add	r3, r3, r4, lsl #2
+ 1582 0068 53F8345C 		ldr	r5, [r3, #-52]
+ 1583              	.LVL230:
+ 844:rt-thread/components/finsh/cmd.c ****                 if ((obj->type & ~RT_Object_Class_Static) != find_arg.type)
+ 1584              		.loc 1 844 0
+ 1585 006c FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 1586              	.LVL231:
+ 845:rt-thread/components/finsh/cmd.c ****                 {
+ 1587              		.loc 1 845 0
+ 1588 0070 15F8043C 		ldrb	r3, [r5, #-4]	@ zero_extendqisi2
+ 1589 0074 23F08003 		bic	r3, r3, #128
+ 1590 0078 9DF83420 		ldrb	r2, [sp, #52]	@ zero_extendqisi2
+ 1591 007c 9342     		cmp	r3, r2
+ 1592 007e DAD0     		beq	.L127
+ 847:rt-thread/components/finsh/cmd.c ****                     continue;
+ 1593              		.loc 1 847 0
+ 1594 0080 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 1595              	.LVL232:
+ 848:rt-thread/components/finsh/cmd.c ****                 }
+ 1596              		.loc 1 848 0
+ 1597 0084 E9E7     		b	.L128
+ 1598              	.LVL233:
+ 1599              	.L132:
+ 854:rt-thread/components/finsh/cmd.c ****                         maxlen, RT_NAME_MAX,
+ 1600              		.loc 1 854 0
+ 1601 0086 0C49     		ldr	r1, .L136+24
+ 1602 0088 DFE7     		b	.L129
+ 1603              	.LVL234:
+ 1604              	.L134:
+ 1605              	.LBE104:
+ 1606              	.LBE102:
+ 861:rt-thread/components/finsh/cmd.c **** 
+ 862:rt-thread/components/finsh/cmd.c ****             }
+ 863:rt-thread/components/finsh/cmd.c ****         }
+ 864:rt-thread/components/finsh/cmd.c ****     }
+ 865:rt-thread/components/finsh/cmd.c ****     while (next != (rt_list_t*)RT_NULL);
+ 1607              		.loc 1 865 0
+ 1608 008a 37B1     		cbz	r7, .L135
+ 1609              	.LVL235:
+ 1610              	.L131:
+ 835:rt-thread/components/finsh/cmd.c ****         {
+ 1611              		.loc 1 835 0
+ 1612 008c 0BA9     		add	r1, sp, #44
+ 1613 008e 3846     		mov	r0, r7
+ 1614 0090 FFF7FEFF 		bl	list_get_next
+ 1615              	.LVL236:
+ 1616 0094 0746     		mov	r7, r0
+ 1617              	.LVL237:
+ 1618              	.LBB105:
+ 838:rt-thread/components/finsh/cmd.c ****             {
+ARM GAS  /tmp/ccsLNend.s 			page 49
+
+
+ 1619              		.loc 1 838 0
+ 1620 0096 3446     		mov	r4, r6
+ 1621 0098 E0E7     		b	.L126
+ 1622              	.LVL238:
+ 1623              	.L135:
+ 1624              	.LBE105:
+ 866:rt-thread/components/finsh/cmd.c **** 
+ 867:rt-thread/components/finsh/cmd.c ****     return 0;
+ 868:rt-thread/components/finsh/cmd.c **** }
+ 1625              		.loc 1 868 0
+ 1626 009a 0020     		movs	r0, #0
+ 1627 009c 11B0     		add	sp, sp, #68
+ 1628              	.LCFI22:
+ 1629              		.cfi_def_cfa_offset 20
+ 1630              		@ sp needed
+ 1631 009e F0BD     		pop	{r4, r5, r6, r7, pc}
+ 1632              	.LVL239:
+ 1633              	.L137:
+ 1634              		.align	2
+ 1635              	.L136:
+ 1636 00a0 08000000 		.word	.LC35
+ 1637 00a4 10000000 		.word	.LC36
+ 1638 00a8 4C000000 		.word	.LC5
+ 1639 00ac 38000000 		.word	.LC37
+ 1640 00b0 00000000 		.word	.LANCHOR0
+ 1641 00b4 5C000000 		.word	.LC38
+ 1642 00b8 00000000 		.word	.LC34
+ 1643              		.cfi_endproc
+ 1644              	.LFE28:
+ 1646              		.section	.text.list_timer,"ax",%progbits
+ 1647              		.align	1
+ 1648              		.global	list_timer
+ 1649              		.syntax unified
+ 1650              		.thumb
+ 1651              		.thumb_func
+ 1652              		.fpu fpv4-sp-d16
+ 1654              	list_timer:
+ 1655              	.LFB27:
+ 733:rt-thread/components/finsh/cmd.c ****     rt_ubase_t level;
+ 1656              		.loc 1 733 0
+ 1657              		.cfi_startproc
+ 1658              		@ args = 0, pretend = 0, frame = 56
+ 1659              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1660 0000 F0B5     		push	{r4, r5, r6, r7, lr}
+ 1661              	.LCFI23:
+ 1662              		.cfi_def_cfa_offset 20
+ 1663              		.cfi_offset 4, -20
+ 1664              		.cfi_offset 5, -16
+ 1665              		.cfi_offset 6, -12
+ 1666              		.cfi_offset 7, -8
+ 1667              		.cfi_offset 14, -4
+ 1668 0002 91B0     		sub	sp, sp, #68
+ 1669              	.LCFI24:
+ 1670              		.cfi_def_cfa_offset 88
+ 1671              	.LVL240:
+ 742:rt-thread/components/finsh/cmd.c **** 
+ 1672              		.loc 1 742 0
+ARM GAS  /tmp/ccsLNend.s 			page 50
+
+
+ 1673 0004 0823     		movs	r3, #8
+ 1674 0006 03AA     		add	r2, sp, #12
+ 1675 0008 0A21     		movs	r1, #10
+ 1676 000a 0BA8     		add	r0, sp, #44
+ 1677 000c FFF7FEFF 		bl	list_find_init
+ 1678              	.LVL241:
+ 746:rt-thread/components/finsh/cmd.c ****     rt_kprintf(     " ---------- ---------- -----------\n");
+ 1679              		.loc 1 746 0
+ 1680 0010 294A     		ldr	r2, .L150
+ 1681 0012 0821     		movs	r1, #8
+ 1682 0014 2948     		ldr	r0, .L150+4
+ 1683 0016 FFF7FEFF 		bl	rt_kprintf
+ 1684              	.LVL242:
+ 1685 001a 0826     		movs	r6, #8
+ 1686 001c 03E0     		b	.L139
+ 1687              	.LVL243:
+ 1688              	.L140:
+ 1689              	.LBB106:
+ 1690              	.LBB107:
+  63:rt-thread/components/finsh/cmd.c **** }
+ 1691              		.loc 1 63 0
+ 1692 001e 2848     		ldr	r0, .L150+8
+ 1693 0020 FFF7FEFF 		bl	rt_kprintf
+ 1694              	.LVL244:
+ 1695 0024 2646     		mov	r6, r4
+ 1696              	.LVL245:
+ 1697              	.L139:
+ 1698 0026 741E     		subs	r4, r6, #1
+ 1699              	.LVL246:
+ 1700 0028 002E     		cmp	r6, #0
+ 1701 002a F8D1     		bne	.L140
+ 1702              	.LVL247:
+ 1703              	.LBE107:
+ 1704              	.LBE106:
+ 747:rt-thread/components/finsh/cmd.c ****     do {
+ 1705              		.loc 1 747 0
+ 1706 002c 2548     		ldr	r0, .L150+12
+ 1707 002e FFF7FEFF 		bl	rt_kprintf
+ 1708              	.LVL248:
+ 737:rt-thread/components/finsh/cmd.c **** 
+ 1709              		.loc 1 737 0
+ 1710 0032 0027     		movs	r7, #0
+ 1711 0034 2FE0     		b	.L146
+ 1712              	.LVL249:
+ 1713              	.L142:
+ 1714              	.LBB108:
+ 1715              	.LBB109:
+ 765:rt-thread/components/finsh/cmd.c **** 
+ 1716              		.loc 1 765 0
+ 1717 0036 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 1718              	.LVL250:
+ 768:rt-thread/components/finsh/cmd.c ****                         maxlen, RT_NAME_MAX,
+ 1719              		.loc 1 768 0
+ 1720 003a EB69     		ldr	r3, [r5, #28]
+ 1721 003c 0193     		str	r3, [sp, #4]
+ 1722 003e AB69     		ldr	r3, [r5, #24]
+ 1723 0040 0093     		str	r3, [sp]
+ARM GAS  /tmp/ccsLNend.s 			page 51
+
+
+ 1724 0042 A5F10C03 		sub	r3, r5, #12
+ 1725 0046 0822     		movs	r2, #8
+ 1726 0048 1146     		mov	r1, r2
+ 1727 004a 1F48     		ldr	r0, .L150+16
+ 1728 004c FFF7FEFF 		bl	rt_kprintf
+ 1729              	.LVL251:
+ 773:rt-thread/components/finsh/cmd.c ****                     rt_kprintf("activated\n");
+ 1730              		.loc 1 773 0
+ 1731 0050 15F8033C 		ldrb	r3, [r5, #-3]	@ zero_extendqisi2
+ 1732 0054 13F0010F 		tst	r3, #1
+ 1733 0058 18D0     		beq	.L144
+ 774:rt-thread/components/finsh/cmd.c ****                 else
+ 1734              		.loc 1 774 0
+ 1735 005a 1C48     		ldr	r0, .L150+20
+ 1736 005c FFF7FEFF 		bl	rt_kprintf
+ 1737              	.LVL252:
+ 1738              	.L143:
+ 1739              	.LBE109:
+ 752:rt-thread/components/finsh/cmd.c ****             {
+ 1740              		.loc 1 752 0 discriminator 2
+ 1741 0060 0134     		adds	r4, r4, #1
+ 1742              	.LVL253:
+ 1743              	.L141:
+ 752:rt-thread/components/finsh/cmd.c ****             {
+ 1744              		.loc 1 752 0 is_stmt 0 discriminator 1
+ 1745 0062 0F9B     		ldr	r3, [sp, #60]
+ 1746 0064 9C42     		cmp	r4, r3
+ 1747 0066 15DA     		bge	.L148
+ 1748              	.LBB110:
+ 757:rt-thread/components/finsh/cmd.c ****                 level = rt_hw_interrupt_disable();
+ 1749              		.loc 1 757 0 is_stmt 1
+ 1750 0068 10AB     		add	r3, sp, #64
+ 1751 006a 03EB8403 		add	r3, r3, r4, lsl #2
+ 1752 006e 53F8345C 		ldr	r5, [r3, #-52]
+ 1753              	.LVL254:
+ 758:rt-thread/components/finsh/cmd.c ****                 if ((obj->type & ~RT_Object_Class_Static) != find_arg.type)
+ 1754              		.loc 1 758 0
+ 1755 0072 FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 1756              	.LVL255:
+ 759:rt-thread/components/finsh/cmd.c ****                 {
+ 1757              		.loc 1 759 0
+ 1758 0076 15F8043C 		ldrb	r3, [r5, #-4]	@ zero_extendqisi2
+ 1759 007a 23F08003 		bic	r3, r3, #128
+ 1760 007e 9DF83420 		ldrb	r2, [sp, #52]	@ zero_extendqisi2
+ 1761 0082 9342     		cmp	r3, r2
+ 1762 0084 D7D0     		beq	.L142
+ 761:rt-thread/components/finsh/cmd.c ****                     continue;
+ 1763              		.loc 1 761 0
+ 1764 0086 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 1765              	.LVL256:
+ 762:rt-thread/components/finsh/cmd.c ****                 }
+ 1766              		.loc 1 762 0
+ 1767 008a E9E7     		b	.L143
+ 1768              	.LVL257:
+ 1769              	.L144:
+ 776:rt-thread/components/finsh/cmd.c **** 
+ 1770              		.loc 1 776 0
+ARM GAS  /tmp/ccsLNend.s 			page 52
+
+
+ 1771 008c 1048     		ldr	r0, .L150+24
+ 1772 008e FFF7FEFF 		bl	rt_kprintf
+ 1773              	.LVL258:
+ 1774 0092 E5E7     		b	.L143
+ 1775              	.LVL259:
+ 1776              	.L148:
+ 1777              	.LBE110:
+ 1778              	.LBE108:
+ 781:rt-thread/components/finsh/cmd.c **** 
+ 1779              		.loc 1 781 0
+ 1780 0094 37B1     		cbz	r7, .L149
+ 1781              	.LVL260:
+ 1782              	.L146:
+ 749:rt-thread/components/finsh/cmd.c ****         {
+ 1783              		.loc 1 749 0
+ 1784 0096 0BA9     		add	r1, sp, #44
+ 1785 0098 3846     		mov	r0, r7
+ 1786 009a FFF7FEFF 		bl	list_get_next
+ 1787              	.LVL261:
+ 1788 009e 0746     		mov	r7, r0
+ 1789              	.LVL262:
+ 1790              	.LBB111:
+ 752:rt-thread/components/finsh/cmd.c ****             {
+ 1791              		.loc 1 752 0
+ 1792 00a0 3446     		mov	r4, r6
+ 1793 00a2 DEE7     		b	.L141
+ 1794              	.LVL263:
+ 1795              	.L149:
+ 1796              	.LBE111:
+ 783:rt-thread/components/finsh/cmd.c **** 
+ 1797              		.loc 1 783 0
+ 1798 00a4 FFF7FEFF 		bl	rt_tick_get
+ 1799              	.LVL264:
+ 1800 00a8 0146     		mov	r1, r0
+ 1801 00aa 0A48     		ldr	r0, .L150+28
+ 1802 00ac FFF7FEFF 		bl	rt_kprintf
+ 1803              	.LVL265:
+ 786:rt-thread/components/finsh/cmd.c **** FINSH_FUNCTION_EXPORT(list_timer, list timer in system);
+ 1804              		.loc 1 786 0
+ 1805 00b0 0020     		movs	r0, #0
+ 1806 00b2 11B0     		add	sp, sp, #68
+ 1807              	.LCFI25:
+ 1808              		.cfi_def_cfa_offset 20
+ 1809              		@ sp needed
+ 1810 00b4 F0BD     		pop	{r4, r5, r6, r7, pc}
+ 1811              	.LVL266:
+ 1812              	.L151:
+ 1813 00b6 00BF     		.align	2
+ 1814              	.L150:
+ 1815 00b8 00000000 		.word	.LC39
+ 1816 00bc 08000000 		.word	.LC40
+ 1817 00c0 4C000000 		.word	.LC5
+ 1818 00c4 30000000 		.word	.LC41
+ 1819 00c8 54000000 		.word	.LC42
+ 1820 00cc 6C000000 		.word	.LC43
+ 1821 00d0 78000000 		.word	.LC44
+ 1822 00d4 88000000 		.word	.LC45
+ARM GAS  /tmp/ccsLNend.s 			page 53
+
+
+ 1823              		.cfi_endproc
+ 1824              	.LFE27:
+ 1826              		.section	.text.list,"ax",%progbits
+ 1827              		.align	1
+ 1828              		.global	list
+ 1829              		.syntax unified
+ 1830              		.thumb
+ 1831              		.thumb_func
+ 1832              		.fpu fpv4-sp-d16
+ 1834              	list:
+ 1835              	.LFB29:
+ 869:rt-thread/components/finsh/cmd.c **** FINSH_FUNCTION_EXPORT(list_device, list device in system);
+ 870:rt-thread/components/finsh/cmd.c **** MSH_CMD_EXPORT(list_device, list device in system);
+ 871:rt-thread/components/finsh/cmd.c **** #endif
+ 872:rt-thread/components/finsh/cmd.c **** 
+ 873:rt-thread/components/finsh/cmd.c **** long list(void)
+ 874:rt-thread/components/finsh/cmd.c **** {
+ 1836              		.loc 1 874 0
+ 1837              		.cfi_startproc
+ 1838              		@ args = 0, pretend = 0, frame = 0
+ 1839              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1840 0000 38B5     		push	{r3, r4, r5, lr}
+ 1841              	.LCFI26:
+ 1842              		.cfi_def_cfa_offset 16
+ 1843              		.cfi_offset 3, -16
+ 1844              		.cfi_offset 4, -12
+ 1845              		.cfi_offset 5, -8
+ 1846              		.cfi_offset 14, -4
+ 875:rt-thread/components/finsh/cmd.c **** #ifndef FINSH_USING_MSH_ONLY
+ 876:rt-thread/components/finsh/cmd.c ****     struct finsh_syscall_item *syscall_item;
+ 877:rt-thread/components/finsh/cmd.c ****     struct finsh_sysvar_item *sysvar_item;
+ 878:rt-thread/components/finsh/cmd.c **** #endif
+ 879:rt-thread/components/finsh/cmd.c **** 
+ 880:rt-thread/components/finsh/cmd.c ****     rt_kprintf("--Function List:\n");
+ 1847              		.loc 1 880 0
+ 1848 0002 0D48     		ldr	r0, .L158
+ 1849 0004 FFF7FEFF 		bl	rt_kprintf
+ 1850              	.LVL267:
+ 1851              	.LBB112:
+ 881:rt-thread/components/finsh/cmd.c ****     {
+ 882:rt-thread/components/finsh/cmd.c ****         struct finsh_syscall *index;
+ 883:rt-thread/components/finsh/cmd.c ****         for (index = _syscall_table_begin;
+ 1852              		.loc 1 883 0
+ 1853 0008 0C4B     		ldr	r3, .L158+4
+ 1854 000a 1C68     		ldr	r4, [r3]
+ 1855              	.LVL268:
+ 1856 000c 00E0     		b	.L153
+ 1857              	.L154:
+ 884:rt-thread/components/finsh/cmd.c ****                 index < _syscall_table_end;
+ 885:rt-thread/components/finsh/cmd.c ****                 FINSH_NEXT_SYSCALL(index))
+ 1858              		.loc 1 885 0
+ 1859 000e 0C34     		adds	r4, r4, #12
+ 1860              	.LVL269:
+ 1861              	.L153:
+ 884:rt-thread/components/finsh/cmd.c ****                 index < _syscall_table_end;
+ 1862              		.loc 1 884 0 discriminator 1
+ 1863 0010 0B4B     		ldr	r3, .L158+8
+ARM GAS  /tmp/ccsLNend.s 			page 54
+
+
+ 1864 0012 1B68     		ldr	r3, [r3]
+ 883:rt-thread/components/finsh/cmd.c ****                 index < _syscall_table_end;
+ 1865              		.loc 1 883 0 discriminator 1
+ 1866 0014 9C42     		cmp	r4, r3
+ 1867 0016 0DD2     		bcs	.L157
+ 886:rt-thread/components/finsh/cmd.c ****         {
+ 887:rt-thread/components/finsh/cmd.c ****             /* skip the internal command */
+ 888:rt-thread/components/finsh/cmd.c ****             if (strncmp((char *)index->name, "__", 2) == 0) continue;
+ 1868              		.loc 1 888 0
+ 1869 0018 2568     		ldr	r5, [r4]
+ 1870 001a 0222     		movs	r2, #2
+ 1871 001c 0949     		ldr	r1, .L158+12
+ 1872 001e 2846     		mov	r0, r5
+ 1873 0020 FFF7FEFF 		bl	strncmp
+ 1874              	.LVL270:
+ 1875 0024 0028     		cmp	r0, #0
+ 1876 0026 F2D0     		beq	.L154
+ 889:rt-thread/components/finsh/cmd.c **** 
+ 890:rt-thread/components/finsh/cmd.c **** #if defined(FINSH_USING_DESCRIPTION) && defined(FINSH_USING_SYMTAB)
+ 891:rt-thread/components/finsh/cmd.c ****             rt_kprintf("%-16s -- %s\n", index->name, index->desc);
+ 1877              		.loc 1 891 0
+ 1878 0028 6268     		ldr	r2, [r4, #4]
+ 1879 002a 2946     		mov	r1, r5
+ 1880 002c 0648     		ldr	r0, .L158+16
+ 1881 002e FFF7FEFF 		bl	rt_kprintf
+ 1882              	.LVL271:
+ 1883 0032 ECE7     		b	.L154
+ 1884              	.L157:
+ 1885              	.LBE112:
+ 892:rt-thread/components/finsh/cmd.c **** #else
+ 893:rt-thread/components/finsh/cmd.c ****             rt_kprintf("%s\n", index->name);
+ 894:rt-thread/components/finsh/cmd.c **** #endif
+ 895:rt-thread/components/finsh/cmd.c ****         }
+ 896:rt-thread/components/finsh/cmd.c ****     }
+ 897:rt-thread/components/finsh/cmd.c **** 
+ 898:rt-thread/components/finsh/cmd.c **** #ifndef FINSH_USING_MSH_ONLY
+ 899:rt-thread/components/finsh/cmd.c ****     /* list syscall list */
+ 900:rt-thread/components/finsh/cmd.c ****     syscall_item = global_syscall_list;
+ 901:rt-thread/components/finsh/cmd.c ****     while (syscall_item != NULL)
+ 902:rt-thread/components/finsh/cmd.c ****     {
+ 903:rt-thread/components/finsh/cmd.c ****         rt_kprintf("[l] %s\n", syscall_item->syscall.name);
+ 904:rt-thread/components/finsh/cmd.c ****         syscall_item = syscall_item->next;
+ 905:rt-thread/components/finsh/cmd.c ****     }
+ 906:rt-thread/components/finsh/cmd.c **** 
+ 907:rt-thread/components/finsh/cmd.c ****     rt_kprintf("--Variable List:\n");
+ 908:rt-thread/components/finsh/cmd.c ****     {
+ 909:rt-thread/components/finsh/cmd.c ****         struct finsh_sysvar *index;
+ 910:rt-thread/components/finsh/cmd.c ****         for (index = _sysvar_table_begin;
+ 911:rt-thread/components/finsh/cmd.c ****                 index < _sysvar_table_end;
+ 912:rt-thread/components/finsh/cmd.c ****                 FINSH_NEXT_SYSVAR(index))
+ 913:rt-thread/components/finsh/cmd.c ****         {
+ 914:rt-thread/components/finsh/cmd.c **** #ifdef FINSH_USING_DESCRIPTION
+ 915:rt-thread/components/finsh/cmd.c ****             rt_kprintf("%-16s -- %s\n", index->name, index->desc);
+ 916:rt-thread/components/finsh/cmd.c **** #else
+ 917:rt-thread/components/finsh/cmd.c ****             rt_kprintf("%s\n", index->name);
+ 918:rt-thread/components/finsh/cmd.c **** #endif
+ 919:rt-thread/components/finsh/cmd.c ****         }
+ARM GAS  /tmp/ccsLNend.s 			page 55
+
+
+ 920:rt-thread/components/finsh/cmd.c ****     }
+ 921:rt-thread/components/finsh/cmd.c **** 
+ 922:rt-thread/components/finsh/cmd.c ****     sysvar_item = global_sysvar_list;
+ 923:rt-thread/components/finsh/cmd.c ****     while (sysvar_item != NULL)
+ 924:rt-thread/components/finsh/cmd.c ****     {
+ 925:rt-thread/components/finsh/cmd.c ****         rt_kprintf("[l] %s\n", sysvar_item->sysvar.name);
+ 926:rt-thread/components/finsh/cmd.c ****         sysvar_item = sysvar_item->next;
+ 927:rt-thread/components/finsh/cmd.c ****     }
+ 928:rt-thread/components/finsh/cmd.c **** #endif
+ 929:rt-thread/components/finsh/cmd.c **** 
+ 930:rt-thread/components/finsh/cmd.c ****     return 0;
+ 931:rt-thread/components/finsh/cmd.c **** }
+ 1886              		.loc 1 931 0
+ 1887 0034 0020     		movs	r0, #0
+ 1888 0036 38BD     		pop	{r3, r4, r5, pc}
+ 1889              	.LVL272:
+ 1890              	.L159:
+ 1891              		.align	2
+ 1892              	.L158:
+ 1893 0038 00000000 		.word	.LC46
+ 1894 003c 00000000 		.word	_syscall_table_begin
+ 1895 0040 00000000 		.word	_syscall_table_end
+ 1896 0044 14000000 		.word	.LC47
+ 1897 0048 18000000 		.word	.LC48
+ 1898              		.cfi_endproc
+ 1899              	.LFE29:
+ 1901              		.global	__fsym_list
+ 1902              		.global	__fsym_list_desc
+ 1903              		.global	__fsym_list_name
+ 1904              		.global	__fsym___cmd_list_device
+ 1905              		.global	__fsym___cmd_list_device_desc
+ 1906              		.global	__fsym___cmd_list_device_name
+ 1907              		.global	__fsym_list_device
+ 1908              		.global	__fsym_list_device_desc
+ 1909              		.global	__fsym_list_device_name
+ 1910              		.global	__fsym___cmd_list_timer
+ 1911              		.global	__fsym___cmd_list_timer_desc
+ 1912              		.global	__fsym___cmd_list_timer_name
+ 1913              		.global	__fsym_list_timer
+ 1914              		.global	__fsym_list_timer_desc
+ 1915              		.global	__fsym_list_timer_name
+ 1916              		.global	__fsym___cmd_list_msgqueue
+ 1917              		.global	__fsym___cmd_list_msgqueue_desc
+ 1918              		.global	__fsym___cmd_list_msgqueue_name
+ 1919              		.global	__fsym_list_msgqueue
+ 1920              		.global	__fsym_list_msgqueue_desc
+ 1921              		.global	__fsym_list_msgqueue_name
+ 1922              		.global	__fsym___cmd_list_mutex
+ 1923              		.global	__fsym___cmd_list_mutex_desc
+ 1924              		.global	__fsym___cmd_list_mutex_name
+ 1925              		.global	__fsym_list_mutex
+ 1926              		.global	__fsym_list_mutex_desc
+ 1927              		.global	__fsym_list_mutex_name
+ 1928              		.global	__fsym___cmd_list_event
+ 1929              		.global	__fsym___cmd_list_event_desc
+ 1930              		.global	__fsym___cmd_list_event_name
+ 1931              		.global	__fsym_list_event
+ARM GAS  /tmp/ccsLNend.s 			page 56
+
+
+ 1932              		.global	__fsym_list_event_desc
+ 1933              		.global	__fsym_list_event_name
+ 1934              		.global	__fsym___cmd_list_sem
+ 1935              		.global	__fsym___cmd_list_sem_desc
+ 1936              		.global	__fsym___cmd_list_sem_name
+ 1937              		.global	__fsym_list_sem
+ 1938              		.global	__fsym_list_sem_desc
+ 1939              		.global	__fsym_list_sem_name
+ 1940              		.global	__fsym___cmd_list_thread
+ 1941              		.global	__fsym___cmd_list_thread_desc
+ 1942              		.global	__fsym___cmd_list_thread_name
+ 1943              		.global	__fsym_list_thread
+ 1944              		.global	__fsym_list_thread_desc
+ 1945              		.global	__fsym_list_thread_name
+ 1946              		.global	__fsym___cmd_version
+ 1947              		.global	__fsym___cmd_version_desc
+ 1948              		.global	__fsym___cmd_version_name
+ 1949              		.global	__fsym_version
+ 1950              		.global	__fsym_version_desc
+ 1951              		.global	__fsym_version_name
+ 1952              		.global	__fsym_hello
+ 1953              		.global	__fsym_hello_desc
+ 1954              		.global	__fsym_hello_name
+ 1955              		.section	.rodata.device_type_str,"a",%progbits
+ 1956              		.align	2
+ 1957              		.set	.LANCHOR0,. + 0
+ 1960              	device_type_str:
+ 1961 0000 00000000 		.word	.LC49
+ 1962 0004 14000000 		.word	.LC50
+ 1963 0008 24000000 		.word	.LC51
+ 1964 000c 38000000 		.word	.LC52
+ 1965 0010 44000000 		.word	.LC53
+ 1966 0014 50000000 		.word	.LC54
+ 1967 0018 54000000 		.word	.LC55
+ 1968 001c 64000000 		.word	.LC56
+ 1969 0020 74000000 		.word	.LC57
+ 1970 0024 7C000000 		.word	.LC58
+ 1971 0028 90000000 		.word	.LC59
+ 1972 002c A0000000 		.word	.LC60
+ 1973 0030 A8000000 		.word	.LC61
+ 1974 0034 B4000000 		.word	.LC62
+ 1975 0038 C0000000 		.word	.LC63
+ 1976 003c D4000000 		.word	.LC64
+ 1977 0040 DC000000 		.word	.LC65
+ 1978 0044 EC000000 		.word	.LC66
+ 1979 0048 FC000000 		.word	.LC67
+ 1980 004c 14010000 		.word	.LC68
+ 1981 0050 24010000 		.word	.LC69
+ 1982 0054 00000000 		.word	.LC34
+ 1983              		.section	.rodata.hello.str1.4,"aMS",%progbits,1
+ 1984              		.align	2
+ 1985              	.LC0:
+ 1986 0000 48656C6C 		.ascii	"Hello RT-Thread!\012\000"
+ 1986      6F205254 
+ 1986      2D546872 
+ 1986      65616421 
+ 1986      0A00
+ARM GAS  /tmp/ccsLNend.s 			page 57
+
+
+ 1987              		.section	.rodata.list.str1.4,"aMS",%progbits,1
+ 1988              		.align	2
+ 1989              	.LC46:
+ 1990 0000 2D2D4675 		.ascii	"--Function List:\012\000"
+ 1990      6E637469 
+ 1990      6F6E204C 
+ 1990      6973743A 
+ 1990      0A00
+ 1991 0012 0000     		.space	2
+ 1992              	.LC47:
+ 1993 0014 5F5F00   		.ascii	"__\000"
+ 1994 0017 00       		.space	1
+ 1995              	.LC48:
+ 1996 0018 252D3136 		.ascii	"%-16s -- %s\012\000"
+ 1996      73202D2D 
+ 1996      2025730A 
+ 1996      00
+ 1997              		.section	.rodata.list_device.str1.4,"aMS",%progbits,1
+ 1998              		.align	2
+ 1999              	.LC34:
+ 2000 0000 556E6B6E 		.ascii	"Unknown\000"
+ 2000      6F776E00 
+ 2001              	.LC35:
+ 2002 0008 64657669 		.ascii	"device\000"
+ 2002      636500
+ 2003 000f 00       		.space	1
+ 2004              	.LC36:
+ 2005 0010 252D2A2E 		.ascii	"%-*.s         type         ref count\012\000"
+ 2005      73202020 
+ 2005      20202020 
+ 2005      20207479 
+ 2005      70652020 
+ 2006 0036 0000     		.space	2
+ 2007              	.LC37:
+ 2008 0038 202D2D2D 		.ascii	" -------------------- ----------\012\000"
+ 2008      2D2D2D2D 
+ 2008      2D2D2D2D 
+ 2008      2D2D2D2D 
+ 2008      2D2D2D2D 
+ 2009 005a 0000     		.space	2
+ 2010              	.LC38:
+ 2011 005c 252D2A2E 		.ascii	"%-*.*s %-20s %-8d\012\000"
+ 2011      2A732025 
+ 2011      2D323073 
+ 2011      20252D38 
+ 2011      640A00
+ 2012              		.section	.rodata.list_event.str1.4,"aMS",%progbits,1
+ 2013              		.align	2
+ 2014              	.LC20:
+ 2015 0000 6576656E 		.ascii	"event\000"
+ 2015      7400
+ 2016 0006 0000     		.space	2
+ 2017              	.LC21:
+ 2018 0008 252D2A2E 		.ascii	"%-*.s      set    suspend thread\012\000"
+ 2018      73202020 
+ 2018      20202073 
+ 2018      65742020 
+ARM GAS  /tmp/ccsLNend.s 			page 58
+
+
+ 2018      20207375 
+ 2019 002a 0000     		.space	2
+ 2020              	.LC22:
+ 2021 002c 20202D2D 		.ascii	"  ---------- --------------\012\000"
+ 2021      2D2D2D2D 
+ 2021      2D2D2D2D 
+ 2021      202D2D2D 
+ 2021      2D2D2D2D 
+ 2022 0049 000000   		.space	3
+ 2023              	.LC23:
+ 2024 004c 252D2A2E 		.ascii	"%-*.*s  0x%08x %03d:\000"
+ 2024      2A732020 
+ 2024      30782530 
+ 2024      38782025 
+ 2024      3033643A 
+ 2025 0061 000000   		.space	3
+ 2026              	.LC24:
+ 2027 0064 252D2A2E 		.ascii	"%-*.*s  0x%08x 0\012\000"
+ 2027      2A732020 
+ 2027      30782530 
+ 2027      38782030 
+ 2027      0A00
+ 2028              		.section	.rodata.list_msgqueue.str1.4,"aMS",%progbits,1
+ 2029              		.align	2
+ 2030              	.LC29:
+ 2031 0000 6D736771 		.ascii	"msgqueue\000"
+ 2031      75657565 
+ 2031      00
+ 2032 0009 000000   		.space	3
+ 2033              	.LC30:
+ 2034 000c 252D2A2E 		.ascii	"%-*.s entry suspend thread\012\000"
+ 2034      7320656E 
+ 2034      74727920 
+ 2034      73757370 
+ 2034      656E6420 
+ 2035              	.LC31:
+ 2036 0028 202D2D2D 		.ascii	" ----  --------------\012\000"
+ 2036      2D20202D 
+ 2036      2D2D2D2D 
+ 2036      2D2D2D2D 
+ 2036      2D2D2D2D 
+ 2037 003f 00       		.space	1
+ 2038              	.LC32:
+ 2039 0040 252D2A2E 		.ascii	"%-*.*s %04d  %d:\000"
+ 2039      2A732025 
+ 2039      30346420 
+ 2039      2025643A 
+ 2039      00
+ 2040 0051 000000   		.space	3
+ 2041              	.LC33:
+ 2042 0054 252D2A2E 		.ascii	"%-*.*s %04d  %d\012\000"
+ 2042      2A732025 
+ 2042      30346420 
+ 2042      2025640A 
+ 2042      00
+ 2043              		.section	.rodata.list_mutex.str1.4,"aMS",%progbits,1
+ 2044              		.align	2
+ARM GAS  /tmp/ccsLNend.s 			page 59
+
+
+ 2045              	.LC25:
+ 2046 0000 6D757465 		.ascii	"mutex\000"
+ 2046      7800
+ 2047 0006 0000     		.space	2
+ 2048              	.LC26:
+ 2049 0008 252D2A2E 		.ascii	"%-*.s   owner  hold suspend thread\012\000"
+ 2049      73202020 
+ 2049      6F776E65 
+ 2049      72202068 
+ 2049      6F6C6420 
+ 2050              	.LC27:
+ 2051 002c 202D2D2D 		.ascii	" -------- ---- --------------\012\000"
+ 2051      2D2D2D2D 
+ 2051      2D202D2D 
+ 2051      2D2D202D 
+ 2051      2D2D2D2D 
+ 2052 004b 00       		.space	1
+ 2053              	.LC28:
+ 2054 004c 252D2A2E 		.ascii	"%-*.*s %-8.*s %04d %d\012\000"
+ 2054      2A732025 
+ 2054      2D382E2A 
+ 2054      73202530 
+ 2054      34642025 
+ 2055              		.section	.rodata.list_sem.str1.4,"aMS",%progbits,1
+ 2056              		.align	2
+ 2057              	.LC14:
+ 2058 0000 73656D61 		.ascii	"semaphore\000"
+ 2058      70686F72 
+ 2058      6500
+ 2059 000a 0000     		.space	2
+ 2060              	.LC15:
+ 2061 000c 252D2A2E 		.ascii	"%-*.s v   suspend thread\012\000"
+ 2061      73207620 
+ 2061      20207375 
+ 2061      7370656E 
+ 2061      64207468 
+ 2062 0026 0000     		.space	2
+ 2063              	.LC16:
+ 2064 0028 202D2D2D 		.ascii	" --- --------------\012\000"
+ 2064      202D2D2D 
+ 2064      2D2D2D2D 
+ 2064      2D2D2D2D 
+ 2064      2D2D2D0A 
+ 2065 003d 000000   		.space	3
+ 2066              	.LC17:
+ 2067 0040 252D2A2E 		.ascii	"%-*.*s %03d %d:\000"
+ 2067      2A732025 
+ 2067      30336420 
+ 2067      25643A00 
+ 2068              	.LC18:
+ 2069 0050 0A00     		.ascii	"\012\000"
+ 2070 0052 0000     		.space	2
+ 2071              	.LC19:
+ 2072 0054 252D2A2E 		.ascii	"%-*.*s %03d %d\012\000"
+ 2072      2A732025 
+ 2072      30336420 
+ 2072      25640A00 
+ARM GAS  /tmp/ccsLNend.s 			page 60
+
+
+ 2073              		.section	.rodata.list_thread.str1.4,"aMS",%progbits,1
+ 2074              		.align	2
+ 2075              	.LC3:
+ 2076 0000 74687265 		.ascii	"thread\000"
+ 2076      616400
+ 2077 0007 00       		.space	1
+ 2078              	.LC4:
+ 2079 0008 252D2A2E 		.ascii	"%-*.s pri  status      sp     stack size max used l"
+ 2079      73207072 
+ 2079      69202073 
+ 2079      74617475 
+ 2079      73202020 
+ 2080 003b 65667420 		.ascii	"eft tick  error\012\000"
+ 2080      7469636B 
+ 2080      20206572 
+ 2080      726F720A 
+ 2080      00
+ 2081              	.LC5:
+ 2082 004c 2D00     		.ascii	"-\000"
+ 2083 004e 0000     		.space	2
+ 2084              	.LC6:
+ 2085 0050 202D2D2D 		.ascii	" ---  ------- ---------- ----------  ------  ------"
+ 2085      20202D2D 
+ 2085      2D2D2D2D 
+ 2085      2D202D2D 
+ 2085      2D2D2D2D 
+ 2086 0083 2D2D2D2D 		.ascii	"---- ---\012\000"
+ 2086      202D2D2D 
+ 2086      0A00
+ 2087 008d 000000   		.space	3
+ 2088              	.LC7:
+ 2089 0090 252D2A2E 		.ascii	"%-*.*s %3d \000"
+ 2089      2A732025 
+ 2089      33642000 
+ 2090              	.LC8:
+ 2091 009c 20726561 		.ascii	" ready  \000"
+ 2091      64792020 
+ 2091      00
+ 2092 00a5 000000   		.space	3
+ 2093              	.LC9:
+ 2094 00a8 20737573 		.ascii	" suspend\000"
+ 2094      70656E64 
+ 2094      00
+ 2095 00b1 000000   		.space	3
+ 2096              	.LC10:
+ 2097 00b4 20696E69 		.ascii	" init   \000"
+ 2097      74202020 
+ 2097      00
+ 2098 00bd 000000   		.space	3
+ 2099              	.LC11:
+ 2100 00c0 20636C6F 		.ascii	" close  \000"
+ 2100      73652020 
+ 2100      00
+ 2101 00c9 000000   		.space	3
+ 2102              	.LC12:
+ 2103 00cc 2072756E 		.ascii	" running\000"
+ 2103      6E696E67 
+ARM GAS  /tmp/ccsLNend.s 			page 61
+
+
+ 2103      00
+ 2104 00d5 000000   		.space	3
+ 2105              	.LC13:
+ 2106 00d8 20307825 		.ascii	" 0x%08x 0x%08x    %02d%%   0x%08x %03d\012\000"
+ 2106      30387820 
+ 2106      30782530 
+ 2106      38782020 
+ 2106      20202530 
+ 2107              		.section	.rodata.list_timer.str1.4,"aMS",%progbits,1
+ 2108              		.align	2
+ 2109              	.LC39:
+ 2110 0000 74696D65 		.ascii	"timer\000"
+ 2110      7200
+ 2111 0006 0000     		.space	2
+ 2112              	.LC40:
+ 2113 0008 252D2A2E 		.ascii	"%-*.s  periodic   timeout       flag\012\000"
+ 2113      73202070 
+ 2113      6572696F 
+ 2113      64696320 
+ 2113      20207469 
+ 2114 002e 0000     		.space	2
+ 2115              	.LC41:
+ 2116 0030 202D2D2D 		.ascii	" ---------- ---------- -----------\012\000"
+ 2116      2D2D2D2D 
+ 2116      2D2D2D20 
+ 2116      2D2D2D2D 
+ 2116      2D2D2D2D 
+ 2117              	.LC42:
+ 2118 0054 252D2A2E 		.ascii	"%-*.*s 0x%08x 0x%08x \000"
+ 2118      2A732030 
+ 2118      78253038 
+ 2118      78203078 
+ 2118      25303878 
+ 2119 006a 0000     		.space	2
+ 2120              	.LC43:
+ 2121 006c 61637469 		.ascii	"activated\012\000"
+ 2121      76617465 
+ 2121      640A00
+ 2122 0077 00       		.space	1
+ 2123              	.LC44:
+ 2124 0078 64656163 		.ascii	"deactivated\012\000"
+ 2124      74697661 
+ 2124      7465640A 
+ 2124      00
+ 2125 0085 000000   		.space	3
+ 2126              	.LC45:
+ 2127 0088 63757272 		.ascii	"current tick:0x%08x\012\000"
+ 2127      656E7420 
+ 2127      7469636B 
+ 2127      3A307825 
+ 2127      3038780A 
+ 2128              		.section	.rodata.name,"a",%progbits
+ 2129              		.align	2
+ 2132              	__fsym_list_desc:
+ 2133 0000 6C697374 		.ascii	"list all symbol in system\000"
+ 2133      20616C6C 
+ 2133      2073796D 
+ARM GAS  /tmp/ccsLNend.s 			page 62
+
+
+ 2133      626F6C20 
+ 2133      696E2073 
+ 2134 001a 0000     		.space	2
+ 2137              	__fsym_list_name:
+ 2138 001c 6C697374 		.ascii	"list\000"
+ 2138      00
+ 2139 0021 000000   		.space	3
+ 2142              	__fsym___cmd_list_device_desc:
+ 2143 0024 6C697374 		.ascii	"list device in system\000"
+ 2143      20646576 
+ 2143      69636520 
+ 2143      696E2073 
+ 2143      79737465 
+ 2144 003a 0000     		.space	2
+ 2147              	__fsym___cmd_list_device_name:
+ 2148 003c 5F5F636D 		.ascii	"__cmd_list_device\000"
+ 2148      645F6C69 
+ 2148      73745F64 
+ 2148      65766963 
+ 2148      6500
+ 2149 004e 0000     		.space	2
+ 2152              	__fsym_list_device_desc:
+ 2153 0050 6C697374 		.ascii	"list device in system\000"
+ 2153      20646576 
+ 2153      69636520 
+ 2153      696E2073 
+ 2153      79737465 
+ 2154 0066 0000     		.space	2
+ 2157              	__fsym_list_device_name:
+ 2158 0068 6C697374 		.ascii	"list_device\000"
+ 2158      5F646576 
+ 2158      69636500 
+ 2161              	__fsym___cmd_list_timer_desc:
+ 2162 0074 6C697374 		.ascii	"list timer in system\000"
+ 2162      2074696D 
+ 2162      65722069 
+ 2162      6E207379 
+ 2162      7374656D 
+ 2163 0089 000000   		.space	3
+ 2166              	__fsym___cmd_list_timer_name:
+ 2167 008c 5F5F636D 		.ascii	"__cmd_list_timer\000"
+ 2167      645F6C69 
+ 2167      73745F74 
+ 2167      696D6572 
+ 2167      00
+ 2168 009d 000000   		.space	3
+ 2171              	__fsym_list_timer_desc:
+ 2172 00a0 6C697374 		.ascii	"list timer in system\000"
+ 2172      2074696D 
+ 2172      65722069 
+ 2172      6E207379 
+ 2172      7374656D 
+ 2173 00b5 000000   		.space	3
+ 2176              	__fsym_list_timer_name:
+ 2177 00b8 6C697374 		.ascii	"list_timer\000"
+ 2177      5F74696D 
+ 2177      657200
+ARM GAS  /tmp/ccsLNend.s 			page 63
+
+
+ 2178 00c3 00       		.space	1
+ 2181              	__fsym___cmd_list_msgqueue_desc:
+ 2182 00c4 6C697374 		.ascii	"list message queue in system\000"
+ 2182      206D6573 
+ 2182      73616765 
+ 2182      20717565 
+ 2182      75652069 
+ 2183 00e1 000000   		.space	3
+ 2186              	__fsym___cmd_list_msgqueue_name:
+ 2187 00e4 5F5F636D 		.ascii	"__cmd_list_msgqueue\000"
+ 2187      645F6C69 
+ 2187      73745F6D 
+ 2187      73677175 
+ 2187      65756500 
+ 2190              	__fsym_list_msgqueue_desc:
+ 2191 00f8 6C697374 		.ascii	"list message queue in system\000"
+ 2191      206D6573 
+ 2191      73616765 
+ 2191      20717565 
+ 2191      75652069 
+ 2192 0115 000000   		.space	3
+ 2195              	__fsym_list_msgqueue_name:
+ 2196 0118 6C697374 		.ascii	"list_msgqueue\000"
+ 2196      5F6D7367 
+ 2196      71756575 
+ 2196      6500
+ 2197 0126 0000     		.space	2
+ 2200              	__fsym___cmd_list_mutex_desc:
+ 2201 0128 6C697374 		.ascii	"list mutex in system\000"
+ 2201      206D7574 
+ 2201      65782069 
+ 2201      6E207379 
+ 2201      7374656D 
+ 2202 013d 000000   		.space	3
+ 2205              	__fsym___cmd_list_mutex_name:
+ 2206 0140 5F5F636D 		.ascii	"__cmd_list_mutex\000"
+ 2206      645F6C69 
+ 2206      73745F6D 
+ 2206      75746578 
+ 2206      00
+ 2207 0151 000000   		.space	3
+ 2210              	__fsym_list_mutex_desc:
+ 2211 0154 6C697374 		.ascii	"list mutex in system\000"
+ 2211      206D7574 
+ 2211      65782069 
+ 2211      6E207379 
+ 2211      7374656D 
+ 2212 0169 000000   		.space	3
+ 2215              	__fsym_list_mutex_name:
+ 2216 016c 6C697374 		.ascii	"list_mutex\000"
+ 2216      5F6D7574 
+ 2216      657800
+ 2217 0177 00       		.space	1
+ 2220              	__fsym___cmd_list_event_desc:
+ 2221 0178 6C697374 		.ascii	"list event in system\000"
+ 2221      20657665 
+ 2221      6E742069 
+ARM GAS  /tmp/ccsLNend.s 			page 64
+
+
+ 2221      6E207379 
+ 2221      7374656D 
+ 2222 018d 000000   		.space	3
+ 2225              	__fsym___cmd_list_event_name:
+ 2226 0190 5F5F636D 		.ascii	"__cmd_list_event\000"
+ 2226      645F6C69 
+ 2226      73745F65 
+ 2226      76656E74 
+ 2226      00
+ 2227 01a1 000000   		.space	3
+ 2230              	__fsym_list_event_desc:
+ 2231 01a4 6C697374 		.ascii	"list event in system\000"
+ 2231      20657665 
+ 2231      6E742069 
+ 2231      6E207379 
+ 2231      7374656D 
+ 2232 01b9 000000   		.space	3
+ 2235              	__fsym_list_event_name:
+ 2236 01bc 6C697374 		.ascii	"list_event\000"
+ 2236      5F657665 
+ 2236      6E7400
+ 2237 01c7 00       		.space	1
+ 2240              	__fsym___cmd_list_sem_desc:
+ 2241 01c8 6C697374 		.ascii	"list semaphore in system\000"
+ 2241      2073656D 
+ 2241      6170686F 
+ 2241      72652069 
+ 2241      6E207379 
+ 2242 01e1 000000   		.space	3
+ 2245              	__fsym___cmd_list_sem_name:
+ 2246 01e4 5F5F636D 		.ascii	"__cmd_list_sem\000"
+ 2246      645F6C69 
+ 2246      73745F73 
+ 2246      656D00
+ 2247 01f3 00       		.space	1
+ 2250              	__fsym_list_sem_desc:
+ 2251 01f4 6C697374 		.ascii	"list semaphore in system\000"
+ 2251      2073656D 
+ 2251      6170686F 
+ 2251      72652069 
+ 2251      6E207379 
+ 2252 020d 000000   		.space	3
+ 2255              	__fsym_list_sem_name:
+ 2256 0210 6C697374 		.ascii	"list_sem\000"
+ 2256      5F73656D 
+ 2256      00
+ 2257 0219 000000   		.space	3
+ 2260              	__fsym___cmd_list_thread_desc:
+ 2261 021c 6C697374 		.ascii	"list thread\000"
+ 2261      20746872 
+ 2261      65616400 
+ 2264              	__fsym___cmd_list_thread_name:
+ 2265 0228 5F5F636D 		.ascii	"__cmd_list_thread\000"
+ 2265      645F6C69 
+ 2265      73745F74 
+ 2265      68726561 
+ 2265      6400
+ARM GAS  /tmp/ccsLNend.s 			page 65
+
+
+ 2266 023a 0000     		.space	2
+ 2269              	__fsym_list_thread_desc:
+ 2270 023c 6C697374 		.ascii	"list thread\000"
+ 2270      20746872 
+ 2270      65616400 
+ 2273              	__fsym_list_thread_name:
+ 2274 0248 6C697374 		.ascii	"list_thread\000"
+ 2274      5F746872 
+ 2274      65616400 
+ 2277              	__fsym___cmd_version_desc:
+ 2278 0254 73686F77 		.ascii	"show RT-Thread version information\000"
+ 2278      2052542D 
+ 2278      54687265 
+ 2278      61642076 
+ 2278      65727369 
+ 2279 0277 00       		.space	1
+ 2282              	__fsym___cmd_version_name:
+ 2283 0278 5F5F636D 		.ascii	"__cmd_version\000"
+ 2283      645F7665 
+ 2283      7273696F 
+ 2283      6E00
+ 2284 0286 0000     		.space	2
+ 2287              	__fsym_version_desc:
+ 2288 0288 73686F77 		.ascii	"show RT-Thread version information\000"
+ 2288      2052542D 
+ 2288      54687265 
+ 2288      61642076 
+ 2288      65727369 
+ 2289 02ab 00       		.space	1
+ 2292              	__fsym_version_name:
+ 2293 02ac 76657273 		.ascii	"version\000"
+ 2293      696F6E00 
+ 2296              	__fsym_hello_desc:
+ 2297 02b4 73617920 		.ascii	"say hello world\000"
+ 2297      68656C6C 
+ 2297      6F20776F 
+ 2297      726C6400 
+ 2300              	__fsym_hello_name:
+ 2301 02c4 68656C6C 		.ascii	"hello\000"
+ 2301      6F00
+ 2302              		.section	.rodata.show_wait_queue.str1.4,"aMS",%progbits,1
+ 2303              		.align	2
+ 2304              	.LC1:
+ 2305 0000 257300   		.ascii	"%s\000"
+ 2306 0003 00       		.space	1
+ 2307              	.LC2:
+ 2308 0004 2F00     		.ascii	"/\000"
+ 2309              		.section	.rodata.str1.4,"aMS",%progbits,1
+ 2310              		.align	2
+ 2311              	.LC49:
+ 2312 0000 43686172 		.ascii	"Character Device\000"
+ 2312      61637465 
+ 2312      72204465 
+ 2312      76696365 
+ 2312      00
+ 2313 0011 000000   		.space	3
+ 2314              	.LC50:
+ARM GAS  /tmp/ccsLNend.s 			page 66
+
+
+ 2315 0014 426C6F63 		.ascii	"Block Device\000"
+ 2315      6B204465 
+ 2315      76696365 
+ 2315      00
+ 2316 0021 000000   		.space	3
+ 2317              	.LC51:
+ 2318 0024 4E657477 		.ascii	"Network Interface\000"
+ 2318      6F726B20 
+ 2318      496E7465 
+ 2318      72666163 
+ 2318      6500
+ 2319 0036 0000     		.space	2
+ 2320              	.LC52:
+ 2321 0038 4D544420 		.ascii	"MTD Device\000"
+ 2321      44657669 
+ 2321      636500
+ 2322 0043 00       		.space	1
+ 2323              	.LC53:
+ 2324 0044 43414E20 		.ascii	"CAN Device\000"
+ 2324      44657669 
+ 2324      636500
+ 2325 004f 00       		.space	1
+ 2326              	.LC54:
+ 2327 0050 52544300 		.ascii	"RTC\000"
+ 2328              	.LC55:
+ 2329 0054 536F756E 		.ascii	"Sound Device\000"
+ 2329      64204465 
+ 2329      76696365 
+ 2329      00
+ 2330 0061 000000   		.space	3
+ 2331              	.LC56:
+ 2332 0064 47726170 		.ascii	"Graphic Device\000"
+ 2332      68696320 
+ 2332      44657669 
+ 2332      636500
+ 2333 0073 00       		.space	1
+ 2334              	.LC57:
+ 2335 0074 49324320 		.ascii	"I2C Bus\000"
+ 2335      42757300 
+ 2336              	.LC58:
+ 2337 007c 55534220 		.ascii	"USB Slave Device\000"
+ 2337      536C6176 
+ 2337      65204465 
+ 2337      76696365 
+ 2337      00
+ 2338 008d 000000   		.space	3
+ 2339              	.LC59:
+ 2340 0090 55534220 		.ascii	"USB Host Bus\000"
+ 2340      486F7374 
+ 2340      20427573 
+ 2340      00
+ 2341 009d 000000   		.space	3
+ 2342              	.LC60:
+ 2343 00a0 53504920 		.ascii	"SPI Bus\000"
+ 2343      42757300 
+ 2344              	.LC61:
+ 2345 00a8 53504920 		.ascii	"SPI Device\000"
+ARM GAS  /tmp/ccsLNend.s 			page 67
+
+
+ 2345      44657669 
+ 2345      636500
+ 2346 00b3 00       		.space	1
+ 2347              	.LC62:
+ 2348 00b4 5344494F 		.ascii	"SDIO Bus\000"
+ 2348      20427573 
+ 2348      00
+ 2349 00bd 000000   		.space	3
+ 2350              	.LC63:
+ 2351 00c0 504D2050 		.ascii	"PM Pseudo Device\000"
+ 2351      73657564 
+ 2351      6F204465 
+ 2351      76696365 
+ 2351      00
+ 2352 00d1 000000   		.space	3
+ 2353              	.LC64:
+ 2354 00d4 50697065 		.ascii	"Pipe\000"
+ 2354      00
+ 2355 00d9 000000   		.space	3
+ 2356              	.LC65:
+ 2357 00dc 506F7274 		.ascii	"Portal Device\000"
+ 2357      616C2044 
+ 2357      65766963 
+ 2357      6500
+ 2358 00ea 0000     		.space	2
+ 2359              	.LC66:
+ 2360 00ec 54696D65 		.ascii	"Timer Device\000"
+ 2360      72204465 
+ 2360      76696365 
+ 2360      00
+ 2361 00f9 000000   		.space	3
+ 2362              	.LC67:
+ 2363 00fc 4D697363 		.ascii	"Miscellaneous Device\000"
+ 2363      656C6C61 
+ 2363      6E656F75 
+ 2363      73204465 
+ 2363      76696365 
+ 2364 0111 000000   		.space	3
+ 2365              	.LC68:
+ 2366 0114 53656E73 		.ascii	"Sensor Device\000"
+ 2366      6F722044 
+ 2366      65766963 
+ 2366      6500
+ 2367 0122 0000     		.space	2
+ 2368              	.LC69:
+ 2369 0124 546F7563 		.ascii	"Touch Device\000"
+ 2369      68204465 
+ 2369      76696365 
+ 2369      00
+ 2370              		.section	FSymTab,"a",%progbits
+ 2371              		.align	2
+ 2374              	__fsym_list:
+ 2375 0000 00000000 		.word	__fsym_list_name
+ 2376 0004 00000000 		.word	__fsym_list_desc
+ 2377 0008 00000000 		.word	list
+ 2380              	__fsym___cmd_list_device:
+ 2381 000c 00000000 		.word	__fsym___cmd_list_device_name
+ARM GAS  /tmp/ccsLNend.s 			page 68
+
+
+ 2382 0010 00000000 		.word	__fsym___cmd_list_device_desc
+ 2383 0014 00000000 		.word	list_device
+ 2386              	__fsym_list_device:
+ 2387 0018 00000000 		.word	__fsym_list_device_name
+ 2388 001c 00000000 		.word	__fsym_list_device_desc
+ 2389 0020 00000000 		.word	list_device
+ 2392              	__fsym___cmd_list_timer:
+ 2393 0024 00000000 		.word	__fsym___cmd_list_timer_name
+ 2394 0028 00000000 		.word	__fsym___cmd_list_timer_desc
+ 2395 002c 00000000 		.word	list_timer
+ 2398              	__fsym_list_timer:
+ 2399 0030 00000000 		.word	__fsym_list_timer_name
+ 2400 0034 00000000 		.word	__fsym_list_timer_desc
+ 2401 0038 00000000 		.word	list_timer
+ 2404              	__fsym___cmd_list_msgqueue:
+ 2405 003c 00000000 		.word	__fsym___cmd_list_msgqueue_name
+ 2406 0040 00000000 		.word	__fsym___cmd_list_msgqueue_desc
+ 2407 0044 00000000 		.word	list_msgqueue
+ 2410              	__fsym_list_msgqueue:
+ 2411 0048 00000000 		.word	__fsym_list_msgqueue_name
+ 2412 004c 00000000 		.word	__fsym_list_msgqueue_desc
+ 2413 0050 00000000 		.word	list_msgqueue
+ 2416              	__fsym___cmd_list_mutex:
+ 2417 0054 00000000 		.word	__fsym___cmd_list_mutex_name
+ 2418 0058 00000000 		.word	__fsym___cmd_list_mutex_desc
+ 2419 005c 00000000 		.word	list_mutex
+ 2422              	__fsym_list_mutex:
+ 2423 0060 00000000 		.word	__fsym_list_mutex_name
+ 2424 0064 00000000 		.word	__fsym_list_mutex_desc
+ 2425 0068 00000000 		.word	list_mutex
+ 2428              	__fsym___cmd_list_event:
+ 2429 006c 00000000 		.word	__fsym___cmd_list_event_name
+ 2430 0070 00000000 		.word	__fsym___cmd_list_event_desc
+ 2431 0074 00000000 		.word	list_event
+ 2434              	__fsym_list_event:
+ 2435 0078 00000000 		.word	__fsym_list_event_name
+ 2436 007c 00000000 		.word	__fsym_list_event_desc
+ 2437 0080 00000000 		.word	list_event
+ 2440              	__fsym___cmd_list_sem:
+ 2441 0084 00000000 		.word	__fsym___cmd_list_sem_name
+ 2442 0088 00000000 		.word	__fsym___cmd_list_sem_desc
+ 2443 008c 00000000 		.word	list_sem
+ 2446              	__fsym_list_sem:
+ 2447 0090 00000000 		.word	__fsym_list_sem_name
+ 2448 0094 00000000 		.word	__fsym_list_sem_desc
+ 2449 0098 00000000 		.word	list_sem
+ 2452              	__fsym___cmd_list_thread:
+ 2453 009c 00000000 		.word	__fsym___cmd_list_thread_name
+ 2454 00a0 00000000 		.word	__fsym___cmd_list_thread_desc
+ 2455 00a4 00000000 		.word	list_thread
+ 2458              	__fsym_list_thread:
+ 2459 00a8 00000000 		.word	__fsym_list_thread_name
+ 2460 00ac 00000000 		.word	__fsym_list_thread_desc
+ 2461 00b0 00000000 		.word	list_thread
+ 2464              	__fsym___cmd_version:
+ 2465 00b4 00000000 		.word	__fsym___cmd_version_name
+ 2466 00b8 00000000 		.word	__fsym___cmd_version_desc
+ARM GAS  /tmp/ccsLNend.s 			page 69
+
+
+ 2467 00bc 00000000 		.word	version
+ 2470              	__fsym_version:
+ 2471 00c0 00000000 		.word	__fsym_version_name
+ 2472 00c4 00000000 		.word	__fsym_version_desc
+ 2473 00c8 00000000 		.word	version
+ 2476              	__fsym_hello:
+ 2477 00cc 00000000 		.word	__fsym_hello_name
+ 2478 00d0 00000000 		.word	__fsym_hello_desc
+ 2479 00d4 00000000 		.word	hello
+ 2480              		.text
+ 2481              	.Letext0:
+ 2482              		.file 3 "rt-thread/include/rtdef.h"
+ 2483              		.file 4 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/machine/_default_types.h"
+ 2484              		.file 5 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/lock.h"
+ 2485              		.file 6 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_types.h"
+ 2486              		.file 7 "/opt/gcc-arm-none-eabi-6-2017-q2-update/lib/gcc/arm-none-eabi/6.3.1/include/stddef.h"
+ 2487              		.file 8 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/reent.h"
+ 2488              		.file 9 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_stdint.h"
+ 2489              		.file 10 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/time.h"
+ 2490              		.file 11 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/errno.h"
+ 2491              		.file 12 "rt-thread/components/finsh/finsh_api.h"
+ 2492              		.file 13 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/ctype.h"
+ 2493              		.file 14 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/stdlib.h"
+ 2494              		.file 15 "rt-thread/components/finsh/finsh.h"
+ 2495              		.file 16 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/string.h"
+ 2496              		.file 17 "rt-thread/include/rtthread.h"
+ 2497              		.file 18 "rt-thread/include/rthw.h"
+ARM GAS  /tmp/ccsLNend.s 			page 70
+
+
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 cmd.c
+     /tmp/ccsLNend.s:18     .text.hello:0000000000000000 $t
+     /tmp/ccsLNend.s:25     .text.hello:0000000000000000 hello
+     /tmp/ccsLNend.s:47     .text.hello:000000000000000c $d
+     /tmp/ccsLNend.s:52     .text.show_wait_queue:0000000000000000 $t
+     /tmp/ccsLNend.s:58     .text.show_wait_queue:0000000000000000 show_wait_queue
+     /tmp/ccsLNend.s:110    .text.show_wait_queue:0000000000000028 $d
+     /tmp/ccsLNend.s:116    .text.version:0000000000000000 $t
+     /tmp/ccsLNend.s:123    .text.version:0000000000000000 version
+     /tmp/ccsLNend.s:144    .text.list_get_next:0000000000000000 $t
+     /tmp/ccsLNend.s:150    .text.list_get_next:0000000000000000 list_get_next
+     /tmp/ccsLNend.s:280    .text.list_find_init:0000000000000000 $t
+     /tmp/ccsLNend.s:286    .text.list_find_init:0000000000000000 list_find_init
+     /tmp/ccsLNend.s:330    .text.list_thread:0000000000000000 $t
+     /tmp/ccsLNend.s:337    .text.list_thread:0000000000000000 list_thread
+     /tmp/ccsLNend.s:580    .text.list_thread:0000000000000120 $d
+     /tmp/ccsLNend.s:595    .text.list_sem:0000000000000000 $t
+     /tmp/ccsLNend.s:602    .text.list_sem:0000000000000000 list_sem
+     /tmp/ccsLNend.s:825    .text.list_sem:00000000000000e4 $d
+     /tmp/ccsLNend.s:836    .text.list_event:0000000000000000 $t
+     /tmp/ccsLNend.s:843    .text.list_event:0000000000000000 list_event
+     /tmp/ccsLNend.s:1040   .text.list_event:00000000000000d4 $d
+     /tmp/ccsLNend.s:1051   .text.list_mutex:0000000000000000 $t
+     /tmp/ccsLNend.s:1058   .text.list_mutex:0000000000000000 list_mutex
+     /tmp/ccsLNend.s:1226   .text.list_mutex:00000000000000b0 $d
+     /tmp/ccsLNend.s:1235   .text.list_msgqueue:0000000000000000 $t
+     /tmp/ccsLNend.s:1242   .text.list_msgqueue:0000000000000000 list_msgqueue
+     /tmp/ccsLNend.s:1464   .text.list_msgqueue:00000000000000e4 $d
+     /tmp/ccsLNend.s:1475   .text.list_device:0000000000000000 $t
+     /tmp/ccsLNend.s:1482   .text.list_device:0000000000000000 list_device
+     /tmp/ccsLNend.s:1636   .text.list_device:00000000000000a0 $d
+     /tmp/ccsLNend.s:1647   .text.list_timer:0000000000000000 $t
+     /tmp/ccsLNend.s:1654   .text.list_timer:0000000000000000 list_timer
+     /tmp/ccsLNend.s:1815   .text.list_timer:00000000000000b8 $d
+     /tmp/ccsLNend.s:1827   .text.list:0000000000000000 $t
+     /tmp/ccsLNend.s:1834   .text.list:0000000000000000 list
+     /tmp/ccsLNend.s:1893   .text.list:0000000000000038 $d
+     /tmp/ccsLNend.s:2374   FSymTab:0000000000000000 __fsym_list
+     /tmp/ccsLNend.s:2132   .rodata.name:0000000000000000 __fsym_list_desc
+     /tmp/ccsLNend.s:2137   .rodata.name:000000000000001c __fsym_list_name
+     /tmp/ccsLNend.s:2380   FSymTab:000000000000000c __fsym___cmd_list_device
+     /tmp/ccsLNend.s:2142   .rodata.name:0000000000000024 __fsym___cmd_list_device_desc
+     /tmp/ccsLNend.s:2147   .rodata.name:000000000000003c __fsym___cmd_list_device_name
+     /tmp/ccsLNend.s:2386   FSymTab:0000000000000018 __fsym_list_device
+     /tmp/ccsLNend.s:2152   .rodata.name:0000000000000050 __fsym_list_device_desc
+     /tmp/ccsLNend.s:2157   .rodata.name:0000000000000068 __fsym_list_device_name
+     /tmp/ccsLNend.s:2392   FSymTab:0000000000000024 __fsym___cmd_list_timer
+     /tmp/ccsLNend.s:2161   .rodata.name:0000000000000074 __fsym___cmd_list_timer_desc
+     /tmp/ccsLNend.s:2166   .rodata.name:000000000000008c __fsym___cmd_list_timer_name
+     /tmp/ccsLNend.s:2398   FSymTab:0000000000000030 __fsym_list_timer
+     /tmp/ccsLNend.s:2171   .rodata.name:00000000000000a0 __fsym_list_timer_desc
+     /tmp/ccsLNend.s:2176   .rodata.name:00000000000000b8 __fsym_list_timer_name
+     /tmp/ccsLNend.s:2404   FSymTab:000000000000003c __fsym___cmd_list_msgqueue
+     /tmp/ccsLNend.s:2181   .rodata.name:00000000000000c4 __fsym___cmd_list_msgqueue_desc
+     /tmp/ccsLNend.s:2186   .rodata.name:00000000000000e4 __fsym___cmd_list_msgqueue_name
+     /tmp/ccsLNend.s:2410   FSymTab:0000000000000048 __fsym_list_msgqueue
+ARM GAS  /tmp/ccsLNend.s 			page 71
+
+
+     /tmp/ccsLNend.s:2190   .rodata.name:00000000000000f8 __fsym_list_msgqueue_desc
+     /tmp/ccsLNend.s:2195   .rodata.name:0000000000000118 __fsym_list_msgqueue_name
+     /tmp/ccsLNend.s:2416   FSymTab:0000000000000054 __fsym___cmd_list_mutex
+     /tmp/ccsLNend.s:2200   .rodata.name:0000000000000128 __fsym___cmd_list_mutex_desc
+     /tmp/ccsLNend.s:2205   .rodata.name:0000000000000140 __fsym___cmd_list_mutex_name
+     /tmp/ccsLNend.s:2422   FSymTab:0000000000000060 __fsym_list_mutex
+     /tmp/ccsLNend.s:2210   .rodata.name:0000000000000154 __fsym_list_mutex_desc
+     /tmp/ccsLNend.s:2215   .rodata.name:000000000000016c __fsym_list_mutex_name
+     /tmp/ccsLNend.s:2428   FSymTab:000000000000006c __fsym___cmd_list_event
+     /tmp/ccsLNend.s:2220   .rodata.name:0000000000000178 __fsym___cmd_list_event_desc
+     /tmp/ccsLNend.s:2225   .rodata.name:0000000000000190 __fsym___cmd_list_event_name
+     /tmp/ccsLNend.s:2434   FSymTab:0000000000000078 __fsym_list_event
+     /tmp/ccsLNend.s:2230   .rodata.name:00000000000001a4 __fsym_list_event_desc
+     /tmp/ccsLNend.s:2235   .rodata.name:00000000000001bc __fsym_list_event_name
+     /tmp/ccsLNend.s:2440   FSymTab:0000000000000084 __fsym___cmd_list_sem
+     /tmp/ccsLNend.s:2240   .rodata.name:00000000000001c8 __fsym___cmd_list_sem_desc
+     /tmp/ccsLNend.s:2245   .rodata.name:00000000000001e4 __fsym___cmd_list_sem_name
+     /tmp/ccsLNend.s:2446   FSymTab:0000000000000090 __fsym_list_sem
+     /tmp/ccsLNend.s:2250   .rodata.name:00000000000001f4 __fsym_list_sem_desc
+     /tmp/ccsLNend.s:2255   .rodata.name:0000000000000210 __fsym_list_sem_name
+     /tmp/ccsLNend.s:2452   FSymTab:000000000000009c __fsym___cmd_list_thread
+     /tmp/ccsLNend.s:2260   .rodata.name:000000000000021c __fsym___cmd_list_thread_desc
+     /tmp/ccsLNend.s:2264   .rodata.name:0000000000000228 __fsym___cmd_list_thread_name
+     /tmp/ccsLNend.s:2458   FSymTab:00000000000000a8 __fsym_list_thread
+     /tmp/ccsLNend.s:2269   .rodata.name:000000000000023c __fsym_list_thread_desc
+     /tmp/ccsLNend.s:2273   .rodata.name:0000000000000248 __fsym_list_thread_name
+     /tmp/ccsLNend.s:2464   FSymTab:00000000000000b4 __fsym___cmd_version
+     /tmp/ccsLNend.s:2277   .rodata.name:0000000000000254 __fsym___cmd_version_desc
+     /tmp/ccsLNend.s:2282   .rodata.name:0000000000000278 __fsym___cmd_version_name
+     /tmp/ccsLNend.s:2470   FSymTab:00000000000000c0 __fsym_version
+     /tmp/ccsLNend.s:2287   .rodata.name:0000000000000288 __fsym_version_desc
+     /tmp/ccsLNend.s:2292   .rodata.name:00000000000002ac __fsym_version_name
+     /tmp/ccsLNend.s:2476   FSymTab:00000000000000cc __fsym_hello
+     /tmp/ccsLNend.s:2296   .rodata.name:00000000000002b4 __fsym_hello_desc
+     /tmp/ccsLNend.s:2300   .rodata.name:00000000000002c4 __fsym_hello_name
+     /tmp/ccsLNend.s:1956   .rodata.device_type_str:0000000000000000 $d
+     /tmp/ccsLNend.s:1960   .rodata.device_type_str:0000000000000000 device_type_str
+     /tmp/ccsLNend.s:1984   .rodata.hello.str1.4:0000000000000000 $d
+     /tmp/ccsLNend.s:1988   .rodata.list.str1.4:0000000000000000 $d
+     /tmp/ccsLNend.s:1998   .rodata.list_device.str1.4:0000000000000000 $d
+     /tmp/ccsLNend.s:2013   .rodata.list_event.str1.4:0000000000000000 $d
+     /tmp/ccsLNend.s:2029   .rodata.list_msgqueue.str1.4:0000000000000000 $d
+     /tmp/ccsLNend.s:2044   .rodata.list_mutex.str1.4:0000000000000000 $d
+     /tmp/ccsLNend.s:2056   .rodata.list_sem.str1.4:0000000000000000 $d
+     /tmp/ccsLNend.s:2074   .rodata.list_thread.str1.4:0000000000000000 $d
+     /tmp/ccsLNend.s:2108   .rodata.list_timer.str1.4:0000000000000000 $d
+     /tmp/ccsLNend.s:2129   .rodata.name:0000000000000000 $d
+     /tmp/ccsLNend.s:2303   .rodata.show_wait_queue.str1.4:0000000000000000 $d
+     /tmp/ccsLNend.s:2310   .rodata.str1.4:0000000000000000 $d
+     /tmp/ccsLNend.s:2371   FSymTab:0000000000000000 $d
+                     .debug_frame:0000000000000010 $d
+
+UNDEFINED SYMBOLS
+rt_kprintf
+rt_show_version
+rt_hw_interrupt_disable
+rt_hw_interrupt_enable
+ARM GAS  /tmp/ccsLNend.s 			page 72
+
+
+rt_object_get_information
+memcpy
+rt_tick_get
+strncmp
+_syscall_table_begin
+_syscall_table_end

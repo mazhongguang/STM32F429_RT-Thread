@@ -1,0 +1,555 @@
+ARM GAS  /tmp/cchfUVrS.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.eabi_attribute 27, 1
+   3              		.eabi_attribute 28, 1
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.file	"pcf8574.c"
+  14              		.text
+  15              	.Ltext0:
+  16              		.cfi_sections	.debug_frame
+  17              		.section	.text.pcf8574_port_read,"ax",%progbits
+  18              		.align	1
+  19              		.global	pcf8574_port_read
+  20              		.syntax unified
+  21              		.thumb
+  22              		.thumb_func
+  23              		.fpu fpv4-sp-d16
+  25              	pcf8574_port_read:
+  26              	.LFB19:
+  27              		.file 1 "hardware/pcf8574/pcf8574.c"
+   1:hardware/pcf8574/pcf8574.c **** /*
+   2:hardware/pcf8574/pcf8574.c ****  * Copyright (c) 2006-2018, RT-Thread Development Team
+   3:hardware/pcf8574/pcf8574.c ****  *
+   4:hardware/pcf8574/pcf8574.c ****  * SPDX-License-Identifier: Apache-2.0
+   5:hardware/pcf8574/pcf8574.c ****  *
+   6:hardware/pcf8574/pcf8574.c ****  *
+   7:hardware/pcf8574/pcf8574.c ****  * Change Logs:
+   8:hardware/pcf8574/pcf8574.c ****  * Date           Author       Notes
+   9:hardware/pcf8574/pcf8574.c ****  * 2018-11-21     SummerGift   first version
+  10:hardware/pcf8574/pcf8574.c ****  * 2018-11-22     flybreak     Make the first version of pcf8574's package
+  11:hardware/pcf8574/pcf8574.c ****  */
+  12:hardware/pcf8574/pcf8574.c **** 
+  13:hardware/pcf8574/pcf8574.c **** #include "pcf8574.h"
+  14:hardware/pcf8574/pcf8574.c **** 
+  15:hardware/pcf8574/pcf8574.c **** #define DBG_ENABLE
+  16:hardware/pcf8574/pcf8574.c **** #define DBG_SECTION_NAME     "pcf8574"
+  17:hardware/pcf8574/pcf8574.c **** #define DBG_LEVEL            DBG_INFO
+  18:hardware/pcf8574/pcf8574.c **** #define DBG_COLOR
+  19:hardware/pcf8574/pcf8574.c **** #include <rtdbg.h>
+  20:hardware/pcf8574/pcf8574.c **** 
+  21:hardware/pcf8574/pcf8574.c **** uint8_t pcf8574_port_read(pcf8574_device_t dev)
+  22:hardware/pcf8574/pcf8574.c **** {
+  28              		.loc 1 22 0
+  29              		.cfi_startproc
+  30              		@ args = 0, pretend = 0, frame = 8
+  31              		@ frame_needed = 0, uses_anonymous_args = 0
+  32              	.LVL0:
+  33 0000 00B5     		push	{lr}
+  34              	.LCFI0:
+  35              		.cfi_def_cfa_offset 4
+  36              		.cfi_offset 14, -4
+ARM GAS  /tmp/cchfUVrS.s 			page 2
+
+
+  37 0002 83B0     		sub	sp, sp, #12
+  38              	.LCFI1:
+  39              		.cfi_def_cfa_offset 16
+  23:hardware/pcf8574/pcf8574.c ****     uint8_t value;
+  24:hardware/pcf8574/pcf8574.c **** 
+  25:hardware/pcf8574/pcf8574.c ****     rt_device_read(&dev->bus->parent, dev->i2c_addr, &value, 1);
+  40              		.loc 1 25 0
+  41 0004 0123     		movs	r3, #1
+  42 0006 0DF10702 		add	r2, sp, #7
+  43 000a 0179     		ldrb	r1, [r0, #4]	@ zero_extendqisi2
+  44 000c 0068     		ldr	r0, [r0]
+  45              	.LVL1:
+  46 000e FFF7FEFF 		bl	rt_device_read
+  47              	.LVL2:
+  26:hardware/pcf8574/pcf8574.c **** 
+  27:hardware/pcf8574/pcf8574.c ****     return value;
+  28:hardware/pcf8574/pcf8574.c **** }
+  48              		.loc 1 28 0
+  49 0012 9DF80700 		ldrb	r0, [sp, #7]	@ zero_extendqisi2
+  50 0016 03B0     		add	sp, sp, #12
+  51              	.LCFI2:
+  52              		.cfi_def_cfa_offset 4
+  53              		@ sp needed
+  54 0018 5DF804FB 		ldr	pc, [sp], #4
+  55              		.cfi_endproc
+  56              	.LFE19:
+  58              		.section	.text.pcf8574_port_write,"ax",%progbits
+  59              		.align	1
+  60              		.global	pcf8574_port_write
+  61              		.syntax unified
+  62              		.thumb
+  63              		.thumb_func
+  64              		.fpu fpv4-sp-d16
+  66              	pcf8574_port_write:
+  67              	.LFB20:
+  29:hardware/pcf8574/pcf8574.c **** 
+  30:hardware/pcf8574/pcf8574.c **** void pcf8574_port_write(pcf8574_device_t dev, uint8_t value)
+  31:hardware/pcf8574/pcf8574.c **** {
+  68              		.loc 1 31 0
+  69              		.cfi_startproc
+  70              		@ args = 0, pretend = 0, frame = 8
+  71              		@ frame_needed = 0, uses_anonymous_args = 0
+  72              	.LVL3:
+  73 0000 00B5     		push	{lr}
+  74              	.LCFI3:
+  75              		.cfi_def_cfa_offset 4
+  76              		.cfi_offset 14, -4
+  77 0002 83B0     		sub	sp, sp, #12
+  78              	.LCFI4:
+  79              		.cfi_def_cfa_offset 16
+  80 0004 02AA     		add	r2, sp, #8
+  81 0006 02F8011D 		strb	r1, [r2, #-1]!
+  32:hardware/pcf8574/pcf8574.c ****     rt_device_write(&dev->bus->parent, dev->i2c_addr, &value, 1);
+  82              		.loc 1 32 0
+  83 000a 0123     		movs	r3, #1
+  84 000c 0179     		ldrb	r1, [r0, #4]	@ zero_extendqisi2
+  85              	.LVL4:
+ARM GAS  /tmp/cchfUVrS.s 			page 3
+
+
+  86 000e 0068     		ldr	r0, [r0]
+  87              	.LVL5:
+  88 0010 FFF7FEFF 		bl	rt_device_write
+  89              	.LVL6:
+  33:hardware/pcf8574/pcf8574.c **** }
+  90              		.loc 1 33 0
+  91 0014 03B0     		add	sp, sp, #12
+  92              	.LCFI5:
+  93              		.cfi_def_cfa_offset 4
+  94              		@ sp needed
+  95 0016 5DF804FB 		ldr	pc, [sp], #4
+  96              		.cfi_endproc
+  97              	.LFE20:
+  99              		.section	.text.pcf8574_pin_read,"ax",%progbits
+ 100              		.align	1
+ 101              		.global	pcf8574_pin_read
+ 102              		.syntax unified
+ 103              		.thumb
+ 104              		.thumb_func
+ 105              		.fpu fpv4-sp-d16
+ 107              	pcf8574_pin_read:
+ 108              	.LFB21:
+  34:hardware/pcf8574/pcf8574.c **** 
+  35:hardware/pcf8574/pcf8574.c **** uint8_t pcf8574_pin_read(pcf8574_device_t dev, uint8_t bit)
+  36:hardware/pcf8574/pcf8574.c **** {
+ 109              		.loc 1 36 0
+ 110              		.cfi_startproc
+ 111              		@ args = 0, pretend = 0, frame = 0
+ 112              		@ frame_needed = 0, uses_anonymous_args = 0
+ 113              	.LVL7:
+ 114 0000 10B5     		push	{r4, lr}
+ 115              	.LCFI6:
+ 116              		.cfi_def_cfa_offset 8
+ 117              		.cfi_offset 4, -8
+ 118              		.cfi_offset 14, -4
+ 119 0002 0C46     		mov	r4, r1
+  37:hardware/pcf8574/pcf8574.c ****     uint8_t data;
+  38:hardware/pcf8574/pcf8574.c ****     data = pcf8574_port_read(dev);
+ 120              		.loc 1 38 0
+ 121 0004 FFF7FEFF 		bl	pcf8574_port_read
+ 122              	.LVL8:
+  39:hardware/pcf8574/pcf8574.c **** 
+  40:hardware/pcf8574/pcf8574.c ****     if (data & (1 << bit))
+ 123              		.loc 1 40 0
+ 124 0008 2041     		asrs	r0, r0, r4
+ 125              	.LVL9:
+ 126 000a 10F0010F 		tst	r0, #1
+ 127 000e 01D1     		bne	.L9
+  41:hardware/pcf8574/pcf8574.c ****         return 1;
+  42:hardware/pcf8574/pcf8574.c ****     else
+  43:hardware/pcf8574/pcf8574.c ****         return 0;
+ 128              		.loc 1 43 0
+ 129 0010 0020     		movs	r0, #0
+  44:hardware/pcf8574/pcf8574.c **** }
+ 130              		.loc 1 44 0
+ 131 0012 10BD     		pop	{r4, pc}
+ 132              	.L9:
+ARM GAS  /tmp/cchfUVrS.s 			page 4
+
+
+  41:hardware/pcf8574/pcf8574.c ****         return 1;
+ 133              		.loc 1 41 0
+ 134 0014 0120     		movs	r0, #1
+ 135 0016 10BD     		pop	{r4, pc}
+ 136              		.cfi_endproc
+ 137              	.LFE21:
+ 139              		.section	.text.pcf8574_pin_write,"ax",%progbits
+ 140              		.align	1
+ 141              		.global	pcf8574_pin_write
+ 142              		.syntax unified
+ 143              		.thumb
+ 144              		.thumb_func
+ 145              		.fpu fpv4-sp-d16
+ 147              	pcf8574_pin_write:
+ 148              	.LFB22:
+  45:hardware/pcf8574/pcf8574.c **** 
+  46:hardware/pcf8574/pcf8574.c **** void pcf8574_pin_write(pcf8574_device_t dev, uint8_t bit, uint8_t value)
+  47:hardware/pcf8574/pcf8574.c **** {
+ 149              		.loc 1 47 0
+ 150              		.cfi_startproc
+ 151              		@ args = 0, pretend = 0, frame = 0
+ 152              		@ frame_needed = 0, uses_anonymous_args = 0
+ 153              	.LVL10:
+ 154 0000 70B5     		push	{r4, r5, r6, lr}
+ 155              	.LCFI7:
+ 156              		.cfi_def_cfa_offset 16
+ 157              		.cfi_offset 4, -16
+ 158              		.cfi_offset 5, -12
+ 159              		.cfi_offset 6, -8
+ 160              		.cfi_offset 14, -4
+ 161 0002 0446     		mov	r4, r0
+ 162 0004 0D46     		mov	r5, r1
+ 163 0006 1646     		mov	r6, r2
+  48:hardware/pcf8574/pcf8574.c ****     uint8_t data;
+  49:hardware/pcf8574/pcf8574.c ****     data = pcf8574_port_read(dev);
+ 164              		.loc 1 49 0
+ 165 0008 FFF7FEFF 		bl	pcf8574_port_read
+ 166              	.LVL11:
+  50:hardware/pcf8574/pcf8574.c **** 
+  51:hardware/pcf8574/pcf8574.c ****     if (value == 0)
+ 167              		.loc 1 51 0
+ 168 000c 3EB1     		cbz	r6, .L14
+  52:hardware/pcf8574/pcf8574.c ****         data &= ~(1 << bit);
+  53:hardware/pcf8574/pcf8574.c ****     else 
+  54:hardware/pcf8574/pcf8574.c ****         data |= 1 << bit;
+ 169              		.loc 1 54 0
+ 170 000e 0121     		movs	r1, #1
+ 171 0010 A940     		lsls	r1, r1, r5
+ 172 0012 0143     		orrs	r1, r1, r0
+ 173 0014 C9B2     		uxtb	r1, r1
+ 174              	.LVL12:
+ 175              	.L12:
+  55:hardware/pcf8574/pcf8574.c **** 
+  56:hardware/pcf8574/pcf8574.c ****     pcf8574_port_write(dev, data);
+ 176              		.loc 1 56 0
+ 177 0016 2046     		mov	r0, r4
+ 178 0018 FFF7FEFF 		bl	pcf8574_port_write
+ARM GAS  /tmp/cchfUVrS.s 			page 5
+
+
+ 179              	.LVL13:
+ 180 001c 70BD     		pop	{r4, r5, r6, pc}
+ 181              	.LVL14:
+ 182              	.L14:
+  52:hardware/pcf8574/pcf8574.c ****         data &= ~(1 << bit);
+ 183              		.loc 1 52 0
+ 184 001e 0121     		movs	r1, #1
+ 185 0020 A940     		lsls	r1, r1, r5
+ 186 0022 20EA0101 		bic	r1, r0, r1
+ 187 0026 C9B2     		uxtb	r1, r1
+ 188              	.LVL15:
+ 189 0028 F5E7     		b	.L12
+ 190              		.cfi_endproc
+ 191              	.LFE22:
+ 193              		.section	.text.pcf8574_init,"ax",%progbits
+ 194              		.align	1
+ 195              		.global	pcf8574_init
+ 196              		.syntax unified
+ 197              		.thumb
+ 198              		.thumb_func
+ 199              		.fpu fpv4-sp-d16
+ 201              	pcf8574_init:
+ 202              	.LFB23:
+  57:hardware/pcf8574/pcf8574.c **** }
+  58:hardware/pcf8574/pcf8574.c **** 
+  59:hardware/pcf8574/pcf8574.c **** pcf8574_device_t pcf8574_init(const char *dev_name, rt_uint8_t i2c_addr)
+  60:hardware/pcf8574/pcf8574.c **** {
+ 203              		.loc 1 60 0
+ 204              		.cfi_startproc
+ 205              		@ args = 0, pretend = 0, frame = 8
+ 206              		@ frame_needed = 0, uses_anonymous_args = 0
+ 207              	.LVL16:
+ 208 0000 70B5     		push	{r4, r5, r6, lr}
+ 209              	.LCFI8:
+ 210              		.cfi_def_cfa_offset 16
+ 211              		.cfi_offset 4, -16
+ 212              		.cfi_offset 5, -12
+ 213              		.cfi_offset 6, -8
+ 214              		.cfi_offset 14, -4
+ 215 0002 82B0     		sub	sp, sp, #8
+ 216              	.LCFI9:
+ 217              		.cfi_def_cfa_offset 24
+ 218 0004 0646     		mov	r6, r0
+ 219 0006 0D46     		mov	r5, r1
+  61:hardware/pcf8574/pcf8574.c ****     uint8_t buffer[] = { 0xFF };
+ 220              		.loc 1 61 0
+ 221 0008 FF23     		movs	r3, #255
+ 222 000a 8DF80430 		strb	r3, [sp, #4]
+ 223              	.LVL17:
+  62:hardware/pcf8574/pcf8574.c ****     pcf8574_device_t dev = RT_NULL;
+  63:hardware/pcf8574/pcf8574.c ****     
+  64:hardware/pcf8574/pcf8574.c ****     RT_ASSERT(dev_name);
+  65:hardware/pcf8574/pcf8574.c **** 
+  66:hardware/pcf8574/pcf8574.c ****     dev = rt_calloc(1, sizeof(struct pcf8574_device));
+ 224              		.loc 1 66 0
+ 225 000e 0821     		movs	r1, #8
+ 226              	.LVL18:
+ARM GAS  /tmp/cchfUVrS.s 			page 6
+
+
+ 227 0010 0120     		movs	r0, #1
+ 228              	.LVL19:
+ 229 0012 FFF7FEFF 		bl	rt_calloc
+ 230              	.LVL20:
+  67:hardware/pcf8574/pcf8574.c ****     if (dev == RT_NULL)
+ 231              		.loc 1 67 0
+ 232 0016 0446     		mov	r4, r0
+ 233 0018 90B1     		cbz	r0, .L23
+  68:hardware/pcf8574/pcf8574.c ****     {
+  69:hardware/pcf8574/pcf8574.c ****         LOG_E("Can't allocate memory for pcf8574 device on '%s' ", dev_name);
+  70:hardware/pcf8574/pcf8574.c ****         goto __exit;
+  71:hardware/pcf8574/pcf8574.c ****     }
+  72:hardware/pcf8574/pcf8574.c **** 
+  73:hardware/pcf8574/pcf8574.c ****     dev->bus = (struct rt_i2c_bus_device *)rt_device_find(dev_name);
+ 234              		.loc 1 73 0
+ 235 001a 3046     		mov	r0, r6
+ 236              	.LVL21:
+ 237 001c FFF7FEFF 		bl	rt_device_find
+ 238              	.LVL22:
+ 239 0020 2060     		str	r0, [r4]
+  74:hardware/pcf8574/pcf8574.c ****     if (dev->bus == RT_NULL)
+ 240              		.loc 1 74 0
+ 241 0022 C0B1     		cbz	r0, .L24
+  75:hardware/pcf8574/pcf8574.c ****     {
+  76:hardware/pcf8574/pcf8574.c ****         LOG_E("i2c_bus %s for PCF8574 not found!", dev_name);
+  77:hardware/pcf8574/pcf8574.c ****         goto __exit;
+  78:hardware/pcf8574/pcf8574.c ****     }
+  79:hardware/pcf8574/pcf8574.c **** 
+  80:hardware/pcf8574/pcf8574.c ****     if (i2c_addr != RT_NULL)
+ 242              		.loc 1 80 0
+ 243 0024 15B3     		cbz	r5, .L19
+  81:hardware/pcf8574/pcf8574.c ****         dev->i2c_addr = i2c_addr;
+ 244              		.loc 1 81 0
+ 245 0026 2571     		strb	r5, [r4, #4]
+ 246              	.L20:
+  82:hardware/pcf8574/pcf8574.c ****     else
+  83:hardware/pcf8574/pcf8574.c ****         dev->i2c_addr = PCF8574_ADDR_DEFAULT;
+  84:hardware/pcf8574/pcf8574.c **** 
+  85:hardware/pcf8574/pcf8574.c ****     if (rt_device_open(&dev->bus->parent, RT_NULL) != RT_EOK)
+ 247              		.loc 1 85 0
+ 248 0028 0021     		movs	r1, #0
+ 249 002a FFF7FEFF 		bl	rt_device_open
+ 250              	.LVL23:
+ 251 002e 00B3     		cbz	r0, .L25
+ 252              	.L17:
+  86:hardware/pcf8574/pcf8574.c ****     {
+  87:hardware/pcf8574/pcf8574.c ****         LOG_D("i2c_bus %s for PCF8574 opened failed!", dev_name);
+  88:hardware/pcf8574/pcf8574.c ****         goto __exit;
+  89:hardware/pcf8574/pcf8574.c ****     }
+  90:hardware/pcf8574/pcf8574.c **** 
+  91:hardware/pcf8574/pcf8574.c ****     rt_device_write(&dev->bus->parent, dev->i2c_addr, &buffer, 1);
+  92:hardware/pcf8574/pcf8574.c **** 
+  93:hardware/pcf8574/pcf8574.c ****     LOG_D("pcf8574 init done", dev_name);
+  94:hardware/pcf8574/pcf8574.c ****     return dev;
+  95:hardware/pcf8574/pcf8574.c **** 
+  96:hardware/pcf8574/pcf8574.c **** __exit:
+  97:hardware/pcf8574/pcf8574.c ****     if (dev != RT_NULL)
+ARM GAS  /tmp/cchfUVrS.s 			page 7
+
+
+ 253              		.loc 1 97 0
+ 254 0030 1CB1     		cbz	r4, .L15
+  98:hardware/pcf8574/pcf8574.c ****         rt_free(dev);
+ 255              		.loc 1 98 0
+ 256 0032 2046     		mov	r0, r4
+ 257 0034 FFF7FEFF 		bl	rt_free
+ 258              	.LVL24:
+  99:hardware/pcf8574/pcf8574.c **** 
+ 100:hardware/pcf8574/pcf8574.c ****     return RT_NULL;
+ 259              		.loc 1 100 0
+ 260 0038 0024     		movs	r4, #0
+ 261              	.LVL25:
+ 262              	.L15:
+ 101:hardware/pcf8574/pcf8574.c **** }
+ 263              		.loc 1 101 0
+ 264 003a 2046     		mov	r0, r4
+ 265 003c 02B0     		add	sp, sp, #8
+ 266              	.LCFI10:
+ 267              		.cfi_remember_state
+ 268              		.cfi_def_cfa_offset 16
+ 269              		@ sp needed
+ 270 003e 70BD     		pop	{r4, r5, r6, pc}
+ 271              	.LVL26:
+ 272              	.L23:
+ 273              	.LCFI11:
+ 274              		.cfi_restore_state
+  69:hardware/pcf8574/pcf8574.c ****         goto __exit;
+ 275              		.loc 1 69 0
+ 276 0040 0F48     		ldr	r0, .L26
+ 277              	.LVL27:
+ 278 0042 FFF7FEFF 		bl	rt_kprintf
+ 279              	.LVL28:
+ 280 0046 3146     		mov	r1, r6
+ 281 0048 0E48     		ldr	r0, .L26+4
+ 282 004a FFF7FEFF 		bl	rt_kprintf
+ 283              	.LVL29:
+ 284 004e 0E48     		ldr	r0, .L26+8
+ 285 0050 FFF7FEFF 		bl	rt_kprintf
+ 286              	.LVL30:
+  70:hardware/pcf8574/pcf8574.c ****     }
+ 287              		.loc 1 70 0
+ 288 0054 ECE7     		b	.L17
+ 289              	.L24:
+  76:hardware/pcf8574/pcf8574.c ****         goto __exit;
+ 290              		.loc 1 76 0
+ 291 0056 0A48     		ldr	r0, .L26
+ 292 0058 FFF7FEFF 		bl	rt_kprintf
+ 293              	.LVL31:
+ 294 005c 3146     		mov	r1, r6
+ 295 005e 0B48     		ldr	r0, .L26+12
+ 296 0060 FFF7FEFF 		bl	rt_kprintf
+ 297              	.LVL32:
+ 298 0064 0848     		ldr	r0, .L26+8
+ 299 0066 FFF7FEFF 		bl	rt_kprintf
+ 300              	.LVL33:
+  77:hardware/pcf8574/pcf8574.c ****     }
+ 301              		.loc 1 77 0
+ARM GAS  /tmp/cchfUVrS.s 			page 8
+
+
+ 302 006a E1E7     		b	.L17
+ 303              	.L19:
+  83:hardware/pcf8574/pcf8574.c **** 
+ 304              		.loc 1 83 0
+ 305 006c 2023     		movs	r3, #32
+ 306 006e 2371     		strb	r3, [r4, #4]
+ 307 0070 DAE7     		b	.L20
+ 308              	.L25:
+  91:hardware/pcf8574/pcf8574.c **** 
+ 309              		.loc 1 91 0
+ 310 0072 0123     		movs	r3, #1
+ 311 0074 01AA     		add	r2, sp, #4
+ 312 0076 2179     		ldrb	r1, [r4, #4]	@ zero_extendqisi2
+ 313 0078 2068     		ldr	r0, [r4]
+ 314 007a FFF7FEFF 		bl	rt_device_write
+ 315              	.LVL34:
+  94:hardware/pcf8574/pcf8574.c **** 
+ 316              		.loc 1 94 0
+ 317 007e DCE7     		b	.L15
+ 318              	.L27:
+ 319              		.align	2
+ 320              	.L26:
+ 321 0080 00000000 		.word	.LC0
+ 322 0084 14000000 		.word	.LC1
+ 323 0088 48000000 		.word	.LC2
+ 324 008c 50000000 		.word	.LC3
+ 325              		.cfi_endproc
+ 326              	.LFE23:
+ 328              		.section	.text.pcf8574_deinit,"ax",%progbits
+ 329              		.align	1
+ 330              		.global	pcf8574_deinit
+ 331              		.syntax unified
+ 332              		.thumb
+ 333              		.thumb_func
+ 334              		.fpu fpv4-sp-d16
+ 336              	pcf8574_deinit:
+ 337              	.LFB24:
+ 102:hardware/pcf8574/pcf8574.c **** 
+ 103:hardware/pcf8574/pcf8574.c **** void pcf8574_deinit(struct pcf8574_device *dev)
+ 104:hardware/pcf8574/pcf8574.c **** {
+ 338              		.loc 1 104 0
+ 339              		.cfi_startproc
+ 340              		@ args = 0, pretend = 0, frame = 0
+ 341              		@ frame_needed = 0, uses_anonymous_args = 0
+ 342              	.LVL35:
+ 343 0000 08B5     		push	{r3, lr}
+ 344              	.LCFI12:
+ 345              		.cfi_def_cfa_offset 8
+ 346              		.cfi_offset 3, -8
+ 347              		.cfi_offset 14, -4
+ 105:hardware/pcf8574/pcf8574.c ****     RT_ASSERT(dev);
+ 106:hardware/pcf8574/pcf8574.c **** 
+ 107:hardware/pcf8574/pcf8574.c ****     rt_free(dev);
+ 348              		.loc 1 107 0
+ 349 0002 FFF7FEFF 		bl	rt_free
+ 350              	.LVL36:
+ 351 0006 08BD     		pop	{r3, pc}
+ARM GAS  /tmp/cchfUVrS.s 			page 9
+
+
+ 352              		.cfi_endproc
+ 353              	.LFE24:
+ 355              		.section	.rodata.pcf8574_init.str1.4,"aMS",%progbits,1
+ 356              		.align	2
+ 357              	.LC0:
+ 358 0000 1B5B3331 		.ascii	"\033[31m[E/pcf8574] \000"
+ 358      6D5B452F 
+ 358      70636638 
+ 358      3537345D 
+ 358      2000
+ 359 0012 0000     		.space	2
+ 360              	.LC1:
+ 361 0014 43616E27 		.ascii	"Can't allocate memory for pcf8574 device on '%s' \000"
+ 361      7420616C 
+ 361      6C6F6361 
+ 361      7465206D 
+ 361      656D6F72 
+ 362 0046 0000     		.space	2
+ 363              	.LC2:
+ 364 0048 1B5B306D 		.ascii	"\033[0m\012\000"
+ 364      0A00
+ 365 004e 0000     		.space	2
+ 366              	.LC3:
+ 367 0050 6932635F 		.ascii	"i2c_bus %s for PCF8574 not found!\000"
+ 367      62757320 
+ 367      25732066 
+ 367      6F722050 
+ 367      43463835 
+ 368              		.text
+ 369              	.Letext0:
+ 370              		.file 2 "rt-thread/include/rtdef.h"
+ 371              		.file 3 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/machine/_default_types.h"
+ 372              		.file 4 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/lock.h"
+ 373              		.file 5 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_types.h"
+ 374              		.file 6 "/opt/gcc-arm-none-eabi-6-2017-q2-update/lib/gcc/arm-none-eabi/6.3.1/include/stddef.h"
+ 375              		.file 7 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/reent.h"
+ 376              		.file 8 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_stdint.h"
+ 377              		.file 9 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/time.h"
+ 378              		.file 10 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/errno.h"
+ 379              		.file 11 "rt-thread/components/finsh/finsh_api.h"
+ 380              		.file 12 "rt-thread/components/drivers/include/drivers/i2c.h"
+ 381              		.file 13 "hardware/pcf8574/pcf8574.h"
+ 382              		.file 14 "rt-thread/include/rtthread.h"
+ARM GAS  /tmp/cchfUVrS.s 			page 10
+
+
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 pcf8574.c
+     /tmp/cchfUVrS.s:18     .text.pcf8574_port_read:0000000000000000 $t
+     /tmp/cchfUVrS.s:25     .text.pcf8574_port_read:0000000000000000 pcf8574_port_read
+     /tmp/cchfUVrS.s:59     .text.pcf8574_port_write:0000000000000000 $t
+     /tmp/cchfUVrS.s:66     .text.pcf8574_port_write:0000000000000000 pcf8574_port_write
+     /tmp/cchfUVrS.s:100    .text.pcf8574_pin_read:0000000000000000 $t
+     /tmp/cchfUVrS.s:107    .text.pcf8574_pin_read:0000000000000000 pcf8574_pin_read
+     /tmp/cchfUVrS.s:140    .text.pcf8574_pin_write:0000000000000000 $t
+     /tmp/cchfUVrS.s:147    .text.pcf8574_pin_write:0000000000000000 pcf8574_pin_write
+     /tmp/cchfUVrS.s:194    .text.pcf8574_init:0000000000000000 $t
+     /tmp/cchfUVrS.s:201    .text.pcf8574_init:0000000000000000 pcf8574_init
+     /tmp/cchfUVrS.s:321    .text.pcf8574_init:0000000000000080 $d
+     /tmp/cchfUVrS.s:329    .text.pcf8574_deinit:0000000000000000 $t
+     /tmp/cchfUVrS.s:336    .text.pcf8574_deinit:0000000000000000 pcf8574_deinit
+     /tmp/cchfUVrS.s:356    .rodata.pcf8574_init.str1.4:0000000000000000 $d
+                     .debug_frame:0000000000000010 $d
+
+UNDEFINED SYMBOLS
+rt_device_read
+rt_device_write
+rt_calloc
+rt_device_find
+rt_device_open
+rt_free
+rt_kprintf

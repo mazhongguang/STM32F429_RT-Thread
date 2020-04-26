@@ -1,0 +1,544 @@
+ARM GAS  /tmp/ccxbERQ4.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.eabi_attribute 27, 1
+   3              		.eabi_attribute 28, 1
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.file	"button.c"
+  14              		.text
+  15              	.Ltext0:
+  16              		.cfi_sections	.debug_frame
+  17              		.section	.text.my_button_scan,"ax",%progbits
+  18              		.align	1
+  19              		.syntax unified
+  20              		.thumb
+  21              		.thumb_func
+  22              		.fpu fpv4-sp-d16
+  24              	my_button_scan:
+  25              	.LFB20:
+  26              		.file 1 "hardware/button/button.c"
+   1:hardware/button/button.c **** #include <rtdevice.h>
+   2:hardware/button/button.c **** #include "button.h"
+   3:hardware/button/button.c **** #include "pin.h"
+   4:hardware/button/button.c **** #include "rtconfig.h"
+   5:hardware/button/button.c **** #include "rtdef.h"
+   6:hardware/button/button.c **** #include "rtthread.h"
+   7:hardware/button/button.c **** 
+   8:hardware/button/button.c **** /* DEBUG */
+   9:hardware/button/button.c **** #define DBG_ENABLE
+  10:hardware/button/button.c **** #define DBG_SECTION_NAME "button"
+  11:hardware/button/button.c **** #define DBG_LEVEL DBG_INFO
+  12:hardware/button/button.c **** #define DBG_COLOR
+  13:hardware/button/button.c **** #include <rtdbg.h>
+  14:hardware/button/button.c **** 
+  15:hardware/button/button.c **** #define MY_BUTTON_CALL(func,argv) do{if((func) != RT_NULL) func argv;}while(0)
+  16:hardware/button/button.c **** 
+  17:hardware/button/button.c **** struct my_button_manage
+  18:hardware/button/button.c **** {
+  19:hardware/button/button.c **** 	rt_uint8_t num;		/* 需要注册的按键数 */
+  20:hardware/button/button.c **** 	rt_timer_t timer;	/* soft timer */
+  21:hardware/button/button.c **** 	struct my_button *button_list[MY_BUTTON_LIST_MAX];
+  22:hardware/button/button.c **** };
+  23:hardware/button/button.c **** 
+  24:hardware/button/button.c **** static struct my_button_manage button_manage;
+  25:hardware/button/button.c **** 
+  26:hardware/button/button.c **** int my_button_register(struct my_button *button)
+  27:hardware/button/button.c **** {
+  28:hardware/button/button.c **** 	if (button->press_logic_level == 0)
+  29:hardware/button/button.c **** 	{
+  30:hardware/button/button.c **** 		rt_pin_mode(button->pin, PIN_MODE_INPUT_PULLUP);
+  31:hardware/button/button.c **** 	}
+  32:hardware/button/button.c **** 	else
+ARM GAS  /tmp/ccxbERQ4.s 			page 2
+
+
+  33:hardware/button/button.c **** 	{
+  34:hardware/button/button.c **** 		rt_pin_mode(button->pin, PIN_MODE_INPUT_PULLDOWN);
+  35:hardware/button/button.c **** 	}
+  36:hardware/button/button.c **** 	
+  37:hardware/button/button.c **** 	button->cnt = 0;
+  38:hardware/button/button.c **** 	button->event = BUTTON_EVENT_NONE;
+  39:hardware/button/button.c **** 	button_manage.button_list[button_manage.num++] = button;
+  40:hardware/button/button.c **** 
+  41:hardware/button/button.c **** 	return 0;
+  42:hardware/button/button.c **** }
+  43:hardware/button/button.c **** 
+  44:hardware/button/button.c **** static void my_button_scan(void *param)
+  45:hardware/button/button.c **** {
+  27              		.loc 1 45 0
+  28              		.cfi_startproc
+  29              		@ args = 0, pretend = 0, frame = 0
+  30              		@ frame_needed = 0, uses_anonymous_args = 0
+  31              	.LVL0:
+  32 0000 2DE9F041 		push	{r4, r5, r6, r7, r8, lr}
+  33              	.LCFI0:
+  34              		.cfi_def_cfa_offset 24
+  35              		.cfi_offset 4, -24
+  36              		.cfi_offset 5, -20
+  37              		.cfi_offset 6, -16
+  38              		.cfi_offset 7, -12
+  39              		.cfi_offset 8, -8
+  40              		.cfi_offset 14, -4
+  41              	.LVL1:
+  46:hardware/button/button.c **** 	rt_uint8_t i;
+  47:hardware/button/button.c **** 	rt_uint16_t cnt_old;
+  48:hardware/button/button.c **** 
+  49:hardware/button/button.c **** 	for (i = 0; i < button_manage.num; i++)
+  42              		.loc 1 49 0
+  43 0004 0024     		movs	r4, #0
+  44 0006 41E0     		b	.L2
+  45              	.LVL2:
+  46              	.L13:
+  50:hardware/button/button.c **** 	{
+  51:hardware/button/button.c **** 		cnt_old = button_manage.button_list[i]->cnt;
+  52:hardware/button/button.c **** 
+  53:hardware/button/button.c **** 		if (rt_pin_read(button_manage.button_list[i]->pin) == button_manage.button_list[i]->press_logic_l
+  54:hardware/button/button.c **** 		{
+  55:hardware/button/button.c **** 			button_manage.button_list[i]->cnt++;
+  47              		.loc 1 55 0
+  48 0008 5A88     		ldrh	r2, [r3, #2]
+  49 000a 0132     		adds	r2, r2, #1
+  50 000c 5A80     		strh	r2, [r3, #2]	@ movhi
+  56:hardware/button/button.c **** 
+  57:hardware/button/button.c **** 			if (button_manage.button_list[i]->cnt == MY_BUTTON_DOWN_MS / MY_BUTTON_SCAN_SPACE_MS)		//button 
+  51              		.loc 1 57 0
+  52 000e 56F82720 		ldr	r2, [r6, r7, lsl #2]
+  53 0012 5388     		ldrh	r3, [r2, #2]
+  54 0014 022B     		cmp	r3, #2
+  55 0016 1AD0     		beq	.L10
+  58:hardware/button/button.c **** 			{
+  59:hardware/button/button.c **** 				LOG_D("BUTTON_DOWN");
+  60:hardware/button/button.c **** 				button_manage.button_list[i]->event = BUTTON_EVENT_CLICK_DOWN;
+ARM GAS  /tmp/ccxbERQ4.s 			page 3
+
+
+  61:hardware/button/button.c **** 				MY_BUTTON_CALL(button_manage.button_list[i]->cb, (button_manage.button_list[i]));
+  62:hardware/button/button.c **** 			}
+  63:hardware/button/button.c **** 			else if (button_manage.button_list[i]->cnt == MY_BUTTON_HOLD_MS / MY_BUTTON_SCAN_SPACE_MS)	//but
+  56              		.loc 1 63 0
+  57 0018 232B     		cmp	r3, #35
+  58 001a 1FD0     		beq	.L11
+  64:hardware/button/button.c **** 			{
+  65:hardware/button/button.c **** 				LOG_D("BUTTON_HOLD");
+  66:hardware/button/button.c **** 				button_manage.button_list[i]->event = BUTTON_EVENT_HOLD;
+  67:hardware/button/button.c **** 				MY_BUTTON_CALL(button_manage.button_list[i]->cb, (button_manage.button_list[i]));
+  68:hardware/button/button.c **** 			}
+  69:hardware/button/button.c **** 			else if (button_manage.button_list[i]->cnt > MY_BUTTON_HOLD_MS / MY_BUTTON_SCAN_SPACE_MS)
+  59              		.loc 1 69 0
+  60 001c 232B     		cmp	r3, #35
+  61 001e 33D9     		bls	.L5
+  70:hardware/button/button.c **** 			{
+  71:hardware/button/button.c **** 				LOG_D("BUTTON_HOLD_CYC");
+  72:hardware/button/button.c **** 				button_manage.button_list[i]->event = BUTTON_EVENT_HOLD_CYC;
+  62              		.loc 1 72 0
+  63 0020 0323     		movs	r3, #3
+  64 0022 1372     		strb	r3, [r2, #8]
+  73:hardware/button/button.c **** 				if (button_manage.button_list[i]->hold_cyc_period && button_manage.button_list[i]->cnt % (butto
+  65              		.loc 1 73 0
+  66 0024 0235     		adds	r5, r5, #2
+  67 0026 2D4B     		ldr	r3, .L14
+  68 0028 53F82500 		ldr	r0, [r3, r5, lsl #2]
+  69 002c 8388     		ldrh	r3, [r0, #4]
+  70 002e 5BB3     		cbz	r3, .L5
+  71              		.loc 1 73 0 is_stmt 0 discriminator 1
+  72 0030 4188     		ldrh	r1, [r0, #2]
+  73 0032 2B4A     		ldr	r2, .L14+4
+  74 0034 A2FB0323 		umull	r2, r3, r2, r3
+  75 0038 1B09     		lsrs	r3, r3, #4
+  76 003a B1FBF3F2 		udiv	r2, r1, r3
+  77 003e 03FB1213 		mls	r3, r3, r2, r1
+  78 0042 9BB2     		uxth	r3, r3
+  79 0044 03BB     		cbnz	r3, .L5
+  74:hardware/button/button.c **** 				{
+  75:hardware/button/button.c **** 					MY_BUTTON_CALL(button_manage.button_list[i]->cb, (button_manage.button_list[i]));
+  80              		.loc 1 75 0 is_stmt 1
+  81 0046 C368     		ldr	r3, [r0, #12]
+  82 0048 F3B1     		cbz	r3, .L5
+  83              		.loc 1 75 0 is_stmt 0 discriminator 1
+  84 004a 9847     		blx	r3
+  85              	.LVL3:
+  86 004c 1CE0     		b	.L5
+  87              	.L10:
+  60:hardware/button/button.c **** 				MY_BUTTON_CALL(button_manage.button_list[i]->cb, (button_manage.button_list[i]));
+  88              		.loc 1 60 0 is_stmt 1
+  89 004e 0023     		movs	r3, #0
+  90 0050 1372     		strb	r3, [r2, #8]
+  61:hardware/button/button.c **** 			}
+  91              		.loc 1 61 0
+  92 0052 1046     		mov	r0, r2
+  93 0054 D368     		ldr	r3, [r2, #12]
+  94 0056 BBB1     		cbz	r3, .L5
+  61:hardware/button/button.c **** 			}
+ARM GAS  /tmp/ccxbERQ4.s 			page 4
+
+
+  95              		.loc 1 61 0 is_stmt 0 discriminator 1
+  96 0058 9847     		blx	r3
+  97              	.LVL4:
+  98 005a 15E0     		b	.L5
+  99              	.L11:
+  66:hardware/button/button.c **** 				MY_BUTTON_CALL(button_manage.button_list[i]->cb, (button_manage.button_list[i]));
+ 100              		.loc 1 66 0 is_stmt 1
+ 101 005c 0223     		movs	r3, #2
+ 102 005e 1372     		strb	r3, [r2, #8]
+  67:hardware/button/button.c **** 			}
+ 103              		.loc 1 67 0
+ 104 0060 1D44     		add	r5, r5, r3
+ 105 0062 1E4B     		ldr	r3, .L14
+ 106 0064 53F82500 		ldr	r0, [r3, r5, lsl #2]
+ 107 0068 C368     		ldr	r3, [r0, #12]
+ 108 006a 6BB1     		cbz	r3, .L5
+  67:hardware/button/button.c **** 			}
+ 109              		.loc 1 67 0 is_stmt 0 discriminator 1
+ 110 006c 9847     		blx	r3
+ 111              	.LVL5:
+ 112 006e 0BE0     		b	.L5
+ 113              	.L7:
+  76:hardware/button/button.c **** 				}
+  77:hardware/button/button.c **** 			}
+  78:hardware/button/button.c **** 		}
+  79:hardware/button/button.c **** 		else 
+  80:hardware/button/button.c **** 		{
+  81:hardware/button/button.c **** 			button_manage.button_list[i]->cnt = 0;
+  82:hardware/button/button.c **** 
+  83:hardware/button/button.c **** 			if (cnt_old >= MY_BUTTON_DOWN_MS / MY_BUTTON_SCAN_SPACE_MS && cnt_old < MY_BUTTON_HOLD_MS / MY_B
+  84:hardware/button/button.c **** 			{
+  85:hardware/button/button.c **** 				LOG_D("BUTTON_CLICK_UP");
+  86:hardware/button/button.c **** 				button_manage.button_list[i]->event = BUTTON_EVENT_CLICK_UP;
+  87:hardware/button/button.c **** 				MY_BUTTON_CALL(button_manage.button_list[i]->cb, (button_manage.button_list[i]));
+  88:hardware/button/button.c **** 			}
+  89:hardware/button/button.c **** 			else if (cnt_old >= MY_BUTTON_HOLD_MS / MY_BUTTON_SCAN_SPACE_MS)		//BUTTON_HOLD_UP
+ 114              		.loc 1 89 0 is_stmt 1
+ 115 0070 B8F1220F 		cmp	r8, #34
+ 116 0074 08D9     		bls	.L5
+  90:hardware/button/button.c **** 			{
+  91:hardware/button/button.c **** 				LOG_D("BUTTON_HOLD_UP");
+  92:hardware/button/button.c **** 				button_manage.button_list[i]->event = BUTTON_EVENT_HOLD_UP;
+ 117              		.loc 1 92 0
+ 118 0076 0235     		adds	r5, r5, #2
+ 119 0078 184B     		ldr	r3, .L14
+ 120 007a 53F82500 		ldr	r0, [r3, r5, lsl #2]
+ 121 007e 0423     		movs	r3, #4
+ 122 0080 0372     		strb	r3, [r0, #8]
+  93:hardware/button/button.c **** 				MY_BUTTON_CALL(button_manage.button_list[i]->cb, (button_manage.button_list[i]));
+ 123              		.loc 1 93 0
+ 124 0082 C368     		ldr	r3, [r0, #12]
+ 125 0084 03B1     		cbz	r3, .L5
+ 126              		.loc 1 93 0 is_stmt 0 discriminator 1
+ 127 0086 9847     		blx	r3
+ 128              	.LVL6:
+ 129              	.L5:
+  49:hardware/button/button.c **** 	{
+ARM GAS  /tmp/ccxbERQ4.s 			page 5
+
+
+ 130              		.loc 1 49 0 is_stmt 1 discriminator 2
+ 131 0088 0134     		adds	r4, r4, #1
+ 132              	.LVL7:
+ 133 008a E4B2     		uxtb	r4, r4
+ 134              	.LVL8:
+ 135              	.L2:
+  49:hardware/button/button.c **** 	{
+ 136              		.loc 1 49 0 is_stmt 0 discriminator 1
+ 137 008c 134B     		ldr	r3, .L14
+ 138 008e 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 139 0090 9C42     		cmp	r4, r3
+ 140 0092 20D2     		bcs	.L12
+  51:hardware/button/button.c **** 
+ 141              		.loc 1 51 0 is_stmt 1
+ 142 0094 2546     		mov	r5, r4
+ 143 0096 114E     		ldr	r6, .L14
+ 144 0098 A71C     		adds	r7, r4, #2
+ 145 009a 56F82730 		ldr	r3, [r6, r7, lsl #2]
+ 146 009e B3F80280 		ldrh	r8, [r3, #2]
+ 147              	.LVL9:
+  53:hardware/button/button.c **** 		{
+ 148              		.loc 1 53 0
+ 149 00a2 D888     		ldrh	r0, [r3, #6]
+ 150 00a4 FFF7FEFF 		bl	rt_pin_read
+ 151              	.LVL10:
+ 152 00a8 56F82730 		ldr	r3, [r6, r7, lsl #2]
+ 153 00ac 1A78     		ldrb	r2, [r3]	@ zero_extendqisi2
+ 154 00ae 9042     		cmp	r0, r2
+ 155 00b0 AAD0     		beq	.L13
+  81:hardware/button/button.c **** 
+ 156              		.loc 1 81 0
+ 157 00b2 0022     		movs	r2, #0
+ 158 00b4 5A80     		strh	r2, [r3, #2]	@ movhi
+  83:hardware/button/button.c **** 			{
+ 159              		.loc 1 83 0
+ 160 00b6 A8F10203 		sub	r3, r8, #2
+ 161 00ba 9BB2     		uxth	r3, r3
+ 162 00bc 202B     		cmp	r3, #32
+ 163 00be D7D8     		bhi	.L7
+  86:hardware/button/button.c **** 				MY_BUTTON_CALL(button_manage.button_list[i]->cb, (button_manage.button_list[i]));
+ 164              		.loc 1 86 0
+ 165 00c0 0235     		adds	r5, r5, #2
+ 166 00c2 064B     		ldr	r3, .L14
+ 167 00c4 53F82500 		ldr	r0, [r3, r5, lsl #2]
+ 168 00c8 0123     		movs	r3, #1
+ 169 00ca 0372     		strb	r3, [r0, #8]
+  87:hardware/button/button.c **** 			}
+ 170              		.loc 1 87 0
+ 171 00cc C368     		ldr	r3, [r0, #12]
+ 172 00ce 002B     		cmp	r3, #0
+ 173 00d0 DAD0     		beq	.L5
+  87:hardware/button/button.c **** 			}
+ 174              		.loc 1 87 0 is_stmt 0 discriminator 1
+ 175 00d2 9847     		blx	r3
+ 176              	.LVL11:
+ 177 00d4 D8E7     		b	.L5
+ 178              	.LVL12:
+ARM GAS  /tmp/ccxbERQ4.s 			page 6
+
+
+ 179              	.L12:
+  94:hardware/button/button.c **** 			}
+  95:hardware/button/button.c **** 		}
+  96:hardware/button/button.c **** 	}
+  97:hardware/button/button.c **** }
+ 180              		.loc 1 97 0 is_stmt 1
+ 181 00d6 BDE8F081 		pop	{r4, r5, r6, r7, r8, pc}
+ 182              	.LVL13:
+ 183              	.L15:
+ 184 00da 00BF     		.align	2
+ 185              	.L14:
+ 186 00dc 00000000 		.word	.LANCHOR0
+ 187 00e0 CDCCCCCC 		.word	-858993459
+ 188              		.cfi_endproc
+ 189              	.LFE20:
+ 191              		.section	.text.my_button_register,"ax",%progbits
+ 192              		.align	1
+ 193              		.global	my_button_register
+ 194              		.syntax unified
+ 195              		.thumb
+ 196              		.thumb_func
+ 197              		.fpu fpv4-sp-d16
+ 199              	my_button_register:
+ 200              	.LFB19:
+  27:hardware/button/button.c **** 	if (button->press_logic_level == 0)
+ 201              		.loc 1 27 0
+ 202              		.cfi_startproc
+ 203              		@ args = 0, pretend = 0, frame = 0
+ 204              		@ frame_needed = 0, uses_anonymous_args = 0
+ 205              	.LVL14:
+ 206 0000 10B5     		push	{r4, lr}
+ 207              	.LCFI1:
+ 208              		.cfi_def_cfa_offset 8
+ 209              		.cfi_offset 4, -8
+ 210              		.cfi_offset 14, -4
+ 211 0002 0446     		mov	r4, r0
+  28:hardware/button/button.c **** 	{
+ 212              		.loc 1 28 0
+ 213 0004 0378     		ldrb	r3, [r0]	@ zero_extendqisi2
+ 214 0006 7BB1     		cbz	r3, .L20
+  34:hardware/button/button.c **** 	}
+ 215              		.loc 1 34 0
+ 216 0008 0321     		movs	r1, #3
+ 217 000a C088     		ldrh	r0, [r0, #6]
+ 218              	.LVL15:
+ 219 000c FFF7FEFF 		bl	rt_pin_mode
+ 220              	.LVL16:
+ 221              	.L18:
+  37:hardware/button/button.c **** 	button->event = BUTTON_EVENT_NONE;
+ 222              		.loc 1 37 0
+ 223 0010 0020     		movs	r0, #0
+ 224 0012 6080     		strh	r0, [r4, #2]	@ movhi
+  38:hardware/button/button.c **** 	button_manage.button_list[button_manage.num++] = button;
+ 225              		.loc 1 38 0
+ 226 0014 0523     		movs	r3, #5
+ 227 0016 2372     		strb	r3, [r4, #8]
+  39:hardware/button/button.c **** 
+ARM GAS  /tmp/ccxbERQ4.s 			page 7
+
+
+ 228              		.loc 1 39 0
+ 229 0018 064A     		ldr	r2, .L21
+ 230 001a 1378     		ldrb	r3, [r2]	@ zero_extendqisi2
+ 231 001c 591C     		adds	r1, r3, #1
+ 232 001e 1170     		strb	r1, [r2]
+ 233 0020 0233     		adds	r3, r3, #2
+ 234 0022 42F82340 		str	r4, [r2, r3, lsl #2]
+  42:hardware/button/button.c **** 
+ 235              		.loc 1 42 0
+ 236 0026 10BD     		pop	{r4, pc}
+ 237              	.LVL17:
+ 238              	.L20:
+  30:hardware/button/button.c **** 	}
+ 239              		.loc 1 30 0
+ 240 0028 0221     		movs	r1, #2
+ 241 002a C088     		ldrh	r0, [r0, #6]
+ 242              	.LVL18:
+ 243 002c FFF7FEFF 		bl	rt_pin_mode
+ 244              	.LVL19:
+ 245 0030 EEE7     		b	.L18
+ 246              	.L22:
+ 247 0032 00BF     		.align	2
+ 248              	.L21:
+ 249 0034 00000000 		.word	.LANCHOR0
+ 250              		.cfi_endproc
+ 251              	.LFE19:
+ 253              		.section	.text.my_button_start,"ax",%progbits
+ 254              		.align	1
+ 255              		.global	my_button_start
+ 256              		.syntax unified
+ 257              		.thumb
+ 258              		.thumb_func
+ 259              		.fpu fpv4-sp-d16
+ 261              	my_button_start:
+ 262              	.LFB21:
+  98:hardware/button/button.c **** 
+  99:hardware/button/button.c **** int my_button_start(void)
+ 100:hardware/button/button.c **** {
+ 263              		.loc 1 100 0
+ 264              		.cfi_startproc
+ 265              		@ args = 0, pretend = 0, frame = 0
+ 266              		@ frame_needed = 0, uses_anonymous_args = 0
+ 101:hardware/button/button.c **** 	if (button_manage.timer != RT_NULL)
+ 267              		.loc 1 101 0
+ 268 0000 0D4B     		ldr	r3, .L31
+ 269 0002 5B68     		ldr	r3, [r3, #4]
+ 270 0004 93B9     		cbnz	r3, .L25
+ 100:hardware/button/button.c **** 	if (button_manage.timer != RT_NULL)
+ 271              		.loc 1 100 0
+ 272 0006 00B5     		push	{lr}
+ 273              	.LCFI2:
+ 274              		.cfi_def_cfa_offset 4
+ 275              		.cfi_offset 14, -4
+ 276 0008 83B0     		sub	sp, sp, #12
+ 277              	.LCFI3:
+ 278              		.cfi_def_cfa_offset 16
+ 102:hardware/button/button.c **** 	{
+ARM GAS  /tmp/ccxbERQ4.s 			page 8
+
+
+ 103:hardware/button/button.c **** 		return -1;
+ 104:hardware/button/button.c **** 	}
+ 105:hardware/button/button.c **** 
+ 106:hardware/button/button.c **** 	/*创建定时器1*/
+ 107:hardware/button/button.c **** 	button_manage.timer = rt_timer_create("timer1",				/* tiemr's name -> timer1 */
+ 279              		.loc 1 107 0
+ 280 000a 0623     		movs	r3, #6
+ 281 000c 0093     		str	r3, [sp]
+ 282 000e 1423     		movs	r3, #20
+ 283 0010 0022     		movs	r2, #0
+ 284 0012 0A49     		ldr	r1, .L31+4
+ 285 0014 0A48     		ldr	r0, .L31+8
+ 286 0016 FFF7FEFF 		bl	rt_timer_create
+ 287              	.LVL20:
+ 288 001a 074B     		ldr	r3, .L31
+ 289 001c 5860     		str	r0, [r3, #4]
+ 108:hardware/button/button.c **** 										my_button_scan,			/* timeout callback function */
+ 109:hardware/button/button.c **** 										RT_NULL,				/* timeout function's entry param */
+ 110:hardware/button/button.c **** 										RT_TICK_PER_SECOND * MY_BUTTON_SCAN_SPACE_MS / 1000,	/* timer's time, unit->OS Tick,(10 O
+ 111:hardware/button/button.c **** 										RT_TIMER_FLAG_PERIODIC | RT_TIMER_FLAG_SOFT_TIMER);		/* periodic timer */
+ 112:hardware/button/button.c **** 
+ 113:hardware/button/button.c **** 	/* startup timers */
+ 114:hardware/button/button.c **** 	if (button_manage.timer != RT_NULL)
+ 290              		.loc 1 114 0
+ 291 001e 40B1     		cbz	r0, .L26
+ 115:hardware/button/button.c **** 	{
+ 116:hardware/button/button.c **** 		rt_timer_start(button_manage.timer);
+ 292              		.loc 1 116 0
+ 293 0020 FFF7FEFF 		bl	rt_timer_start
+ 294              	.LVL21:
+ 117:hardware/button/button.c **** 	}
+ 118:hardware/button/button.c **** 
+ 119:hardware/button/button.c **** 	return 0;
+ 295              		.loc 1 119 0
+ 296 0024 0020     		movs	r0, #0
+ 297              	.L23:
+ 120:hardware/button/button.c **** }
+ 298              		.loc 1 120 0
+ 299 0026 03B0     		add	sp, sp, #12
+ 300              	.LCFI4:
+ 301              		.cfi_def_cfa_offset 4
+ 302              		@ sp needed
+ 303 0028 5DF804FB 		ldr	pc, [sp], #4
+ 304              	.L25:
+ 305              	.LCFI5:
+ 306              		.cfi_def_cfa_offset 0
+ 307              		.cfi_restore 14
+ 103:hardware/button/button.c **** 	}
+ 308              		.loc 1 103 0
+ 309 002c 4FF0FF30 		mov	r0, #-1
+ 310 0030 7047     		bx	lr
+ 311              	.L26:
+ 312              	.LCFI6:
+ 313              		.cfi_def_cfa_offset 16
+ 314              		.cfi_offset 14, -4
+ 119:hardware/button/button.c **** }
+ 315              		.loc 1 119 0
+ARM GAS  /tmp/ccxbERQ4.s 			page 9
+
+
+ 316 0032 0020     		movs	r0, #0
+ 317 0034 F7E7     		b	.L23
+ 318              	.L32:
+ 319 0036 00BF     		.align	2
+ 320              	.L31:
+ 321 0038 00000000 		.word	.LANCHOR0
+ 322 003c 00000000 		.word	my_button_scan
+ 323 0040 00000000 		.word	.LC0
+ 324              		.cfi_endproc
+ 325              	.LFE21:
+ 327              		.section	.bss.button_manage,"aw",%nobits
+ 328              		.align	2
+ 329              		.set	.LANCHOR0,. + 0
+ 332              	button_manage:
+ 333 0000 00000000 		.space	48
+ 333      00000000 
+ 333      00000000 
+ 333      00000000 
+ 333      00000000 
+ 334              		.section	.rodata.my_button_start.str1.4,"aMS",%progbits,1
+ 335              		.align	2
+ 336              	.LC0:
+ 337 0000 74696D65 		.ascii	"timer1\000"
+ 337      723100
+ 338              		.text
+ 339              	.Letext0:
+ 340              		.file 2 "rt-thread/include/rtdef.h"
+ 341              		.file 3 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/lock.h"
+ 342              		.file 4 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_types.h"
+ 343              		.file 5 "/opt/gcc-arm-none-eabi-6-2017-q2-update/lib/gcc/arm-none-eabi/6.3.1/include/stddef.h"
+ 344              		.file 6 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/reent.h"
+ 345              		.file 7 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/time.h"
+ 346              		.file 8 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/errno.h"
+ 347              		.file 9 "rt-thread/components/finsh/finsh_api.h"
+ 348              		.file 10 "hardware/button/button.h"
+ 349              		.file 11 "rt-thread/include/rtthread.h"
+ 350              		.file 12 "rt-thread/components/drivers/include/drivers/pin.h"
+ARM GAS  /tmp/ccxbERQ4.s 			page 10
+
+
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 button.c
+     /tmp/ccxbERQ4.s:18     .text.my_button_scan:0000000000000000 $t
+     /tmp/ccxbERQ4.s:24     .text.my_button_scan:0000000000000000 my_button_scan
+     /tmp/ccxbERQ4.s:186    .text.my_button_scan:00000000000000dc $d
+     /tmp/ccxbERQ4.s:192    .text.my_button_register:0000000000000000 $t
+     /tmp/ccxbERQ4.s:199    .text.my_button_register:0000000000000000 my_button_register
+     /tmp/ccxbERQ4.s:249    .text.my_button_register:0000000000000034 $d
+     /tmp/ccxbERQ4.s:254    .text.my_button_start:0000000000000000 $t
+     /tmp/ccxbERQ4.s:261    .text.my_button_start:0000000000000000 my_button_start
+     /tmp/ccxbERQ4.s:321    .text.my_button_start:0000000000000038 $d
+     /tmp/ccxbERQ4.s:328    .bss.button_manage:0000000000000000 $d
+     /tmp/ccxbERQ4.s:332    .bss.button_manage:0000000000000000 button_manage
+     /tmp/ccxbERQ4.s:335    .rodata.my_button_start.str1.4:0000000000000000 $d
+                     .debug_frame:0000000000000010 $d
+
+UNDEFINED SYMBOLS
+rt_pin_read
+rt_pin_mode
+rt_timer_create
+rt_timer_start

@@ -1,0 +1,415 @@
+ARM GAS  /tmp/ccgmbxsk.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.eabi_attribute 27, 1
+   3              		.eabi_attribute 28, 1
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.file	"finsh_vm.c"
+  14              		.text
+  15              	.Ltext0:
+  16              		.cfi_sections	.debug_frame
+  17              		.section	.text.finsh_vm_run,"ax",%progbits
+  18              		.align	1
+  19              		.global	finsh_vm_run
+  20              		.syntax unified
+  21              		.thumb
+  22              		.thumb_func
+  23              		.fpu fpv4-sp-d16
+  25              	finsh_vm_run:
+  26              	.LFB16:
+  27              		.file 1 "rt-thread/components/finsh/finsh_vm.c"
+   1:rt-thread/components/finsh/finsh_vm.c **** /*
+   2:rt-thread/components/finsh/finsh_vm.c ****  * Copyright (c) 2006-2018, RT-Thread Development Team
+   3:rt-thread/components/finsh/finsh_vm.c ****  *
+   4:rt-thread/components/finsh/finsh_vm.c ****  * SPDX-License-Identifier: Apache-2.0
+   5:rt-thread/components/finsh/finsh_vm.c ****  *
+   6:rt-thread/components/finsh/finsh_vm.c ****  * Change Logs:
+   7:rt-thread/components/finsh/finsh_vm.c ****  * Date           Author       Notes
+   8:rt-thread/components/finsh/finsh_vm.c ****  * 2010-03-22     Bernard      first version
+   9:rt-thread/components/finsh/finsh_vm.c ****  */
+  10:rt-thread/components/finsh/finsh_vm.c **** #include <finsh.h>
+  11:rt-thread/components/finsh/finsh_vm.c **** 
+  12:rt-thread/components/finsh/finsh_vm.c **** #include "finsh_vm.h"
+  13:rt-thread/components/finsh/finsh_vm.c **** #include "finsh_ops.h"
+  14:rt-thread/components/finsh/finsh_vm.c **** #include "finsh_var.h"
+  15:rt-thread/components/finsh/finsh_vm.c **** 
+  16:rt-thread/components/finsh/finsh_vm.c **** /* stack */
+  17:rt-thread/components/finsh/finsh_vm.c **** union finsh_value   finsh_vm_stack[FINSH_STACK_MAX];
+  18:rt-thread/components/finsh/finsh_vm.c **** /* text segment */
+  19:rt-thread/components/finsh/finsh_vm.c **** uint8_t             text_segment[FINSH_TEXT_MAX];
+  20:rt-thread/components/finsh/finsh_vm.c **** 
+  21:rt-thread/components/finsh/finsh_vm.c **** union finsh_value*  finsh_sp;       /* stack pointer */
+  22:rt-thread/components/finsh/finsh_vm.c **** uint8_t*            finsh_pc;       /* PC */
+  23:rt-thread/components/finsh/finsh_vm.c **** 
+  24:rt-thread/components/finsh/finsh_vm.c **** /* syscall list, for dynamic system call register */
+  25:rt-thread/components/finsh/finsh_vm.c **** struct finsh_syscall_item* global_syscall_list = NULL;
+  26:rt-thread/components/finsh/finsh_vm.c **** 
+  27:rt-thread/components/finsh/finsh_vm.c **** // #define FINSH_VM_DISASSEMBLE
+  28:rt-thread/components/finsh/finsh_vm.c **** void finsh_vm_run()
+  29:rt-thread/components/finsh/finsh_vm.c **** {
+  28              		.loc 1 29 0
+  29              		.cfi_startproc
+ARM GAS  /tmp/ccgmbxsk.s 			page 2
+
+
+  30              		@ args = 0, pretend = 0, frame = 0
+  31              		@ frame_needed = 0, uses_anonymous_args = 0
+  32 0000 08B5     		push	{r3, lr}
+  33              	.LCFI0:
+  34              		.cfi_def_cfa_offset 8
+  35              		.cfi_offset 3, -8
+  36              		.cfi_offset 14, -4
+  30:rt-thread/components/finsh/finsh_vm.c ****     uint8_t op;
+  31:rt-thread/components/finsh/finsh_vm.c **** 
+  32:rt-thread/components/finsh/finsh_vm.c ****     /* if you want to disassemble the byte code, please define FINSH_VM_DISASSEMBLE */
+  33:rt-thread/components/finsh/finsh_vm.c **** #ifdef FINSH_VM_DISASSEMBLE
+  34:rt-thread/components/finsh/finsh_vm.c ****     void finsh_disassemble();
+  35:rt-thread/components/finsh/finsh_vm.c ****     finsh_disassemble();
+  36:rt-thread/components/finsh/finsh_vm.c **** #endif
+  37:rt-thread/components/finsh/finsh_vm.c **** 
+  38:rt-thread/components/finsh/finsh_vm.c ****     /* set sp(stack pointer) to the beginning of stack */
+  39:rt-thread/components/finsh/finsh_vm.c ****     finsh_sp = &finsh_vm_stack[0];
+  37              		.loc 1 39 0
+  38 0002 0B4A     		ldr	r2, .L5
+  39 0004 0B4B     		ldr	r3, .L5+4
+  40 0006 1A60     		str	r2, [r3]
+  40:rt-thread/components/finsh/finsh_vm.c **** 
+  41:rt-thread/components/finsh/finsh_vm.c ****     /* set pc to the beginning of text segment */
+  42:rt-thread/components/finsh/finsh_vm.c ****     finsh_pc = &text_segment[0];
+  41              		.loc 1 42 0
+  42 0008 0B4A     		ldr	r2, .L5+8
+  43 000a 0C4B     		ldr	r3, .L5+12
+  44 000c 1A60     		str	r2, [r3]
+  43:rt-thread/components/finsh/finsh_vm.c **** 
+  44:rt-thread/components/finsh/finsh_vm.c ****     while ((finsh_pc - &text_segment[0] >= 0) &&
+  45              		.loc 1 44 0
+  46 000e 07E0     		b	.L2
+  47              	.L3:
+  45:rt-thread/components/finsh/finsh_vm.c ****         (finsh_pc - &text_segment[0] < FINSH_TEXT_MAX))
+  46:rt-thread/components/finsh/finsh_vm.c ****     {
+  47:rt-thread/components/finsh/finsh_vm.c ****         /* get op */
+  48:rt-thread/components/finsh/finsh_vm.c ****         op = *finsh_pc++;
+  48              		.loc 1 48 0
+  49 0010 511C     		adds	r1, r2, #1
+  50 0012 0A4B     		ldr	r3, .L5+12
+  51 0014 1960     		str	r1, [r3]
+  52 0016 1278     		ldrb	r2, [r2]	@ zero_extendqisi2
+  53              	.LVL0:
+  49:rt-thread/components/finsh/finsh_vm.c **** 
+  50:rt-thread/components/finsh/finsh_vm.c ****         /* call op function */
+  51:rt-thread/components/finsh/finsh_vm.c ****         op_table[op]();
+  54              		.loc 1 51 0
+  55 0018 094B     		ldr	r3, .L5+16
+  56 001a 53F82230 		ldr	r3, [r3, r2, lsl #2]
+  57 001e 9847     		blx	r3
+  58              	.LVL1:
+  59              	.L2:
+  44:rt-thread/components/finsh/finsh_vm.c ****         (finsh_pc - &text_segment[0] < FINSH_TEXT_MAX))
+  60              		.loc 1 44 0
+  61 0020 064B     		ldr	r3, .L5+12
+  62 0022 1A68     		ldr	r2, [r3]
+  63 0024 044B     		ldr	r3, .L5+8
+ARM GAS  /tmp/ccgmbxsk.s 			page 3
+
+
+  64 0026 D31A     		subs	r3, r2, r3
+  65 0028 7F2B     		cmp	r3, #127
+  66 002a F1D9     		bls	.L3
+  52:rt-thread/components/finsh/finsh_vm.c ****     }
+  53:rt-thread/components/finsh/finsh_vm.c **** }
+  67              		.loc 1 53 0
+  68 002c 08BD     		pop	{r3, pc}
+  69              	.L6:
+  70 002e 00BF     		.align	2
+  71              	.L5:
+  72 0030 00000000 		.word	finsh_vm_stack
+  73 0034 00000000 		.word	finsh_sp
+  74 0038 00000000 		.word	text_segment
+  75 003c 00000000 		.word	finsh_pc
+  76 0040 00000000 		.word	op_table
+  77              		.cfi_endproc
+  78              	.LFE16:
+  80              		.section	.text.finsh_syscall_append,"ax",%progbits
+  81              		.align	1
+  82              		.global	finsh_syscall_append
+  83              		.syntax unified
+  84              		.thumb
+  85              		.thumb_func
+  86              		.fpu fpv4-sp-d16
+  88              	finsh_syscall_append:
+  89              	.LFB17:
+  54:rt-thread/components/finsh/finsh_vm.c **** 
+  55:rt-thread/components/finsh/finsh_vm.c **** #ifdef RT_USING_HEAP
+  56:rt-thread/components/finsh/finsh_vm.c **** void finsh_syscall_append(const char* name, syscall_func func)
+  57:rt-thread/components/finsh/finsh_vm.c **** {
+  90              		.loc 1 57 0
+  91              		.cfi_startproc
+  92              		@ args = 0, pretend = 0, frame = 0
+  93              		@ frame_needed = 0, uses_anonymous_args = 0
+  94              	.LVL2:
+  95 0000 70B5     		push	{r4, r5, r6, lr}
+  96              	.LCFI1:
+  97              		.cfi_def_cfa_offset 16
+  98              		.cfi_offset 4, -16
+  99              		.cfi_offset 5, -12
+ 100              		.cfi_offset 6, -8
+ 101              		.cfi_offset 14, -4
+ 102 0002 0646     		mov	r6, r0
+ 103 0004 0D46     		mov	r5, r1
+  58:rt-thread/components/finsh/finsh_vm.c ****     /* create the syscall */
+  59:rt-thread/components/finsh/finsh_vm.c ****     struct finsh_syscall_item* item;
+  60:rt-thread/components/finsh/finsh_vm.c **** 
+  61:rt-thread/components/finsh/finsh_vm.c ****     item = (struct finsh_syscall_item*)rt_malloc(sizeof(struct finsh_syscall_item));
+ 104              		.loc 1 61 0
+ 105 0006 1020     		movs	r0, #16
+ 106              	.LVL3:
+ 107 0008 FFF7FEFF 		bl	rt_malloc
+ 108              	.LVL4:
+  62:rt-thread/components/finsh/finsh_vm.c ****     if (item != RT_NULL)
+ 109              		.loc 1 62 0
+ 110 000c 68B1     		cbz	r0, .L7
+ 111 000e 0446     		mov	r4, r0
+ARM GAS  /tmp/ccgmbxsk.s 			page 4
+
+
+  63:rt-thread/components/finsh/finsh_vm.c ****     {
+  64:rt-thread/components/finsh/finsh_vm.c ****         item->next = NULL;
+ 112              		.loc 1 64 0
+ 113 0010 0023     		movs	r3, #0
+ 114 0012 0360     		str	r3, [r0]
+  65:rt-thread/components/finsh/finsh_vm.c ****         item->syscall.name = rt_strdup(name);
+ 115              		.loc 1 65 0
+ 116 0014 3046     		mov	r0, r6
+ 117              	.LVL5:
+ 118 0016 FFF7FEFF 		bl	rt_strdup
+ 119              	.LVL6:
+ 120 001a 6060     		str	r0, [r4, #4]
+  66:rt-thread/components/finsh/finsh_vm.c ****         item->syscall.func = func;
+ 121              		.loc 1 66 0
+ 122 001c E560     		str	r5, [r4, #12]
+  67:rt-thread/components/finsh/finsh_vm.c **** 
+  68:rt-thread/components/finsh/finsh_vm.c ****         if (global_syscall_list == NULL)
+ 123              		.loc 1 68 0
+ 124 001e 054B     		ldr	r3, .L12
+ 125 0020 1B68     		ldr	r3, [r3]
+ 126 0022 1BB1     		cbz	r3, .L11
+  69:rt-thread/components/finsh/finsh_vm.c ****         {
+  70:rt-thread/components/finsh/finsh_vm.c ****             global_syscall_list = item;
+  71:rt-thread/components/finsh/finsh_vm.c ****         }
+  72:rt-thread/components/finsh/finsh_vm.c ****         else
+  73:rt-thread/components/finsh/finsh_vm.c ****         {
+  74:rt-thread/components/finsh/finsh_vm.c ****             item->next = global_syscall_list;
+ 127              		.loc 1 74 0
+ 128 0024 2360     		str	r3, [r4]
+  75:rt-thread/components/finsh/finsh_vm.c ****             global_syscall_list = item;
+ 129              		.loc 1 75 0
+ 130 0026 034B     		ldr	r3, .L12
+ 131 0028 1C60     		str	r4, [r3]
+ 132              	.LVL7:
+ 133              	.L7:
+ 134 002a 70BD     		pop	{r4, r5, r6, pc}
+ 135              	.LVL8:
+ 136              	.L11:
+  70:rt-thread/components/finsh/finsh_vm.c ****         }
+ 137              		.loc 1 70 0
+ 138 002c 014B     		ldr	r3, .L12
+ 139 002e 1C60     		str	r4, [r3]
+ 140 0030 70BD     		pop	{r4, r5, r6, pc}
+ 141              	.LVL9:
+ 142              	.L13:
+ 143 0032 00BF     		.align	2
+ 144              	.L12:
+ 145 0034 00000000 		.word	.LANCHOR0
+ 146              		.cfi_endproc
+ 147              	.LFE17:
+ 149              		.section	.text.finsh_syscall_lookup,"ax",%progbits
+ 150              		.align	1
+ 151              		.global	finsh_syscall_lookup
+ 152              		.syntax unified
+ 153              		.thumb
+ 154              		.thumb_func
+ 155              		.fpu fpv4-sp-d16
+ARM GAS  /tmp/ccgmbxsk.s 			page 5
+
+
+ 157              	finsh_syscall_lookup:
+ 158              	.LFB18:
+  76:rt-thread/components/finsh/finsh_vm.c ****         }
+  77:rt-thread/components/finsh/finsh_vm.c ****     }
+  78:rt-thread/components/finsh/finsh_vm.c **** }
+  79:rt-thread/components/finsh/finsh_vm.c **** #endif
+  80:rt-thread/components/finsh/finsh_vm.c **** 
+  81:rt-thread/components/finsh/finsh_vm.c **** struct finsh_syscall* finsh_syscall_lookup(const char* name)
+  82:rt-thread/components/finsh/finsh_vm.c **** {
+ 159              		.loc 1 82 0
+ 160              		.cfi_startproc
+ 161              		@ args = 0, pretend = 0, frame = 0
+ 162              		@ frame_needed = 0, uses_anonymous_args = 0
+ 163              	.LVL10:
+ 164 0000 38B5     		push	{r3, r4, r5, lr}
+ 165              	.LCFI2:
+ 166              		.cfi_def_cfa_offset 16
+ 167              		.cfi_offset 3, -16
+ 168              		.cfi_offset 4, -12
+ 169              		.cfi_offset 5, -8
+ 170              		.cfi_offset 14, -4
+ 171 0002 0546     		mov	r5, r0
+  83:rt-thread/components/finsh/finsh_vm.c ****     struct finsh_syscall* index;
+  84:rt-thread/components/finsh/finsh_vm.c ****     struct finsh_syscall_item* item;
+  85:rt-thread/components/finsh/finsh_vm.c **** 
+  86:rt-thread/components/finsh/finsh_vm.c ****     for (index = _syscall_table_begin; index < _syscall_table_end; FINSH_NEXT_SYSCALL(index))
+ 172              		.loc 1 86 0
+ 173 0004 0E4B     		ldr	r3, .L24
+ 174 0006 1C68     		ldr	r4, [r3]
+ 175              	.LVL11:
+ 176              	.L15:
+ 177              		.loc 1 86 0 is_stmt 0 discriminator 1
+ 178 0008 0E4B     		ldr	r3, .L24+4
+ 179 000a 1B68     		ldr	r3, [r3]
+ 180 000c 9C42     		cmp	r4, r3
+ 181 000e 06D2     		bcs	.L22
+  87:rt-thread/components/finsh/finsh_vm.c ****     {
+  88:rt-thread/components/finsh/finsh_vm.c ****         if (strcmp(index->name, name) == 0)
+ 182              		.loc 1 88 0 is_stmt 1
+ 183 0010 2946     		mov	r1, r5
+ 184 0012 2068     		ldr	r0, [r4]
+ 185 0014 FFF7FEFF 		bl	strcmp
+ 186              	.LVL12:
+ 187 0018 80B1     		cbz	r0, .L14
+  86:rt-thread/components/finsh/finsh_vm.c ****     {
+ 188              		.loc 1 86 0 discriminator 2
+ 189 001a 0C34     		adds	r4, r4, #12
+ 190              	.LVL13:
+ 191 001c F4E7     		b	.L15
+ 192              	.L22:
+  89:rt-thread/components/finsh/finsh_vm.c ****             return index;
+  90:rt-thread/components/finsh/finsh_vm.c ****     }
+  91:rt-thread/components/finsh/finsh_vm.c **** 
+  92:rt-thread/components/finsh/finsh_vm.c ****     /* find on syscall list */
+  93:rt-thread/components/finsh/finsh_vm.c ****     item = global_syscall_list;
+ 193              		.loc 1 93 0
+ 194 001e 0A4B     		ldr	r3, .L24+8
+ARM GAS  /tmp/ccgmbxsk.s 			page 6
+
+
+ 195 0020 1C68     		ldr	r4, [r3]
+ 196              	.LVL14:
+ 197              	.L18:
+  94:rt-thread/components/finsh/finsh_vm.c ****     while (item != NULL)
+ 198              		.loc 1 94 0
+ 199 0022 5CB1     		cbz	r4, .L14
+  95:rt-thread/components/finsh/finsh_vm.c ****     {
+  96:rt-thread/components/finsh/finsh_vm.c ****         if (strncmp(item->syscall.name, name, strlen(name)) == 0)
+ 200              		.loc 1 96 0
+ 201 0024 2846     		mov	r0, r5
+ 202 0026 FFF7FEFF 		bl	strlen
+ 203              	.LVL15:
+ 204 002a 0246     		mov	r2, r0
+ 205 002c 2946     		mov	r1, r5
+ 206 002e 6068     		ldr	r0, [r4, #4]
+ 207 0030 FFF7FEFF 		bl	strncmp
+ 208              	.LVL16:
+ 209 0034 08B1     		cbz	r0, .L23
+  97:rt-thread/components/finsh/finsh_vm.c ****         {
+  98:rt-thread/components/finsh/finsh_vm.c ****             return &(item->syscall);
+  99:rt-thread/components/finsh/finsh_vm.c ****         }
+ 100:rt-thread/components/finsh/finsh_vm.c **** 
+ 101:rt-thread/components/finsh/finsh_vm.c ****         item = item->next;
+ 210              		.loc 1 101 0
+ 211 0036 2468     		ldr	r4, [r4]
+ 212              	.LVL17:
+ 213 0038 F3E7     		b	.L18
+ 214              	.L23:
+  98:rt-thread/components/finsh/finsh_vm.c ****         }
+ 215              		.loc 1 98 0
+ 216 003a 0434     		adds	r4, r4, #4
+ 217              	.LVL18:
+ 218              	.L14:
+ 102:rt-thread/components/finsh/finsh_vm.c ****     }
+ 103:rt-thread/components/finsh/finsh_vm.c **** 
+ 104:rt-thread/components/finsh/finsh_vm.c ****     return NULL;
+ 105:rt-thread/components/finsh/finsh_vm.c **** }
+ 219              		.loc 1 105 0
+ 220 003c 2046     		mov	r0, r4
+ 221 003e 38BD     		pop	{r3, r4, r5, pc}
+ 222              	.LVL19:
+ 223              	.L25:
+ 224              		.align	2
+ 225              	.L24:
+ 226 0040 00000000 		.word	_syscall_table_begin
+ 227 0044 00000000 		.word	_syscall_table_end
+ 228 0048 00000000 		.word	.LANCHOR0
+ 229              		.cfi_endproc
+ 230              	.LFE18:
+ 232              		.global	global_syscall_list
+ 233              		.comm	finsh_pc,4,4
+ 234              		.comm	finsh_sp,4,4
+ 235              		.comm	text_segment,128,4
+ 236              		.comm	finsh_vm_stack,256,4
+ 237              		.section	.bss.global_syscall_list,"aw",%nobits
+ 238              		.align	2
+ 239              		.set	.LANCHOR0,. + 0
+ARM GAS  /tmp/ccgmbxsk.s 			page 7
+
+
+ 242              	global_syscall_list:
+ 243 0000 00000000 		.space	4
+ 244              		.text
+ 245              	.Letext0:
+ 246              		.file 2 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/machine/_default_types.h"
+ 247              		.file 3 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/lock.h"
+ 248              		.file 4 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_types.h"
+ 249              		.file 5 "/opt/gcc-arm-none-eabi-6-2017-q2-update/lib/gcc/arm-none-eabi/6.3.1/include/stddef.h"
+ 250              		.file 6 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/reent.h"
+ 251              		.file 7 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_stdint.h"
+ 252              		.file 8 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/time.h"
+ 253              		.file 9 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/errno.h"
+ 254              		.file 10 "rt-thread/components/finsh/finsh_api.h"
+ 255              		.file 11 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/ctype.h"
+ 256              		.file 12 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/stdlib.h"
+ 257              		.file 13 "rt-thread/components/finsh/finsh.h"
+ 258              		.file 14 "rt-thread/components/finsh/finsh_var.h"
+ 259              		.file 15 "rt-thread/components/finsh/finsh_vm.h"
+ 260              		.file 16 "rt-thread/components/finsh/finsh_ops.h"
+ 261              		.file 17 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/string.h"
+ 262              		.file 18 "rt-thread/include/rtthread.h"
+ARM GAS  /tmp/ccgmbxsk.s 			page 8
+
+
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 finsh_vm.c
+     /tmp/ccgmbxsk.s:18     .text.finsh_vm_run:0000000000000000 $t
+     /tmp/ccgmbxsk.s:25     .text.finsh_vm_run:0000000000000000 finsh_vm_run
+     /tmp/ccgmbxsk.s:72     .text.finsh_vm_run:0000000000000030 $d
+                            *COM*:0000000000000100 finsh_vm_stack
+                            *COM*:0000000000000004 finsh_sp
+                            *COM*:0000000000000080 text_segment
+                            *COM*:0000000000000004 finsh_pc
+     /tmp/ccgmbxsk.s:81     .text.finsh_syscall_append:0000000000000000 $t
+     /tmp/ccgmbxsk.s:88     .text.finsh_syscall_append:0000000000000000 finsh_syscall_append
+     /tmp/ccgmbxsk.s:145    .text.finsh_syscall_append:0000000000000034 $d
+     /tmp/ccgmbxsk.s:150    .text.finsh_syscall_lookup:0000000000000000 $t
+     /tmp/ccgmbxsk.s:157    .text.finsh_syscall_lookup:0000000000000000 finsh_syscall_lookup
+     /tmp/ccgmbxsk.s:226    .text.finsh_syscall_lookup:0000000000000040 $d
+     /tmp/ccgmbxsk.s:242    .bss.global_syscall_list:0000000000000000 global_syscall_list
+     /tmp/ccgmbxsk.s:238    .bss.global_syscall_list:0000000000000000 $d
+                     .debug_frame:0000000000000010 $d
+
+UNDEFINED SYMBOLS
+op_table
+rt_malloc
+rt_strdup
+strcmp
+strlen
+strncmp
+_syscall_table_begin
+_syscall_table_end

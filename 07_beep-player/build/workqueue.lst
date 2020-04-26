@@ -1,0 +1,2016 @@
+ARM GAS  /tmp/ccpfJq7S.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.eabi_attribute 27, 1
+   3              		.eabi_attribute 28, 1
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.file	"workqueue.c"
+  14              		.text
+  15              	.Ltext0:
+  16              		.cfi_sections	.debug_frame
+  17              		.section	.text._workqueue_cancel_work,"ax",%progbits
+  18              		.align	1
+  19              		.syntax unified
+  20              		.thumb
+  21              		.thumb_func
+  22              		.fpu fpv4-sp-d16
+  24              	_workqueue_cancel_work:
+  25              	.LFB22:
+  26              		.file 1 "rt-thread/components/drivers/src/workqueue.c"
+   1:rt-thread/components/drivers/src/workqueue.c **** /*
+   2:rt-thread/components/drivers/src/workqueue.c ****  * Copyright (c) 2006-2018, RT-Thread Development Team
+   3:rt-thread/components/drivers/src/workqueue.c ****  *
+   4:rt-thread/components/drivers/src/workqueue.c ****  * SPDX-License-Identifier: Apache-2.0
+   5:rt-thread/components/drivers/src/workqueue.c ****  *
+   6:rt-thread/components/drivers/src/workqueue.c ****  * Change Logs:
+   7:rt-thread/components/drivers/src/workqueue.c ****  * Date           Author       Notes
+   8:rt-thread/components/drivers/src/workqueue.c ****  * 2017-02-27     bernard      fix the re-work issue.
+   9:rt-thread/components/drivers/src/workqueue.c ****  */
+  10:rt-thread/components/drivers/src/workqueue.c **** 
+  11:rt-thread/components/drivers/src/workqueue.c **** #include <rthw.h>
+  12:rt-thread/components/drivers/src/workqueue.c **** #include <rtthread.h>
+  13:rt-thread/components/drivers/src/workqueue.c **** #include <rtdevice.h>
+  14:rt-thread/components/drivers/src/workqueue.c **** 
+  15:rt-thread/components/drivers/src/workqueue.c **** #ifdef RT_USING_HEAP
+  16:rt-thread/components/drivers/src/workqueue.c **** 
+  17:rt-thread/components/drivers/src/workqueue.c **** static void _delayed_work_timeout_handler(void *parameter);
+  18:rt-thread/components/drivers/src/workqueue.c **** 
+  19:rt-thread/components/drivers/src/workqueue.c **** rt_inline rt_err_t _workqueue_work_completion(struct rt_workqueue *queue)
+  20:rt-thread/components/drivers/src/workqueue.c **** {
+  21:rt-thread/components/drivers/src/workqueue.c ****     rt_err_t result;
+  22:rt-thread/components/drivers/src/workqueue.c **** 
+  23:rt-thread/components/drivers/src/workqueue.c ****     rt_enter_critical();
+  24:rt-thread/components/drivers/src/workqueue.c ****     while (1)
+  25:rt-thread/components/drivers/src/workqueue.c ****     {
+  26:rt-thread/components/drivers/src/workqueue.c ****         /* try to take condition semaphore */
+  27:rt-thread/components/drivers/src/workqueue.c ****         result = rt_sem_trytake(&(queue->sem));
+  28:rt-thread/components/drivers/src/workqueue.c ****         if (result == -RT_ETIMEOUT)
+  29:rt-thread/components/drivers/src/workqueue.c ****         {
+  30:rt-thread/components/drivers/src/workqueue.c ****             /* it's timeout, release this semaphore */
+  31:rt-thread/components/drivers/src/workqueue.c ****             rt_sem_release(&(queue->sem));
+  32:rt-thread/components/drivers/src/workqueue.c ****         }
+ARM GAS  /tmp/ccpfJq7S.s 			page 2
+
+
+  33:rt-thread/components/drivers/src/workqueue.c ****         else if (result == RT_EOK)
+  34:rt-thread/components/drivers/src/workqueue.c ****         {
+  35:rt-thread/components/drivers/src/workqueue.c ****             /* keep the sem value = 0 */
+  36:rt-thread/components/drivers/src/workqueue.c ****             result = RT_EOK;
+  37:rt-thread/components/drivers/src/workqueue.c ****             break;
+  38:rt-thread/components/drivers/src/workqueue.c ****         }
+  39:rt-thread/components/drivers/src/workqueue.c ****         else
+  40:rt-thread/components/drivers/src/workqueue.c ****         {
+  41:rt-thread/components/drivers/src/workqueue.c ****             result = -RT_ERROR;
+  42:rt-thread/components/drivers/src/workqueue.c ****             break;
+  43:rt-thread/components/drivers/src/workqueue.c ****         }
+  44:rt-thread/components/drivers/src/workqueue.c ****     }
+  45:rt-thread/components/drivers/src/workqueue.c ****     rt_exit_critical();
+  46:rt-thread/components/drivers/src/workqueue.c **** 
+  47:rt-thread/components/drivers/src/workqueue.c ****     return result;
+  48:rt-thread/components/drivers/src/workqueue.c **** }
+  49:rt-thread/components/drivers/src/workqueue.c **** 
+  50:rt-thread/components/drivers/src/workqueue.c **** static void _workqueue_thread_entry(void *parameter)
+  51:rt-thread/components/drivers/src/workqueue.c **** {
+  52:rt-thread/components/drivers/src/workqueue.c ****     rt_base_t level;
+  53:rt-thread/components/drivers/src/workqueue.c ****     struct rt_work *work;
+  54:rt-thread/components/drivers/src/workqueue.c ****     struct rt_workqueue *queue;
+  55:rt-thread/components/drivers/src/workqueue.c **** 
+  56:rt-thread/components/drivers/src/workqueue.c ****     queue = (struct rt_workqueue *) parameter;
+  57:rt-thread/components/drivers/src/workqueue.c ****     RT_ASSERT(queue != RT_NULL);
+  58:rt-thread/components/drivers/src/workqueue.c **** 
+  59:rt-thread/components/drivers/src/workqueue.c ****     while (1)
+  60:rt-thread/components/drivers/src/workqueue.c ****     {
+  61:rt-thread/components/drivers/src/workqueue.c ****         if (rt_list_isempty(&(queue->work_list)))
+  62:rt-thread/components/drivers/src/workqueue.c ****         {
+  63:rt-thread/components/drivers/src/workqueue.c ****             /* no software timer exist, suspend self. */
+  64:rt-thread/components/drivers/src/workqueue.c ****             rt_thread_suspend(rt_thread_self());
+  65:rt-thread/components/drivers/src/workqueue.c ****             rt_schedule();
+  66:rt-thread/components/drivers/src/workqueue.c ****         }
+  67:rt-thread/components/drivers/src/workqueue.c **** 
+  68:rt-thread/components/drivers/src/workqueue.c ****         /* we have work to do with. */
+  69:rt-thread/components/drivers/src/workqueue.c ****         level = rt_hw_interrupt_disable();
+  70:rt-thread/components/drivers/src/workqueue.c ****         work = rt_list_entry(queue->work_list.next, struct rt_work, list);
+  71:rt-thread/components/drivers/src/workqueue.c ****         rt_list_remove(&(work->list));
+  72:rt-thread/components/drivers/src/workqueue.c ****         queue->work_current = work;
+  73:rt-thread/components/drivers/src/workqueue.c ****         work->flags &= ~RT_WORK_STATE_PENDING;
+  74:rt-thread/components/drivers/src/workqueue.c ****         work->workqueue = RT_NULL;
+  75:rt-thread/components/drivers/src/workqueue.c ****         rt_hw_interrupt_enable(level);
+  76:rt-thread/components/drivers/src/workqueue.c **** 
+  77:rt-thread/components/drivers/src/workqueue.c ****         /* do work */
+  78:rt-thread/components/drivers/src/workqueue.c ****         work->work_func(work, work->work_data);
+  79:rt-thread/components/drivers/src/workqueue.c ****         level = rt_hw_interrupt_disable();
+  80:rt-thread/components/drivers/src/workqueue.c ****         /* clean current work */
+  81:rt-thread/components/drivers/src/workqueue.c ****         queue->work_current = RT_NULL;
+  82:rt-thread/components/drivers/src/workqueue.c ****         rt_hw_interrupt_enable(level);
+  83:rt-thread/components/drivers/src/workqueue.c **** 
+  84:rt-thread/components/drivers/src/workqueue.c ****         /* ack work completion */
+  85:rt-thread/components/drivers/src/workqueue.c ****         _workqueue_work_completion(queue);
+  86:rt-thread/components/drivers/src/workqueue.c ****     }
+  87:rt-thread/components/drivers/src/workqueue.c **** }
+  88:rt-thread/components/drivers/src/workqueue.c **** 
+  89:rt-thread/components/drivers/src/workqueue.c **** static rt_err_t _workqueue_submit_work(struct rt_workqueue *queue, struct rt_work *work)
+ARM GAS  /tmp/ccpfJq7S.s 			page 3
+
+
+  90:rt-thread/components/drivers/src/workqueue.c **** {
+  91:rt-thread/components/drivers/src/workqueue.c ****     rt_base_t level;
+  92:rt-thread/components/drivers/src/workqueue.c **** 
+  93:rt-thread/components/drivers/src/workqueue.c ****     level = rt_hw_interrupt_disable();
+  94:rt-thread/components/drivers/src/workqueue.c ****     if (work->flags & RT_WORK_STATE_PENDING)
+  95:rt-thread/components/drivers/src/workqueue.c ****     {
+  96:rt-thread/components/drivers/src/workqueue.c ****         rt_hw_interrupt_enable(level);
+  97:rt-thread/components/drivers/src/workqueue.c ****         return -RT_EBUSY;
+  98:rt-thread/components/drivers/src/workqueue.c ****     }
+  99:rt-thread/components/drivers/src/workqueue.c **** 
+ 100:rt-thread/components/drivers/src/workqueue.c ****     if (queue->work_current == work)
+ 101:rt-thread/components/drivers/src/workqueue.c ****     {
+ 102:rt-thread/components/drivers/src/workqueue.c ****         rt_hw_interrupt_enable(level);
+ 103:rt-thread/components/drivers/src/workqueue.c ****         return -RT_EBUSY;
+ 104:rt-thread/components/drivers/src/workqueue.c ****     }
+ 105:rt-thread/components/drivers/src/workqueue.c **** 
+ 106:rt-thread/components/drivers/src/workqueue.c ****     /* NOTE: the work MUST be initialized firstly */
+ 107:rt-thread/components/drivers/src/workqueue.c ****     rt_list_remove(&(work->list));
+ 108:rt-thread/components/drivers/src/workqueue.c **** 
+ 109:rt-thread/components/drivers/src/workqueue.c ****     rt_list_insert_after(queue->work_list.prev, &(work->list));
+ 110:rt-thread/components/drivers/src/workqueue.c ****     work->flags |= RT_WORK_STATE_PENDING;
+ 111:rt-thread/components/drivers/src/workqueue.c **** 
+ 112:rt-thread/components/drivers/src/workqueue.c ****     /* whether the workqueue is doing work */
+ 113:rt-thread/components/drivers/src/workqueue.c ****     if (queue->work_current == RT_NULL)
+ 114:rt-thread/components/drivers/src/workqueue.c ****     {
+ 115:rt-thread/components/drivers/src/workqueue.c ****         rt_hw_interrupt_enable(level);
+ 116:rt-thread/components/drivers/src/workqueue.c ****         /* resume work thread */
+ 117:rt-thread/components/drivers/src/workqueue.c ****         rt_thread_resume(queue->work_thread);
+ 118:rt-thread/components/drivers/src/workqueue.c ****         rt_schedule();
+ 119:rt-thread/components/drivers/src/workqueue.c ****     }
+ 120:rt-thread/components/drivers/src/workqueue.c ****     else
+ 121:rt-thread/components/drivers/src/workqueue.c ****     {
+ 122:rt-thread/components/drivers/src/workqueue.c ****         rt_hw_interrupt_enable(level);
+ 123:rt-thread/components/drivers/src/workqueue.c ****     }
+ 124:rt-thread/components/drivers/src/workqueue.c **** 
+ 125:rt-thread/components/drivers/src/workqueue.c ****     return RT_EOK;
+ 126:rt-thread/components/drivers/src/workqueue.c **** }
+ 127:rt-thread/components/drivers/src/workqueue.c **** 
+ 128:rt-thread/components/drivers/src/workqueue.c **** static rt_err_t _workqueue_cancel_work(struct rt_workqueue *queue, struct rt_work *work)
+ 129:rt-thread/components/drivers/src/workqueue.c **** {
+  27              		.loc 1 129 0
+  28              		.cfi_startproc
+  29              		@ args = 0, pretend = 0, frame = 0
+  30              		@ frame_needed = 0, uses_anonymous_args = 0
+  31              	.LVL0:
+  32 0000 38B5     		push	{r3, r4, r5, lr}
+  33              	.LCFI0:
+  34              		.cfi_def_cfa_offset 16
+  35              		.cfi_offset 3, -16
+  36              		.cfi_offset 4, -12
+  37              		.cfi_offset 5, -8
+  38              		.cfi_offset 14, -4
+  39 0002 0546     		mov	r5, r0
+  40 0004 0C46     		mov	r4, r1
+ 130:rt-thread/components/drivers/src/workqueue.c ****     rt_base_t level;
+ 131:rt-thread/components/drivers/src/workqueue.c **** 
+ 132:rt-thread/components/drivers/src/workqueue.c ****     level = rt_hw_interrupt_disable();
+ARM GAS  /tmp/ccpfJq7S.s 			page 4
+
+
+  41              		.loc 1 132 0
+  42 0006 FFF7FEFF 		bl	rt_hw_interrupt_disable
+  43              	.LVL1:
+ 133:rt-thread/components/drivers/src/workqueue.c ****     if (queue->work_current == work)
+  44              		.loc 1 133 0
+  45 000a AB68     		ldr	r3, [r5, #8]
+  46 000c A342     		cmp	r3, r4
+  47 000e 0FD0     		beq	.L5
+  48              	.LVL2:
+  49              	.LBB28:
+  50              	.LBB29:
+  51              		.file 2 "rt-thread/include/rtservice.h"
+   1:rt-thread/include/rtservice.h **** /*
+   2:rt-thread/include/rtservice.h ****  * Copyright (c) 2006-2018, RT-Thread Development Team
+   3:rt-thread/include/rtservice.h ****  *
+   4:rt-thread/include/rtservice.h ****  * SPDX-License-Identifier: Apache-2.0
+   5:rt-thread/include/rtservice.h ****  *
+   6:rt-thread/include/rtservice.h ****  * Change Logs:
+   7:rt-thread/include/rtservice.h ****  * Date           Author       Notes
+   8:rt-thread/include/rtservice.h ****  * 2006-03-16     Bernard      the first version
+   9:rt-thread/include/rtservice.h ****  * 2006-09-07     Bernard      move the kservice APIs to rtthread.h
+  10:rt-thread/include/rtservice.h ****  * 2007-06-27     Bernard      fix the rt_list_remove bug
+  11:rt-thread/include/rtservice.h ****  * 2012-03-22     Bernard      rename kservice.h to rtservice.h
+  12:rt-thread/include/rtservice.h ****  * 2017-11-15     JasonJia     Modify rt_slist_foreach to rt_slist_for_each_entry.
+  13:rt-thread/include/rtservice.h ****  *                             Make code cleanup.
+  14:rt-thread/include/rtservice.h ****  */
+  15:rt-thread/include/rtservice.h **** 
+  16:rt-thread/include/rtservice.h **** #ifndef __RT_SERVICE_H__
+  17:rt-thread/include/rtservice.h **** #define __RT_SERVICE_H__
+  18:rt-thread/include/rtservice.h **** 
+  19:rt-thread/include/rtservice.h **** #ifdef __cplusplus
+  20:rt-thread/include/rtservice.h **** extern "C" {
+  21:rt-thread/include/rtservice.h **** #endif
+  22:rt-thread/include/rtservice.h **** 
+  23:rt-thread/include/rtservice.h **** /**
+  24:rt-thread/include/rtservice.h ****  * @addtogroup KernelService
+  25:rt-thread/include/rtservice.h ****  */
+  26:rt-thread/include/rtservice.h **** 
+  27:rt-thread/include/rtservice.h **** /**@{*/
+  28:rt-thread/include/rtservice.h **** 
+  29:rt-thread/include/rtservice.h **** /**
+  30:rt-thread/include/rtservice.h ****  * rt_container_of - return the member address of ptr, if the type of ptr is the
+  31:rt-thread/include/rtservice.h ****  * struct type.
+  32:rt-thread/include/rtservice.h ****  */
+  33:rt-thread/include/rtservice.h **** #define rt_container_of(ptr, type, member) \
+  34:rt-thread/include/rtservice.h ****     ((type *)((char *)(ptr) - (unsigned long)(&((type *)0)->member)))
+  35:rt-thread/include/rtservice.h **** 
+  36:rt-thread/include/rtservice.h **** 
+  37:rt-thread/include/rtservice.h **** /**
+  38:rt-thread/include/rtservice.h ****  * @brief initialize a list object
+  39:rt-thread/include/rtservice.h ****  */
+  40:rt-thread/include/rtservice.h **** #define RT_LIST_OBJECT_INIT(object) { &(object), &(object) }
+  41:rt-thread/include/rtservice.h **** 
+  42:rt-thread/include/rtservice.h **** /**
+  43:rt-thread/include/rtservice.h ****  * @brief initialize a list
+  44:rt-thread/include/rtservice.h ****  *
+  45:rt-thread/include/rtservice.h ****  * @param l list to be initialized
+ARM GAS  /tmp/ccpfJq7S.s 			page 5
+
+
+  46:rt-thread/include/rtservice.h ****  */
+  47:rt-thread/include/rtservice.h **** rt_inline void rt_list_init(rt_list_t *l)
+  48:rt-thread/include/rtservice.h **** {
+  49:rt-thread/include/rtservice.h ****     l->next = l->prev = l;
+  50:rt-thread/include/rtservice.h **** }
+  51:rt-thread/include/rtservice.h **** 
+  52:rt-thread/include/rtservice.h **** /**
+  53:rt-thread/include/rtservice.h ****  * @brief insert a node after a list
+  54:rt-thread/include/rtservice.h ****  *
+  55:rt-thread/include/rtservice.h ****  * @param l list to insert it
+  56:rt-thread/include/rtservice.h ****  * @param n new node to be inserted
+  57:rt-thread/include/rtservice.h ****  */
+  58:rt-thread/include/rtservice.h **** rt_inline void rt_list_insert_after(rt_list_t *l, rt_list_t *n)
+  59:rt-thread/include/rtservice.h **** {
+  60:rt-thread/include/rtservice.h ****     l->next->prev = n;
+  61:rt-thread/include/rtservice.h ****     n->next = l->next;
+  62:rt-thread/include/rtservice.h **** 
+  63:rt-thread/include/rtservice.h ****     l->next = n;
+  64:rt-thread/include/rtservice.h ****     n->prev = l;
+  65:rt-thread/include/rtservice.h **** }
+  66:rt-thread/include/rtservice.h **** 
+  67:rt-thread/include/rtservice.h **** /**
+  68:rt-thread/include/rtservice.h ****  * @brief insert a node before a list
+  69:rt-thread/include/rtservice.h ****  *
+  70:rt-thread/include/rtservice.h ****  * @param n new node to be inserted
+  71:rt-thread/include/rtservice.h ****  * @param l list to insert it
+  72:rt-thread/include/rtservice.h ****  */
+  73:rt-thread/include/rtservice.h **** rt_inline void rt_list_insert_before(rt_list_t *l, rt_list_t *n)
+  74:rt-thread/include/rtservice.h **** {
+  75:rt-thread/include/rtservice.h ****     l->prev->next = n;
+  76:rt-thread/include/rtservice.h ****     n->prev = l->prev;
+  77:rt-thread/include/rtservice.h **** 
+  78:rt-thread/include/rtservice.h ****     l->prev = n;
+  79:rt-thread/include/rtservice.h ****     n->next = l;
+  80:rt-thread/include/rtservice.h **** }
+  81:rt-thread/include/rtservice.h **** 
+  82:rt-thread/include/rtservice.h **** /**
+  83:rt-thread/include/rtservice.h ****  * @brief remove node from list.
+  84:rt-thread/include/rtservice.h ****  * @param n the node to remove from the list.
+  85:rt-thread/include/rtservice.h ****  */
+  86:rt-thread/include/rtservice.h **** rt_inline void rt_list_remove(rt_list_t *n)
+  87:rt-thread/include/rtservice.h **** {
+  88:rt-thread/include/rtservice.h ****     n->next->prev = n->prev;
+  52              		.loc 2 88 0
+  53 0010 2368     		ldr	r3, [r4]
+  54 0012 6268     		ldr	r2, [r4, #4]
+  55 0014 5A60     		str	r2, [r3, #4]
+  89:rt-thread/include/rtservice.h ****     n->prev->next = n->next;
+  56              		.loc 2 89 0
+  57 0016 6368     		ldr	r3, [r4, #4]
+  58 0018 2268     		ldr	r2, [r4]
+  59 001a 1A60     		str	r2, [r3]
+  90:rt-thread/include/rtservice.h **** 
+  91:rt-thread/include/rtservice.h ****     n->next = n->prev = n;
+  60              		.loc 2 91 0
+  61 001c 6460     		str	r4, [r4, #4]
+  62 001e 2460     		str	r4, [r4]
+ARM GAS  /tmp/ccpfJq7S.s 			page 6
+
+
+  63              	.LVL3:
+  64              	.LBE29:
+  65              	.LBE28:
+ 134:rt-thread/components/drivers/src/workqueue.c ****     {
+ 135:rt-thread/components/drivers/src/workqueue.c ****         rt_hw_interrupt_enable(level);
+ 136:rt-thread/components/drivers/src/workqueue.c ****         return -RT_EBUSY;
+ 137:rt-thread/components/drivers/src/workqueue.c ****     }
+ 138:rt-thread/components/drivers/src/workqueue.c ****     rt_list_remove(&(work->list));
+ 139:rt-thread/components/drivers/src/workqueue.c ****     work->flags &= ~RT_WORK_STATE_PENDING;
+  66              		.loc 1 139 0
+  67 0020 238A     		ldrh	r3, [r4, #16]
+  68 0022 23F00103 		bic	r3, r3, #1
+  69 0026 2382     		strh	r3, [r4, #16]	@ movhi
+ 140:rt-thread/components/drivers/src/workqueue.c ****     rt_hw_interrupt_enable(level);
+  70              		.loc 1 140 0
+  71 0028 FFF7FEFF 		bl	rt_hw_interrupt_enable
+  72              	.LVL4:
+ 141:rt-thread/components/drivers/src/workqueue.c **** 
+ 142:rt-thread/components/drivers/src/workqueue.c ****     return RT_EOK;
+  73              		.loc 1 142 0
+  74 002c 0020     		movs	r0, #0
+ 143:rt-thread/components/drivers/src/workqueue.c **** }
+  75              		.loc 1 143 0
+  76 002e 38BD     		pop	{r3, r4, r5, pc}
+  77              	.LVL5:
+  78              	.L5:
+ 135:rt-thread/components/drivers/src/workqueue.c ****         return -RT_EBUSY;
+  79              		.loc 1 135 0
+  80 0030 FFF7FEFF 		bl	rt_hw_interrupt_enable
+  81              	.LVL6:
+ 136:rt-thread/components/drivers/src/workqueue.c ****     }
+  82              		.loc 1 136 0
+  83 0034 6FF00600 		mvn	r0, #6
+  84 0038 38BD     		pop	{r3, r4, r5, pc}
+  85              		.cfi_endproc
+  86              	.LFE22:
+  88              		.section	.text._workqueue_thread_entry,"ax",%progbits
+  89              		.align	1
+  90              		.syntax unified
+  91              		.thumb
+  92              		.thumb_func
+  93              		.fpu fpv4-sp-d16
+  95              	_workqueue_thread_entry:
+  96              	.LFB20:
+  51:rt-thread/components/drivers/src/workqueue.c ****     rt_base_t level;
+  97              		.loc 1 51 0
+  98              		.cfi_startproc
+  99              		@ args = 0, pretend = 0, frame = 0
+ 100              		@ frame_needed = 0, uses_anonymous_args = 0
+ 101              	.LVL7:
+ 102 0000 70B5     		push	{r4, r5, r6, lr}
+ 103              	.LCFI1:
+ 104              		.cfi_def_cfa_offset 16
+ 105              		.cfi_offset 4, -16
+ 106              		.cfi_offset 5, -12
+ 107              		.cfi_offset 6, -8
+ 108              		.cfi_offset 14, -4
+ARM GAS  /tmp/ccpfJq7S.s 			page 7
+
+
+ 109 0002 0546     		mov	r5, r0
+ 110              	.LVL8:
+ 111 0004 08E0     		b	.L10
+ 112              	.LVL9:
+ 113              	.L12:
+  64:rt-thread/components/drivers/src/workqueue.c ****             rt_schedule();
+ 114              		.loc 1 64 0
+ 115 0006 FFF7FEFF 		bl	rt_thread_self
+ 116              	.LVL10:
+ 117 000a FFF7FEFF 		bl	rt_thread_suspend
+ 118              	.LVL11:
+  65:rt-thread/components/drivers/src/workqueue.c ****         }
+ 119              		.loc 1 65 0
+ 120 000e FFF7FEFF 		bl	rt_schedule
+ 121              	.LVL12:
+ 122 0012 04E0     		b	.L7
+ 123              	.LVL13:
+ 124              	.L8:
+ 125              	.LBB36:
+ 126              	.LBB37:
+  45:rt-thread/components/drivers/src/workqueue.c **** 
+ 127              		.loc 1 45 0
+ 128 0014 FFF7FEFF 		bl	rt_exit_critical
+ 129              	.LVL14:
+ 130              	.L10:
+ 131              	.LBE37:
+ 132              	.LBE36:
+ 133              	.LBB39:
+ 134              	.LBB40:
+  92:rt-thread/include/rtservice.h **** }
+  93:rt-thread/include/rtservice.h **** 
+  94:rt-thread/include/rtservice.h **** /**
+  95:rt-thread/include/rtservice.h ****  * @brief tests whether a list is empty
+  96:rt-thread/include/rtservice.h ****  * @param l the list to test.
+  97:rt-thread/include/rtservice.h ****  */
+  98:rt-thread/include/rtservice.h **** rt_inline int rt_list_isempty(const rt_list_t *l)
+  99:rt-thread/include/rtservice.h **** {
+ 100:rt-thread/include/rtservice.h ****     return l->next == l;
+ 135              		.loc 2 100 0
+ 136 0018 2B68     		ldr	r3, [r5]
+ 137              	.LVL15:
+ 138              	.LBE40:
+ 139              	.LBE39:
+  61:rt-thread/components/drivers/src/workqueue.c ****         {
+ 140              		.loc 1 61 0
+ 141 001a 9D42     		cmp	r5, r3
+ 142 001c F3D0     		beq	.L12
+ 143              	.L7:
+  69:rt-thread/components/drivers/src/workqueue.c ****         work = rt_list_entry(queue->work_list.next, struct rt_work, list);
+ 144              		.loc 1 69 0
+ 145 001e FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 146              	.LVL16:
+  70:rt-thread/components/drivers/src/workqueue.c ****         rt_list_remove(&(work->list));
+ 147              		.loc 1 70 0
+ 148 0022 2C68     		ldr	r4, [r5]
+ 149              	.LVL17:
+ 150              	.LBB41:
+ARM GAS  /tmp/ccpfJq7S.s 			page 8
+
+
+ 151              	.LBB42:
+  88:rt-thread/include/rtservice.h ****     n->prev->next = n->next;
+ 152              		.loc 2 88 0
+ 153 0024 2368     		ldr	r3, [r4]
+ 154 0026 6268     		ldr	r2, [r4, #4]
+ 155 0028 5A60     		str	r2, [r3, #4]
+  89:rt-thread/include/rtservice.h **** 
+ 156              		.loc 2 89 0
+ 157 002a 6368     		ldr	r3, [r4, #4]
+ 158 002c 2268     		ldr	r2, [r4]
+ 159 002e 1A60     		str	r2, [r3]
+  91:rt-thread/include/rtservice.h **** }
+ 160              		.loc 2 91 0
+ 161 0030 6460     		str	r4, [r4, #4]
+ 162 0032 2460     		str	r4, [r4]
+ 163              	.LVL18:
+ 164              	.LBE42:
+ 165              	.LBE41:
+  72:rt-thread/components/drivers/src/workqueue.c ****         work->flags &= ~RT_WORK_STATE_PENDING;
+ 166              		.loc 1 72 0
+ 167 0034 AC60     		str	r4, [r5, #8]
+  73:rt-thread/components/drivers/src/workqueue.c ****         work->workqueue = RT_NULL;
+ 168              		.loc 1 73 0
+ 169 0036 238A     		ldrh	r3, [r4, #16]
+ 170 0038 23F00103 		bic	r3, r3, #1
+ 171 003c 2382     		strh	r3, [r4, #16]	@ movhi
+  74:rt-thread/components/drivers/src/workqueue.c ****         rt_hw_interrupt_enable(level);
+ 172              		.loc 1 74 0
+ 173 003e 0026     		movs	r6, #0
+ 174 0040 2664     		str	r6, [r4, #64]
+  75:rt-thread/components/drivers/src/workqueue.c **** 
+ 175              		.loc 1 75 0
+ 176 0042 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 177              	.LVL19:
+  78:rt-thread/components/drivers/src/workqueue.c ****         level = rt_hw_interrupt_disable();
+ 178              		.loc 1 78 0
+ 179 0046 A368     		ldr	r3, [r4, #8]
+ 180 0048 E168     		ldr	r1, [r4, #12]
+ 181 004a 2046     		mov	r0, r4
+ 182 004c 9847     		blx	r3
+ 183              	.LVL20:
+  79:rt-thread/components/drivers/src/workqueue.c ****         /* clean current work */
+ 184              		.loc 1 79 0
+ 185 004e FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 186              	.LVL21:
+  81:rt-thread/components/drivers/src/workqueue.c ****         rt_hw_interrupt_enable(level);
+ 187              		.loc 1 81 0
+ 188 0052 AE60     		str	r6, [r5, #8]
+  82:rt-thread/components/drivers/src/workqueue.c **** 
+ 189              		.loc 1 82 0
+ 190 0054 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 191              	.LVL22:
+ 192              	.LBB43:
+ 193              	.LBB38:
+  23:rt-thread/components/drivers/src/workqueue.c ****     while (1)
+ 194              		.loc 1 23 0
+ 195 0058 FFF7FEFF 		bl	rt_enter_critical
+ARM GAS  /tmp/ccpfJq7S.s 			page 9
+
+
+ 196              	.LVL23:
+ 197              	.L9:
+  27:rt-thread/components/drivers/src/workqueue.c ****         if (result == -RT_ETIMEOUT)
+ 198              		.loc 1 27 0
+ 199 005c 05F10C04 		add	r4, r5, #12
+ 200 0060 2046     		mov	r0, r4
+ 201 0062 FFF7FEFF 		bl	rt_sem_trytake
+ 202              	.LVL24:
+  28:rt-thread/components/drivers/src/workqueue.c ****         {
+ 203              		.loc 1 28 0
+ 204 0066 10F1020F 		cmn	r0, #2
+ 205 006a D3D1     		bne	.L8
+  31:rt-thread/components/drivers/src/workqueue.c ****         }
+ 206              		.loc 1 31 0
+ 207 006c 2046     		mov	r0, r4
+ 208              	.LVL25:
+ 209 006e FFF7FEFF 		bl	rt_sem_release
+ 210              	.LVL26:
+ 211 0072 F3E7     		b	.L9
+ 212              	.LBE38:
+ 213              	.LBE43:
+ 214              		.cfi_endproc
+ 215              	.LFE20:
+ 217              		.section	.text._workqueue_submit_work,"ax",%progbits
+ 218              		.align	1
+ 219              		.syntax unified
+ 220              		.thumb
+ 221              		.thumb_func
+ 222              		.fpu fpv4-sp-d16
+ 224              	_workqueue_submit_work:
+ 225              	.LFB21:
+  90:rt-thread/components/drivers/src/workqueue.c ****     rt_base_t level;
+ 226              		.loc 1 90 0
+ 227              		.cfi_startproc
+ 228              		@ args = 0, pretend = 0, frame = 0
+ 229              		@ frame_needed = 0, uses_anonymous_args = 0
+ 230              	.LVL27:
+ 231 0000 38B5     		push	{r3, r4, r5, lr}
+ 232              	.LCFI2:
+ 233              		.cfi_def_cfa_offset 16
+ 234              		.cfi_offset 3, -16
+ 235              		.cfi_offset 4, -12
+ 236              		.cfi_offset 5, -8
+ 237              		.cfi_offset 14, -4
+ 238 0002 0546     		mov	r5, r0
+ 239 0004 0C46     		mov	r4, r1
+  93:rt-thread/components/drivers/src/workqueue.c ****     if (work->flags & RT_WORK_STATE_PENDING)
+ 240              		.loc 1 93 0
+ 241 0006 FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 242              	.LVL28:
+  94:rt-thread/components/drivers/src/workqueue.c ****     {
+ 243              		.loc 1 94 0
+ 244 000a 238A     		ldrh	r3, [r4, #16]
+ 245 000c 13F0010F 		tst	r3, #1
+ 246 0010 1BD1     		bne	.L19
+ 100:rt-thread/components/drivers/src/workqueue.c ****     {
+ 247              		.loc 1 100 0
+ARM GAS  /tmp/ccpfJq7S.s 			page 10
+
+
+ 248 0012 AB68     		ldr	r3, [r5, #8]
+ 249 0014 9C42     		cmp	r4, r3
+ 250 0016 1DD0     		beq	.L20
+ 251              	.LVL29:
+ 252              	.LBB44:
+ 253              	.LBB45:
+  88:rt-thread/include/rtservice.h ****     n->prev->next = n->next;
+ 254              		.loc 2 88 0
+ 255 0018 2368     		ldr	r3, [r4]
+ 256 001a 6268     		ldr	r2, [r4, #4]
+ 257 001c 5A60     		str	r2, [r3, #4]
+  89:rt-thread/include/rtservice.h **** 
+ 258              		.loc 2 89 0
+ 259 001e 6368     		ldr	r3, [r4, #4]
+ 260 0020 2268     		ldr	r2, [r4]
+ 261 0022 1A60     		str	r2, [r3]
+  91:rt-thread/include/rtservice.h **** }
+ 262              		.loc 2 91 0
+ 263 0024 6460     		str	r4, [r4, #4]
+ 264 0026 2460     		str	r4, [r4]
+ 265              	.LVL30:
+ 266              	.LBE45:
+ 267              	.LBE44:
+ 109:rt-thread/components/drivers/src/workqueue.c ****     work->flags |= RT_WORK_STATE_PENDING;
+ 268              		.loc 1 109 0
+ 269 0028 6B68     		ldr	r3, [r5, #4]
+ 270              	.LVL31:
+ 271              	.LBB46:
+ 272              	.LBB47:
+  60:rt-thread/include/rtservice.h ****     n->next = l->next;
+ 273              		.loc 2 60 0
+ 274 002a 1A68     		ldr	r2, [r3]
+ 275 002c 5460     		str	r4, [r2, #4]
+  61:rt-thread/include/rtservice.h **** 
+ 276              		.loc 2 61 0
+ 277 002e 1A68     		ldr	r2, [r3]
+ 278 0030 2260     		str	r2, [r4]
+  63:rt-thread/include/rtservice.h ****     n->prev = l;
+ 279              		.loc 2 63 0
+ 280 0032 1C60     		str	r4, [r3]
+  64:rt-thread/include/rtservice.h **** }
+ 281              		.loc 2 64 0
+ 282 0034 6360     		str	r3, [r4, #4]
+ 283              	.LVL32:
+ 284              	.LBE47:
+ 285              	.LBE46:
+ 110:rt-thread/components/drivers/src/workqueue.c **** 
+ 286              		.loc 1 110 0
+ 287 0036 238A     		ldrh	r3, [r4, #16]
+ 288 0038 43F00103 		orr	r3, r3, #1
+ 289 003c 2382     		strh	r3, [r4, #16]	@ movhi
+ 113:rt-thread/components/drivers/src/workqueue.c ****     {
+ 290              		.loc 1 113 0
+ 291 003e AB68     		ldr	r3, [r5, #8]
+ 292 0040 6BB1     		cbz	r3, .L21
+ 122:rt-thread/components/drivers/src/workqueue.c ****     }
+ 293              		.loc 1 122 0
+ARM GAS  /tmp/ccpfJq7S.s 			page 11
+
+
+ 294 0042 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 295              	.LVL33:
+ 125:rt-thread/components/drivers/src/workqueue.c **** }
+ 296              		.loc 1 125 0
+ 297 0046 0020     		movs	r0, #0
+ 126:rt-thread/components/drivers/src/workqueue.c **** 
+ 298              		.loc 1 126 0
+ 299 0048 38BD     		pop	{r3, r4, r5, pc}
+ 300              	.LVL34:
+ 301              	.L19:
+  96:rt-thread/components/drivers/src/workqueue.c ****         return -RT_EBUSY;
+ 302              		.loc 1 96 0
+ 303 004a FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 304              	.LVL35:
+  97:rt-thread/components/drivers/src/workqueue.c ****     }
+ 305              		.loc 1 97 0
+ 306 004e 6FF00600 		mvn	r0, #6
+ 307 0052 38BD     		pop	{r3, r4, r5, pc}
+ 308              	.LVL36:
+ 309              	.L20:
+ 102:rt-thread/components/drivers/src/workqueue.c ****         return -RT_EBUSY;
+ 310              		.loc 1 102 0
+ 311 0054 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 312              	.LVL37:
+ 103:rt-thread/components/drivers/src/workqueue.c ****     }
+ 313              		.loc 1 103 0
+ 314 0058 6FF00600 		mvn	r0, #6
+ 315 005c 38BD     		pop	{r3, r4, r5, pc}
+ 316              	.LVL38:
+ 317              	.L21:
+ 115:rt-thread/components/drivers/src/workqueue.c ****         /* resume work thread */
+ 318              		.loc 1 115 0
+ 319 005e FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 320              	.LVL39:
+ 117:rt-thread/components/drivers/src/workqueue.c ****         rt_schedule();
+ 321              		.loc 1 117 0
+ 322 0062 E86A     		ldr	r0, [r5, #44]
+ 323 0064 FFF7FEFF 		bl	rt_thread_resume
+ 324              	.LVL40:
+ 118:rt-thread/components/drivers/src/workqueue.c ****     }
+ 325              		.loc 1 118 0
+ 326 0068 FFF7FEFF 		bl	rt_schedule
+ 327              	.LVL41:
+ 125:rt-thread/components/drivers/src/workqueue.c **** }
+ 328              		.loc 1 125 0
+ 329 006c 0020     		movs	r0, #0
+ 330 006e 38BD     		pop	{r3, r4, r5, pc}
+ 331              		.cfi_endproc
+ 332              	.LFE21:
+ 334              		.section	.text._delayed_work_timeout_handler,"ax",%progbits
+ 335              		.align	1
+ 336              		.syntax unified
+ 337              		.thumb
+ 338              		.thumb_func
+ 339              		.fpu fpv4-sp-d16
+ 341              	_delayed_work_timeout_handler:
+ 342              	.LFB25:
+ARM GAS  /tmp/ccpfJq7S.s 			page 12
+
+
+ 144:rt-thread/components/drivers/src/workqueue.c **** 
+ 145:rt-thread/components/drivers/src/workqueue.c **** static rt_err_t _workqueue_cancel_delayed_work(struct rt_work *work)
+ 146:rt-thread/components/drivers/src/workqueue.c **** {
+ 147:rt-thread/components/drivers/src/workqueue.c ****     rt_base_t level;
+ 148:rt-thread/components/drivers/src/workqueue.c ****     int ret = RT_EOK;
+ 149:rt-thread/components/drivers/src/workqueue.c **** 
+ 150:rt-thread/components/drivers/src/workqueue.c ****     if (!work->workqueue)
+ 151:rt-thread/components/drivers/src/workqueue.c ****     {
+ 152:rt-thread/components/drivers/src/workqueue.c ****         ret = -EINVAL;
+ 153:rt-thread/components/drivers/src/workqueue.c ****         goto __exit;
+ 154:rt-thread/components/drivers/src/workqueue.c ****     }
+ 155:rt-thread/components/drivers/src/workqueue.c **** 
+ 156:rt-thread/components/drivers/src/workqueue.c ****     if (work->flags & RT_WORK_STATE_PENDING)
+ 157:rt-thread/components/drivers/src/workqueue.c ****     {
+ 158:rt-thread/components/drivers/src/workqueue.c ****         /* Remove from the queue if already submitted */
+ 159:rt-thread/components/drivers/src/workqueue.c ****         ret = _workqueue_cancel_work(work->workqueue, work);
+ 160:rt-thread/components/drivers/src/workqueue.c ****         if (ret)
+ 161:rt-thread/components/drivers/src/workqueue.c ****         {
+ 162:rt-thread/components/drivers/src/workqueue.c ****             goto __exit;
+ 163:rt-thread/components/drivers/src/workqueue.c ****         }
+ 164:rt-thread/components/drivers/src/workqueue.c ****     }
+ 165:rt-thread/components/drivers/src/workqueue.c ****     else
+ 166:rt-thread/components/drivers/src/workqueue.c ****     {
+ 167:rt-thread/components/drivers/src/workqueue.c ****         if (work->flags & RT_WORK_STATE_SUBMITTING)
+ 168:rt-thread/components/drivers/src/workqueue.c ****         {
+ 169:rt-thread/components/drivers/src/workqueue.c ****             level = rt_hw_interrupt_disable();
+ 170:rt-thread/components/drivers/src/workqueue.c ****             rt_timer_stop(&(work->timer));
+ 171:rt-thread/components/drivers/src/workqueue.c ****             rt_timer_detach(&(work->timer));
+ 172:rt-thread/components/drivers/src/workqueue.c ****             work->flags &= ~RT_WORK_STATE_SUBMITTING;
+ 173:rt-thread/components/drivers/src/workqueue.c ****             rt_hw_interrupt_enable(level);
+ 174:rt-thread/components/drivers/src/workqueue.c ****         }
+ 175:rt-thread/components/drivers/src/workqueue.c ****     }
+ 176:rt-thread/components/drivers/src/workqueue.c **** 
+ 177:rt-thread/components/drivers/src/workqueue.c ****     level = rt_hw_interrupt_disable();
+ 178:rt-thread/components/drivers/src/workqueue.c ****     /* Detach from workqueue */
+ 179:rt-thread/components/drivers/src/workqueue.c ****     work->workqueue = RT_NULL;
+ 180:rt-thread/components/drivers/src/workqueue.c ****     work->flags &= ~(RT_WORK_STATE_PENDING);
+ 181:rt-thread/components/drivers/src/workqueue.c ****     rt_hw_interrupt_enable(level);
+ 182:rt-thread/components/drivers/src/workqueue.c **** 
+ 183:rt-thread/components/drivers/src/workqueue.c **** __exit:
+ 184:rt-thread/components/drivers/src/workqueue.c ****     return ret;
+ 185:rt-thread/components/drivers/src/workqueue.c **** }
+ 186:rt-thread/components/drivers/src/workqueue.c **** 
+ 187:rt-thread/components/drivers/src/workqueue.c **** static rt_err_t _workqueue_submit_delayed_work(struct rt_workqueue *queue,
+ 188:rt-thread/components/drivers/src/workqueue.c ****         struct rt_work *work, rt_tick_t ticks)
+ 189:rt-thread/components/drivers/src/workqueue.c **** {
+ 190:rt-thread/components/drivers/src/workqueue.c ****     rt_base_t level;
+ 191:rt-thread/components/drivers/src/workqueue.c ****     rt_err_t ret = RT_EOK;
+ 192:rt-thread/components/drivers/src/workqueue.c **** 
+ 193:rt-thread/components/drivers/src/workqueue.c ****     /* Work cannot be active in multiple queues */
+ 194:rt-thread/components/drivers/src/workqueue.c ****     if (work->workqueue && work->workqueue != queue)
+ 195:rt-thread/components/drivers/src/workqueue.c ****     {
+ 196:rt-thread/components/drivers/src/workqueue.c ****         ret = -RT_EINVAL;
+ 197:rt-thread/components/drivers/src/workqueue.c ****         goto __exit;
+ 198:rt-thread/components/drivers/src/workqueue.c ****     }
+ 199:rt-thread/components/drivers/src/workqueue.c **** 
+ 200:rt-thread/components/drivers/src/workqueue.c ****     /* Cancel if work has been submitted */
+ARM GAS  /tmp/ccpfJq7S.s 			page 13
+
+
+ 201:rt-thread/components/drivers/src/workqueue.c ****     if (work->workqueue == queue)
+ 202:rt-thread/components/drivers/src/workqueue.c ****     {
+ 203:rt-thread/components/drivers/src/workqueue.c ****         ret = _workqueue_cancel_delayed_work(work);
+ 204:rt-thread/components/drivers/src/workqueue.c ****         if (ret < 0)
+ 205:rt-thread/components/drivers/src/workqueue.c ****         {
+ 206:rt-thread/components/drivers/src/workqueue.c ****             goto __exit;
+ 207:rt-thread/components/drivers/src/workqueue.c ****         }
+ 208:rt-thread/components/drivers/src/workqueue.c ****     }
+ 209:rt-thread/components/drivers/src/workqueue.c **** 
+ 210:rt-thread/components/drivers/src/workqueue.c ****     level = rt_hw_interrupt_disable();
+ 211:rt-thread/components/drivers/src/workqueue.c ****     /* Attach workqueue so the timeout callback can submit it */
+ 212:rt-thread/components/drivers/src/workqueue.c ****     work->workqueue = queue;
+ 213:rt-thread/components/drivers/src/workqueue.c ****     rt_hw_interrupt_enable(level);
+ 214:rt-thread/components/drivers/src/workqueue.c **** 
+ 215:rt-thread/components/drivers/src/workqueue.c ****     if (!ticks)
+ 216:rt-thread/components/drivers/src/workqueue.c ****     {
+ 217:rt-thread/components/drivers/src/workqueue.c ****         /* Submit work if no ticks is 0 */
+ 218:rt-thread/components/drivers/src/workqueue.c ****         ret = _workqueue_submit_work(work->workqueue, work);
+ 219:rt-thread/components/drivers/src/workqueue.c ****     }
+ 220:rt-thread/components/drivers/src/workqueue.c ****     else
+ 221:rt-thread/components/drivers/src/workqueue.c ****     {
+ 222:rt-thread/components/drivers/src/workqueue.c ****         level = rt_hw_interrupt_disable();
+ 223:rt-thread/components/drivers/src/workqueue.c ****         /* Add timeout */
+ 224:rt-thread/components/drivers/src/workqueue.c ****         work->flags |= RT_WORK_STATE_SUBMITTING;
+ 225:rt-thread/components/drivers/src/workqueue.c ****         rt_timer_init(&(work->timer), "work", _delayed_work_timeout_handler, work, ticks,
+ 226:rt-thread/components/drivers/src/workqueue.c ****                       RT_TIMER_FLAG_ONE_SHOT | RT_TIMER_FLAG_SOFT_TIMER);
+ 227:rt-thread/components/drivers/src/workqueue.c ****         rt_hw_interrupt_enable(level);
+ 228:rt-thread/components/drivers/src/workqueue.c ****         rt_timer_start(&(work->timer));
+ 229:rt-thread/components/drivers/src/workqueue.c ****     }
+ 230:rt-thread/components/drivers/src/workqueue.c **** 
+ 231:rt-thread/components/drivers/src/workqueue.c **** __exit:
+ 232:rt-thread/components/drivers/src/workqueue.c ****     return ret;
+ 233:rt-thread/components/drivers/src/workqueue.c **** }
+ 234:rt-thread/components/drivers/src/workqueue.c **** 
+ 235:rt-thread/components/drivers/src/workqueue.c **** static void _delayed_work_timeout_handler(void *parameter)
+ 236:rt-thread/components/drivers/src/workqueue.c **** {
+ 343              		.loc 1 236 0
+ 344              		.cfi_startproc
+ 345              		@ args = 0, pretend = 0, frame = 0
+ 346              		@ frame_needed = 0, uses_anonymous_args = 0
+ 347              	.LVL42:
+ 348 0000 70B5     		push	{r4, r5, r6, lr}
+ 349              	.LCFI3:
+ 350              		.cfi_def_cfa_offset 16
+ 351              		.cfi_offset 4, -16
+ 352              		.cfi_offset 5, -12
+ 353              		.cfi_offset 6, -8
+ 354              		.cfi_offset 14, -4
+ 355 0002 0446     		mov	r4, r0
+ 356              	.LVL43:
+ 237:rt-thread/components/drivers/src/workqueue.c ****     struct rt_work *delayed_work;
+ 238:rt-thread/components/drivers/src/workqueue.c ****     rt_base_t level;
+ 239:rt-thread/components/drivers/src/workqueue.c **** 
+ 240:rt-thread/components/drivers/src/workqueue.c ****     delayed_work = (struct rt_work *)parameter;
+ 241:rt-thread/components/drivers/src/workqueue.c ****     level = rt_hw_interrupt_disable();
+ 357              		.loc 1 241 0
+ 358 0004 FFF7FEFF 		bl	rt_hw_interrupt_disable
+ARM GAS  /tmp/ccpfJq7S.s 			page 14
+
+
+ 359              	.LVL44:
+ 360 0008 0646     		mov	r6, r0
+ 361              	.LVL45:
+ 242:rt-thread/components/drivers/src/workqueue.c ****     rt_timer_stop(&(delayed_work->timer));
+ 362              		.loc 1 242 0
+ 363 000a 04F11405 		add	r5, r4, #20
+ 364 000e 2846     		mov	r0, r5
+ 365              	.LVL46:
+ 366 0010 FFF7FEFF 		bl	rt_timer_stop
+ 367              	.LVL47:
+ 243:rt-thread/components/drivers/src/workqueue.c ****     rt_timer_detach(&(delayed_work->timer));
+ 368              		.loc 1 243 0
+ 369 0014 2846     		mov	r0, r5
+ 370 0016 FFF7FEFF 		bl	rt_timer_detach
+ 371              	.LVL48:
+ 244:rt-thread/components/drivers/src/workqueue.c ****     delayed_work->flags &= ~RT_WORK_STATE_SUBMITTING;
+ 372              		.loc 1 244 0
+ 373 001a 238A     		ldrh	r3, [r4, #16]
+ 374 001c 23F00203 		bic	r3, r3, #2
+ 375 0020 2382     		strh	r3, [r4, #16]	@ movhi
+ 245:rt-thread/components/drivers/src/workqueue.c ****     delayed_work->type &= ~RT_WORK_TYPE_DELAYED;
+ 376              		.loc 1 245 0
+ 377 0022 638A     		ldrh	r3, [r4, #18]
+ 378 0024 23F00103 		bic	r3, r3, #1
+ 379 0028 6382     		strh	r3, [r4, #18]	@ movhi
+ 246:rt-thread/components/drivers/src/workqueue.c ****     rt_hw_interrupt_enable(level);
+ 380              		.loc 1 246 0
+ 381 002a 3046     		mov	r0, r6
+ 382 002c FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 383              	.LVL49:
+ 247:rt-thread/components/drivers/src/workqueue.c ****     _workqueue_submit_work(delayed_work->workqueue, delayed_work);
+ 384              		.loc 1 247 0
+ 385 0030 2146     		mov	r1, r4
+ 386 0032 206C     		ldr	r0, [r4, #64]
+ 387 0034 FFF7FEFF 		bl	_workqueue_submit_work
+ 388              	.LVL50:
+ 389 0038 70BD     		pop	{r4, r5, r6, pc}
+ 390              		.cfi_endproc
+ 391              	.LFE25:
+ 393              		.section	.text._workqueue_cancel_delayed_work,"ax",%progbits
+ 394              		.align	1
+ 395              		.syntax unified
+ 396              		.thumb
+ 397              		.thumb_func
+ 398              		.fpu fpv4-sp-d16
+ 400              	_workqueue_cancel_delayed_work:
+ 401              	.LFB23:
+ 146:rt-thread/components/drivers/src/workqueue.c ****     rt_base_t level;
+ 402              		.loc 1 146 0
+ 403              		.cfi_startproc
+ 404              		@ args = 0, pretend = 0, frame = 0
+ 405              		@ frame_needed = 0, uses_anonymous_args = 0
+ 406              	.LVL51:
+ 407 0000 70B5     		push	{r4, r5, r6, lr}
+ 408              	.LCFI4:
+ 409              		.cfi_def_cfa_offset 16
+ 410              		.cfi_offset 4, -16
+ARM GAS  /tmp/ccpfJq7S.s 			page 15
+
+
+ 411              		.cfi_offset 5, -12
+ 412              		.cfi_offset 6, -8
+ 413              		.cfi_offset 14, -4
+ 414              	.LVL52:
+ 150:rt-thread/components/drivers/src/workqueue.c ****     {
+ 415              		.loc 1 150 0
+ 416 0002 026C     		ldr	r2, [r0, #64]
+ 417 0004 82B3     		cbz	r2, .L28
+ 418 0006 0446     		mov	r4, r0
+ 156:rt-thread/components/drivers/src/workqueue.c ****     {
+ 419              		.loc 1 156 0
+ 420 0008 038A     		ldrh	r3, [r0, #16]
+ 421 000a 13F0010F 		tst	r3, #1
+ 422 000e 0FD1     		bne	.L31
+ 167:rt-thread/components/drivers/src/workqueue.c ****         {
+ 423              		.loc 1 167 0
+ 424 0010 13F0020F 		tst	r3, #2
+ 425 0014 14D1     		bne	.L32
+ 148:rt-thread/components/drivers/src/workqueue.c **** 
+ 426              		.loc 1 148 0
+ 427 0016 0025     		movs	r5, #0
+ 428              	.LVL53:
+ 429              	.L27:
+ 177:rt-thread/components/drivers/src/workqueue.c ****     /* Detach from workqueue */
+ 430              		.loc 1 177 0
+ 431 0018 FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 432              	.LVL54:
+ 179:rt-thread/components/drivers/src/workqueue.c ****     work->flags &= ~(RT_WORK_STATE_PENDING);
+ 433              		.loc 1 179 0
+ 434 001c 0023     		movs	r3, #0
+ 435 001e 2364     		str	r3, [r4, #64]
+ 180:rt-thread/components/drivers/src/workqueue.c ****     rt_hw_interrupt_enable(level);
+ 436              		.loc 1 180 0
+ 437 0020 238A     		ldrh	r3, [r4, #16]
+ 438 0022 23F00103 		bic	r3, r3, #1
+ 439 0026 2382     		strh	r3, [r4, #16]	@ movhi
+ 181:rt-thread/components/drivers/src/workqueue.c **** 
+ 440              		.loc 1 181 0
+ 441 0028 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 442              	.LVL55:
+ 443              	.L25:
+ 185:rt-thread/components/drivers/src/workqueue.c **** 
+ 444              		.loc 1 185 0
+ 445 002c 2846     		mov	r0, r5
+ 446 002e 70BD     		pop	{r4, r5, r6, pc}
+ 447              	.LVL56:
+ 448              	.L31:
+ 159:rt-thread/components/drivers/src/workqueue.c ****         if (ret)
+ 449              		.loc 1 159 0
+ 450 0030 0146     		mov	r1, r0
+ 451 0032 1046     		mov	r0, r2
+ 452              	.LVL57:
+ 453 0034 FFF7FEFF 		bl	_workqueue_cancel_work
+ 454              	.LVL58:
+ 160:rt-thread/components/drivers/src/workqueue.c ****         {
+ 455              		.loc 1 160 0
+ 456 0038 0546     		mov	r5, r0
+ARM GAS  /tmp/ccpfJq7S.s 			page 16
+
+
+ 457 003a 0028     		cmp	r0, #0
+ 458 003c ECD0     		beq	.L27
+ 459 003e F5E7     		b	.L25
+ 460              	.LVL59:
+ 461              	.L32:
+ 169:rt-thread/components/drivers/src/workqueue.c ****             rt_timer_stop(&(work->timer));
+ 462              		.loc 1 169 0
+ 463 0040 FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 464              	.LVL60:
+ 465 0044 0646     		mov	r6, r0
+ 466              	.LVL61:
+ 170:rt-thread/components/drivers/src/workqueue.c ****             rt_timer_detach(&(work->timer));
+ 467              		.loc 1 170 0
+ 468 0046 04F11405 		add	r5, r4, #20
+ 469 004a 2846     		mov	r0, r5
+ 470              	.LVL62:
+ 471 004c FFF7FEFF 		bl	rt_timer_stop
+ 472              	.LVL63:
+ 171:rt-thread/components/drivers/src/workqueue.c ****             work->flags &= ~RT_WORK_STATE_SUBMITTING;
+ 473              		.loc 1 171 0
+ 474 0050 2846     		mov	r0, r5
+ 475 0052 FFF7FEFF 		bl	rt_timer_detach
+ 476              	.LVL64:
+ 172:rt-thread/components/drivers/src/workqueue.c ****             rt_hw_interrupt_enable(level);
+ 477              		.loc 1 172 0
+ 478 0056 238A     		ldrh	r3, [r4, #16]
+ 479 0058 23F00203 		bic	r3, r3, #2
+ 480 005c 2382     		strh	r3, [r4, #16]	@ movhi
+ 173:rt-thread/components/drivers/src/workqueue.c ****         }
+ 481              		.loc 1 173 0
+ 482 005e 3046     		mov	r0, r6
+ 483 0060 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 484              	.LVL65:
+ 148:rt-thread/components/drivers/src/workqueue.c **** 
+ 485              		.loc 1 148 0
+ 486 0064 0025     		movs	r5, #0
+ 487 0066 D7E7     		b	.L27
+ 488              	.LVL66:
+ 489              	.L28:
+ 152:rt-thread/components/drivers/src/workqueue.c ****         goto __exit;
+ 490              		.loc 1 152 0
+ 491 0068 6FF01505 		mvn	r5, #21
+ 492 006c DEE7     		b	.L25
+ 493              		.cfi_endproc
+ 494              	.LFE23:
+ 496              		.section	.text._workqueue_submit_delayed_work,"ax",%progbits
+ 497              		.align	1
+ 498              		.syntax unified
+ 499              		.thumb
+ 500              		.thumb_func
+ 501              		.fpu fpv4-sp-d16
+ 503              	_workqueue_submit_delayed_work:
+ 504              	.LFB24:
+ 189:rt-thread/components/drivers/src/workqueue.c ****     rt_base_t level;
+ 505              		.loc 1 189 0
+ 506              		.cfi_startproc
+ 507              		@ args = 0, pretend = 0, frame = 0
+ARM GAS  /tmp/ccpfJq7S.s 			page 17
+
+
+ 508              		@ frame_needed = 0, uses_anonymous_args = 0
+ 509              	.LVL67:
+ 510 0000 2DE9F041 		push	{r4, r5, r6, r7, r8, lr}
+ 511              	.LCFI5:
+ 512              		.cfi_def_cfa_offset 24
+ 513              		.cfi_offset 4, -24
+ 514              		.cfi_offset 5, -20
+ 515              		.cfi_offset 6, -16
+ 516              		.cfi_offset 7, -12
+ 517              		.cfi_offset 8, -8
+ 518              		.cfi_offset 14, -4
+ 519 0004 82B0     		sub	sp, sp, #8
+ 520              	.LCFI6:
+ 521              		.cfi_def_cfa_offset 32
+ 522              	.LVL68:
+ 194:rt-thread/components/drivers/src/workqueue.c ****     {
+ 523              		.loc 1 194 0
+ 524 0006 0B6C     		ldr	r3, [r1, #64]
+ 525 0008 0BB1     		cbz	r3, .L34
+ 194:rt-thread/components/drivers/src/workqueue.c ****     {
+ 526              		.loc 1 194 0 is_stmt 0 discriminator 1
+ 527 000a 8342     		cmp	r3, r0
+ 528 000c 33D1     		bne	.L38
+ 529              	.L34:
+ 530 000e 1646     		mov	r6, r2
+ 531 0010 0C46     		mov	r4, r1
+ 532 0012 0546     		mov	r5, r0
+ 201:rt-thread/components/drivers/src/workqueue.c ****     {
+ 533              		.loc 1 201 0 is_stmt 1
+ 534 0014 8342     		cmp	r3, r0
+ 535 0016 22D0     		beq	.L41
+ 191:rt-thread/components/drivers/src/workqueue.c **** 
+ 536              		.loc 1 191 0
+ 537 0018 0027     		movs	r7, #0
+ 538              	.LVL69:
+ 539              	.L36:
+ 210:rt-thread/components/drivers/src/workqueue.c ****     /* Attach workqueue so the timeout callback can submit it */
+ 540              		.loc 1 210 0
+ 541 001a FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 542              	.LVL70:
+ 212:rt-thread/components/drivers/src/workqueue.c ****     rt_hw_interrupt_enable(level);
+ 543              		.loc 1 212 0
+ 544 001e 2564     		str	r5, [r4, #64]
+ 213:rt-thread/components/drivers/src/workqueue.c **** 
+ 545              		.loc 1 213 0
+ 546 0020 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 547              	.LVL71:
+ 215:rt-thread/components/drivers/src/workqueue.c ****     {
+ 548              		.loc 1 215 0
+ 549 0024 0EB3     		cbz	r6, .L42
+ 222:rt-thread/components/drivers/src/workqueue.c ****         /* Add timeout */
+ 550              		.loc 1 222 0
+ 551 0026 FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 552              	.LVL72:
+ 553 002a 8046     		mov	r8, r0
+ 554              	.LVL73:
+ 224:rt-thread/components/drivers/src/workqueue.c ****         rt_timer_init(&(work->timer), "work", _delayed_work_timeout_handler, work, ticks,
+ARM GAS  /tmp/ccpfJq7S.s 			page 18
+
+
+ 555              		.loc 1 224 0
+ 556 002c 238A     		ldrh	r3, [r4, #16]
+ 557 002e 43F00203 		orr	r3, r3, #2
+ 558 0032 2382     		strh	r3, [r4, #16]	@ movhi
+ 225:rt-thread/components/drivers/src/workqueue.c ****                       RT_TIMER_FLAG_ONE_SHOT | RT_TIMER_FLAG_SOFT_TIMER);
+ 559              		.loc 1 225 0
+ 560 0034 04F11405 		add	r5, r4, #20
+ 561              	.LVL74:
+ 562 0038 0423     		movs	r3, #4
+ 563 003a 0193     		str	r3, [sp, #4]
+ 564 003c 0096     		str	r6, [sp]
+ 565 003e 2346     		mov	r3, r4
+ 566 0040 0E4A     		ldr	r2, .L43
+ 567 0042 0F49     		ldr	r1, .L43+4
+ 568 0044 2846     		mov	r0, r5
+ 569              	.LVL75:
+ 570 0046 FFF7FEFF 		bl	rt_timer_init
+ 571              	.LVL76:
+ 227:rt-thread/components/drivers/src/workqueue.c ****         rt_timer_start(&(work->timer));
+ 572              		.loc 1 227 0
+ 573 004a 4046     		mov	r0, r8
+ 574 004c FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 575              	.LVL77:
+ 228:rt-thread/components/drivers/src/workqueue.c ****     }
+ 576              		.loc 1 228 0
+ 577 0050 2846     		mov	r0, r5
+ 578 0052 FFF7FEFF 		bl	rt_timer_start
+ 579              	.LVL78:
+ 580              	.L33:
+ 233:rt-thread/components/drivers/src/workqueue.c **** 
+ 581              		.loc 1 233 0
+ 582 0056 3846     		mov	r0, r7
+ 583 0058 02B0     		add	sp, sp, #8
+ 584              	.LCFI7:
+ 585              		.cfi_remember_state
+ 586              		.cfi_def_cfa_offset 24
+ 587              		@ sp needed
+ 588 005a BDE8F081 		pop	{r4, r5, r6, r7, r8, pc}
+ 589              	.LVL79:
+ 590              	.L41:
+ 591              	.LCFI8:
+ 592              		.cfi_restore_state
+ 203:rt-thread/components/drivers/src/workqueue.c ****         if (ret < 0)
+ 593              		.loc 1 203 0
+ 594 005e 0846     		mov	r0, r1
+ 595              	.LVL80:
+ 596 0060 FFF7FEFF 		bl	_workqueue_cancel_delayed_work
+ 597              	.LVL81:
+ 204:rt-thread/components/drivers/src/workqueue.c ****         {
+ 598              		.loc 1 204 0
+ 599 0064 071E     		subs	r7, r0, #0
+ 600 0066 D8DA     		bge	.L36
+ 601 0068 F5E7     		b	.L33
+ 602              	.LVL82:
+ 603              	.L42:
+ 218:rt-thread/components/drivers/src/workqueue.c ****     }
+ 604              		.loc 1 218 0
+ARM GAS  /tmp/ccpfJq7S.s 			page 19
+
+
+ 605 006a 2146     		mov	r1, r4
+ 606 006c 206C     		ldr	r0, [r4, #64]
+ 607 006e FFF7FEFF 		bl	_workqueue_submit_work
+ 608              	.LVL83:
+ 609 0072 0746     		mov	r7, r0
+ 610              	.LVL84:
+ 611 0074 EFE7     		b	.L33
+ 612              	.LVL85:
+ 613              	.L38:
+ 196:rt-thread/components/drivers/src/workqueue.c ****         goto __exit;
+ 614              		.loc 1 196 0
+ 615 0076 6FF00907 		mvn	r7, #9
+ 616              	.L35:
+ 617              	.LVL86:
+ 232:rt-thread/components/drivers/src/workqueue.c **** }
+ 618              		.loc 1 232 0
+ 619 007a ECE7     		b	.L33
+ 620              	.L44:
+ 621              		.align	2
+ 622              	.L43:
+ 623 007c 00000000 		.word	_delayed_work_timeout_handler
+ 624 0080 00000000 		.word	.LC0
+ 625              		.cfi_endproc
+ 626              	.LFE24:
+ 628              		.section	.text.rt_workqueue_create,"ax",%progbits
+ 629              		.align	1
+ 630              		.global	rt_workqueue_create
+ 631              		.syntax unified
+ 632              		.thumb
+ 633              		.thumb_func
+ 634              		.fpu fpv4-sp-d16
+ 636              	rt_workqueue_create:
+ 637              	.LFB26:
+ 248:rt-thread/components/drivers/src/workqueue.c **** }
+ 249:rt-thread/components/drivers/src/workqueue.c **** 
+ 250:rt-thread/components/drivers/src/workqueue.c **** struct rt_workqueue *rt_workqueue_create(const char *name, rt_uint16_t stack_size, rt_uint8_t prior
+ 251:rt-thread/components/drivers/src/workqueue.c **** {
+ 638              		.loc 1 251 0
+ 639              		.cfi_startproc
+ 640              		@ args = 0, pretend = 0, frame = 0
+ 641              		@ frame_needed = 0, uses_anonymous_args = 0
+ 642              	.LVL87:
+ 643 0000 F0B5     		push	{r4, r5, r6, r7, lr}
+ 644              	.LCFI9:
+ 645              		.cfi_def_cfa_offset 20
+ 646              		.cfi_offset 4, -20
+ 647              		.cfi_offset 5, -16
+ 648              		.cfi_offset 6, -12
+ 649              		.cfi_offset 7, -8
+ 650              		.cfi_offset 14, -4
+ 651 0002 83B0     		sub	sp, sp, #12
+ 652              	.LCFI10:
+ 653              		.cfi_def_cfa_offset 32
+ 654 0004 0546     		mov	r5, r0
+ 655 0006 0E46     		mov	r6, r1
+ 656 0008 1746     		mov	r7, r2
+ 657              	.LVL88:
+ARM GAS  /tmp/ccpfJq7S.s 			page 20
+
+
+ 252:rt-thread/components/drivers/src/workqueue.c ****     struct rt_workqueue *queue = RT_NULL;
+ 253:rt-thread/components/drivers/src/workqueue.c **** 
+ 254:rt-thread/components/drivers/src/workqueue.c ****     queue = (struct rt_workqueue *)RT_KERNEL_MALLOC(sizeof(struct rt_workqueue));
+ 658              		.loc 1 254 0
+ 659 000a 3020     		movs	r0, #48
+ 660              	.LVL89:
+ 661 000c FFF7FEFF 		bl	rt_malloc
+ 662              	.LVL90:
+ 255:rt-thread/components/drivers/src/workqueue.c ****     if (queue != RT_NULL)
+ 663              		.loc 1 255 0
+ 664 0010 0446     		mov	r4, r0
+ 665 0012 A8B1     		cbz	r0, .L45
+ 666              	.LVL91:
+ 667              	.LBB48:
+ 668              	.LBB49:
+  49:rt-thread/include/rtservice.h **** }
+ 669              		.loc 2 49 0
+ 670 0014 6060     		str	r0, [r4, #4]
+ 671 0016 2060     		str	r0, [r4]
+ 672              	.LVL92:
+ 673              	.LBE49:
+ 674              	.LBE48:
+ 256:rt-thread/components/drivers/src/workqueue.c ****     {
+ 257:rt-thread/components/drivers/src/workqueue.c ****         /* initialize work list */
+ 258:rt-thread/components/drivers/src/workqueue.c ****         rt_list_init(&(queue->work_list));
+ 259:rt-thread/components/drivers/src/workqueue.c ****         queue->work_current = RT_NULL;
+ 675              		.loc 1 259 0
+ 676 0018 0022     		movs	r2, #0
+ 677 001a 8260     		str	r2, [r0, #8]
+ 260:rt-thread/components/drivers/src/workqueue.c ****         rt_sem_init(&(queue->sem), "wqueue", 0, RT_IPC_FLAG_FIFO);
+ 678              		.loc 1 260 0
+ 679 001c 1346     		mov	r3, r2
+ 680 001e 0C49     		ldr	r1, .L50
+ 681 0020 0C30     		adds	r0, r0, #12
+ 682              	.LVL93:
+ 683 0022 FFF7FEFF 		bl	rt_sem_init
+ 684              	.LVL94:
+ 261:rt-thread/components/drivers/src/workqueue.c **** 
+ 262:rt-thread/components/drivers/src/workqueue.c ****         /* create the work thread */
+ 263:rt-thread/components/drivers/src/workqueue.c ****         queue->work_thread = rt_thread_create(name, _workqueue_thread_entry, queue, stack_size, pri
+ 685              		.loc 1 263 0
+ 686 0026 0A23     		movs	r3, #10
+ 687 0028 0193     		str	r3, [sp, #4]
+ 688 002a 0097     		str	r7, [sp]
+ 689 002c 3346     		mov	r3, r6
+ 690 002e 2246     		mov	r2, r4
+ 691 0030 0849     		ldr	r1, .L50+4
+ 692 0032 2846     		mov	r0, r5
+ 693 0034 FFF7FEFF 		bl	rt_thread_create
+ 694              	.LVL95:
+ 695 0038 E062     		str	r0, [r4, #44]
+ 264:rt-thread/components/drivers/src/workqueue.c ****         if (queue->work_thread == RT_NULL)
+ 696              		.loc 1 264 0
+ 697 003a 20B1     		cbz	r0, .L49
+ 265:rt-thread/components/drivers/src/workqueue.c ****         {
+ 266:rt-thread/components/drivers/src/workqueue.c ****             RT_KERNEL_FREE(queue);
+ 267:rt-thread/components/drivers/src/workqueue.c ****             return RT_NULL;
+ARM GAS  /tmp/ccpfJq7S.s 			page 21
+
+
+ 268:rt-thread/components/drivers/src/workqueue.c ****         }
+ 269:rt-thread/components/drivers/src/workqueue.c **** 
+ 270:rt-thread/components/drivers/src/workqueue.c ****         rt_thread_startup(queue->work_thread);
+ 698              		.loc 1 270 0
+ 699 003c FFF7FEFF 		bl	rt_thread_startup
+ 700              	.LVL96:
+ 701              	.L45:
+ 271:rt-thread/components/drivers/src/workqueue.c ****     }
+ 272:rt-thread/components/drivers/src/workqueue.c **** 
+ 273:rt-thread/components/drivers/src/workqueue.c ****     return queue;
+ 274:rt-thread/components/drivers/src/workqueue.c **** }
+ 702              		.loc 1 274 0
+ 703 0040 2046     		mov	r0, r4
+ 704 0042 03B0     		add	sp, sp, #12
+ 705              	.LCFI11:
+ 706              		.cfi_remember_state
+ 707              		.cfi_def_cfa_offset 20
+ 708              		@ sp needed
+ 709 0044 F0BD     		pop	{r4, r5, r6, r7, pc}
+ 710              	.LVL97:
+ 711              	.L49:
+ 712              	.LCFI12:
+ 713              		.cfi_restore_state
+ 266:rt-thread/components/drivers/src/workqueue.c ****             return RT_NULL;
+ 714              		.loc 1 266 0
+ 715 0046 2046     		mov	r0, r4
+ 716 0048 FFF7FEFF 		bl	rt_free
+ 717              	.LVL98:
+ 267:rt-thread/components/drivers/src/workqueue.c ****         }
+ 718              		.loc 1 267 0
+ 719 004c 0024     		movs	r4, #0
+ 720              	.LVL99:
+ 721 004e F7E7     		b	.L45
+ 722              	.L51:
+ 723              		.align	2
+ 724              	.L50:
+ 725 0050 00000000 		.word	.LC1
+ 726 0054 00000000 		.word	_workqueue_thread_entry
+ 727              		.cfi_endproc
+ 728              	.LFE26:
+ 730              		.section	.text.rt_workqueue_destroy,"ax",%progbits
+ 731              		.align	1
+ 732              		.global	rt_workqueue_destroy
+ 733              		.syntax unified
+ 734              		.thumb
+ 735              		.thumb_func
+ 736              		.fpu fpv4-sp-d16
+ 738              	rt_workqueue_destroy:
+ 739              	.LFB27:
+ 275:rt-thread/components/drivers/src/workqueue.c **** 
+ 276:rt-thread/components/drivers/src/workqueue.c **** rt_err_t rt_workqueue_destroy(struct rt_workqueue *queue)
+ 277:rt-thread/components/drivers/src/workqueue.c **** {
+ 740              		.loc 1 277 0
+ 741              		.cfi_startproc
+ 742              		@ args = 0, pretend = 0, frame = 0
+ 743              		@ frame_needed = 0, uses_anonymous_args = 0
+ 744              	.LVL100:
+ARM GAS  /tmp/ccpfJq7S.s 			page 22
+
+
+ 745 0000 10B5     		push	{r4, lr}
+ 746              	.LCFI13:
+ 747              		.cfi_def_cfa_offset 8
+ 748              		.cfi_offset 4, -8
+ 749              		.cfi_offset 14, -4
+ 750 0002 0446     		mov	r4, r0
+ 278:rt-thread/components/drivers/src/workqueue.c ****     RT_ASSERT(queue != RT_NULL);
+ 279:rt-thread/components/drivers/src/workqueue.c **** 
+ 280:rt-thread/components/drivers/src/workqueue.c ****     rt_thread_delete(queue->work_thread);
+ 751              		.loc 1 280 0
+ 752 0004 C06A     		ldr	r0, [r0, #44]
+ 753              	.LVL101:
+ 754 0006 FFF7FEFF 		bl	rt_thread_delete
+ 755              	.LVL102:
+ 281:rt-thread/components/drivers/src/workqueue.c ****     RT_KERNEL_FREE(queue);
+ 756              		.loc 1 281 0
+ 757 000a 2046     		mov	r0, r4
+ 758 000c FFF7FEFF 		bl	rt_free
+ 759              	.LVL103:
+ 282:rt-thread/components/drivers/src/workqueue.c **** 
+ 283:rt-thread/components/drivers/src/workqueue.c ****     return RT_EOK;
+ 284:rt-thread/components/drivers/src/workqueue.c **** }
+ 760              		.loc 1 284 0
+ 761 0010 0020     		movs	r0, #0
+ 762 0012 10BD     		pop	{r4, pc}
+ 763              		.cfi_endproc
+ 764              	.LFE27:
+ 766              		.section	.text.rt_workqueue_dowork,"ax",%progbits
+ 767              		.align	1
+ 768              		.global	rt_workqueue_dowork
+ 769              		.syntax unified
+ 770              		.thumb
+ 771              		.thumb_func
+ 772              		.fpu fpv4-sp-d16
+ 774              	rt_workqueue_dowork:
+ 775              	.LFB28:
+ 285:rt-thread/components/drivers/src/workqueue.c **** 
+ 286:rt-thread/components/drivers/src/workqueue.c **** rt_err_t rt_workqueue_dowork(struct rt_workqueue *queue, struct rt_work *work)
+ 287:rt-thread/components/drivers/src/workqueue.c **** {
+ 776              		.loc 1 287 0
+ 777              		.cfi_startproc
+ 778              		@ args = 0, pretend = 0, frame = 0
+ 779              		@ frame_needed = 0, uses_anonymous_args = 0
+ 780              	.LVL104:
+ 781 0000 08B5     		push	{r3, lr}
+ 782              	.LCFI14:
+ 783              		.cfi_def_cfa_offset 8
+ 784              		.cfi_offset 3, -8
+ 785              		.cfi_offset 14, -4
+ 288:rt-thread/components/drivers/src/workqueue.c ****     RT_ASSERT(queue != RT_NULL);
+ 289:rt-thread/components/drivers/src/workqueue.c ****     RT_ASSERT(work != RT_NULL);
+ 290:rt-thread/components/drivers/src/workqueue.c **** 
+ 291:rt-thread/components/drivers/src/workqueue.c ****     return _workqueue_submit_work(queue, work);
+ 786              		.loc 1 291 0
+ 787 0002 FFF7FEFF 		bl	_workqueue_submit_work
+ 788              	.LVL105:
+ 292:rt-thread/components/drivers/src/workqueue.c **** }
+ARM GAS  /tmp/ccpfJq7S.s 			page 23
+
+
+ 789              		.loc 1 292 0
+ 790 0006 08BD     		pop	{r3, pc}
+ 791              		.cfi_endproc
+ 792              	.LFE28:
+ 794              		.section	.text.rt_workqueue_submit_work,"ax",%progbits
+ 795              		.align	1
+ 796              		.global	rt_workqueue_submit_work
+ 797              		.syntax unified
+ 798              		.thumb
+ 799              		.thumb_func
+ 800              		.fpu fpv4-sp-d16
+ 802              	rt_workqueue_submit_work:
+ 803              	.LFB29:
+ 293:rt-thread/components/drivers/src/workqueue.c **** 
+ 294:rt-thread/components/drivers/src/workqueue.c **** rt_err_t rt_workqueue_submit_work(struct rt_workqueue *queue, struct rt_work *work, rt_tick_t time)
+ 295:rt-thread/components/drivers/src/workqueue.c **** {
+ 804              		.loc 1 295 0
+ 805              		.cfi_startproc
+ 806              		@ args = 0, pretend = 0, frame = 0
+ 807              		@ frame_needed = 0, uses_anonymous_args = 0
+ 808              	.LVL106:
+ 809 0000 10B5     		push	{r4, lr}
+ 810              	.LCFI15:
+ 811              		.cfi_def_cfa_offset 8
+ 812              		.cfi_offset 4, -8
+ 813              		.cfi_offset 14, -4
+ 296:rt-thread/components/drivers/src/workqueue.c ****     RT_ASSERT(queue != RT_NULL);
+ 297:rt-thread/components/drivers/src/workqueue.c ****     RT_ASSERT(work != RT_NULL);
+ 298:rt-thread/components/drivers/src/workqueue.c **** 
+ 299:rt-thread/components/drivers/src/workqueue.c ****     if (time > 0)
+ 814              		.loc 1 299 0
+ 815 0002 1446     		mov	r4, r2
+ 816 0004 1AB1     		cbz	r2, .L57
+ 300:rt-thread/components/drivers/src/workqueue.c ****     {
+ 301:rt-thread/components/drivers/src/workqueue.c ****         work->type |= RT_WORK_TYPE_DELAYED;
+ 817              		.loc 1 301 0
+ 818 0006 4B8A     		ldrh	r3, [r1, #18]
+ 819 0008 43F00103 		orr	r3, r3, #1
+ 820 000c 4B82     		strh	r3, [r1, #18]	@ movhi
+ 821              	.L57:
+ 302:rt-thread/components/drivers/src/workqueue.c ****     }
+ 303:rt-thread/components/drivers/src/workqueue.c **** 
+ 304:rt-thread/components/drivers/src/workqueue.c ****     if (work->type & RT_WORK_TYPE_DELAYED)
+ 822              		.loc 1 304 0
+ 823 000e 4B8A     		ldrh	r3, [r1, #18]
+ 824 0010 13F0010F 		tst	r3, #1
+ 825 0014 02D1     		bne	.L61
+ 305:rt-thread/components/drivers/src/workqueue.c ****     {
+ 306:rt-thread/components/drivers/src/workqueue.c ****         return _workqueue_submit_delayed_work(queue, work, time);
+ 307:rt-thread/components/drivers/src/workqueue.c ****     }
+ 308:rt-thread/components/drivers/src/workqueue.c ****     else
+ 309:rt-thread/components/drivers/src/workqueue.c ****     {
+ 310:rt-thread/components/drivers/src/workqueue.c ****         return _workqueue_submit_work(queue, work);
+ 826              		.loc 1 310 0
+ 827 0016 FFF7FEFF 		bl	_workqueue_submit_work
+ 828              	.LVL107:
+ 311:rt-thread/components/drivers/src/workqueue.c ****     }
+ARM GAS  /tmp/ccpfJq7S.s 			page 24
+
+
+ 312:rt-thread/components/drivers/src/workqueue.c **** }
+ 829              		.loc 1 312 0
+ 830 001a 10BD     		pop	{r4, pc}
+ 831              	.LVL108:
+ 832              	.L61:
+ 306:rt-thread/components/drivers/src/workqueue.c ****     }
+ 833              		.loc 1 306 0
+ 834 001c 2246     		mov	r2, r4
+ 835              	.LVL109:
+ 836 001e FFF7FEFF 		bl	_workqueue_submit_delayed_work
+ 837              	.LVL110:
+ 838 0022 10BD     		pop	{r4, pc}
+ 839              		.cfi_endproc
+ 840              	.LFE29:
+ 842              		.section	.text.rt_workqueue_critical_work,"ax",%progbits
+ 843              		.align	1
+ 844              		.global	rt_workqueue_critical_work
+ 845              		.syntax unified
+ 846              		.thumb
+ 847              		.thumb_func
+ 848              		.fpu fpv4-sp-d16
+ 850              	rt_workqueue_critical_work:
+ 851              	.LFB30:
+ 313:rt-thread/components/drivers/src/workqueue.c **** 
+ 314:rt-thread/components/drivers/src/workqueue.c **** rt_err_t rt_workqueue_critical_work(struct rt_workqueue *queue, struct rt_work *work)
+ 315:rt-thread/components/drivers/src/workqueue.c **** {
+ 852              		.loc 1 315 0
+ 853              		.cfi_startproc
+ 854              		@ args = 0, pretend = 0, frame = 0
+ 855              		@ frame_needed = 0, uses_anonymous_args = 0
+ 856              	.LVL111:
+ 857 0000 38B5     		push	{r3, r4, r5, lr}
+ 858              	.LCFI16:
+ 859              		.cfi_def_cfa_offset 16
+ 860              		.cfi_offset 3, -16
+ 861              		.cfi_offset 4, -12
+ 862              		.cfi_offset 5, -8
+ 863              		.cfi_offset 14, -4
+ 864 0002 0546     		mov	r5, r0
+ 865 0004 0C46     		mov	r4, r1
+ 316:rt-thread/components/drivers/src/workqueue.c ****     rt_base_t level;
+ 317:rt-thread/components/drivers/src/workqueue.c ****     RT_ASSERT(queue != RT_NULL);
+ 318:rt-thread/components/drivers/src/workqueue.c ****     RT_ASSERT(work != RT_NULL);
+ 319:rt-thread/components/drivers/src/workqueue.c **** 
+ 320:rt-thread/components/drivers/src/workqueue.c ****     level = rt_hw_interrupt_disable();
+ 866              		.loc 1 320 0
+ 867 0006 FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 868              	.LVL112:
+ 321:rt-thread/components/drivers/src/workqueue.c ****     if (queue->work_current == work)
+ 869              		.loc 1 321 0
+ 870 000a AB68     		ldr	r3, [r5, #8]
+ 871 000c A342     		cmp	r3, r4
+ 872 000e 14D0     		beq	.L67
+ 873              	.LVL113:
+ 874              	.LBB50:
+ 875              	.LBB51:
+  88:rt-thread/include/rtservice.h ****     n->prev->next = n->next;
+ARM GAS  /tmp/ccpfJq7S.s 			page 25
+
+
+ 876              		.loc 2 88 0
+ 877 0010 2368     		ldr	r3, [r4]
+ 878 0012 6268     		ldr	r2, [r4, #4]
+ 879 0014 5A60     		str	r2, [r3, #4]
+  89:rt-thread/include/rtservice.h **** 
+ 880              		.loc 2 89 0
+ 881 0016 6368     		ldr	r3, [r4, #4]
+ 882 0018 2268     		ldr	r2, [r4]
+ 883 001a 1A60     		str	r2, [r3]
+  91:rt-thread/include/rtservice.h **** }
+ 884              		.loc 2 91 0
+ 885 001c 6460     		str	r4, [r4, #4]
+ 886 001e 2460     		str	r4, [r4]
+ 887              	.LVL114:
+ 888              	.LBE51:
+ 889              	.LBE50:
+ 322:rt-thread/components/drivers/src/workqueue.c ****     {
+ 323:rt-thread/components/drivers/src/workqueue.c ****         rt_hw_interrupt_enable(level);
+ 324:rt-thread/components/drivers/src/workqueue.c ****         return -RT_EBUSY;
+ 325:rt-thread/components/drivers/src/workqueue.c ****     }
+ 326:rt-thread/components/drivers/src/workqueue.c **** 
+ 327:rt-thread/components/drivers/src/workqueue.c ****     /* NOTE: the work MUST be initialized firstly */
+ 328:rt-thread/components/drivers/src/workqueue.c ****     rt_list_remove(&(work->list));
+ 329:rt-thread/components/drivers/src/workqueue.c **** 
+ 330:rt-thread/components/drivers/src/workqueue.c ****     rt_list_insert_after(queue->work_list.prev, &(work->list));
+ 890              		.loc 1 330 0
+ 891 0020 6B68     		ldr	r3, [r5, #4]
+ 892              	.LVL115:
+ 893              	.LBB52:
+ 894              	.LBB53:
+  60:rt-thread/include/rtservice.h ****     n->next = l->next;
+ 895              		.loc 2 60 0
+ 896 0022 1A68     		ldr	r2, [r3]
+ 897 0024 5460     		str	r4, [r2, #4]
+  61:rt-thread/include/rtservice.h **** 
+ 898              		.loc 2 61 0
+ 899 0026 1A68     		ldr	r2, [r3]
+ 900 0028 2260     		str	r2, [r4]
+  63:rt-thread/include/rtservice.h ****     n->prev = l;
+ 901              		.loc 2 63 0
+ 902 002a 1C60     		str	r4, [r3]
+  64:rt-thread/include/rtservice.h **** }
+ 903              		.loc 2 64 0
+ 904 002c 6360     		str	r3, [r4, #4]
+ 905              	.LVL116:
+ 906              	.LBE53:
+ 907              	.LBE52:
+ 331:rt-thread/components/drivers/src/workqueue.c ****     if (queue->work_current == RT_NULL)
+ 908              		.loc 1 331 0
+ 909 002e AB68     		ldr	r3, [r5, #8]
+ 910 0030 43B1     		cbz	r3, .L68
+ 332:rt-thread/components/drivers/src/workqueue.c ****     {
+ 333:rt-thread/components/drivers/src/workqueue.c ****         rt_hw_interrupt_enable(level);
+ 334:rt-thread/components/drivers/src/workqueue.c ****         /* resume work thread */
+ 335:rt-thread/components/drivers/src/workqueue.c ****         rt_thread_resume(queue->work_thread);
+ 336:rt-thread/components/drivers/src/workqueue.c ****         rt_schedule();
+ 337:rt-thread/components/drivers/src/workqueue.c ****     }
+ARM GAS  /tmp/ccpfJq7S.s 			page 26
+
+
+ 338:rt-thread/components/drivers/src/workqueue.c ****     else rt_hw_interrupt_enable(level);
+ 911              		.loc 1 338 0
+ 912 0032 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 913              	.LVL117:
+ 339:rt-thread/components/drivers/src/workqueue.c **** 
+ 340:rt-thread/components/drivers/src/workqueue.c ****     return RT_EOK;
+ 914              		.loc 1 340 0
+ 915 0036 0020     		movs	r0, #0
+ 341:rt-thread/components/drivers/src/workqueue.c **** }
+ 916              		.loc 1 341 0
+ 917 0038 38BD     		pop	{r3, r4, r5, pc}
+ 918              	.LVL118:
+ 919              	.L67:
+ 323:rt-thread/components/drivers/src/workqueue.c ****         return -RT_EBUSY;
+ 920              		.loc 1 323 0
+ 921 003a FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 922              	.LVL119:
+ 324:rt-thread/components/drivers/src/workqueue.c ****     }
+ 923              		.loc 1 324 0
+ 924 003e 6FF00600 		mvn	r0, #6
+ 925 0042 38BD     		pop	{r3, r4, r5, pc}
+ 926              	.LVL120:
+ 927              	.L68:
+ 333:rt-thread/components/drivers/src/workqueue.c ****         /* resume work thread */
+ 928              		.loc 1 333 0
+ 929 0044 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 930              	.LVL121:
+ 335:rt-thread/components/drivers/src/workqueue.c ****         rt_schedule();
+ 931              		.loc 1 335 0
+ 932 0048 E86A     		ldr	r0, [r5, #44]
+ 933 004a FFF7FEFF 		bl	rt_thread_resume
+ 934              	.LVL122:
+ 336:rt-thread/components/drivers/src/workqueue.c ****     }
+ 935              		.loc 1 336 0
+ 936 004e FFF7FEFF 		bl	rt_schedule
+ 937              	.LVL123:
+ 340:rt-thread/components/drivers/src/workqueue.c **** }
+ 938              		.loc 1 340 0
+ 939 0052 0020     		movs	r0, #0
+ 940 0054 38BD     		pop	{r3, r4, r5, pc}
+ 941              		.cfi_endproc
+ 942              	.LFE30:
+ 944              		.section	.text.rt_workqueue_cancel_work,"ax",%progbits
+ 945              		.align	1
+ 946              		.global	rt_workqueue_cancel_work
+ 947              		.syntax unified
+ 948              		.thumb
+ 949              		.thumb_func
+ 950              		.fpu fpv4-sp-d16
+ 952              	rt_workqueue_cancel_work:
+ 953              	.LFB31:
+ 342:rt-thread/components/drivers/src/workqueue.c **** 
+ 343:rt-thread/components/drivers/src/workqueue.c **** rt_err_t rt_workqueue_cancel_work(struct rt_workqueue *queue, struct rt_work *work)
+ 344:rt-thread/components/drivers/src/workqueue.c **** {
+ 954              		.loc 1 344 0
+ 955              		.cfi_startproc
+ 956              		@ args = 0, pretend = 0, frame = 0
+ARM GAS  /tmp/ccpfJq7S.s 			page 27
+
+
+ 957              		@ frame_needed = 0, uses_anonymous_args = 0
+ 958              	.LVL124:
+ 959 0000 08B5     		push	{r3, lr}
+ 960              	.LCFI17:
+ 961              		.cfi_def_cfa_offset 8
+ 962              		.cfi_offset 3, -8
+ 963              		.cfi_offset 14, -4
+ 345:rt-thread/components/drivers/src/workqueue.c ****     RT_ASSERT(queue != RT_NULL);
+ 346:rt-thread/components/drivers/src/workqueue.c ****     RT_ASSERT(work != RT_NULL);
+ 347:rt-thread/components/drivers/src/workqueue.c **** 
+ 348:rt-thread/components/drivers/src/workqueue.c ****     if (work->type & RT_WORK_TYPE_DELAYED)
+ 964              		.loc 1 348 0
+ 965 0002 4B8A     		ldrh	r3, [r1, #18]
+ 966 0004 13F0010F 		tst	r3, #1
+ 967 0008 02D1     		bne	.L73
+ 349:rt-thread/components/drivers/src/workqueue.c ****     {
+ 350:rt-thread/components/drivers/src/workqueue.c ****         return _workqueue_cancel_delayed_work(work);
+ 351:rt-thread/components/drivers/src/workqueue.c ****     }
+ 352:rt-thread/components/drivers/src/workqueue.c ****     else
+ 353:rt-thread/components/drivers/src/workqueue.c ****     {
+ 354:rt-thread/components/drivers/src/workqueue.c ****         return _workqueue_cancel_work(queue, work);
+ 968              		.loc 1 354 0
+ 969 000a FFF7FEFF 		bl	_workqueue_cancel_work
+ 970              	.LVL125:
+ 355:rt-thread/components/drivers/src/workqueue.c ****     }
+ 356:rt-thread/components/drivers/src/workqueue.c **** }
+ 971              		.loc 1 356 0
+ 972 000e 08BD     		pop	{r3, pc}
+ 973              	.LVL126:
+ 974              	.L73:
+ 350:rt-thread/components/drivers/src/workqueue.c ****     }
+ 975              		.loc 1 350 0
+ 976 0010 0846     		mov	r0, r1
+ 977              	.LVL127:
+ 978 0012 FFF7FEFF 		bl	_workqueue_cancel_delayed_work
+ 979              	.LVL128:
+ 980 0016 08BD     		pop	{r3, pc}
+ 981              		.cfi_endproc
+ 982              	.LFE31:
+ 984              		.section	.text.rt_workqueue_cancel_work_sync,"ax",%progbits
+ 985              		.align	1
+ 986              		.global	rt_workqueue_cancel_work_sync
+ 987              		.syntax unified
+ 988              		.thumb
+ 989              		.thumb_func
+ 990              		.fpu fpv4-sp-d16
+ 992              	rt_workqueue_cancel_work_sync:
+ 993              	.LFB32:
+ 357:rt-thread/components/drivers/src/workqueue.c **** 
+ 358:rt-thread/components/drivers/src/workqueue.c **** rt_err_t rt_workqueue_cancel_work_sync(struct rt_workqueue *queue, struct rt_work *work)
+ 359:rt-thread/components/drivers/src/workqueue.c **** {
+ 994              		.loc 1 359 0
+ 995              		.cfi_startproc
+ 996              		@ args = 0, pretend = 0, frame = 0
+ 997              		@ frame_needed = 0, uses_anonymous_args = 0
+ 998              	.LVL129:
+ 999 0000 70B5     		push	{r4, r5, r6, lr}
+ARM GAS  /tmp/ccpfJq7S.s 			page 28
+
+
+ 1000              	.LCFI18:
+ 1001              		.cfi_def_cfa_offset 16
+ 1002              		.cfi_offset 4, -16
+ 1003              		.cfi_offset 5, -12
+ 1004              		.cfi_offset 6, -8
+ 1005              		.cfi_offset 14, -4
+ 1006 0002 0546     		mov	r5, r0
+ 1007 0004 0C46     		mov	r4, r1
+ 360:rt-thread/components/drivers/src/workqueue.c ****     rt_base_t level;
+ 361:rt-thread/components/drivers/src/workqueue.c **** 
+ 362:rt-thread/components/drivers/src/workqueue.c ****     RT_ASSERT(queue != RT_NULL);
+ 363:rt-thread/components/drivers/src/workqueue.c ****     RT_ASSERT(work != RT_NULL);
+ 364:rt-thread/components/drivers/src/workqueue.c **** 
+ 365:rt-thread/components/drivers/src/workqueue.c ****     level = rt_hw_interrupt_disable();
+ 1008              		.loc 1 365 0
+ 1009 0006 FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 1010              	.LVL130:
+ 1011 000a 0646     		mov	r6, r0
+ 1012              	.LVL131:
+ 366:rt-thread/components/drivers/src/workqueue.c ****     if (queue->work_current == work) /* it's current work in the queue */
+ 1013              		.loc 1 366 0
+ 1014 000c AB68     		ldr	r3, [r5, #8]
+ 1015 000e A342     		cmp	r3, r4
+ 1016 0010 10D0     		beq	.L78
+ 1017              	.LVL132:
+ 1018              	.LBB54:
+ 1019              	.LBB55:
+  88:rt-thread/include/rtservice.h ****     n->prev->next = n->next;
+ 1020              		.loc 2 88 0
+ 1021 0012 2368     		ldr	r3, [r4]
+ 1022 0014 6268     		ldr	r2, [r4, #4]
+ 1023 0016 5A60     		str	r2, [r3, #4]
+  89:rt-thread/include/rtservice.h **** 
+ 1024              		.loc 2 89 0
+ 1025 0018 6368     		ldr	r3, [r4, #4]
+ 1026 001a 2268     		ldr	r2, [r4]
+ 1027 001c 1A60     		str	r2, [r3]
+  91:rt-thread/include/rtservice.h **** }
+ 1028              		.loc 2 91 0
+ 1029 001e 6460     		str	r4, [r4, #4]
+ 1030 0020 2460     		str	r4, [r4]
+ 1031              	.LVL133:
+ 1032              	.L76:
+ 1033              	.LBE55:
+ 1034              	.LBE54:
+ 367:rt-thread/components/drivers/src/workqueue.c ****     {
+ 368:rt-thread/components/drivers/src/workqueue.c ****         /* wait for work completion */
+ 369:rt-thread/components/drivers/src/workqueue.c ****         rt_sem_take(&(queue->sem), RT_WAITING_FOREVER);
+ 370:rt-thread/components/drivers/src/workqueue.c ****     }
+ 371:rt-thread/components/drivers/src/workqueue.c ****     else
+ 372:rt-thread/components/drivers/src/workqueue.c ****     {
+ 373:rt-thread/components/drivers/src/workqueue.c ****         rt_list_remove(&(work->list));
+ 374:rt-thread/components/drivers/src/workqueue.c ****     }
+ 375:rt-thread/components/drivers/src/workqueue.c ****     work->flags &= ~RT_WORK_STATE_PENDING;
+ 1035              		.loc 1 375 0
+ 1036 0022 238A     		ldrh	r3, [r4, #16]
+ 1037 0024 23F00103 		bic	r3, r3, #1
+ARM GAS  /tmp/ccpfJq7S.s 			page 29
+
+
+ 1038 0028 2382     		strh	r3, [r4, #16]	@ movhi
+ 376:rt-thread/components/drivers/src/workqueue.c ****     rt_hw_interrupt_enable(level);
+ 1039              		.loc 1 376 0
+ 1040 002a 3046     		mov	r0, r6
+ 1041 002c FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 1042              	.LVL134:
+ 377:rt-thread/components/drivers/src/workqueue.c **** 
+ 378:rt-thread/components/drivers/src/workqueue.c ****     return RT_EOK;
+ 379:rt-thread/components/drivers/src/workqueue.c **** }
+ 1043              		.loc 1 379 0
+ 1044 0030 0020     		movs	r0, #0
+ 1045 0032 70BD     		pop	{r4, r5, r6, pc}
+ 1046              	.LVL135:
+ 1047              	.L78:
+ 369:rt-thread/components/drivers/src/workqueue.c ****     }
+ 1048              		.loc 1 369 0
+ 1049 0034 4FF0FF31 		mov	r1, #-1
+ 1050 0038 05F10C00 		add	r0, r5, #12
+ 1051              	.LVL136:
+ 1052 003c FFF7FEFF 		bl	rt_sem_take
+ 1053              	.LVL137:
+ 1054 0040 EFE7     		b	.L76
+ 1055              		.cfi_endproc
+ 1056              	.LFE32:
+ 1058              		.section	.text.rt_workqueue_cancel_all_work,"ax",%progbits
+ 1059              		.align	1
+ 1060              		.global	rt_workqueue_cancel_all_work
+ 1061              		.syntax unified
+ 1062              		.thumb
+ 1063              		.thumb_func
+ 1064              		.fpu fpv4-sp-d16
+ 1066              	rt_workqueue_cancel_all_work:
+ 1067              	.LFB33:
+ 380:rt-thread/components/drivers/src/workqueue.c **** 
+ 381:rt-thread/components/drivers/src/workqueue.c **** rt_err_t rt_workqueue_cancel_all_work(struct rt_workqueue *queue)
+ 382:rt-thread/components/drivers/src/workqueue.c **** {
+ 1068              		.loc 1 382 0
+ 1069              		.cfi_startproc
+ 1070              		@ args = 0, pretend = 0, frame = 0
+ 1071              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1072              	.LVL138:
+ 1073 0000 10B5     		push	{r4, lr}
+ 1074              	.LCFI19:
+ 1075              		.cfi_def_cfa_offset 8
+ 1076              		.cfi_offset 4, -8
+ 1077              		.cfi_offset 14, -4
+ 1078 0002 0446     		mov	r4, r0
+ 383:rt-thread/components/drivers/src/workqueue.c ****     struct rt_list_node *node, *next;
+ 384:rt-thread/components/drivers/src/workqueue.c ****     RT_ASSERT(queue != RT_NULL);
+ 385:rt-thread/components/drivers/src/workqueue.c **** 
+ 386:rt-thread/components/drivers/src/workqueue.c ****     rt_enter_critical();
+ 1079              		.loc 1 386 0
+ 1080 0004 FFF7FEFF 		bl	rt_enter_critical
+ 1081              	.LVL139:
+ 387:rt-thread/components/drivers/src/workqueue.c ****     for (node = queue->work_list.next; node != &(queue->work_list); node = next)
+ 1082              		.loc 1 387 0
+ 1083 0008 2368     		ldr	r3, [r4]
+ARM GAS  /tmp/ccpfJq7S.s 			page 30
+
+
+ 1084              	.LVL140:
+ 1085 000a 08E0     		b	.L80
+ 1086              	.L81:
+ 388:rt-thread/components/drivers/src/workqueue.c ****     {
+ 389:rt-thread/components/drivers/src/workqueue.c ****         next = node->next;
+ 1087              		.loc 1 389 0 discriminator 3
+ 1088 000c 1A68     		ldr	r2, [r3]
+ 1089              	.LVL141:
+ 1090              	.LBB56:
+ 1091              	.LBB57:
+  88:rt-thread/include/rtservice.h ****     n->prev->next = n->next;
+ 1092              		.loc 2 88 0 discriminator 3
+ 1093 000e 5968     		ldr	r1, [r3, #4]
+ 1094 0010 5160     		str	r1, [r2, #4]
+  89:rt-thread/include/rtservice.h **** 
+ 1095              		.loc 2 89 0 discriminator 3
+ 1096 0012 5968     		ldr	r1, [r3, #4]
+ 1097 0014 1868     		ldr	r0, [r3]
+ 1098 0016 0860     		str	r0, [r1]
+  91:rt-thread/include/rtservice.h **** }
+ 1099              		.loc 2 91 0 discriminator 3
+ 1100 0018 5B60     		str	r3, [r3, #4]
+ 1101 001a 1B60     		str	r3, [r3]
+ 1102              	.LVL142:
+ 1103              	.LBE57:
+ 1104              	.LBE56:
+ 387:rt-thread/components/drivers/src/workqueue.c ****     {
+ 1105              		.loc 1 387 0 discriminator 3
+ 1106 001c 1346     		mov	r3, r2
+ 1107              	.LVL143:
+ 1108              	.L80:
+ 387:rt-thread/components/drivers/src/workqueue.c ****     {
+ 1109              		.loc 1 387 0 is_stmt 0 discriminator 1
+ 1110 001e A342     		cmp	r3, r4
+ 1111 0020 F4D1     		bne	.L81
+ 390:rt-thread/components/drivers/src/workqueue.c ****         rt_list_remove(node);
+ 391:rt-thread/components/drivers/src/workqueue.c ****     }
+ 392:rt-thread/components/drivers/src/workqueue.c ****     rt_exit_critical();
+ 1112              		.loc 1 392 0 is_stmt 1
+ 1113 0022 FFF7FEFF 		bl	rt_exit_critical
+ 1114              	.LVL144:
+ 393:rt-thread/components/drivers/src/workqueue.c **** 
+ 394:rt-thread/components/drivers/src/workqueue.c ****     return RT_EOK;
+ 395:rt-thread/components/drivers/src/workqueue.c **** }
+ 1115              		.loc 1 395 0
+ 1116 0026 0020     		movs	r0, #0
+ 1117 0028 10BD     		pop	{r4, pc}
+ 1118              		.cfi_endproc
+ 1119              	.LFE33:
+ 1121              		.section	.text.rt_delayed_work_init,"ax",%progbits
+ 1122              		.align	1
+ 1123              		.global	rt_delayed_work_init
+ 1124              		.syntax unified
+ 1125              		.thumb
+ 1126              		.thumb_func
+ 1127              		.fpu fpv4-sp-d16
+ 1129              	rt_delayed_work_init:
+ARM GAS  /tmp/ccpfJq7S.s 			page 31
+
+
+ 1130              	.LFB34:
+ 396:rt-thread/components/drivers/src/workqueue.c **** 
+ 397:rt-thread/components/drivers/src/workqueue.c **** void rt_delayed_work_init(struct rt_delayed_work *work, void (*work_func)(struct rt_work *work,
+ 398:rt-thread/components/drivers/src/workqueue.c ****                           void *work_data), void *work_data)
+ 399:rt-thread/components/drivers/src/workqueue.c **** {
+ 1131              		.loc 1 399 0
+ 1132              		.cfi_startproc
+ 1133              		@ args = 0, pretend = 0, frame = 0
+ 1134              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1135              		@ link register save eliminated.
+ 1136              	.LVL145:
+ 1137              	.LBB58:
+ 1138              	.LBB59:
+ 1139              	.LBB60:
+ 1140              	.LBB61:
+  49:rt-thread/include/rtservice.h **** }
+ 1141              		.loc 2 49 0
+ 1142 0000 4060     		str	r0, [r0, #4]
+ 1143 0002 0060     		str	r0, [r0]
+ 1144              	.LVL146:
+ 1145              	.LBE61:
+ 1146              	.LBE60:
+ 1147              		.file 3 "rt-thread/components/drivers/include/ipc/workqueue.h"
+   1:rt-thread/components/drivers/include/ipc/workqueue.h **** /*
+   2:rt-thread/components/drivers/include/ipc/workqueue.h ****  * Copyright (c) 2006-2018, RT-Thread Development Team
+   3:rt-thread/components/drivers/include/ipc/workqueue.h ****  *
+   4:rt-thread/components/drivers/include/ipc/workqueue.h ****  * SPDX-License-Identifier: Apache-2.0
+   5:rt-thread/components/drivers/include/ipc/workqueue.h ****  *
+   6:rt-thread/components/drivers/include/ipc/workqueue.h ****  * Change Logs:
+   7:rt-thread/components/drivers/include/ipc/workqueue.h ****  * Date           Author       Notes
+   8:rt-thread/components/drivers/include/ipc/workqueue.h ****  */
+   9:rt-thread/components/drivers/include/ipc/workqueue.h **** #ifndef WORKQUEUE_H__
+  10:rt-thread/components/drivers/include/ipc/workqueue.h **** #define WORKQUEUE_H__
+  11:rt-thread/components/drivers/include/ipc/workqueue.h **** 
+  12:rt-thread/components/drivers/include/ipc/workqueue.h **** #include <rtthread.h>
+  13:rt-thread/components/drivers/include/ipc/workqueue.h **** 
+  14:rt-thread/components/drivers/include/ipc/workqueue.h **** enum
+  15:rt-thread/components/drivers/include/ipc/workqueue.h **** {
+  16:rt-thread/components/drivers/include/ipc/workqueue.h ****     RT_WORK_STATE_PENDING    = 0x0001,     /* Work item pending state */
+  17:rt-thread/components/drivers/include/ipc/workqueue.h ****     RT_WORK_STATE_SUBMITTING = 0x0002,     /* Work item submitting state */
+  18:rt-thread/components/drivers/include/ipc/workqueue.h **** };
+  19:rt-thread/components/drivers/include/ipc/workqueue.h **** 
+  20:rt-thread/components/drivers/include/ipc/workqueue.h **** /**
+  21:rt-thread/components/drivers/include/ipc/workqueue.h ****  * work type defitions
+  22:rt-thread/components/drivers/include/ipc/workqueue.h ****  */
+  23:rt-thread/components/drivers/include/ipc/workqueue.h **** enum
+  24:rt-thread/components/drivers/include/ipc/workqueue.h **** {
+  25:rt-thread/components/drivers/include/ipc/workqueue.h ****     RT_WORK_TYPE_DELAYED     = 0x0001,
+  26:rt-thread/components/drivers/include/ipc/workqueue.h **** };
+  27:rt-thread/components/drivers/include/ipc/workqueue.h **** 
+  28:rt-thread/components/drivers/include/ipc/workqueue.h **** /* workqueue implementation */
+  29:rt-thread/components/drivers/include/ipc/workqueue.h **** struct rt_workqueue
+  30:rt-thread/components/drivers/include/ipc/workqueue.h **** {
+  31:rt-thread/components/drivers/include/ipc/workqueue.h ****     rt_list_t      work_list;
+  32:rt-thread/components/drivers/include/ipc/workqueue.h ****     struct rt_work *work_current; /* current work */
+  33:rt-thread/components/drivers/include/ipc/workqueue.h **** 
+  34:rt-thread/components/drivers/include/ipc/workqueue.h ****     struct rt_semaphore sem;
+ARM GAS  /tmp/ccpfJq7S.s 			page 32
+
+
+  35:rt-thread/components/drivers/include/ipc/workqueue.h ****     rt_thread_t    work_thread;
+  36:rt-thread/components/drivers/include/ipc/workqueue.h **** };
+  37:rt-thread/components/drivers/include/ipc/workqueue.h **** 
+  38:rt-thread/components/drivers/include/ipc/workqueue.h **** struct rt_work
+  39:rt-thread/components/drivers/include/ipc/workqueue.h **** {
+  40:rt-thread/components/drivers/include/ipc/workqueue.h ****     rt_list_t list;
+  41:rt-thread/components/drivers/include/ipc/workqueue.h **** 
+  42:rt-thread/components/drivers/include/ipc/workqueue.h ****     void (*work_func)(struct rt_work *work, void *work_data);
+  43:rt-thread/components/drivers/include/ipc/workqueue.h ****     void *work_data;
+  44:rt-thread/components/drivers/include/ipc/workqueue.h ****     rt_uint16_t flags;
+  45:rt-thread/components/drivers/include/ipc/workqueue.h ****     rt_uint16_t type;
+  46:rt-thread/components/drivers/include/ipc/workqueue.h ****     struct rt_timer timer;
+  47:rt-thread/components/drivers/include/ipc/workqueue.h ****     struct rt_workqueue *workqueue;
+  48:rt-thread/components/drivers/include/ipc/workqueue.h **** };
+  49:rt-thread/components/drivers/include/ipc/workqueue.h **** 
+  50:rt-thread/components/drivers/include/ipc/workqueue.h **** struct rt_delayed_work
+  51:rt-thread/components/drivers/include/ipc/workqueue.h **** {
+  52:rt-thread/components/drivers/include/ipc/workqueue.h ****     struct rt_work work;
+  53:rt-thread/components/drivers/include/ipc/workqueue.h **** };
+  54:rt-thread/components/drivers/include/ipc/workqueue.h **** 
+  55:rt-thread/components/drivers/include/ipc/workqueue.h **** #ifdef RT_USING_HEAP
+  56:rt-thread/components/drivers/include/ipc/workqueue.h **** /**
+  57:rt-thread/components/drivers/include/ipc/workqueue.h ****  * WorkQueue for DeviceDriver
+  58:rt-thread/components/drivers/include/ipc/workqueue.h ****  */
+  59:rt-thread/components/drivers/include/ipc/workqueue.h **** struct rt_workqueue *rt_workqueue_create(const char *name, rt_uint16_t stack_size, rt_uint8_t prior
+  60:rt-thread/components/drivers/include/ipc/workqueue.h **** rt_err_t rt_workqueue_destroy(struct rt_workqueue *queue);
+  61:rt-thread/components/drivers/include/ipc/workqueue.h **** rt_err_t rt_workqueue_dowork(struct rt_workqueue *queue, struct rt_work *work);
+  62:rt-thread/components/drivers/include/ipc/workqueue.h **** rt_err_t rt_workqueue_submit_work(struct rt_workqueue *queue, struct rt_work *work, rt_tick_t time)
+  63:rt-thread/components/drivers/include/ipc/workqueue.h **** rt_err_t rt_workqueue_cancel_work(struct rt_workqueue *queue, struct rt_work *work);
+  64:rt-thread/components/drivers/include/ipc/workqueue.h **** rt_err_t rt_workqueue_cancel_work_sync(struct rt_workqueue *queue, struct rt_work *work);
+  65:rt-thread/components/drivers/include/ipc/workqueue.h **** 
+  66:rt-thread/components/drivers/include/ipc/workqueue.h **** #ifdef RT_USING_SYSTEM_WORKQUEUE
+  67:rt-thread/components/drivers/include/ipc/workqueue.h **** rt_err_t rt_work_submit(struct rt_work *work, rt_tick_t time);
+  68:rt-thread/components/drivers/include/ipc/workqueue.h **** rt_err_t rt_work_cancel(struct rt_work *work);
+  69:rt-thread/components/drivers/include/ipc/workqueue.h **** #endif
+  70:rt-thread/components/drivers/include/ipc/workqueue.h **** 
+  71:rt-thread/components/drivers/include/ipc/workqueue.h **** rt_inline void rt_work_init(struct rt_work *work, void (*work_func)(struct rt_work *work, void *wor
+  72:rt-thread/components/drivers/include/ipc/workqueue.h ****                             void *work_data)
+  73:rt-thread/components/drivers/include/ipc/workqueue.h **** {
+  74:rt-thread/components/drivers/include/ipc/workqueue.h ****     rt_list_init(&(work->list));
+  75:rt-thread/components/drivers/include/ipc/workqueue.h ****     work->work_func = work_func;
+ 1148              		.loc 3 75 0
+ 1149 0004 8160     		str	r1, [r0, #8]
+  76:rt-thread/components/drivers/include/ipc/workqueue.h ****     work->work_data = work_data;
+ 1150              		.loc 3 76 0
+ 1151 0006 C260     		str	r2, [r0, #12]
+  77:rt-thread/components/drivers/include/ipc/workqueue.h ****     work->workqueue = RT_NULL;
+ 1152              		.loc 3 77 0
+ 1153 0008 0023     		movs	r3, #0
+ 1154 000a 0364     		str	r3, [r0, #64]
+  78:rt-thread/components/drivers/include/ipc/workqueue.h ****     work->flags = 0;
+ 1155              		.loc 3 78 0
+ 1156 000c 0382     		strh	r3, [r0, #16]	@ movhi
+  79:rt-thread/components/drivers/include/ipc/workqueue.h ****     work->type = 0;
+ 1157              		.loc 3 79 0
+ 1158 000e 4382     		strh	r3, [r0, #18]	@ movhi
+ 1159              	.LVL147:
+ARM GAS  /tmp/ccpfJq7S.s 			page 33
+
+
+ 1160 0010 7047     		bx	lr
+ 1161              	.LBE59:
+ 1162              	.LBE58:
+ 1163              		.cfi_endproc
+ 1164              	.LFE34:
+ 1166              		.section	.rodata._workqueue_submit_delayed_work.str1.4,"aMS",%progbits,1
+ 1167              		.align	2
+ 1168              	.LC0:
+ 1169 0000 776F726B 		.ascii	"work\000"
+ 1169      00
+ 1170              		.section	.rodata.rt_workqueue_create.str1.4,"aMS",%progbits,1
+ 1171              		.align	2
+ 1172              	.LC1:
+ 1173 0000 77717565 		.ascii	"wqueue\000"
+ 1173      756500
+ 1174              		.text
+ 1175              	.Letext0:
+ 1176              		.file 4 "rt-thread/include/rtdef.h"
+ 1177              		.file 5 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/lock.h"
+ 1178              		.file 6 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_types.h"
+ 1179              		.file 7 "/opt/gcc-arm-none-eabi-6-2017-q2-update/lib/gcc/arm-none-eabi/6.3.1/include/stddef.h"
+ 1180              		.file 8 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/reent.h"
+ 1181              		.file 9 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/time.h"
+ 1182              		.file 10 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/errno.h"
+ 1183              		.file 11 "rt-thread/components/finsh/finsh_api.h"
+ 1184              		.file 12 "rt-thread/include/rtthread.h"
+ 1185              		.file 13 "rt-thread/include/rthw.h"
+ARM GAS  /tmp/ccpfJq7S.s 			page 34
+
+
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 workqueue.c
+     /tmp/ccpfJq7S.s:18     .text._workqueue_cancel_work:0000000000000000 $t
+     /tmp/ccpfJq7S.s:24     .text._workqueue_cancel_work:0000000000000000 _workqueue_cancel_work
+     /tmp/ccpfJq7S.s:89     .text._workqueue_thread_entry:0000000000000000 $t
+     /tmp/ccpfJq7S.s:95     .text._workqueue_thread_entry:0000000000000000 _workqueue_thread_entry
+     /tmp/ccpfJq7S.s:218    .text._workqueue_submit_work:0000000000000000 $t
+     /tmp/ccpfJq7S.s:224    .text._workqueue_submit_work:0000000000000000 _workqueue_submit_work
+     /tmp/ccpfJq7S.s:335    .text._delayed_work_timeout_handler:0000000000000000 $t
+     /tmp/ccpfJq7S.s:341    .text._delayed_work_timeout_handler:0000000000000000 _delayed_work_timeout_handler
+     /tmp/ccpfJq7S.s:394    .text._workqueue_cancel_delayed_work:0000000000000000 $t
+     /tmp/ccpfJq7S.s:400    .text._workqueue_cancel_delayed_work:0000000000000000 _workqueue_cancel_delayed_work
+     /tmp/ccpfJq7S.s:497    .text._workqueue_submit_delayed_work:0000000000000000 $t
+     /tmp/ccpfJq7S.s:503    .text._workqueue_submit_delayed_work:0000000000000000 _workqueue_submit_delayed_work
+     /tmp/ccpfJq7S.s:623    .text._workqueue_submit_delayed_work:000000000000007c $d
+     /tmp/ccpfJq7S.s:629    .text.rt_workqueue_create:0000000000000000 $t
+     /tmp/ccpfJq7S.s:636    .text.rt_workqueue_create:0000000000000000 rt_workqueue_create
+     /tmp/ccpfJq7S.s:725    .text.rt_workqueue_create:0000000000000050 $d
+     /tmp/ccpfJq7S.s:731    .text.rt_workqueue_destroy:0000000000000000 $t
+     /tmp/ccpfJq7S.s:738    .text.rt_workqueue_destroy:0000000000000000 rt_workqueue_destroy
+     /tmp/ccpfJq7S.s:767    .text.rt_workqueue_dowork:0000000000000000 $t
+     /tmp/ccpfJq7S.s:774    .text.rt_workqueue_dowork:0000000000000000 rt_workqueue_dowork
+     /tmp/ccpfJq7S.s:795    .text.rt_workqueue_submit_work:0000000000000000 $t
+     /tmp/ccpfJq7S.s:802    .text.rt_workqueue_submit_work:0000000000000000 rt_workqueue_submit_work
+     /tmp/ccpfJq7S.s:843    .text.rt_workqueue_critical_work:0000000000000000 $t
+     /tmp/ccpfJq7S.s:850    .text.rt_workqueue_critical_work:0000000000000000 rt_workqueue_critical_work
+     /tmp/ccpfJq7S.s:945    .text.rt_workqueue_cancel_work:0000000000000000 $t
+     /tmp/ccpfJq7S.s:952    .text.rt_workqueue_cancel_work:0000000000000000 rt_workqueue_cancel_work
+     /tmp/ccpfJq7S.s:985    .text.rt_workqueue_cancel_work_sync:0000000000000000 $t
+     /tmp/ccpfJq7S.s:992    .text.rt_workqueue_cancel_work_sync:0000000000000000 rt_workqueue_cancel_work_sync
+     /tmp/ccpfJq7S.s:1059   .text.rt_workqueue_cancel_all_work:0000000000000000 $t
+     /tmp/ccpfJq7S.s:1066   .text.rt_workqueue_cancel_all_work:0000000000000000 rt_workqueue_cancel_all_work
+     /tmp/ccpfJq7S.s:1122   .text.rt_delayed_work_init:0000000000000000 $t
+     /tmp/ccpfJq7S.s:1129   .text.rt_delayed_work_init:0000000000000000 rt_delayed_work_init
+     /tmp/ccpfJq7S.s:1167   .rodata._workqueue_submit_delayed_work.str1.4:0000000000000000 $d
+     /tmp/ccpfJq7S.s:1171   .rodata.rt_workqueue_create.str1.4:0000000000000000 $d
+                     .debug_frame:0000000000000010 $d
+
+UNDEFINED SYMBOLS
+rt_hw_interrupt_disable
+rt_hw_interrupt_enable
+rt_thread_self
+rt_thread_suspend
+rt_schedule
+rt_exit_critical
+rt_enter_critical
+rt_sem_trytake
+rt_sem_release
+rt_thread_resume
+rt_timer_stop
+rt_timer_detach
+rt_timer_init
+rt_timer_start
+rt_malloc
+rt_sem_init
+rt_thread_create
+rt_thread_startup
+ARM GAS  /tmp/ccpfJq7S.s 			page 35
+
+
+rt_free
+rt_thread_delete
+rt_sem_take

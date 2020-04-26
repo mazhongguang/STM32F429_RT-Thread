@@ -1,0 +1,2895 @@
+ARM GAS  /tmp/ccy0WF1g.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.eabi_attribute 27, 1
+   3              		.eabi_attribute 28, 1
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.file	"shell.c"
+  14              		.text
+  15              	.Ltext0:
+  16              		.cfi_sections	.debug_frame
+  17              		.section	.text.finsh_rx_ind,"ax",%progbits
+  18              		.align	1
+  19              		.syntax unified
+  20              		.thumb
+  21              		.thumb_func
+  22              		.fpu fpv4-sp-d16
+  24              	finsh_rx_ind:
+  25              	.LFB21:
+  26              		.file 1 "rt-thread/components/finsh/shell.c"
+   1:rt-thread/components/finsh/shell.c **** /*
+   2:rt-thread/components/finsh/shell.c ****  * Copyright (c) 2006-2018, RT-Thread Development Team
+   3:rt-thread/components/finsh/shell.c ****  *
+   4:rt-thread/components/finsh/shell.c ****  * SPDX-License-Identifier: Apache-2.0
+   5:rt-thread/components/finsh/shell.c ****  *
+   6:rt-thread/components/finsh/shell.c ****  * Change Logs:
+   7:rt-thread/components/finsh/shell.c ****  * Date           Author       Notes
+   8:rt-thread/components/finsh/shell.c ****  * 2006-04-30     Bernard      the first version for FinSH
+   9:rt-thread/components/finsh/shell.c ****  * 2006-05-08     Bernard      change finsh thread stack to 2048
+  10:rt-thread/components/finsh/shell.c ****  * 2006-06-03     Bernard      add support for skyeye
+  11:rt-thread/components/finsh/shell.c ****  * 2006-09-24     Bernard      remove the code related with hardware
+  12:rt-thread/components/finsh/shell.c ****  * 2010-01-18     Bernard      fix down then up key bug.
+  13:rt-thread/components/finsh/shell.c ****  * 2010-03-19     Bernard      fix backspace issue and fix device read in shell.
+  14:rt-thread/components/finsh/shell.c ****  * 2010-04-01     Bernard      add prompt output when start and remove the empty history
+  15:rt-thread/components/finsh/shell.c ****  * 2011-02-23     Bernard      fix variable section end issue of finsh shell
+  16:rt-thread/components/finsh/shell.c ****  *                             initialization when use GNU GCC compiler.
+  17:rt-thread/components/finsh/shell.c ****  * 2016-11-26     armink       add password authentication
+  18:rt-thread/components/finsh/shell.c ****  * 2018-07-02     aozima       add custom prompt support.
+  19:rt-thread/components/finsh/shell.c ****  */
+  20:rt-thread/components/finsh/shell.c **** 
+  21:rt-thread/components/finsh/shell.c **** #include <rthw.h>
+  22:rt-thread/components/finsh/shell.c **** 
+  23:rt-thread/components/finsh/shell.c **** #ifdef RT_USING_FINSH
+  24:rt-thread/components/finsh/shell.c **** 
+  25:rt-thread/components/finsh/shell.c **** #include "finsh.h"
+  26:rt-thread/components/finsh/shell.c **** #include "shell.h"
+  27:rt-thread/components/finsh/shell.c **** 
+  28:rt-thread/components/finsh/shell.c **** #ifdef FINSH_USING_MSH
+  29:rt-thread/components/finsh/shell.c **** #include "msh.h"
+  30:rt-thread/components/finsh/shell.c **** #endif
+  31:rt-thread/components/finsh/shell.c **** 
+  32:rt-thread/components/finsh/shell.c **** #ifdef _WIN32
+ARM GAS  /tmp/ccy0WF1g.s 			page 2
+
+
+  33:rt-thread/components/finsh/shell.c **** #include <stdio.h> /* for putchar */
+  34:rt-thread/components/finsh/shell.c **** #endif
+  35:rt-thread/components/finsh/shell.c **** 
+  36:rt-thread/components/finsh/shell.c **** /* finsh thread */
+  37:rt-thread/components/finsh/shell.c **** #ifndef RT_USING_HEAP
+  38:rt-thread/components/finsh/shell.c **** static struct rt_thread finsh_thread;
+  39:rt-thread/components/finsh/shell.c **** ALIGN(RT_ALIGN_SIZE)
+  40:rt-thread/components/finsh/shell.c **** static char finsh_thread_stack[FINSH_THREAD_STACK_SIZE];
+  41:rt-thread/components/finsh/shell.c **** struct finsh_shell _shell;
+  42:rt-thread/components/finsh/shell.c **** #endif
+  43:rt-thread/components/finsh/shell.c **** 
+  44:rt-thread/components/finsh/shell.c **** /* finsh symtab */
+  45:rt-thread/components/finsh/shell.c **** #ifdef FINSH_USING_SYMTAB
+  46:rt-thread/components/finsh/shell.c **** struct finsh_syscall *_syscall_table_begin  = NULL;
+  47:rt-thread/components/finsh/shell.c **** struct finsh_syscall *_syscall_table_end    = NULL;
+  48:rt-thread/components/finsh/shell.c **** struct finsh_sysvar *_sysvar_table_begin    = NULL;
+  49:rt-thread/components/finsh/shell.c **** struct finsh_sysvar *_sysvar_table_end      = NULL;
+  50:rt-thread/components/finsh/shell.c **** #endif
+  51:rt-thread/components/finsh/shell.c **** 
+  52:rt-thread/components/finsh/shell.c **** struct finsh_shell *shell;
+  53:rt-thread/components/finsh/shell.c **** static char *finsh_prompt_custom = RT_NULL;
+  54:rt-thread/components/finsh/shell.c **** 
+  55:rt-thread/components/finsh/shell.c **** #if defined(_MSC_VER) || (defined(__GNUC__) && defined(__x86_64__))
+  56:rt-thread/components/finsh/shell.c **** struct finsh_syscall* finsh_syscall_next(struct finsh_syscall* call)
+  57:rt-thread/components/finsh/shell.c **** {
+  58:rt-thread/components/finsh/shell.c ****     unsigned int *ptr;
+  59:rt-thread/components/finsh/shell.c ****     ptr = (unsigned int*) (call + 1);
+  60:rt-thread/components/finsh/shell.c ****     while ((*ptr == 0) && ((unsigned int*)ptr < (unsigned int*) _syscall_table_end))
+  61:rt-thread/components/finsh/shell.c ****         ptr ++;
+  62:rt-thread/components/finsh/shell.c **** 
+  63:rt-thread/components/finsh/shell.c ****     return (struct finsh_syscall*)ptr;
+  64:rt-thread/components/finsh/shell.c **** }
+  65:rt-thread/components/finsh/shell.c **** 
+  66:rt-thread/components/finsh/shell.c **** struct finsh_sysvar* finsh_sysvar_next(struct finsh_sysvar* call)
+  67:rt-thread/components/finsh/shell.c **** {
+  68:rt-thread/components/finsh/shell.c ****     unsigned int *ptr;
+  69:rt-thread/components/finsh/shell.c ****     ptr = (unsigned int*) (call + 1);
+  70:rt-thread/components/finsh/shell.c ****     while ((*ptr == 0) && ((unsigned int*)ptr < (unsigned int*) _sysvar_table_end))
+  71:rt-thread/components/finsh/shell.c ****         ptr ++;
+  72:rt-thread/components/finsh/shell.c **** 
+  73:rt-thread/components/finsh/shell.c ****     return (struct finsh_sysvar*)ptr;
+  74:rt-thread/components/finsh/shell.c **** }
+  75:rt-thread/components/finsh/shell.c **** #endif /* defined(_MSC_VER) || (defined(__GNUC__) && defined(__x86_64__)) */
+  76:rt-thread/components/finsh/shell.c **** 
+  77:rt-thread/components/finsh/shell.c **** #ifdef RT_USING_HEAP
+  78:rt-thread/components/finsh/shell.c **** int finsh_set_prompt(const char * prompt)
+  79:rt-thread/components/finsh/shell.c **** {
+  80:rt-thread/components/finsh/shell.c ****     if(finsh_prompt_custom)
+  81:rt-thread/components/finsh/shell.c ****     {
+  82:rt-thread/components/finsh/shell.c ****         rt_free(finsh_prompt_custom);
+  83:rt-thread/components/finsh/shell.c ****         finsh_prompt_custom = RT_NULL;
+  84:rt-thread/components/finsh/shell.c ****     }
+  85:rt-thread/components/finsh/shell.c **** 
+  86:rt-thread/components/finsh/shell.c ****     /* strdup */
+  87:rt-thread/components/finsh/shell.c ****     if(prompt)
+  88:rt-thread/components/finsh/shell.c ****     {
+  89:rt-thread/components/finsh/shell.c ****         finsh_prompt_custom = (char *)rt_malloc(strlen(prompt)+1);
+ARM GAS  /tmp/ccy0WF1g.s 			page 3
+
+
+  90:rt-thread/components/finsh/shell.c ****         if(finsh_prompt_custom)
+  91:rt-thread/components/finsh/shell.c ****         {
+  92:rt-thread/components/finsh/shell.c ****             strcpy(finsh_prompt_custom, prompt);
+  93:rt-thread/components/finsh/shell.c ****         }
+  94:rt-thread/components/finsh/shell.c ****     }
+  95:rt-thread/components/finsh/shell.c **** 
+  96:rt-thread/components/finsh/shell.c ****     return 0;
+  97:rt-thread/components/finsh/shell.c **** }
+  98:rt-thread/components/finsh/shell.c **** #endif /* RT_USING_HEAP */
+  99:rt-thread/components/finsh/shell.c **** 
+ 100:rt-thread/components/finsh/shell.c **** #if defined(RT_USING_DFS)
+ 101:rt-thread/components/finsh/shell.c **** #include <dfs_posix.h>
+ 102:rt-thread/components/finsh/shell.c **** #endif /* RT_USING_DFS */
+ 103:rt-thread/components/finsh/shell.c **** 
+ 104:rt-thread/components/finsh/shell.c **** const char *finsh_get_prompt()
+ 105:rt-thread/components/finsh/shell.c **** {
+ 106:rt-thread/components/finsh/shell.c **** #define _MSH_PROMPT "msh "
+ 107:rt-thread/components/finsh/shell.c **** #define _PROMPT     "finsh "
+ 108:rt-thread/components/finsh/shell.c ****     static char finsh_prompt[RT_CONSOLEBUF_SIZE + 1] = {0};
+ 109:rt-thread/components/finsh/shell.c **** 
+ 110:rt-thread/components/finsh/shell.c ****     /* check prompt mode */
+ 111:rt-thread/components/finsh/shell.c ****     if (!shell->prompt_mode)
+ 112:rt-thread/components/finsh/shell.c ****     {
+ 113:rt-thread/components/finsh/shell.c ****         finsh_prompt[0] = '\0';
+ 114:rt-thread/components/finsh/shell.c ****         return finsh_prompt;
+ 115:rt-thread/components/finsh/shell.c ****     }
+ 116:rt-thread/components/finsh/shell.c **** 
+ 117:rt-thread/components/finsh/shell.c ****     if(finsh_prompt_custom)
+ 118:rt-thread/components/finsh/shell.c ****     {
+ 119:rt-thread/components/finsh/shell.c ****         strncpy(finsh_prompt, finsh_prompt_custom, sizeof(finsh_prompt)-1);
+ 120:rt-thread/components/finsh/shell.c ****         return finsh_prompt;
+ 121:rt-thread/components/finsh/shell.c ****     }
+ 122:rt-thread/components/finsh/shell.c **** 
+ 123:rt-thread/components/finsh/shell.c **** #ifdef FINSH_USING_MSH
+ 124:rt-thread/components/finsh/shell.c ****     if (msh_is_used()) strcpy(finsh_prompt, _MSH_PROMPT);
+ 125:rt-thread/components/finsh/shell.c ****     else
+ 126:rt-thread/components/finsh/shell.c **** #endif
+ 127:rt-thread/components/finsh/shell.c ****         strcpy(finsh_prompt, _PROMPT);
+ 128:rt-thread/components/finsh/shell.c **** 
+ 129:rt-thread/components/finsh/shell.c **** #if defined(RT_USING_DFS) && defined(DFS_USING_WORKDIR)
+ 130:rt-thread/components/finsh/shell.c ****     /* get current working directory */
+ 131:rt-thread/components/finsh/shell.c ****     getcwd(&finsh_prompt[rt_strlen(finsh_prompt)], RT_CONSOLEBUF_SIZE - rt_strlen(finsh_prompt));
+ 132:rt-thread/components/finsh/shell.c **** #endif
+ 133:rt-thread/components/finsh/shell.c **** 
+ 134:rt-thread/components/finsh/shell.c ****     strcat(finsh_prompt, ">");
+ 135:rt-thread/components/finsh/shell.c **** 
+ 136:rt-thread/components/finsh/shell.c ****     return finsh_prompt;
+ 137:rt-thread/components/finsh/shell.c **** }
+ 138:rt-thread/components/finsh/shell.c **** 
+ 139:rt-thread/components/finsh/shell.c **** /**
+ 140:rt-thread/components/finsh/shell.c ****  * @ingroup finsh
+ 141:rt-thread/components/finsh/shell.c ****  *
+ 142:rt-thread/components/finsh/shell.c ****  * This function get the prompt mode of finsh shell.
+ 143:rt-thread/components/finsh/shell.c ****  *
+ 144:rt-thread/components/finsh/shell.c ****  * @return prompt the prompt mode, 0 disable prompt mode, other values enable prompt mode.
+ 145:rt-thread/components/finsh/shell.c ****  */
+ 146:rt-thread/components/finsh/shell.c **** rt_uint32_t finsh_get_prompt_mode(void)
+ARM GAS  /tmp/ccy0WF1g.s 			page 4
+
+
+ 147:rt-thread/components/finsh/shell.c **** {
+ 148:rt-thread/components/finsh/shell.c ****     RT_ASSERT(shell != RT_NULL);
+ 149:rt-thread/components/finsh/shell.c ****     return shell->prompt_mode;
+ 150:rt-thread/components/finsh/shell.c **** }
+ 151:rt-thread/components/finsh/shell.c **** 
+ 152:rt-thread/components/finsh/shell.c **** /**
+ 153:rt-thread/components/finsh/shell.c ****  * @ingroup finsh
+ 154:rt-thread/components/finsh/shell.c ****  *
+ 155:rt-thread/components/finsh/shell.c ****  * This function set the prompt mode of finsh shell.
+ 156:rt-thread/components/finsh/shell.c ****  *
+ 157:rt-thread/components/finsh/shell.c ****  * The parameter 0 disable prompt mode, other values enable prompt mode.
+ 158:rt-thread/components/finsh/shell.c ****  *
+ 159:rt-thread/components/finsh/shell.c ****  * @param prompt the prompt mode
+ 160:rt-thread/components/finsh/shell.c ****  */
+ 161:rt-thread/components/finsh/shell.c **** void finsh_set_prompt_mode(rt_uint32_t prompt_mode)
+ 162:rt-thread/components/finsh/shell.c **** {
+ 163:rt-thread/components/finsh/shell.c ****     RT_ASSERT(shell != RT_NULL);
+ 164:rt-thread/components/finsh/shell.c ****     shell->prompt_mode = prompt_mode;
+ 165:rt-thread/components/finsh/shell.c **** }
+ 166:rt-thread/components/finsh/shell.c **** 
+ 167:rt-thread/components/finsh/shell.c **** static int finsh_getchar(void)
+ 168:rt-thread/components/finsh/shell.c **** {
+ 169:rt-thread/components/finsh/shell.c **** #ifdef RT_USING_DEVICE
+ 170:rt-thread/components/finsh/shell.c **** #ifdef RT_USING_POSIX
+ 171:rt-thread/components/finsh/shell.c ****     return getchar();
+ 172:rt-thread/components/finsh/shell.c **** #else
+ 173:rt-thread/components/finsh/shell.c ****     char ch = 0;
+ 174:rt-thread/components/finsh/shell.c **** 
+ 175:rt-thread/components/finsh/shell.c ****     RT_ASSERT(shell != RT_NULL);
+ 176:rt-thread/components/finsh/shell.c ****     while (rt_device_read(shell->device, -1, &ch, 1) != 1)
+ 177:rt-thread/components/finsh/shell.c ****         rt_sem_take(&shell->rx_sem, RT_WAITING_FOREVER);
+ 178:rt-thread/components/finsh/shell.c **** 
+ 179:rt-thread/components/finsh/shell.c ****     return (int)ch;
+ 180:rt-thread/components/finsh/shell.c **** #endif
+ 181:rt-thread/components/finsh/shell.c **** #else
+ 182:rt-thread/components/finsh/shell.c ****     extern char rt_hw_console_getchar(void);
+ 183:rt-thread/components/finsh/shell.c ****     return rt_hw_console_getchar();
+ 184:rt-thread/components/finsh/shell.c **** #endif
+ 185:rt-thread/components/finsh/shell.c **** }
+ 186:rt-thread/components/finsh/shell.c **** 
+ 187:rt-thread/components/finsh/shell.c **** #if !defined(RT_USING_POSIX) && defined(RT_USING_DEVICE)
+ 188:rt-thread/components/finsh/shell.c **** static rt_err_t finsh_rx_ind(rt_device_t dev, rt_size_t size)
+ 189:rt-thread/components/finsh/shell.c **** {
+  27              		.loc 1 189 0
+  28              		.cfi_startproc
+  29              		@ args = 0, pretend = 0, frame = 0
+  30              		@ frame_needed = 0, uses_anonymous_args = 0
+  31              	.LVL0:
+  32 0000 08B5     		push	{r3, lr}
+  33              	.LCFI0:
+  34              		.cfi_def_cfa_offset 8
+  35              		.cfi_offset 3, -8
+  36              		.cfi_offset 14, -4
+ 190:rt-thread/components/finsh/shell.c ****     RT_ASSERT(shell != RT_NULL);
+ 191:rt-thread/components/finsh/shell.c **** 
+ 192:rt-thread/components/finsh/shell.c ****     /* release semaphore to let finsh thread rx data */
+ 193:rt-thread/components/finsh/shell.c ****     rt_sem_release(&shell->rx_sem);
+ARM GAS  /tmp/ccy0WF1g.s 			page 5
+
+
+  37              		.loc 1 193 0
+  38 0002 034B     		ldr	r3, .L3
+  39 0004 1868     		ldr	r0, [r3]
+  40              	.LVL1:
+  41 0006 FFF7FEFF 		bl	rt_sem_release
+  42              	.LVL2:
+ 194:rt-thread/components/finsh/shell.c **** 
+ 195:rt-thread/components/finsh/shell.c ****     return RT_EOK;
+ 196:rt-thread/components/finsh/shell.c **** }
+  43              		.loc 1 196 0
+  44 000a 0020     		movs	r0, #0
+  45 000c 08BD     		pop	{r3, pc}
+  46              	.L4:
+  47 000e 00BF     		.align	2
+  48              	.L3:
+  49 0010 00000000 		.word	shell
+  50              		.cfi_endproc
+  51              	.LFE21:
+  53              		.section	.text.finsh_getchar,"ax",%progbits
+  54              		.align	1
+  55              		.syntax unified
+  56              		.thumb
+  57              		.thumb_func
+  58              		.fpu fpv4-sp-d16
+  60              	finsh_getchar:
+  61              	.LFB20:
+ 168:rt-thread/components/finsh/shell.c **** #ifdef RT_USING_DEVICE
+  62              		.loc 1 168 0
+  63              		.cfi_startproc
+  64              		@ args = 0, pretend = 0, frame = 8
+  65              		@ frame_needed = 0, uses_anonymous_args = 0
+  66 0000 00B5     		push	{lr}
+  67              	.LCFI1:
+  68              		.cfi_def_cfa_offset 4
+  69              		.cfi_offset 14, -4
+  70 0002 83B0     		sub	sp, sp, #12
+  71              	.LCFI2:
+  72              		.cfi_def_cfa_offset 16
+ 173:rt-thread/components/finsh/shell.c **** 
+  73              		.loc 1 173 0
+  74 0004 0023     		movs	r3, #0
+  75 0006 8DF80730 		strb	r3, [sp, #7]
+ 176:rt-thread/components/finsh/shell.c ****         rt_sem_take(&shell->rx_sem, RT_WAITING_FOREVER);
+  76              		.loc 1 176 0
+  77 000a 05E0     		b	.L6
+  78              	.L7:
+ 177:rt-thread/components/finsh/shell.c **** 
+  79              		.loc 1 177 0
+  80 000c 4FF0FF31 		mov	r1, #-1
+  81 0010 0A4B     		ldr	r3, .L9
+  82 0012 1868     		ldr	r0, [r3]
+  83 0014 FFF7FEFF 		bl	rt_sem_take
+  84              	.LVL3:
+  85              	.L6:
+ 176:rt-thread/components/finsh/shell.c ****         rt_sem_take(&shell->rx_sem, RT_WAITING_FOREVER);
+  86              		.loc 1 176 0
+  87 0018 084B     		ldr	r3, .L9
+ARM GAS  /tmp/ccy0WF1g.s 			page 6
+
+
+  88 001a 1868     		ldr	r0, [r3]
+  89 001c 0123     		movs	r3, #1
+  90 001e 0DF10702 		add	r2, sp, #7
+  91 0022 4FF0FF31 		mov	r1, #-1
+  92 0026 D0F80C02 		ldr	r0, [r0, #524]
+  93 002a FFF7FEFF 		bl	rt_device_read
+  94              	.LVL4:
+  95 002e 0128     		cmp	r0, #1
+  96 0030 ECD1     		bne	.L7
+ 185:rt-thread/components/finsh/shell.c **** 
+  97              		.loc 1 185 0
+  98 0032 9DF80700 		ldrb	r0, [sp, #7]	@ zero_extendqisi2
+  99 0036 03B0     		add	sp, sp, #12
+ 100              	.LCFI3:
+ 101              		.cfi_def_cfa_offset 4
+ 102              		@ sp needed
+ 103 0038 5DF804FB 		ldr	pc, [sp], #4
+ 104              	.L10:
+ 105              		.align	2
+ 106              	.L9:
+ 107 003c 00000000 		.word	shell
+ 108              		.cfi_endproc
+ 109              	.LFE20:
+ 111              		.section	.text.shell_push_history,"ax",%progbits
+ 112              		.align	1
+ 113              		.syntax unified
+ 114              		.thumb
+ 115              		.thumb_func
+ 116              		.fpu fpv4-sp-d16
+ 118              	shell_push_history:
+ 119              	.LFB28:
+ 197:rt-thread/components/finsh/shell.c **** 
+ 198:rt-thread/components/finsh/shell.c **** /**
+ 199:rt-thread/components/finsh/shell.c ****  * @ingroup finsh
+ 200:rt-thread/components/finsh/shell.c ****  *
+ 201:rt-thread/components/finsh/shell.c ****  * This function sets the input device of finsh shell.
+ 202:rt-thread/components/finsh/shell.c ****  *
+ 203:rt-thread/components/finsh/shell.c ****  * @param device_name the name of new input device.
+ 204:rt-thread/components/finsh/shell.c ****  */
+ 205:rt-thread/components/finsh/shell.c **** void finsh_set_device(const char *device_name)
+ 206:rt-thread/components/finsh/shell.c **** {
+ 207:rt-thread/components/finsh/shell.c ****     rt_device_t dev = RT_NULL;
+ 208:rt-thread/components/finsh/shell.c **** 
+ 209:rt-thread/components/finsh/shell.c ****     RT_ASSERT(shell != RT_NULL);
+ 210:rt-thread/components/finsh/shell.c ****     dev = rt_device_find(device_name);
+ 211:rt-thread/components/finsh/shell.c ****     if (dev == RT_NULL)
+ 212:rt-thread/components/finsh/shell.c ****     {
+ 213:rt-thread/components/finsh/shell.c ****         rt_kprintf("finsh: can not find device: %s\n", device_name);
+ 214:rt-thread/components/finsh/shell.c ****         return;
+ 215:rt-thread/components/finsh/shell.c ****     }
+ 216:rt-thread/components/finsh/shell.c **** 
+ 217:rt-thread/components/finsh/shell.c ****     /* check whether it's a same device */
+ 218:rt-thread/components/finsh/shell.c ****     if (dev == shell->device) return;
+ 219:rt-thread/components/finsh/shell.c ****     /* open this device and set the new device in finsh shell */
+ 220:rt-thread/components/finsh/shell.c ****     if (rt_device_open(dev, RT_DEVICE_OFLAG_RDWR | RT_DEVICE_FLAG_INT_RX | \
+ 221:rt-thread/components/finsh/shell.c ****                        RT_DEVICE_FLAG_STREAM) == RT_EOK)
+ 222:rt-thread/components/finsh/shell.c ****     {
+ARM GAS  /tmp/ccy0WF1g.s 			page 7
+
+
+ 223:rt-thread/components/finsh/shell.c ****         if (shell->device != RT_NULL)
+ 224:rt-thread/components/finsh/shell.c ****         {
+ 225:rt-thread/components/finsh/shell.c ****             /* close old finsh device */
+ 226:rt-thread/components/finsh/shell.c ****             rt_device_close(shell->device);
+ 227:rt-thread/components/finsh/shell.c ****             rt_device_set_rx_indicate(shell->device, RT_NULL);
+ 228:rt-thread/components/finsh/shell.c ****         }
+ 229:rt-thread/components/finsh/shell.c **** 
+ 230:rt-thread/components/finsh/shell.c ****         /* clear line buffer before switch to new device */
+ 231:rt-thread/components/finsh/shell.c ****         memset(shell->line, 0, sizeof(shell->line));
+ 232:rt-thread/components/finsh/shell.c ****         shell->line_curpos = shell->line_position = 0;
+ 233:rt-thread/components/finsh/shell.c **** 
+ 234:rt-thread/components/finsh/shell.c ****         shell->device = dev;
+ 235:rt-thread/components/finsh/shell.c ****         rt_device_set_rx_indicate(dev, finsh_rx_ind);
+ 236:rt-thread/components/finsh/shell.c ****     }
+ 237:rt-thread/components/finsh/shell.c **** }
+ 238:rt-thread/components/finsh/shell.c **** 
+ 239:rt-thread/components/finsh/shell.c **** /**
+ 240:rt-thread/components/finsh/shell.c ****  * @ingroup finsh
+ 241:rt-thread/components/finsh/shell.c ****  *
+ 242:rt-thread/components/finsh/shell.c ****  * This function returns current finsh shell input device.
+ 243:rt-thread/components/finsh/shell.c ****  *
+ 244:rt-thread/components/finsh/shell.c ****  * @return the finsh shell input device name is returned.
+ 245:rt-thread/components/finsh/shell.c ****  */
+ 246:rt-thread/components/finsh/shell.c **** const char *finsh_get_device()
+ 247:rt-thread/components/finsh/shell.c **** {
+ 248:rt-thread/components/finsh/shell.c ****     RT_ASSERT(shell != RT_NULL);
+ 249:rt-thread/components/finsh/shell.c ****     return shell->device->parent.name;
+ 250:rt-thread/components/finsh/shell.c **** }
+ 251:rt-thread/components/finsh/shell.c **** #endif
+ 252:rt-thread/components/finsh/shell.c **** 
+ 253:rt-thread/components/finsh/shell.c **** /**
+ 254:rt-thread/components/finsh/shell.c ****  * @ingroup finsh
+ 255:rt-thread/components/finsh/shell.c ****  *
+ 256:rt-thread/components/finsh/shell.c ****  * This function set the echo mode of finsh shell.
+ 257:rt-thread/components/finsh/shell.c ****  *
+ 258:rt-thread/components/finsh/shell.c ****  * FINSH_OPTION_ECHO=0x01 is echo mode, other values are none-echo mode.
+ 259:rt-thread/components/finsh/shell.c ****  *
+ 260:rt-thread/components/finsh/shell.c ****  * @param echo the echo mode
+ 261:rt-thread/components/finsh/shell.c ****  */
+ 262:rt-thread/components/finsh/shell.c **** void finsh_set_echo(rt_uint32_t echo)
+ 263:rt-thread/components/finsh/shell.c **** {
+ 264:rt-thread/components/finsh/shell.c ****     RT_ASSERT(shell != RT_NULL);
+ 265:rt-thread/components/finsh/shell.c ****     shell->echo_mode = (rt_uint8_t)echo;
+ 266:rt-thread/components/finsh/shell.c **** }
+ 267:rt-thread/components/finsh/shell.c **** 
+ 268:rt-thread/components/finsh/shell.c **** /**
+ 269:rt-thread/components/finsh/shell.c ****  * @ingroup finsh
+ 270:rt-thread/components/finsh/shell.c ****  *
+ 271:rt-thread/components/finsh/shell.c ****  * This function gets the echo mode of finsh shell.
+ 272:rt-thread/components/finsh/shell.c ****  *
+ 273:rt-thread/components/finsh/shell.c ****  * @return the echo mode
+ 274:rt-thread/components/finsh/shell.c ****  */
+ 275:rt-thread/components/finsh/shell.c **** rt_uint32_t finsh_get_echo()
+ 276:rt-thread/components/finsh/shell.c **** {
+ 277:rt-thread/components/finsh/shell.c ****     RT_ASSERT(shell != RT_NULL);
+ 278:rt-thread/components/finsh/shell.c **** 
+ 279:rt-thread/components/finsh/shell.c ****     return shell->echo_mode;
+ARM GAS  /tmp/ccy0WF1g.s 			page 8
+
+
+ 280:rt-thread/components/finsh/shell.c **** }
+ 281:rt-thread/components/finsh/shell.c **** 
+ 282:rt-thread/components/finsh/shell.c **** #ifdef FINSH_USING_AUTH
+ 283:rt-thread/components/finsh/shell.c **** /**
+ 284:rt-thread/components/finsh/shell.c ****  * set a new password for finsh
+ 285:rt-thread/components/finsh/shell.c ****  *
+ 286:rt-thread/components/finsh/shell.c ****  * @param password new password
+ 287:rt-thread/components/finsh/shell.c ****  *
+ 288:rt-thread/components/finsh/shell.c ****  * @return result, RT_EOK on OK, -RT_ERROR on the new password length is less than
+ 289:rt-thread/components/finsh/shell.c ****  *  FINSH_PASSWORD_MIN or greater than FINSH_PASSWORD_MAX
+ 290:rt-thread/components/finsh/shell.c ****  */
+ 291:rt-thread/components/finsh/shell.c **** rt_err_t finsh_set_password(const char *password) {
+ 292:rt-thread/components/finsh/shell.c ****     rt_ubase_t level;
+ 293:rt-thread/components/finsh/shell.c ****     rt_size_t pw_len = rt_strlen(password);
+ 294:rt-thread/components/finsh/shell.c **** 
+ 295:rt-thread/components/finsh/shell.c ****     if (pw_len < FINSH_PASSWORD_MIN || pw_len > FINSH_PASSWORD_MAX)
+ 296:rt-thread/components/finsh/shell.c ****         return -RT_ERROR;
+ 297:rt-thread/components/finsh/shell.c **** 
+ 298:rt-thread/components/finsh/shell.c ****     level = rt_hw_interrupt_disable();
+ 299:rt-thread/components/finsh/shell.c ****     rt_strncpy(shell->password, password, FINSH_PASSWORD_MAX);
+ 300:rt-thread/components/finsh/shell.c ****     rt_hw_interrupt_enable(level);
+ 301:rt-thread/components/finsh/shell.c **** 
+ 302:rt-thread/components/finsh/shell.c ****     return RT_EOK;
+ 303:rt-thread/components/finsh/shell.c **** }
+ 304:rt-thread/components/finsh/shell.c **** 
+ 305:rt-thread/components/finsh/shell.c **** /**
+ 306:rt-thread/components/finsh/shell.c ****  * get the finsh password
+ 307:rt-thread/components/finsh/shell.c ****  *
+ 308:rt-thread/components/finsh/shell.c ****  * @return password
+ 309:rt-thread/components/finsh/shell.c ****  */
+ 310:rt-thread/components/finsh/shell.c **** const char *finsh_get_password(void)
+ 311:rt-thread/components/finsh/shell.c **** {
+ 312:rt-thread/components/finsh/shell.c ****     return shell->password;
+ 313:rt-thread/components/finsh/shell.c **** }
+ 314:rt-thread/components/finsh/shell.c **** 
+ 315:rt-thread/components/finsh/shell.c **** static void finsh_wait_auth(void)
+ 316:rt-thread/components/finsh/shell.c **** {
+ 317:rt-thread/components/finsh/shell.c ****     int ch;
+ 318:rt-thread/components/finsh/shell.c ****     rt_bool_t input_finish = RT_FALSE;
+ 319:rt-thread/components/finsh/shell.c ****     char password[FINSH_PASSWORD_MAX] = { 0 };
+ 320:rt-thread/components/finsh/shell.c ****     rt_size_t cur_pos = 0;
+ 321:rt-thread/components/finsh/shell.c ****     /* password not set */
+ 322:rt-thread/components/finsh/shell.c ****     if (rt_strlen(finsh_get_password()) == 0) return;
+ 323:rt-thread/components/finsh/shell.c **** 
+ 324:rt-thread/components/finsh/shell.c ****     while (1)
+ 325:rt-thread/components/finsh/shell.c ****     {
+ 326:rt-thread/components/finsh/shell.c ****         rt_kprintf("Password for login: ");
+ 327:rt-thread/components/finsh/shell.c ****         while (!input_finish)
+ 328:rt-thread/components/finsh/shell.c ****         {
+ 329:rt-thread/components/finsh/shell.c ****             while (1)
+ 330:rt-thread/components/finsh/shell.c ****             {
+ 331:rt-thread/components/finsh/shell.c ****                 /* read one character from device */
+ 332:rt-thread/components/finsh/shell.c ****                 ch = finsh_getchar();
+ 333:rt-thread/components/finsh/shell.c ****                 if (ch < 0)
+ 334:rt-thread/components/finsh/shell.c ****                 {
+ 335:rt-thread/components/finsh/shell.c ****                     continue;
+ 336:rt-thread/components/finsh/shell.c ****                 }
+ARM GAS  /tmp/ccy0WF1g.s 			page 9
+
+
+ 337:rt-thread/components/finsh/shell.c **** 
+ 338:rt-thread/components/finsh/shell.c ****                 if (ch >= ' ' && ch <= '~' && cur_pos < FINSH_PASSWORD_MAX)
+ 339:rt-thread/components/finsh/shell.c ****                 {
+ 340:rt-thread/components/finsh/shell.c ****                     /* change the printable characters to '*' */
+ 341:rt-thread/components/finsh/shell.c ****                     rt_kprintf("*");
+ 342:rt-thread/components/finsh/shell.c ****                     password[cur_pos++] = ch;
+ 343:rt-thread/components/finsh/shell.c ****                 }
+ 344:rt-thread/components/finsh/shell.c ****                 else if (ch == '\b' && cur_pos > 0)
+ 345:rt-thread/components/finsh/shell.c ****                 {
+ 346:rt-thread/components/finsh/shell.c ****                     /* backspace */
+ 347:rt-thread/components/finsh/shell.c ****                     cur_pos--;
+ 348:rt-thread/components/finsh/shell.c ****                     password[cur_pos] = '\0';
+ 349:rt-thread/components/finsh/shell.c ****                     rt_kprintf("\b \b");
+ 350:rt-thread/components/finsh/shell.c ****                 }
+ 351:rt-thread/components/finsh/shell.c ****                 else if (ch == '\r' || ch == '\n')
+ 352:rt-thread/components/finsh/shell.c ****                 {
+ 353:rt-thread/components/finsh/shell.c ****                     rt_kprintf("\n");
+ 354:rt-thread/components/finsh/shell.c ****                     input_finish = RT_TRUE;
+ 355:rt-thread/components/finsh/shell.c ****                     break;
+ 356:rt-thread/components/finsh/shell.c ****                 }
+ 357:rt-thread/components/finsh/shell.c ****             }
+ 358:rt-thread/components/finsh/shell.c ****         }
+ 359:rt-thread/components/finsh/shell.c ****         if (!rt_strncmp(shell->password, password, FINSH_PASSWORD_MAX)) return;
+ 360:rt-thread/components/finsh/shell.c ****         else
+ 361:rt-thread/components/finsh/shell.c ****         {
+ 362:rt-thread/components/finsh/shell.c ****             /* authentication failed, delay 2S for retry */
+ 363:rt-thread/components/finsh/shell.c ****             rt_thread_delay(2 * RT_TICK_PER_SECOND);
+ 364:rt-thread/components/finsh/shell.c ****             rt_kprintf("Sorry, try again.\n");
+ 365:rt-thread/components/finsh/shell.c ****             cur_pos = 0;
+ 366:rt-thread/components/finsh/shell.c ****             input_finish = RT_FALSE;
+ 367:rt-thread/components/finsh/shell.c ****             rt_memset(password, '\0', FINSH_PASSWORD_MAX);
+ 368:rt-thread/components/finsh/shell.c ****         }
+ 369:rt-thread/components/finsh/shell.c ****     }
+ 370:rt-thread/components/finsh/shell.c **** }
+ 371:rt-thread/components/finsh/shell.c **** #endif /* FINSH_USING_AUTH */
+ 372:rt-thread/components/finsh/shell.c **** 
+ 373:rt-thread/components/finsh/shell.c **** static void shell_auto_complete(char *prefix)
+ 374:rt-thread/components/finsh/shell.c **** {
+ 375:rt-thread/components/finsh/shell.c **** 
+ 376:rt-thread/components/finsh/shell.c ****     rt_kprintf("\n");
+ 377:rt-thread/components/finsh/shell.c **** #ifdef FINSH_USING_MSH
+ 378:rt-thread/components/finsh/shell.c ****     if (msh_is_used() == RT_TRUE)
+ 379:rt-thread/components/finsh/shell.c ****     {
+ 380:rt-thread/components/finsh/shell.c ****         msh_auto_complete(prefix);
+ 381:rt-thread/components/finsh/shell.c ****     }
+ 382:rt-thread/components/finsh/shell.c ****     else
+ 383:rt-thread/components/finsh/shell.c **** #endif
+ 384:rt-thread/components/finsh/shell.c ****     {
+ 385:rt-thread/components/finsh/shell.c **** #ifndef FINSH_USING_MSH_ONLY
+ 386:rt-thread/components/finsh/shell.c ****         extern void list_prefix(char * prefix);
+ 387:rt-thread/components/finsh/shell.c ****         list_prefix(prefix);
+ 388:rt-thread/components/finsh/shell.c **** #endif
+ 389:rt-thread/components/finsh/shell.c ****     }
+ 390:rt-thread/components/finsh/shell.c **** 
+ 391:rt-thread/components/finsh/shell.c ****     rt_kprintf("%s%s", FINSH_PROMPT, prefix);
+ 392:rt-thread/components/finsh/shell.c **** }
+ 393:rt-thread/components/finsh/shell.c **** 
+ARM GAS  /tmp/ccy0WF1g.s 			page 10
+
+
+ 394:rt-thread/components/finsh/shell.c **** #ifndef FINSH_USING_MSH_ONLY
+ 395:rt-thread/components/finsh/shell.c **** void finsh_run_line(struct finsh_parser *parser, const char *line)
+ 396:rt-thread/components/finsh/shell.c **** {
+ 397:rt-thread/components/finsh/shell.c ****     const char *err_str;
+ 398:rt-thread/components/finsh/shell.c **** 
+ 399:rt-thread/components/finsh/shell.c ****     if(shell->echo_mode)
+ 400:rt-thread/components/finsh/shell.c ****         rt_kprintf("\n");
+ 401:rt-thread/components/finsh/shell.c ****     finsh_parser_run(parser, (unsigned char *)line);
+ 402:rt-thread/components/finsh/shell.c **** 
+ 403:rt-thread/components/finsh/shell.c ****     /* compile node root */
+ 404:rt-thread/components/finsh/shell.c ****     if (finsh_errno() == 0)
+ 405:rt-thread/components/finsh/shell.c ****     {
+ 406:rt-thread/components/finsh/shell.c ****         finsh_compiler_run(parser->root);
+ 407:rt-thread/components/finsh/shell.c ****     }
+ 408:rt-thread/components/finsh/shell.c ****     else
+ 409:rt-thread/components/finsh/shell.c ****     {
+ 410:rt-thread/components/finsh/shell.c ****         err_str = finsh_error_string(finsh_errno());
+ 411:rt-thread/components/finsh/shell.c ****         rt_kprintf("%s\n", err_str);
+ 412:rt-thread/components/finsh/shell.c ****     }
+ 413:rt-thread/components/finsh/shell.c **** 
+ 414:rt-thread/components/finsh/shell.c ****     /* run virtual machine */
+ 415:rt-thread/components/finsh/shell.c ****     if (finsh_errno() == 0)
+ 416:rt-thread/components/finsh/shell.c ****     {
+ 417:rt-thread/components/finsh/shell.c ****         char ch;
+ 418:rt-thread/components/finsh/shell.c ****         finsh_vm_run();
+ 419:rt-thread/components/finsh/shell.c **** 
+ 420:rt-thread/components/finsh/shell.c ****         ch = (unsigned char)finsh_stack_bottom();
+ 421:rt-thread/components/finsh/shell.c ****         if (ch > 0x20 && ch < 0x7e)
+ 422:rt-thread/components/finsh/shell.c ****         {
+ 423:rt-thread/components/finsh/shell.c ****             rt_kprintf("\t'%c', %d, 0x%08x\n",
+ 424:rt-thread/components/finsh/shell.c ****                        (unsigned char)finsh_stack_bottom(),
+ 425:rt-thread/components/finsh/shell.c ****                        (unsigned int)finsh_stack_bottom(),
+ 426:rt-thread/components/finsh/shell.c ****                        (unsigned int)finsh_stack_bottom());
+ 427:rt-thread/components/finsh/shell.c ****         }
+ 428:rt-thread/components/finsh/shell.c ****         else
+ 429:rt-thread/components/finsh/shell.c ****         {
+ 430:rt-thread/components/finsh/shell.c ****             rt_kprintf("\t%d, 0x%08x\n",
+ 431:rt-thread/components/finsh/shell.c ****                        (unsigned int)finsh_stack_bottom(),
+ 432:rt-thread/components/finsh/shell.c ****                        (unsigned int)finsh_stack_bottom());
+ 433:rt-thread/components/finsh/shell.c ****         }
+ 434:rt-thread/components/finsh/shell.c ****     }
+ 435:rt-thread/components/finsh/shell.c **** 
+ 436:rt-thread/components/finsh/shell.c ****     finsh_flush(parser);
+ 437:rt-thread/components/finsh/shell.c **** }
+ 438:rt-thread/components/finsh/shell.c **** #endif
+ 439:rt-thread/components/finsh/shell.c **** 
+ 440:rt-thread/components/finsh/shell.c **** #ifdef FINSH_USING_HISTORY
+ 441:rt-thread/components/finsh/shell.c **** static rt_bool_t shell_handle_history(struct finsh_shell *shell)
+ 442:rt-thread/components/finsh/shell.c **** {
+ 443:rt-thread/components/finsh/shell.c **** #if defined(_WIN32)
+ 444:rt-thread/components/finsh/shell.c ****     int i;
+ 445:rt-thread/components/finsh/shell.c ****     rt_kprintf("\r");
+ 446:rt-thread/components/finsh/shell.c **** 
+ 447:rt-thread/components/finsh/shell.c ****     for (i = 0; i <= 60; i++)
+ 448:rt-thread/components/finsh/shell.c ****         putchar(' ');
+ 449:rt-thread/components/finsh/shell.c ****     rt_kprintf("\r");
+ 450:rt-thread/components/finsh/shell.c **** 
+ARM GAS  /tmp/ccy0WF1g.s 			page 11
+
+
+ 451:rt-thread/components/finsh/shell.c **** #else
+ 452:rt-thread/components/finsh/shell.c ****     rt_kprintf("\033[2K\r");
+ 453:rt-thread/components/finsh/shell.c **** #endif
+ 454:rt-thread/components/finsh/shell.c ****     rt_kprintf("%s%s", FINSH_PROMPT, shell->line);
+ 455:rt-thread/components/finsh/shell.c ****     return RT_FALSE;
+ 456:rt-thread/components/finsh/shell.c **** }
+ 457:rt-thread/components/finsh/shell.c **** 
+ 458:rt-thread/components/finsh/shell.c **** static void shell_push_history(struct finsh_shell *shell)
+ 459:rt-thread/components/finsh/shell.c **** {
+ 120              		.loc 1 459 0
+ 121              		.cfi_startproc
+ 122              		@ args = 0, pretend = 0, frame = 0
+ 123              		@ frame_needed = 0, uses_anonymous_args = 0
+ 124              	.LVL5:
+ 125 0000 70B5     		push	{r4, r5, r6, lr}
+ 126              	.LCFI4:
+ 127              		.cfi_def_cfa_offset 16
+ 128              		.cfi_offset 4, -16
+ 129              		.cfi_offset 5, -12
+ 130              		.cfi_offset 6, -8
+ 131              		.cfi_offset 14, -4
+ 132 0002 0446     		mov	r4, r0
+ 460:rt-thread/components/finsh/shell.c ****     if (shell->line_position != 0)
+ 133              		.loc 1 460 0
+ 134 0004 B0F80632 		ldrh	r3, [r0, #518]
+ 135 0008 002B     		cmp	r3, #0
+ 136 000a 5DD0     		beq	.L12
+ 461:rt-thread/components/finsh/shell.c ****     {
+ 462:rt-thread/components/finsh/shell.c ****         /* push history */
+ 463:rt-thread/components/finsh/shell.c ****         if (shell->history_count >= FINSH_HISTORY_LINES)
+ 137              		.loc 1 463 0
+ 138 000c 858C     		ldrh	r5, [r0, #36]
+ 139 000e 042D     		cmp	r5, #4
+ 140 0010 32D9     		bls	.L13
+ 464:rt-thread/components/finsh/shell.c ****         {
+ 465:rt-thread/components/finsh/shell.c ****             /* if current cmd is same as last cmd, don't push */
+ 466:rt-thread/components/finsh/shell.c ****             if (memcmp(&shell->cmd_history[FINSH_HISTORY_LINES - 1], shell->line, FINSH_CMD_SIZE))
+ 141              		.loc 1 466 0
+ 142 0012 00F5DB76 		add	r6, r0, #438
+ 143 0016 5022     		movs	r2, #80
+ 144 0018 3146     		mov	r1, r6
+ 145 001a 00F5B370 		add	r0, r0, #358
+ 146              	.LVL6:
+ 147 001e FFF7FEFF 		bl	memcmp
+ 148              	.LVL7:
+ 149 0022 0028     		cmp	r0, #0
+ 150 0024 50D0     		beq	.L12
+ 151 0026 0025     		movs	r5, #0
+ 152 0028 0FE0     		b	.L14
+ 153              	.LVL8:
+ 154              	.L15:
+ 155              	.LBB2:
+ 467:rt-thread/components/finsh/shell.c ****             {
+ 468:rt-thread/components/finsh/shell.c ****                 /* move history */
+ 469:rt-thread/components/finsh/shell.c ****                 int index;
+ 470:rt-thread/components/finsh/shell.c ****                 for (index = 0; index < FINSH_HISTORY_LINES - 1; index ++)
+ 471:rt-thread/components/finsh/shell.c ****                 {
+ARM GAS  /tmp/ccy0WF1g.s 			page 12
+
+
+ 472:rt-thread/components/finsh/shell.c ****                     memcpy(&shell->cmd_history[index][0],
+ 156              		.loc 1 472 0 discriminator 3
+ 157 002a 05EB8503 		add	r3, r5, r5, lsl #2
+ 158 002e 1801     		lsls	r0, r3, #4
+ 159 0030 2030     		adds	r0, r0, #32
+ 160 0032 2044     		add	r0, r0, r4
+ 473:rt-thread/components/finsh/shell.c ****                            &shell->cmd_history[index + 1][0], FINSH_CMD_SIZE);
+ 161              		.loc 1 473 0 discriminator 3
+ 162 0034 0135     		adds	r5, r5, #1
+ 163              	.LVL9:
+ 164 0036 05EB8503 		add	r3, r5, r5, lsl #2
+ 165 003a 1901     		lsls	r1, r3, #4
+ 166 003c 2031     		adds	r1, r1, #32
+ 167 003e 2144     		add	r1, r1, r4
+ 472:rt-thread/components/finsh/shell.c ****                            &shell->cmd_history[index + 1][0], FINSH_CMD_SIZE);
+ 168              		.loc 1 472 0 discriminator 3
+ 169 0040 5022     		movs	r2, #80
+ 170 0042 0631     		adds	r1, r1, #6
+ 171 0044 0630     		adds	r0, r0, #6
+ 172 0046 FFF7FEFF 		bl	memcpy
+ 173              	.LVL10:
+ 174              	.L14:
+ 470:rt-thread/components/finsh/shell.c ****                 {
+ 175              		.loc 1 470 0 discriminator 1
+ 176 004a 032D     		cmp	r5, #3
+ 177 004c EDDD     		ble	.L15
+ 474:rt-thread/components/finsh/shell.c ****                 }
+ 475:rt-thread/components/finsh/shell.c ****                 memset(&shell->cmd_history[index][0], 0, FINSH_CMD_SIZE);
+ 178              		.loc 1 475 0
+ 179 004e 05EB8505 		add	r5, r5, r5, lsl #2
+ 180              	.LVL11:
+ 181 0052 2B01     		lsls	r3, r5, #4
+ 182 0054 03F12005 		add	r5, r3, #32
+ 183 0058 2544     		add	r5, r5, r4
+ 184 005a 0635     		adds	r5, r5, #6
+ 185 005c 5022     		movs	r2, #80
+ 186 005e 0021     		movs	r1, #0
+ 187 0060 2846     		mov	r0, r5
+ 188 0062 FFF7FEFF 		bl	memset
+ 189              	.LVL12:
+ 476:rt-thread/components/finsh/shell.c ****                 memcpy(&shell->cmd_history[index][0], shell->line, shell->line_position);
+ 190              		.loc 1 476 0
+ 191 0066 B4F80622 		ldrh	r2, [r4, #518]
+ 192 006a 3146     		mov	r1, r6
+ 193 006c 2846     		mov	r0, r5
+ 194 006e FFF7FEFF 		bl	memcpy
+ 195              	.LVL13:
+ 477:rt-thread/components/finsh/shell.c **** 
+ 478:rt-thread/components/finsh/shell.c ****                 /* it's the maximum history */
+ 479:rt-thread/components/finsh/shell.c ****                 shell->history_count = FINSH_HISTORY_LINES;
+ 196              		.loc 1 479 0
+ 197 0072 0523     		movs	r3, #5
+ 198 0074 A384     		strh	r3, [r4, #36]	@ movhi
+ 199 0076 27E0     		b	.L12
+ 200              	.LVL14:
+ 201              	.L13:
+ 202              	.LBE2:
+ARM GAS  /tmp/ccy0WF1g.s 			page 13
+
+
+ 480:rt-thread/components/finsh/shell.c ****             }
+ 481:rt-thread/components/finsh/shell.c ****         }
+ 482:rt-thread/components/finsh/shell.c ****         else
+ 483:rt-thread/components/finsh/shell.c ****         {
+ 484:rt-thread/components/finsh/shell.c ****             /* if current cmd is same as last cmd, don't push */
+ 485:rt-thread/components/finsh/shell.c ****             if (shell->history_count == 0 || memcmp(&shell->cmd_history[shell->history_count - 1], 
+ 203              		.loc 1 485 0
+ 204 0078 65B1     		cbz	r5, .L16
+ 205              		.loc 1 485 0 is_stmt 0 discriminator 1
+ 206 007a 6B1E     		subs	r3, r5, #1
+ 207 007c 03EB8303 		add	r3, r3, r3, lsl #2
+ 208 0080 1801     		lsls	r0, r3, #4
+ 209              	.LVL15:
+ 210 0082 2030     		adds	r0, r0, #32
+ 211 0084 2044     		add	r0, r0, r4
+ 212 0086 5022     		movs	r2, #80
+ 213 0088 04F5DB71 		add	r1, r4, #438
+ 214 008c 0630     		adds	r0, r0, #6
+ 215 008e FFF7FEFF 		bl	memcmp
+ 216              	.LVL16:
+ 217 0092 C8B1     		cbz	r0, .L12
+ 218              	.L16:
+ 486:rt-thread/components/finsh/shell.c ****             {
+ 487:rt-thread/components/finsh/shell.c ****                 shell->current_history = shell->history_count;
+ 488:rt-thread/components/finsh/shell.c ****                 memset(&shell->cmd_history[shell->history_count][0], 0, FINSH_CMD_SIZE);
+ 219              		.loc 1 488 0 is_stmt 1
+ 220 0094 05EB8505 		add	r5, r5, r5, lsl #2
+ 221 0098 2801     		lsls	r0, r5, #4
+ 222 009a 2030     		adds	r0, r0, #32
+ 223 009c 2044     		add	r0, r0, r4
+ 224 009e 5022     		movs	r2, #80
+ 225 00a0 0021     		movs	r1, #0
+ 226 00a2 0630     		adds	r0, r0, #6
+ 227 00a4 FFF7FEFF 		bl	memset
+ 228              	.LVL17:
+ 489:rt-thread/components/finsh/shell.c ****                 memcpy(&shell->cmd_history[shell->history_count][0], shell->line, shell->line_posit
+ 229              		.loc 1 489 0
+ 230 00a8 A38C     		ldrh	r3, [r4, #36]
+ 231 00aa 03EB8303 		add	r3, r3, r3, lsl #2
+ 232 00ae 1801     		lsls	r0, r3, #4
+ 233 00b0 2030     		adds	r0, r0, #32
+ 234 00b2 2044     		add	r0, r0, r4
+ 235 00b4 B4F80622 		ldrh	r2, [r4, #518]
+ 236 00b8 04F5DB71 		add	r1, r4, #438
+ 237 00bc 0630     		adds	r0, r0, #6
+ 238 00be FFF7FEFF 		bl	memcpy
+ 239              	.LVL18:
+ 490:rt-thread/components/finsh/shell.c **** 
+ 491:rt-thread/components/finsh/shell.c ****                 /* increase count and set current history position */
+ 492:rt-thread/components/finsh/shell.c ****                 shell->history_count ++;
+ 240              		.loc 1 492 0
+ 241 00c2 A38C     		ldrh	r3, [r4, #36]
+ 242 00c4 0133     		adds	r3, r3, #1
+ 243 00c6 A384     		strh	r3, [r4, #36]	@ movhi
+ 244              	.L12:
+ 493:rt-thread/components/finsh/shell.c ****             }
+ 494:rt-thread/components/finsh/shell.c ****         }
+ARM GAS  /tmp/ccy0WF1g.s 			page 14
+
+
+ 495:rt-thread/components/finsh/shell.c ****     }
+ 496:rt-thread/components/finsh/shell.c ****     shell->current_history = shell->history_count;
+ 245              		.loc 1 496 0
+ 246 00c8 A38C     		ldrh	r3, [r4, #36]
+ 247 00ca 6384     		strh	r3, [r4, #34]	@ movhi
+ 248 00cc 70BD     		pop	{r4, r5, r6, pc}
+ 249              		.cfi_endproc
+ 250              	.LFE28:
+ 252              		.section	.text.finsh_set_prompt,"ax",%progbits
+ 253              		.align	1
+ 254              		.global	finsh_set_prompt
+ 255              		.syntax unified
+ 256              		.thumb
+ 257              		.thumb_func
+ 258              		.fpu fpv4-sp-d16
+ 260              	finsh_set_prompt:
+ 261              	.LFB16:
+  79:rt-thread/components/finsh/shell.c ****     if(finsh_prompt_custom)
+ 262              		.loc 1 79 0
+ 263              		.cfi_startproc
+ 264              		@ args = 0, pretend = 0, frame = 0
+ 265              		@ frame_needed = 0, uses_anonymous_args = 0
+ 266              	.LVL19:
+ 267 0000 10B5     		push	{r4, lr}
+ 268              	.LCFI5:
+ 269              		.cfi_def_cfa_offset 8
+ 270              		.cfi_offset 4, -8
+ 271              		.cfi_offset 14, -4
+ 272 0002 0446     		mov	r4, r0
+  80:rt-thread/components/finsh/shell.c ****     {
+ 273              		.loc 1 80 0
+ 274 0004 0B4B     		ldr	r3, .L23
+ 275 0006 1868     		ldr	r0, [r3]
+ 276              	.LVL20:
+ 277 0008 20B1     		cbz	r0, .L20
+  82:rt-thread/components/finsh/shell.c ****         finsh_prompt_custom = RT_NULL;
+ 278              		.loc 1 82 0
+ 279 000a FFF7FEFF 		bl	rt_free
+ 280              	.LVL21:
+  83:rt-thread/components/finsh/shell.c ****     }
+ 281              		.loc 1 83 0
+ 282 000e 0022     		movs	r2, #0
+ 283 0010 084B     		ldr	r3, .L23
+ 284 0012 1A60     		str	r2, [r3]
+ 285              	.L20:
+  87:rt-thread/components/finsh/shell.c ****     {
+ 286              		.loc 1 87 0
+ 287 0014 5CB1     		cbz	r4, .L21
+  89:rt-thread/components/finsh/shell.c ****         if(finsh_prompt_custom)
+ 288              		.loc 1 89 0
+ 289 0016 2046     		mov	r0, r4
+ 290 0018 FFF7FEFF 		bl	strlen
+ 291              	.LVL22:
+ 292 001c 0130     		adds	r0, r0, #1
+ 293 001e FFF7FEFF 		bl	rt_malloc
+ 294              	.LVL23:
+ 295 0022 044B     		ldr	r3, .L23
+ARM GAS  /tmp/ccy0WF1g.s 			page 15
+
+
+ 296 0024 1860     		str	r0, [r3]
+  90:rt-thread/components/finsh/shell.c ****         {
+ 297              		.loc 1 90 0
+ 298 0026 10B1     		cbz	r0, .L21
+  92:rt-thread/components/finsh/shell.c ****         }
+ 299              		.loc 1 92 0
+ 300 0028 2146     		mov	r1, r4
+ 301 002a FFF7FEFF 		bl	strcpy
+ 302              	.LVL24:
+ 303              	.L21:
+  97:rt-thread/components/finsh/shell.c **** #endif /* RT_USING_HEAP */
+ 304              		.loc 1 97 0
+ 305 002e 0020     		movs	r0, #0
+ 306 0030 10BD     		pop	{r4, pc}
+ 307              	.LVL25:
+ 308              	.L24:
+ 309 0032 00BF     		.align	2
+ 310              	.L23:
+ 311 0034 00000000 		.word	.LANCHOR0
+ 312              		.cfi_endproc
+ 313              	.LFE16:
+ 315              		.section	.text.finsh_get_prompt,"ax",%progbits
+ 316              		.align	1
+ 317              		.global	finsh_get_prompt
+ 318              		.syntax unified
+ 319              		.thumb
+ 320              		.thumb_func
+ 321              		.fpu fpv4-sp-d16
+ 323              	finsh_get_prompt:
+ 324              	.LFB17:
+ 105:rt-thread/components/finsh/shell.c **** #define _MSH_PROMPT "msh "
+ 325              		.loc 1 105 0
+ 326              		.cfi_startproc
+ 327              		@ args = 0, pretend = 0, frame = 0
+ 328              		@ frame_needed = 0, uses_anonymous_args = 0
+ 111:rt-thread/components/finsh/shell.c ****     {
+ 329              		.loc 1 111 0
+ 330 0000 184B     		ldr	r3, .L35
+ 331 0002 1B68     		ldr	r3, [r3]
+ 332 0004 93F82130 		ldrb	r3, [r3, #33]	@ zero_extendqisi2
+ 333 0008 13F0020F 		tst	r3, #2
+ 334 000c 0AD0     		beq	.L34
+ 105:rt-thread/components/finsh/shell.c **** #define _MSH_PROMPT "msh "
+ 335              		.loc 1 105 0
+ 336 000e 10B5     		push	{r4, lr}
+ 337              	.LCFI6:
+ 338              		.cfi_def_cfa_offset 8
+ 339              		.cfi_offset 4, -8
+ 340              		.cfi_offset 14, -4
+ 117:rt-thread/components/finsh/shell.c ****     {
+ 341              		.loc 1 117 0
+ 342 0010 154B     		ldr	r3, .L35+4
+ 343 0012 1968     		ldr	r1, [r3]
+ 344 0014 59B1     		cbz	r1, .L28
+ 119:rt-thread/components/finsh/shell.c ****         return finsh_prompt;
+ 345              		.loc 1 119 0
+ 346 0016 4FF48072 		mov	r2, #256
+ARM GAS  /tmp/ccy0WF1g.s 			page 16
+
+
+ 347 001a 1448     		ldr	r0, .L35+8
+ 348 001c FFF7FEFF 		bl	strncpy
+ 349              	.LVL26:
+ 350              	.L27:
+ 137:rt-thread/components/finsh/shell.c **** 
+ 351              		.loc 1 137 0
+ 352 0020 1248     		ldr	r0, .L35+8
+ 353 0022 10BD     		pop	{r4, pc}
+ 354              	.L34:
+ 355              	.LCFI7:
+ 356              		.cfi_def_cfa_offset 0
+ 357              		.cfi_restore 4
+ 358              		.cfi_restore 14
+ 113:rt-thread/components/finsh/shell.c ****         return finsh_prompt;
+ 359              		.loc 1 113 0
+ 360 0024 0022     		movs	r2, #0
+ 361 0026 114B     		ldr	r3, .L35+8
+ 362 0028 1A70     		strb	r2, [r3]
+ 137:rt-thread/components/finsh/shell.c **** 
+ 363              		.loc 1 137 0
+ 364 002a 1048     		ldr	r0, .L35+8
+ 365 002c 7047     		bx	lr
+ 366              	.L28:
+ 367              	.LCFI8:
+ 368              		.cfi_def_cfa_offset 8
+ 369              		.cfi_offset 4, -8
+ 370              		.cfi_offset 14, -4
+ 124:rt-thread/components/finsh/shell.c ****     else
+ 371              		.loc 1 124 0
+ 372 002e FFF7FEFF 		bl	msh_is_used
+ 373              	.LVL27:
+ 374 0032 68B1     		cbz	r0, .L29
+ 124:rt-thread/components/finsh/shell.c ****     else
+ 375              		.loc 1 124 0 is_stmt 0 discriminator 1
+ 376 0034 0D4B     		ldr	r3, .L35+8
+ 377 0036 0E4A     		ldr	r2, .L35+12
+ 378 0038 92E80300 		ldm	r2, {r0, r1}
+ 379 003c 1860     		str	r0, [r3]
+ 380 003e 1971     		strb	r1, [r3, #4]
+ 381              	.L30:
+ 134:rt-thread/components/finsh/shell.c **** 
+ 382              		.loc 1 134 0 is_stmt 1
+ 383 0040 0A4C     		ldr	r4, .L35+8
+ 384 0042 2046     		mov	r0, r4
+ 385 0044 FFF7FEFF 		bl	strlen
+ 386              	.LVL28:
+ 387 0048 0A4B     		ldr	r3, .L35+16
+ 388 004a 1B88     		ldrh	r3, [r3]	@ unaligned
+ 389 004c 2352     		strh	r3, [r4, r0]	@ unaligned
+ 136:rt-thread/components/finsh/shell.c **** }
+ 390              		.loc 1 136 0
+ 391 004e E7E7     		b	.L27
+ 392              	.L29:
+ 127:rt-thread/components/finsh/shell.c **** 
+ 393              		.loc 1 127 0
+ 394 0050 064B     		ldr	r3, .L35+8
+ 395 0052 094A     		ldr	r2, .L35+20
+ARM GAS  /tmp/ccy0WF1g.s 			page 17
+
+
+ 396 0054 92E80300 		ldm	r2, {r0, r1}
+ 397 0058 1860     		str	r0, [r3]
+ 398 005a 9980     		strh	r1, [r3, #4]	@ movhi
+ 399 005c 090C     		lsrs	r1, r1, #16
+ 400 005e 9971     		strb	r1, [r3, #6]
+ 401 0060 EEE7     		b	.L30
+ 402              	.L36:
+ 403 0062 00BF     		.align	2
+ 404              	.L35:
+ 405 0064 00000000 		.word	shell
+ 406 0068 00000000 		.word	.LANCHOR0
+ 407 006c 00000000 		.word	.LANCHOR1
+ 408 0070 00000000 		.word	.LC0
+ 409 0074 10000000 		.word	.LC2
+ 410 0078 08000000 		.word	.LC1
+ 411              		.cfi_endproc
+ 412              	.LFE17:
+ 414              		.section	.text.shell_handle_history,"ax",%progbits
+ 415              		.align	1
+ 416              		.syntax unified
+ 417              		.thumb
+ 418              		.thumb_func
+ 419              		.fpu fpv4-sp-d16
+ 421              	shell_handle_history:
+ 422              	.LFB27:
+ 442:rt-thread/components/finsh/shell.c **** #if defined(_WIN32)
+ 423              		.loc 1 442 0
+ 424              		.cfi_startproc
+ 425              		@ args = 0, pretend = 0, frame = 0
+ 426              		@ frame_needed = 0, uses_anonymous_args = 0
+ 427              	.LVL29:
+ 428 0000 10B5     		push	{r4, lr}
+ 429              	.LCFI9:
+ 430              		.cfi_def_cfa_offset 8
+ 431              		.cfi_offset 4, -8
+ 432              		.cfi_offset 14, -4
+ 433 0002 0446     		mov	r4, r0
+ 452:rt-thread/components/finsh/shell.c **** #endif
+ 434              		.loc 1 452 0
+ 435 0004 0648     		ldr	r0, .L39
+ 436              	.LVL30:
+ 437 0006 FFF7FEFF 		bl	rt_kprintf
+ 438              	.LVL31:
+ 454:rt-thread/components/finsh/shell.c ****     return RT_FALSE;
+ 439              		.loc 1 454 0
+ 440 000a FFF7FEFF 		bl	finsh_get_prompt
+ 441              	.LVL32:
+ 442 000e 04F5DB72 		add	r2, r4, #438
+ 443 0012 0146     		mov	r1, r0
+ 444 0014 0348     		ldr	r0, .L39+4
+ 445 0016 FFF7FEFF 		bl	rt_kprintf
+ 446              	.LVL33:
+ 456:rt-thread/components/finsh/shell.c **** 
+ 447              		.loc 1 456 0
+ 448 001a 0020     		movs	r0, #0
+ 449 001c 10BD     		pop	{r4, pc}
+ 450              	.LVL34:
+ARM GAS  /tmp/ccy0WF1g.s 			page 18
+
+
+ 451              	.L40:
+ 452 001e 00BF     		.align	2
+ 453              	.L39:
+ 454 0020 00000000 		.word	.LC3
+ 455 0024 08000000 		.word	.LC4
+ 456              		.cfi_endproc
+ 457              	.LFE27:
+ 459              		.section	.text.shell_auto_complete,"ax",%progbits
+ 460              		.align	1
+ 461              		.syntax unified
+ 462              		.thumb
+ 463              		.thumb_func
+ 464              		.fpu fpv4-sp-d16
+ 466              	shell_auto_complete:
+ 467              	.LFB26:
+ 374:rt-thread/components/finsh/shell.c **** 
+ 468              		.loc 1 374 0
+ 469              		.cfi_startproc
+ 470              		@ args = 0, pretend = 0, frame = 0
+ 471              		@ frame_needed = 0, uses_anonymous_args = 0
+ 472              	.LVL35:
+ 473 0000 10B5     		push	{r4, lr}
+ 474              	.LCFI10:
+ 475              		.cfi_def_cfa_offset 8
+ 476              		.cfi_offset 4, -8
+ 477              		.cfi_offset 14, -4
+ 478 0002 0446     		mov	r4, r0
+ 376:rt-thread/components/finsh/shell.c **** #ifdef FINSH_USING_MSH
+ 479              		.loc 1 376 0
+ 480 0004 0948     		ldr	r0, .L45
+ 481              	.LVL36:
+ 482 0006 FFF7FEFF 		bl	rt_kprintf
+ 483              	.LVL37:
+ 378:rt-thread/components/finsh/shell.c ****     {
+ 484              		.loc 1 378 0
+ 485 000a FFF7FEFF 		bl	msh_is_used
+ 486              	.LVL38:
+ 487 000e 0128     		cmp	r0, #1
+ 488 0010 07D0     		beq	.L44
+ 489              	.L42:
+ 391:rt-thread/components/finsh/shell.c **** }
+ 490              		.loc 1 391 0
+ 491 0012 FFF7FEFF 		bl	finsh_get_prompt
+ 492              	.LVL39:
+ 493 0016 2246     		mov	r2, r4
+ 494 0018 0146     		mov	r1, r0
+ 495 001a 0548     		ldr	r0, .L45+4
+ 496 001c FFF7FEFF 		bl	rt_kprintf
+ 497              	.LVL40:
+ 498 0020 10BD     		pop	{r4, pc}
+ 499              	.LVL41:
+ 500              	.L44:
+ 380:rt-thread/components/finsh/shell.c ****     }
+ 501              		.loc 1 380 0
+ 502 0022 2046     		mov	r0, r4
+ 503 0024 FFF7FEFF 		bl	msh_auto_complete
+ 504              	.LVL42:
+ARM GAS  /tmp/ccy0WF1g.s 			page 19
+
+
+ 505 0028 F3E7     		b	.L42
+ 506              	.L46:
+ 507 002a 00BF     		.align	2
+ 508              	.L45:
+ 509 002c 00000000 		.word	.LC5
+ 510 0030 08000000 		.word	.LC4
+ 511              		.cfi_endproc
+ 512              	.LFE26:
+ 514              		.section	.text.finsh_get_prompt_mode,"ax",%progbits
+ 515              		.align	1
+ 516              		.global	finsh_get_prompt_mode
+ 517              		.syntax unified
+ 518              		.thumb
+ 519              		.thumb_func
+ 520              		.fpu fpv4-sp-d16
+ 522              	finsh_get_prompt_mode:
+ 523              	.LFB18:
+ 147:rt-thread/components/finsh/shell.c ****     RT_ASSERT(shell != RT_NULL);
+ 524              		.loc 1 147 0
+ 525              		.cfi_startproc
+ 526              		@ args = 0, pretend = 0, frame = 0
+ 527              		@ frame_needed = 0, uses_anonymous_args = 0
+ 528              		@ link register save eliminated.
+ 149:rt-thread/components/finsh/shell.c **** }
+ 529              		.loc 1 149 0
+ 530 0000 034B     		ldr	r3, .L48
+ 531 0002 1B68     		ldr	r3, [r3]
+ 532 0004 93F82100 		ldrb	r0, [r3, #33]	@ zero_extendqisi2
+ 150:rt-thread/components/finsh/shell.c **** 
+ 533              		.loc 1 150 0
+ 534 0008 C0F34000 		ubfx	r0, r0, #1, #1
+ 535 000c 7047     		bx	lr
+ 536              	.L49:
+ 537 000e 00BF     		.align	2
+ 538              	.L48:
+ 539 0010 00000000 		.word	shell
+ 540              		.cfi_endproc
+ 541              	.LFE18:
+ 543              		.section	.text.finsh_set_prompt_mode,"ax",%progbits
+ 544              		.align	1
+ 545              		.global	finsh_set_prompt_mode
+ 546              		.syntax unified
+ 547              		.thumb
+ 548              		.thumb_func
+ 549              		.fpu fpv4-sp-d16
+ 551              	finsh_set_prompt_mode:
+ 552              	.LFB19:
+ 162:rt-thread/components/finsh/shell.c ****     RT_ASSERT(shell != RT_NULL);
+ 553              		.loc 1 162 0
+ 554              		.cfi_startproc
+ 555              		@ args = 0, pretend = 0, frame = 0
+ 556              		@ frame_needed = 0, uses_anonymous_args = 0
+ 557              		@ link register save eliminated.
+ 558              	.LVL43:
+ 164:rt-thread/components/finsh/shell.c **** }
+ 559              		.loc 1 164 0
+ 560 0000 044B     		ldr	r3, .L51
+ARM GAS  /tmp/ccy0WF1g.s 			page 20
+
+
+ 561 0002 1B68     		ldr	r3, [r3]
+ 562 0004 93F82120 		ldrb	r2, [r3, #33]	@ zero_extendqisi2
+ 563 0008 60F34102 		bfi	r2, r0, #1, #1
+ 564 000c 83F82120 		strb	r2, [r3, #33]
+ 565 0010 7047     		bx	lr
+ 566              	.L52:
+ 567 0012 00BF     		.align	2
+ 568              	.L51:
+ 569 0014 00000000 		.word	shell
+ 570              		.cfi_endproc
+ 571              	.LFE19:
+ 573              		.section	.text.finsh_set_device,"ax",%progbits
+ 574              		.align	1
+ 575              		.global	finsh_set_device
+ 576              		.syntax unified
+ 577              		.thumb
+ 578              		.thumb_func
+ 579              		.fpu fpv4-sp-d16
+ 581              	finsh_set_device:
+ 582              	.LFB22:
+ 206:rt-thread/components/finsh/shell.c ****     rt_device_t dev = RT_NULL;
+ 583              		.loc 1 206 0
+ 584              		.cfi_startproc
+ 585              		@ args = 0, pretend = 0, frame = 0
+ 586              		@ frame_needed = 0, uses_anonymous_args = 0
+ 587              	.LVL44:
+ 588 0000 38B5     		push	{r3, r4, r5, lr}
+ 589              	.LCFI11:
+ 590              		.cfi_def_cfa_offset 16
+ 591              		.cfi_offset 3, -16
+ 592              		.cfi_offset 4, -12
+ 593              		.cfi_offset 5, -8
+ 594              		.cfi_offset 14, -4
+ 595 0002 0546     		mov	r5, r0
+ 596              	.LVL45:
+ 210:rt-thread/components/finsh/shell.c ****     if (dev == RT_NULL)
+ 597              		.loc 1 210 0
+ 598 0004 FFF7FEFF 		bl	rt_device_find
+ 599              	.LVL46:
+ 211:rt-thread/components/finsh/shell.c ****     {
+ 600              		.loc 1 211 0
+ 601 0008 68B3     		cbz	r0, .L58
+ 602 000a 0446     		mov	r4, r0
+ 218:rt-thread/components/finsh/shell.c ****     /* open this device and set the new device in finsh shell */
+ 603              		.loc 1 218 0
+ 604 000c 184B     		ldr	r3, .L59
+ 605 000e 1B68     		ldr	r3, [r3]
+ 606 0010 D3F80C32 		ldr	r3, [r3, #524]
+ 607 0014 9842     		cmp	r0, r3
+ 608 0016 25D0     		beq	.L53
+ 220:rt-thread/components/finsh/shell.c ****                        RT_DEVICE_FLAG_STREAM) == RT_EOK)
+ 609              		.loc 1 220 0
+ 610 0018 40F24311 		movw	r1, #323
+ 611 001c FFF7FEFF 		bl	rt_device_open
+ 612              	.LVL47:
+ 613 0020 00BB     		cbnz	r0, .L53
+ 223:rt-thread/components/finsh/shell.c ****         {
+ARM GAS  /tmp/ccy0WF1g.s 			page 21
+
+
+ 614              		.loc 1 223 0
+ 615 0022 134B     		ldr	r3, .L59
+ 616 0024 1B68     		ldr	r3, [r3]
+ 617 0026 D3F80C02 		ldr	r0, [r3, #524]
+ 618 002a 40B1     		cbz	r0, .L56
+ 226:rt-thread/components/finsh/shell.c ****             rt_device_set_rx_indicate(shell->device, RT_NULL);
+ 619              		.loc 1 226 0
+ 620 002c FFF7FEFF 		bl	rt_device_close
+ 621              	.LVL48:
+ 227:rt-thread/components/finsh/shell.c ****         }
+ 622              		.loc 1 227 0
+ 623 0030 0F4B     		ldr	r3, .L59
+ 624 0032 1B68     		ldr	r3, [r3]
+ 625 0034 0021     		movs	r1, #0
+ 626 0036 D3F80C02 		ldr	r0, [r3, #524]
+ 627 003a FFF7FEFF 		bl	rt_device_set_rx_indicate
+ 628              	.LVL49:
+ 629              	.L56:
+ 231:rt-thread/components/finsh/shell.c ****         shell->line_curpos = shell->line_position = 0;
+ 630              		.loc 1 231 0
+ 631 003e 0C4B     		ldr	r3, .L59
+ 632 0040 1D68     		ldr	r5, [r3]
+ 633              	.LVL50:
+ 634 0042 5022     		movs	r2, #80
+ 635 0044 0021     		movs	r1, #0
+ 636 0046 05F5DB70 		add	r0, r5, #438
+ 637 004a FFF7FEFF 		bl	memset
+ 638              	.LVL51:
+ 232:rt-thread/components/finsh/shell.c **** 
+ 639              		.loc 1 232 0
+ 640 004e 0023     		movs	r3, #0
+ 641 0050 A5F80632 		strh	r3, [r5, #518]	@ movhi
+ 642 0054 A5F80832 		strh	r3, [r5, #520]	@ movhi
+ 234:rt-thread/components/finsh/shell.c ****         rt_device_set_rx_indicate(dev, finsh_rx_ind);
+ 643              		.loc 1 234 0
+ 644 0058 C5F80C42 		str	r4, [r5, #524]
+ 235:rt-thread/components/finsh/shell.c ****     }
+ 645              		.loc 1 235 0
+ 646 005c 0549     		ldr	r1, .L59+4
+ 647 005e 2046     		mov	r0, r4
+ 648 0060 FFF7FEFF 		bl	rt_device_set_rx_indicate
+ 649              	.LVL52:
+ 650              	.L53:
+ 651 0064 38BD     		pop	{r3, r4, r5, pc}
+ 652              	.LVL53:
+ 653              	.L58:
+ 213:rt-thread/components/finsh/shell.c ****         return;
+ 654              		.loc 1 213 0
+ 655 0066 2946     		mov	r1, r5
+ 656 0068 0348     		ldr	r0, .L59+8
+ 657              	.LVL54:
+ 658 006a FFF7FEFF 		bl	rt_kprintf
+ 659              	.LVL55:
+ 214:rt-thread/components/finsh/shell.c ****     }
+ 660              		.loc 1 214 0
+ 661 006e 38BD     		pop	{r3, r4, r5, pc}
+ 662              	.LVL56:
+ARM GAS  /tmp/ccy0WF1g.s 			page 22
+
+
+ 663              	.L60:
+ 664              		.align	2
+ 665              	.L59:
+ 666 0070 00000000 		.word	shell
+ 667 0074 00000000 		.word	finsh_rx_ind
+ 668 0078 00000000 		.word	.LC6
+ 669              		.cfi_endproc
+ 670              	.LFE22:
+ 672              		.section	.text.finsh_thread_entry,"ax",%progbits
+ 673              		.align	1
+ 674              		.global	finsh_thread_entry
+ 675              		.syntax unified
+ 676              		.thumb
+ 677              		.thumb_func
+ 678              		.fpu fpv4-sp-d16
+ 680              	finsh_thread_entry:
+ 681              	.LFB29:
+ 497:rt-thread/components/finsh/shell.c **** }
+ 498:rt-thread/components/finsh/shell.c **** #endif
+ 499:rt-thread/components/finsh/shell.c **** 
+ 500:rt-thread/components/finsh/shell.c **** void finsh_thread_entry(void *parameter)
+ 501:rt-thread/components/finsh/shell.c **** {
+ 682              		.loc 1 501 0
+ 683              		.cfi_startproc
+ 684              		@ args = 0, pretend = 0, frame = 0
+ 685              		@ frame_needed = 0, uses_anonymous_args = 0
+ 686              	.LVL57:
+ 687 0000 38B5     		push	{r3, r4, r5, lr}
+ 688              	.LCFI12:
+ 689              		.cfi_def_cfa_offset 16
+ 690              		.cfi_offset 3, -16
+ 691              		.cfi_offset 4, -12
+ 692              		.cfi_offset 5, -8
+ 693              		.cfi_offset 14, -4
+ 502:rt-thread/components/finsh/shell.c ****     int ch;
+ 503:rt-thread/components/finsh/shell.c **** 
+ 504:rt-thread/components/finsh/shell.c ****     /* normal is echo mode */
+ 505:rt-thread/components/finsh/shell.c **** #ifndef FINSH_ECHO_DISABLE_DEFAULT
+ 506:rt-thread/components/finsh/shell.c ****     shell->echo_mode = 1;
+ 694              		.loc 1 506 0
+ 695 0002 BC4B     		ldr	r3, .L114
+ 696 0004 1B68     		ldr	r3, [r3]
+ 697 0006 93F82120 		ldrb	r2, [r3, #33]	@ zero_extendqisi2
+ 698 000a 42F00102 		orr	r2, r2, #1
+ 699 000e 83F82120 		strb	r2, [r3, #33]
+ 507:rt-thread/components/finsh/shell.c **** #else
+ 508:rt-thread/components/finsh/shell.c ****     shell->echo_mode = 0;
+ 509:rt-thread/components/finsh/shell.c **** #endif
+ 510:rt-thread/components/finsh/shell.c **** 
+ 511:rt-thread/components/finsh/shell.c **** #ifndef FINSH_USING_MSH_ONLY
+ 512:rt-thread/components/finsh/shell.c ****     finsh_init(&shell->parser);
+ 513:rt-thread/components/finsh/shell.c **** #endif
+ 514:rt-thread/components/finsh/shell.c **** 
+ 515:rt-thread/components/finsh/shell.c **** #if !defined(RT_USING_POSIX) && defined(RT_USING_DEVICE)
+ 516:rt-thread/components/finsh/shell.c ****     /* set console device as shell device */
+ 517:rt-thread/components/finsh/shell.c ****     if (shell->device == RT_NULL)
+ 700              		.loc 1 517 0
+ARM GAS  /tmp/ccy0WF1g.s 			page 23
+
+
+ 701 0012 D3F80C32 		ldr	r3, [r3, #524]
+ 702 0016 23B1     		cbz	r3, .L99
+ 703              	.LVL58:
+ 704              	.L62:
+ 518:rt-thread/components/finsh/shell.c ****     {
+ 519:rt-thread/components/finsh/shell.c ****         rt_device_t console = rt_console_get_device();
+ 520:rt-thread/components/finsh/shell.c ****         if (console)
+ 521:rt-thread/components/finsh/shell.c ****         {
+ 522:rt-thread/components/finsh/shell.c ****             finsh_set_device(console->parent.name);
+ 523:rt-thread/components/finsh/shell.c ****         }
+ 524:rt-thread/components/finsh/shell.c ****     }
+ 525:rt-thread/components/finsh/shell.c **** #endif
+ 526:rt-thread/components/finsh/shell.c **** 
+ 527:rt-thread/components/finsh/shell.c **** #ifdef FINSH_USING_AUTH
+ 528:rt-thread/components/finsh/shell.c ****     /* set the default password when the password isn't setting */
+ 529:rt-thread/components/finsh/shell.c ****     if (rt_strlen(finsh_get_password()) == 0)
+ 530:rt-thread/components/finsh/shell.c ****     {
+ 531:rt-thread/components/finsh/shell.c ****         if (finsh_set_password(FINSH_DEFAULT_PASSWORD) != RT_EOK)
+ 532:rt-thread/components/finsh/shell.c ****         {
+ 533:rt-thread/components/finsh/shell.c ****             rt_kprintf("Finsh password set failed.\n");
+ 534:rt-thread/components/finsh/shell.c ****         }
+ 535:rt-thread/components/finsh/shell.c ****     }
+ 536:rt-thread/components/finsh/shell.c ****     /* waiting authenticate success */
+ 537:rt-thread/components/finsh/shell.c ****     finsh_wait_auth();
+ 538:rt-thread/components/finsh/shell.c **** #endif
+ 539:rt-thread/components/finsh/shell.c **** 
+ 540:rt-thread/components/finsh/shell.c ****     rt_kprintf(FINSH_PROMPT);
+ 705              		.loc 1 540 0
+ 706 0018 FFF7FEFF 		bl	finsh_get_prompt
+ 707              	.LVL59:
+ 708 001c FFF7FEFF 		bl	rt_kprintf
+ 709              	.LVL60:
+ 710 0020 0BE0     		b	.L63
+ 711              	.LVL61:
+ 712              	.L99:
+ 713              	.LBB3:
+ 519:rt-thread/components/finsh/shell.c ****         if (console)
+ 714              		.loc 1 519 0
+ 715 0022 FFF7FEFF 		bl	rt_console_get_device
+ 716              	.LVL62:
+ 520:rt-thread/components/finsh/shell.c ****         {
+ 717              		.loc 1 520 0
+ 718 0026 0028     		cmp	r0, #0
+ 719 0028 F6D0     		beq	.L62
+ 522:rt-thread/components/finsh/shell.c ****         }
+ 720              		.loc 1 522 0
+ 721 002a FFF7FEFF 		bl	finsh_set_device
+ 722              	.LVL63:
+ 723 002e F3E7     		b	.L62
+ 724              	.LVL64:
+ 725              	.L100:
+ 726              	.LBE3:
+ 541:rt-thread/components/finsh/shell.c **** 
+ 542:rt-thread/components/finsh/shell.c ****     while (1)
+ 543:rt-thread/components/finsh/shell.c ****     {
+ 544:rt-thread/components/finsh/shell.c ****         ch = finsh_getchar();
+ 545:rt-thread/components/finsh/shell.c ****         if (ch < 0)
+ARM GAS  /tmp/ccy0WF1g.s 			page 24
+
+
+ 546:rt-thread/components/finsh/shell.c ****         {
+ 547:rt-thread/components/finsh/shell.c ****             continue;
+ 548:rt-thread/components/finsh/shell.c ****         }
+ 549:rt-thread/components/finsh/shell.c **** 
+ 550:rt-thread/components/finsh/shell.c ****         /*
+ 551:rt-thread/components/finsh/shell.c ****          * handle control key
+ 552:rt-thread/components/finsh/shell.c ****          * up key  : 0x1b 0x5b 0x41
+ 553:rt-thread/components/finsh/shell.c ****          * down key: 0x1b 0x5b 0x42
+ 554:rt-thread/components/finsh/shell.c ****          * right key:0x1b 0x5b 0x43
+ 555:rt-thread/components/finsh/shell.c ****          * left key: 0x1b 0x5b 0x44
+ 556:rt-thread/components/finsh/shell.c ****          */
+ 557:rt-thread/components/finsh/shell.c ****         if (ch == 0x1b)
+ 558:rt-thread/components/finsh/shell.c ****         {
+ 559:rt-thread/components/finsh/shell.c ****             shell->stat = WAIT_SPEC_KEY;
+ 727              		.loc 1 559 0
+ 728 0030 B04B     		ldr	r3, .L114
+ 729 0032 1B68     		ldr	r3, [r3]
+ 730 0034 0122     		movs	r2, #1
+ 731 0036 83F82020 		strb	r2, [r3, #32]
+ 732              	.LVL65:
+ 733              	.L63:
+ 544:rt-thread/components/finsh/shell.c ****         if (ch < 0)
+ 734              		.loc 1 544 0
+ 735 003a FFF7FEFF 		bl	finsh_getchar
+ 736              	.LVL66:
+ 545:rt-thread/components/finsh/shell.c ****         {
+ 737              		.loc 1 545 0
+ 738 003e 041E     		subs	r4, r0, #0
+ 739 0040 FBDB     		blt	.L63
+ 557:rt-thread/components/finsh/shell.c ****         {
+ 740              		.loc 1 557 0
+ 741 0042 1B2C     		cmp	r4, #27
+ 742 0044 F4D0     		beq	.L100
+ 560:rt-thread/components/finsh/shell.c ****             continue;
+ 561:rt-thread/components/finsh/shell.c ****         }
+ 562:rt-thread/components/finsh/shell.c ****         else if (shell->stat == WAIT_SPEC_KEY)
+ 743              		.loc 1 562 0
+ 744 0046 AB4B     		ldr	r3, .L114
+ 745 0048 1D68     		ldr	r5, [r3]
+ 746 004a 95F82030 		ldrb	r3, [r5, #32]	@ zero_extendqisi2
+ 747 004e 012B     		cmp	r3, #1
+ 748 0050 40D0     		beq	.L101
+ 563:rt-thread/components/finsh/shell.c ****         {
+ 564:rt-thread/components/finsh/shell.c ****             if (ch == 0x5b)
+ 565:rt-thread/components/finsh/shell.c ****             {
+ 566:rt-thread/components/finsh/shell.c ****                 shell->stat = WAIT_FUNC_KEY;
+ 567:rt-thread/components/finsh/shell.c ****                 continue;
+ 568:rt-thread/components/finsh/shell.c ****             }
+ 569:rt-thread/components/finsh/shell.c **** 
+ 570:rt-thread/components/finsh/shell.c ****             shell->stat = WAIT_NORMAL;
+ 571:rt-thread/components/finsh/shell.c ****         }
+ 572:rt-thread/components/finsh/shell.c ****         else if (shell->stat == WAIT_FUNC_KEY)
+ 749              		.loc 1 572 0
+ 750 0052 022B     		cmp	r3, #2
+ 751 0054 48D0     		beq	.L102
+ 752              	.L68:
+ 573:rt-thread/components/finsh/shell.c ****         {
+ARM GAS  /tmp/ccy0WF1g.s 			page 25
+
+
+ 574:rt-thread/components/finsh/shell.c ****             shell->stat = WAIT_NORMAL;
+ 575:rt-thread/components/finsh/shell.c **** 
+ 576:rt-thread/components/finsh/shell.c ****             if (ch == 0x41) /* up key */
+ 577:rt-thread/components/finsh/shell.c ****             {
+ 578:rt-thread/components/finsh/shell.c **** #ifdef FINSH_USING_HISTORY
+ 579:rt-thread/components/finsh/shell.c ****                 /* prev history */
+ 580:rt-thread/components/finsh/shell.c ****                 if (shell->current_history > 0)
+ 581:rt-thread/components/finsh/shell.c ****                     shell->current_history --;
+ 582:rt-thread/components/finsh/shell.c ****                 else
+ 583:rt-thread/components/finsh/shell.c ****                 {
+ 584:rt-thread/components/finsh/shell.c ****                     shell->current_history = 0;
+ 585:rt-thread/components/finsh/shell.c ****                     continue;
+ 586:rt-thread/components/finsh/shell.c ****                 }
+ 587:rt-thread/components/finsh/shell.c **** 
+ 588:rt-thread/components/finsh/shell.c ****                 /* copy the history command */
+ 589:rt-thread/components/finsh/shell.c ****                 memcpy(shell->line, &shell->cmd_history[shell->current_history][0],
+ 590:rt-thread/components/finsh/shell.c ****                        FINSH_CMD_SIZE);
+ 591:rt-thread/components/finsh/shell.c ****                 shell->line_curpos = shell->line_position = strlen(shell->line);
+ 592:rt-thread/components/finsh/shell.c ****                 shell_handle_history(shell);
+ 593:rt-thread/components/finsh/shell.c **** #endif
+ 594:rt-thread/components/finsh/shell.c ****                 continue;
+ 595:rt-thread/components/finsh/shell.c ****             }
+ 596:rt-thread/components/finsh/shell.c ****             else if (ch == 0x42) /* down key */
+ 597:rt-thread/components/finsh/shell.c ****             {
+ 598:rt-thread/components/finsh/shell.c **** #ifdef FINSH_USING_HISTORY
+ 599:rt-thread/components/finsh/shell.c ****                 /* next history */
+ 600:rt-thread/components/finsh/shell.c ****                 if (shell->current_history < shell->history_count - 1)
+ 601:rt-thread/components/finsh/shell.c ****                     shell->current_history ++;
+ 602:rt-thread/components/finsh/shell.c ****                 else
+ 603:rt-thread/components/finsh/shell.c ****                 {
+ 604:rt-thread/components/finsh/shell.c ****                     /* set to the end of history */
+ 605:rt-thread/components/finsh/shell.c ****                     if (shell->history_count != 0)
+ 606:rt-thread/components/finsh/shell.c ****                         shell->current_history = shell->history_count - 1;
+ 607:rt-thread/components/finsh/shell.c ****                     else
+ 608:rt-thread/components/finsh/shell.c ****                         continue;
+ 609:rt-thread/components/finsh/shell.c ****                 }
+ 610:rt-thread/components/finsh/shell.c **** 
+ 611:rt-thread/components/finsh/shell.c ****                 memcpy(shell->line, &shell->cmd_history[shell->current_history][0],
+ 612:rt-thread/components/finsh/shell.c ****                        FINSH_CMD_SIZE);
+ 613:rt-thread/components/finsh/shell.c ****                 shell->line_curpos = shell->line_position = strlen(shell->line);
+ 614:rt-thread/components/finsh/shell.c ****                 shell_handle_history(shell);
+ 615:rt-thread/components/finsh/shell.c **** #endif
+ 616:rt-thread/components/finsh/shell.c ****                 continue;
+ 617:rt-thread/components/finsh/shell.c ****             }
+ 618:rt-thread/components/finsh/shell.c ****             else if (ch == 0x44) /* left key */
+ 619:rt-thread/components/finsh/shell.c ****             {
+ 620:rt-thread/components/finsh/shell.c ****                 if (shell->line_curpos)
+ 621:rt-thread/components/finsh/shell.c ****                 {
+ 622:rt-thread/components/finsh/shell.c ****                     rt_kprintf("\b");
+ 623:rt-thread/components/finsh/shell.c ****                     shell->line_curpos --;
+ 624:rt-thread/components/finsh/shell.c ****                 }
+ 625:rt-thread/components/finsh/shell.c **** 
+ 626:rt-thread/components/finsh/shell.c ****                 continue;
+ 627:rt-thread/components/finsh/shell.c ****             }
+ 628:rt-thread/components/finsh/shell.c ****             else if (ch == 0x43) /* right key */
+ 629:rt-thread/components/finsh/shell.c ****             {
+ 630:rt-thread/components/finsh/shell.c ****                 if (shell->line_curpos < shell->line_position)
+ARM GAS  /tmp/ccy0WF1g.s 			page 26
+
+
+ 631:rt-thread/components/finsh/shell.c ****                 {
+ 632:rt-thread/components/finsh/shell.c ****                     rt_kprintf("%c", shell->line[shell->line_curpos]);
+ 633:rt-thread/components/finsh/shell.c ****                     shell->line_curpos ++;
+ 634:rt-thread/components/finsh/shell.c ****                 }
+ 635:rt-thread/components/finsh/shell.c **** 
+ 636:rt-thread/components/finsh/shell.c ****                 continue;
+ 637:rt-thread/components/finsh/shell.c ****             }
+ 638:rt-thread/components/finsh/shell.c ****         }
+ 639:rt-thread/components/finsh/shell.c **** 
+ 640:rt-thread/components/finsh/shell.c ****         /* received null or error */
+ 641:rt-thread/components/finsh/shell.c ****         if (ch == '\0' || ch == 0xFF) continue;
+ 753              		.loc 1 641 0
+ 754 0056 002C     		cmp	r4, #0
+ 755 0058 EFD0     		beq	.L63
+ 756              		.loc 1 641 0 is_stmt 0 discriminator 2
+ 757 005a FF2C     		cmp	r4, #255
+ 758 005c EDD0     		beq	.L63
+ 642:rt-thread/components/finsh/shell.c ****         /* handle tab key */
+ 643:rt-thread/components/finsh/shell.c ****         else if (ch == '\t')
+ 759              		.loc 1 643 0 is_stmt 1
+ 760 005e 092C     		cmp	r4, #9
+ 761 0060 00F0D180 		beq	.L103
+ 644:rt-thread/components/finsh/shell.c ****         {
+ 645:rt-thread/components/finsh/shell.c ****             int i;
+ 646:rt-thread/components/finsh/shell.c ****             /* move the cursor to the beginning of line */
+ 647:rt-thread/components/finsh/shell.c ****             for (i = 0; i < shell->line_curpos; i++)
+ 648:rt-thread/components/finsh/shell.c ****                 rt_kprintf("\b");
+ 649:rt-thread/components/finsh/shell.c **** 
+ 650:rt-thread/components/finsh/shell.c ****             /* auto complete */
+ 651:rt-thread/components/finsh/shell.c ****             shell_auto_complete(&shell->line[0]);
+ 652:rt-thread/components/finsh/shell.c ****             /* re-calculate position */
+ 653:rt-thread/components/finsh/shell.c ****             shell->line_curpos = shell->line_position = strlen(shell->line);
+ 654:rt-thread/components/finsh/shell.c **** 
+ 655:rt-thread/components/finsh/shell.c ****             continue;
+ 656:rt-thread/components/finsh/shell.c ****         }
+ 657:rt-thread/components/finsh/shell.c ****         /* handle backspace key */
+ 658:rt-thread/components/finsh/shell.c ****         else if (ch == 0x7f || ch == 0x08)
+ 762              		.loc 1 658 0
+ 763 0064 7F2C     		cmp	r4, #127
+ 764 0066 00F0D080 		beq	.L80
+ 765              		.loc 1 658 0 is_stmt 0 discriminator 1
+ 766 006a 082C     		cmp	r4, #8
+ 767 006c 00F0CD80 		beq	.L80
+ 659:rt-thread/components/finsh/shell.c ****         {
+ 660:rt-thread/components/finsh/shell.c ****             /* note that shell->line_curpos >= 0 */
+ 661:rt-thread/components/finsh/shell.c ****             if (shell->line_curpos == 0)
+ 662:rt-thread/components/finsh/shell.c ****                 continue;
+ 663:rt-thread/components/finsh/shell.c **** 
+ 664:rt-thread/components/finsh/shell.c ****             shell->line_position--;
+ 665:rt-thread/components/finsh/shell.c ****             shell->line_curpos--;
+ 666:rt-thread/components/finsh/shell.c **** 
+ 667:rt-thread/components/finsh/shell.c ****             if (shell->line_position > shell->line_curpos)
+ 668:rt-thread/components/finsh/shell.c ****             {
+ 669:rt-thread/components/finsh/shell.c ****                 int i;
+ 670:rt-thread/components/finsh/shell.c **** 
+ 671:rt-thread/components/finsh/shell.c ****                 rt_memmove(&shell->line[shell->line_curpos],
+ 672:rt-thread/components/finsh/shell.c ****                            &shell->line[shell->line_curpos + 1],
+ARM GAS  /tmp/ccy0WF1g.s 			page 27
+
+
+ 673:rt-thread/components/finsh/shell.c ****                            shell->line_position - shell->line_curpos);
+ 674:rt-thread/components/finsh/shell.c ****                 shell->line[shell->line_position] = 0;
+ 675:rt-thread/components/finsh/shell.c **** 
+ 676:rt-thread/components/finsh/shell.c ****                 rt_kprintf("\b%s  \b", &shell->line[shell->line_curpos]);
+ 677:rt-thread/components/finsh/shell.c **** 
+ 678:rt-thread/components/finsh/shell.c ****                 /* move the cursor to the origin position */
+ 679:rt-thread/components/finsh/shell.c ****                 for (i = shell->line_curpos; i <= shell->line_position; i++)
+ 680:rt-thread/components/finsh/shell.c ****                     rt_kprintf("\b");
+ 681:rt-thread/components/finsh/shell.c ****             }
+ 682:rt-thread/components/finsh/shell.c ****             else
+ 683:rt-thread/components/finsh/shell.c ****             {
+ 684:rt-thread/components/finsh/shell.c ****                 rt_kprintf("\b \b");
+ 685:rt-thread/components/finsh/shell.c ****                 shell->line[shell->line_position] = 0;
+ 686:rt-thread/components/finsh/shell.c ****             }
+ 687:rt-thread/components/finsh/shell.c **** 
+ 688:rt-thread/components/finsh/shell.c ****             continue;
+ 689:rt-thread/components/finsh/shell.c ****         }
+ 690:rt-thread/components/finsh/shell.c **** 
+ 691:rt-thread/components/finsh/shell.c ****         /* handle end of line, break */
+ 692:rt-thread/components/finsh/shell.c ****         if (ch == '\r' || ch == '\n')
+ 768              		.loc 1 692 0 is_stmt 1
+ 769 0070 0D2C     		cmp	r4, #13
+ 770 0072 00F01281 		beq	.L86
+ 771              		.loc 1 692 0 is_stmt 0 discriminator 1
+ 772 0076 0A2C     		cmp	r4, #10
+ 773 0078 00F00F81 		beq	.L86
+ 693:rt-thread/components/finsh/shell.c ****         {
+ 694:rt-thread/components/finsh/shell.c **** #ifdef FINSH_USING_HISTORY
+ 695:rt-thread/components/finsh/shell.c ****             shell_push_history(shell);
+ 696:rt-thread/components/finsh/shell.c **** #endif
+ 697:rt-thread/components/finsh/shell.c **** 
+ 698:rt-thread/components/finsh/shell.c **** #ifdef FINSH_USING_MSH
+ 699:rt-thread/components/finsh/shell.c ****             if (msh_is_used() == RT_TRUE)
+ 700:rt-thread/components/finsh/shell.c ****             {
+ 701:rt-thread/components/finsh/shell.c ****                 if (shell->echo_mode)
+ 702:rt-thread/components/finsh/shell.c ****                     rt_kprintf("\n");
+ 703:rt-thread/components/finsh/shell.c ****                 msh_exec(shell->line, shell->line_position);
+ 704:rt-thread/components/finsh/shell.c ****             }
+ 705:rt-thread/components/finsh/shell.c ****             else
+ 706:rt-thread/components/finsh/shell.c **** #endif
+ 707:rt-thread/components/finsh/shell.c ****             {
+ 708:rt-thread/components/finsh/shell.c **** #ifndef FINSH_USING_MSH_ONLY
+ 709:rt-thread/components/finsh/shell.c ****                 /* add ';' and run the command line */
+ 710:rt-thread/components/finsh/shell.c ****                 shell->line[shell->line_position] = ';';
+ 711:rt-thread/components/finsh/shell.c **** 
+ 712:rt-thread/components/finsh/shell.c ****                 if (shell->line_position != 0) finsh_run_line(&shell->parser, shell->line);
+ 713:rt-thread/components/finsh/shell.c ****                 else
+ 714:rt-thread/components/finsh/shell.c ****                     if (shell->echo_mode) rt_kprintf("\n");
+ 715:rt-thread/components/finsh/shell.c **** #endif
+ 716:rt-thread/components/finsh/shell.c ****             }
+ 717:rt-thread/components/finsh/shell.c **** 
+ 718:rt-thread/components/finsh/shell.c ****             rt_kprintf(FINSH_PROMPT);
+ 719:rt-thread/components/finsh/shell.c ****             memset(shell->line, 0, sizeof(shell->line));
+ 720:rt-thread/components/finsh/shell.c ****             shell->line_curpos = shell->line_position = 0;
+ 721:rt-thread/components/finsh/shell.c ****             continue;
+ 722:rt-thread/components/finsh/shell.c ****         }
+ 723:rt-thread/components/finsh/shell.c **** 
+ARM GAS  /tmp/ccy0WF1g.s 			page 28
+
+
+ 724:rt-thread/components/finsh/shell.c ****         /* it's a large line, discard it */
+ 725:rt-thread/components/finsh/shell.c ****         if (shell->line_position >= FINSH_CMD_SIZE)
+ 774              		.loc 1 725 0 is_stmt 1
+ 775 007c B5F80632 		ldrh	r3, [r5, #518]
+ 776 0080 4F2B     		cmp	r3, #79
+ 777 0082 02D9     		bls	.L90
+ 726:rt-thread/components/finsh/shell.c ****             shell->line_position = 0;
+ 778              		.loc 1 726 0
+ 779 0084 0023     		movs	r3, #0
+ 780 0086 A5F80632 		strh	r3, [r5, #518]	@ movhi
+ 781              	.L90:
+ 727:rt-thread/components/finsh/shell.c **** 
+ 728:rt-thread/components/finsh/shell.c ****         /* normal character */
+ 729:rt-thread/components/finsh/shell.c ****         if (shell->line_curpos < shell->line_position)
+ 782              		.loc 1 729 0
+ 783 008a B5F80822 		ldrh	r2, [r5, #520]
+ 784 008e B5F80632 		ldrh	r3, [r5, #518]
+ 785 0092 9A42     		cmp	r2, r3
+ 786 0094 C0F03A81 		bcc	.L104
+ 730:rt-thread/components/finsh/shell.c ****         {
+ 731:rt-thread/components/finsh/shell.c ****             int i;
+ 732:rt-thread/components/finsh/shell.c **** 
+ 733:rt-thread/components/finsh/shell.c ****             rt_memmove(&shell->line[shell->line_curpos + 1],
+ 734:rt-thread/components/finsh/shell.c ****                        &shell->line[shell->line_curpos],
+ 735:rt-thread/components/finsh/shell.c ****                        shell->line_position - shell->line_curpos);
+ 736:rt-thread/components/finsh/shell.c ****             shell->line[shell->line_curpos] = ch;
+ 737:rt-thread/components/finsh/shell.c ****             if (shell->echo_mode)
+ 738:rt-thread/components/finsh/shell.c ****                 rt_kprintf("%s", &shell->line[shell->line_curpos]);
+ 739:rt-thread/components/finsh/shell.c **** 
+ 740:rt-thread/components/finsh/shell.c ****             /* move the cursor to new position */
+ 741:rt-thread/components/finsh/shell.c ****             for (i = shell->line_curpos; i < shell->line_position; i++)
+ 742:rt-thread/components/finsh/shell.c ****                 rt_kprintf("\b");
+ 743:rt-thread/components/finsh/shell.c ****         }
+ 744:rt-thread/components/finsh/shell.c ****         else
+ 745:rt-thread/components/finsh/shell.c ****         {
+ 746:rt-thread/components/finsh/shell.c ****             shell->line[shell->line_position] = ch;
+ 787              		.loc 1 746 0
+ 788 0098 2B44     		add	r3, r3, r5
+ 789 009a 83F8B641 		strb	r4, [r3, #438]
+ 747:rt-thread/components/finsh/shell.c ****             if (shell->echo_mode)
+ 790              		.loc 1 747 0
+ 791 009e 95F82130 		ldrb	r3, [r5, #33]	@ zero_extendqisi2
+ 792 00a2 13F0010F 		tst	r3, #1
+ 793 00a6 40F06081 		bne	.L105
+ 794              	.LVL67:
+ 795              	.L95:
+ 748:rt-thread/components/finsh/shell.c ****                 rt_kprintf("%c", ch);
+ 749:rt-thread/components/finsh/shell.c ****         }
+ 750:rt-thread/components/finsh/shell.c **** 
+ 751:rt-thread/components/finsh/shell.c ****         ch = 0;
+ 752:rt-thread/components/finsh/shell.c ****         shell->line_position ++;
+ 796              		.loc 1 752 0
+ 797 00aa 924B     		ldr	r3, .L114
+ 798 00ac 1A68     		ldr	r2, [r3]
+ 799 00ae B2F80632 		ldrh	r3, [r2, #518]
+ 800 00b2 0133     		adds	r3, r3, #1
+ 801 00b4 9BB2     		uxth	r3, r3
+ARM GAS  /tmp/ccy0WF1g.s 			page 29
+
+
+ 802 00b6 A2F80632 		strh	r3, [r2, #518]	@ movhi
+ 753:rt-thread/components/finsh/shell.c ****         shell->line_curpos++;
+ 803              		.loc 1 753 0
+ 804 00ba B2F80812 		ldrh	r1, [r2, #520]
+ 805 00be 0131     		adds	r1, r1, #1
+ 806 00c0 A2F80812 		strh	r1, [r2, #520]	@ movhi
+ 754:rt-thread/components/finsh/shell.c ****         if (shell->line_position >= FINSH_CMD_SIZE)
+ 807              		.loc 1 754 0
+ 808 00c4 4F2B     		cmp	r3, #79
+ 809 00c6 B8D9     		bls	.L63
+ 755:rt-thread/components/finsh/shell.c ****         {
+ 756:rt-thread/components/finsh/shell.c ****             /* clear command line */
+ 757:rt-thread/components/finsh/shell.c ****             shell->line_position = 0;
+ 810              		.loc 1 757 0
+ 811 00c8 0023     		movs	r3, #0
+ 812 00ca A2F80632 		strh	r3, [r2, #518]	@ movhi
+ 758:rt-thread/components/finsh/shell.c ****             shell->line_curpos = 0;
+ 813              		.loc 1 758 0
+ 814 00ce A2F80832 		strh	r3, [r2, #520]	@ movhi
+ 815 00d2 B2E7     		b	.L63
+ 816              	.LVL68:
+ 817              	.L101:
+ 564:rt-thread/components/finsh/shell.c ****             {
+ 818              		.loc 1 564 0
+ 819 00d4 5B2C     		cmp	r4, #91
+ 820 00d6 03D0     		beq	.L106
+ 570:rt-thread/components/finsh/shell.c ****         }
+ 821              		.loc 1 570 0
+ 822 00d8 0023     		movs	r3, #0
+ 823 00da 85F82030 		strb	r3, [r5, #32]
+ 824 00de BAE7     		b	.L68
+ 825              	.L106:
+ 566:rt-thread/components/finsh/shell.c ****                 continue;
+ 826              		.loc 1 566 0
+ 827 00e0 0223     		movs	r3, #2
+ 828 00e2 85F82030 		strb	r3, [r5, #32]
+ 567:rt-thread/components/finsh/shell.c ****             }
+ 829              		.loc 1 567 0
+ 830 00e6 A8E7     		b	.L63
+ 831              	.L102:
+ 574:rt-thread/components/finsh/shell.c **** 
+ 832              		.loc 1 574 0
+ 833 00e8 0023     		movs	r3, #0
+ 834 00ea 85F82030 		strb	r3, [r5, #32]
+ 576:rt-thread/components/finsh/shell.c ****             {
+ 835              		.loc 1 576 0
+ 836 00ee 412C     		cmp	r4, #65
+ 837 00f0 19D0     		beq	.L107
+ 596:rt-thread/components/finsh/shell.c ****             {
+ 838              		.loc 1 596 0
+ 839 00f2 422C     		cmp	r4, #66
+ 840 00f4 37D0     		beq	.L108
+ 618:rt-thread/components/finsh/shell.c ****             {
+ 841              		.loc 1 618 0
+ 842 00f6 442C     		cmp	r4, #68
+ 843 00f8 5BD0     		beq	.L109
+ 628:rt-thread/components/finsh/shell.c ****             {
+ARM GAS  /tmp/ccy0WF1g.s 			page 30
+
+
+ 844              		.loc 1 628 0
+ 845 00fa 432C     		cmp	r4, #67
+ 846 00fc ABD1     		bne	.L68
+ 630:rt-thread/components/finsh/shell.c ****                 {
+ 847              		.loc 1 630 0
+ 848 00fe B5F80832 		ldrh	r3, [r5, #520]
+ 849 0102 B5F80622 		ldrh	r2, [r5, #518]
+ 850 0106 9342     		cmp	r3, r2
+ 851 0108 97D2     		bcs	.L63
+ 632:rt-thread/components/finsh/shell.c ****                     shell->line_curpos ++;
+ 852              		.loc 1 632 0
+ 853 010a 2B44     		add	r3, r3, r5
+ 854 010c 93F8B611 		ldrb	r1, [r3, #438]	@ zero_extendqisi2
+ 855 0110 7948     		ldr	r0, .L114+4
+ 856              	.LVL69:
+ 857 0112 FFF7FEFF 		bl	rt_kprintf
+ 858              	.LVL70:
+ 633:rt-thread/components/finsh/shell.c ****                 }
+ 859              		.loc 1 633 0
+ 860 0116 774B     		ldr	r3, .L114
+ 861 0118 1A68     		ldr	r2, [r3]
+ 862 011a B2F80832 		ldrh	r3, [r2, #520]
+ 863 011e 0133     		adds	r3, r3, #1
+ 864 0120 A2F80832 		strh	r3, [r2, #520]	@ movhi
+ 636:rt-thread/components/finsh/shell.c ****             }
+ 865              		.loc 1 636 0
+ 866 0124 89E7     		b	.L63
+ 867              	.LVL71:
+ 868              	.L107:
+ 580:rt-thread/components/finsh/shell.c ****                     shell->current_history --;
+ 869              		.loc 1 580 0
+ 870 0126 6B8C     		ldrh	r3, [r5, #34]
+ 871 0128 13B9     		cbnz	r3, .L110
+ 584:rt-thread/components/finsh/shell.c ****                     continue;
+ 872              		.loc 1 584 0
+ 873 012a 0023     		movs	r3, #0
+ 874 012c 6B84     		strh	r3, [r5, #34]	@ movhi
+ 585:rt-thread/components/finsh/shell.c ****                 }
+ 875              		.loc 1 585 0
+ 876 012e 84E7     		b	.L63
+ 877              	.L110:
+ 581:rt-thread/components/finsh/shell.c ****                 else
+ 878              		.loc 1 581 0
+ 879 0130 013B     		subs	r3, r3, #1
+ 880 0132 9BB2     		uxth	r3, r3
+ 881 0134 6B84     		strh	r3, [r5, #34]	@ movhi
+ 589:rt-thread/components/finsh/shell.c ****                        FINSH_CMD_SIZE);
+ 882              		.loc 1 589 0
+ 883 0136 05F5DB74 		add	r4, r5, #438
+ 884 013a 03EB8303 		add	r3, r3, r3, lsl #2
+ 885 013e 1A01     		lsls	r2, r3, #4
+ 886 0140 2032     		adds	r2, r2, #32
+ 887 0142 A918     		adds	r1, r5, r2
+ 888 0144 5022     		movs	r2, #80
+ 889 0146 0631     		adds	r1, r1, #6
+ 890 0148 2046     		mov	r0, r4
+ 891              	.LVL72:
+ARM GAS  /tmp/ccy0WF1g.s 			page 31
+
+
+ 892 014a FFF7FEFF 		bl	memcpy
+ 893              	.LVL73:
+ 591:rt-thread/components/finsh/shell.c ****                 shell_handle_history(shell);
+ 894              		.loc 1 591 0
+ 895 014e 2046     		mov	r0, r4
+ 896 0150 FFF7FEFF 		bl	strlen
+ 897              	.LVL74:
+ 898 0154 80B2     		uxth	r0, r0
+ 899 0156 A5F80602 		strh	r0, [r5, #518]	@ movhi
+ 900 015a A5F80802 		strh	r0, [r5, #520]	@ movhi
+ 592:rt-thread/components/finsh/shell.c **** #endif
+ 901              		.loc 1 592 0
+ 902 015e 2846     		mov	r0, r5
+ 903 0160 FFF7FEFF 		bl	shell_handle_history
+ 904              	.LVL75:
+ 594:rt-thread/components/finsh/shell.c ****             }
+ 905              		.loc 1 594 0
+ 906 0164 69E7     		b	.L63
+ 907              	.LVL76:
+ 908              	.L108:
+ 600:rt-thread/components/finsh/shell.c ****                     shell->current_history ++;
+ 909              		.loc 1 600 0
+ 910 0166 6B8C     		ldrh	r3, [r5, #34]
+ 911 0168 AA8C     		ldrh	r2, [r5, #36]
+ 912 016a 511E     		subs	r1, r2, #1
+ 913 016c 8B42     		cmp	r3, r1
+ 914 016e 1ADA     		bge	.L72
+ 601:rt-thread/components/finsh/shell.c ****                 else
+ 915              		.loc 1 601 0
+ 916 0170 0133     		adds	r3, r3, #1
+ 917 0172 6B84     		strh	r3, [r5, #34]	@ movhi
+ 918              	.L73:
+ 611:rt-thread/components/finsh/shell.c ****                        FINSH_CMD_SIZE);
+ 919              		.loc 1 611 0
+ 920 0174 05F5DB74 		add	r4, r5, #438
+ 921 0178 6A8C     		ldrh	r2, [r5, #34]
+ 922 017a 02EB8202 		add	r2, r2, r2, lsl #2
+ 923 017e 1301     		lsls	r3, r2, #4
+ 924 0180 2033     		adds	r3, r3, #32
+ 925 0182 E918     		adds	r1, r5, r3
+ 926 0184 5022     		movs	r2, #80
+ 927 0186 0631     		adds	r1, r1, #6
+ 928 0188 2046     		mov	r0, r4
+ 929              	.LVL77:
+ 930 018a FFF7FEFF 		bl	memcpy
+ 931              	.LVL78:
+ 613:rt-thread/components/finsh/shell.c ****                 shell_handle_history(shell);
+ 932              		.loc 1 613 0
+ 933 018e 2046     		mov	r0, r4
+ 934 0190 FFF7FEFF 		bl	strlen
+ 935              	.LVL79:
+ 936 0194 80B2     		uxth	r0, r0
+ 937 0196 A5F80602 		strh	r0, [r5, #518]	@ movhi
+ 938 019a A5F80802 		strh	r0, [r5, #520]	@ movhi
+ 614:rt-thread/components/finsh/shell.c **** #endif
+ 939              		.loc 1 614 0
+ 940 019e 2846     		mov	r0, r5
+ARM GAS  /tmp/ccy0WF1g.s 			page 32
+
+
+ 941 01a0 FFF7FEFF 		bl	shell_handle_history
+ 942              	.LVL80:
+ 616:rt-thread/components/finsh/shell.c ****             }
+ 943              		.loc 1 616 0
+ 944 01a4 49E7     		b	.L63
+ 945              	.LVL81:
+ 946              	.L72:
+ 605:rt-thread/components/finsh/shell.c ****                         shell->current_history = shell->history_count - 1;
+ 947              		.loc 1 605 0
+ 948 01a6 002A     		cmp	r2, #0
+ 949 01a8 3FF447AF 		beq	.L63
+ 606:rt-thread/components/finsh/shell.c ****                     else
+ 950              		.loc 1 606 0
+ 951 01ac 013A     		subs	r2, r2, #1
+ 952 01ae 6A84     		strh	r2, [r5, #34]	@ movhi
+ 953 01b0 E0E7     		b	.L73
+ 954              	.L109:
+ 620:rt-thread/components/finsh/shell.c ****                 {
+ 955              		.loc 1 620 0
+ 956 01b2 B5F80832 		ldrh	r3, [r5, #520]
+ 957 01b6 002B     		cmp	r3, #0
+ 958 01b8 3FF43FAF 		beq	.L63
+ 622:rt-thread/components/finsh/shell.c ****                     shell->line_curpos --;
+ 959              		.loc 1 622 0
+ 960 01bc 4F48     		ldr	r0, .L114+8
+ 961              	.LVL82:
+ 962 01be FFF7FEFF 		bl	rt_kprintf
+ 963              	.LVL83:
+ 623:rt-thread/components/finsh/shell.c ****                 }
+ 964              		.loc 1 623 0
+ 965 01c2 4C4B     		ldr	r3, .L114
+ 966 01c4 1A68     		ldr	r2, [r3]
+ 967 01c6 B2F80832 		ldrh	r3, [r2, #520]
+ 968 01ca 013B     		subs	r3, r3, #1
+ 969 01cc A2F80832 		strh	r3, [r2, #520]	@ movhi
+ 626:rt-thread/components/finsh/shell.c ****             }
+ 970              		.loc 1 626 0
+ 971 01d0 33E7     		b	.L63
+ 972              	.LVL84:
+ 973              	.L79:
+ 974              	.LBB4:
+ 648:rt-thread/components/finsh/shell.c **** 
+ 975              		.loc 1 648 0 discriminator 3
+ 976 01d2 4A48     		ldr	r0, .L114+8
+ 977 01d4 FFF7FEFF 		bl	rt_kprintf
+ 978              	.LVL85:
+ 647:rt-thread/components/finsh/shell.c ****                 rt_kprintf("\b");
+ 979              		.loc 1 647 0 discriminator 3
+ 980 01d8 0134     		adds	r4, r4, #1
+ 981              	.LVL86:
+ 982              	.L77:
+ 647:rt-thread/components/finsh/shell.c ****                 rt_kprintf("\b");
+ 983              		.loc 1 647 0 is_stmt 0 discriminator 1
+ 984 01da 464B     		ldr	r3, .L114
+ 985 01dc 1868     		ldr	r0, [r3]
+ 986 01de B0F80832 		ldrh	r3, [r0, #520]
+ 987 01e2 9C42     		cmp	r4, r3
+ARM GAS  /tmp/ccy0WF1g.s 			page 33
+
+
+ 988 01e4 F5DB     		blt	.L79
+ 651:rt-thread/components/finsh/shell.c ****             /* re-calculate position */
+ 989              		.loc 1 651 0 is_stmt 1
+ 990 01e6 00F5DB70 		add	r0, r0, #438
+ 991 01ea FFF7FEFF 		bl	shell_auto_complete
+ 992              	.LVL87:
+ 653:rt-thread/components/finsh/shell.c **** 
+ 993              		.loc 1 653 0
+ 994 01ee 414B     		ldr	r3, .L114
+ 995 01f0 1C68     		ldr	r4, [r3]
+ 996              	.LVL88:
+ 997 01f2 04F5DB70 		add	r0, r4, #438
+ 998 01f6 FFF7FEFF 		bl	strlen
+ 999              	.LVL89:
+ 1000 01fa 80B2     		uxth	r0, r0
+ 1001 01fc A4F80602 		strh	r0, [r4, #518]	@ movhi
+ 1002 0200 A4F80802 		strh	r0, [r4, #520]	@ movhi
+ 655:rt-thread/components/finsh/shell.c ****         }
+ 1003              		.loc 1 655 0
+ 1004 0204 19E7     		b	.L63
+ 1005              	.LVL90:
+ 1006              	.L103:
+ 1007              	.LBE4:
+ 1008 0206 0024     		movs	r4, #0
+ 1009 0208 E7E7     		b	.L77
+ 1010              	.L80:
+ 661:rt-thread/components/finsh/shell.c ****                 continue;
+ 1011              		.loc 1 661 0
+ 1012 020a B5F80832 		ldrh	r3, [r5, #520]
+ 1013 020e 002B     		cmp	r3, #0
+ 1014 0210 3FF413AF 		beq	.L63
+ 664:rt-thread/components/finsh/shell.c ****             shell->line_curpos--;
+ 1015              		.loc 1 664 0
+ 1016 0214 B5F80622 		ldrh	r2, [r5, #518]
+ 1017 0218 013A     		subs	r2, r2, #1
+ 1018 021a 92B2     		uxth	r2, r2
+ 1019 021c A5F80622 		strh	r2, [r5, #518]	@ movhi
+ 665:rt-thread/components/finsh/shell.c **** 
+ 1020              		.loc 1 665 0
+ 1021 0220 013B     		subs	r3, r3, #1
+ 1022 0222 9BB2     		uxth	r3, r3
+ 1023 0224 A5F80832 		strh	r3, [r5, #520]	@ movhi
+ 667:rt-thread/components/finsh/shell.c ****             {
+ 1024              		.loc 1 667 0
+ 1025 0228 9A42     		cmp	r2, r3
+ 1026 022a 2AD9     		bls	.L82
+ 1027              	.LBB5:
+ 671:rt-thread/components/finsh/shell.c ****                            &shell->line[shell->line_curpos + 1],
+ 1028              		.loc 1 671 0
+ 1029 022c 03F5D870 		add	r0, r3, #432
+ 1030              	.LVL91:
+ 1031 0230 2844     		add	r0, r0, r5
+ 672:rt-thread/components/finsh/shell.c ****                            shell->line_position - shell->line_curpos);
+ 1032              		.loc 1 672 0
+ 1033 0232 03F2B111 		addw	r1, r3, #433
+ 1034 0236 2944     		add	r1, r1, r5
+ 671:rt-thread/components/finsh/shell.c ****                            &shell->line[shell->line_curpos + 1],
+ARM GAS  /tmp/ccy0WF1g.s 			page 34
+
+
+ 1035              		.loc 1 671 0
+ 1036 0238 D21A     		subs	r2, r2, r3
+ 1037 023a 0631     		adds	r1, r1, #6
+ 1038 023c 0630     		adds	r0, r0, #6
+ 1039 023e FFF7FEFF 		bl	rt_memmove
+ 1040              	.LVL92:
+ 674:rt-thread/components/finsh/shell.c **** 
+ 1041              		.loc 1 674 0
+ 1042 0242 2C4C     		ldr	r4, .L114
+ 1043              	.LVL93:
+ 1044 0244 2368     		ldr	r3, [r4]
+ 1045 0246 B3F80622 		ldrh	r2, [r3, #518]
+ 1046 024a 1A44     		add	r2, r2, r3
+ 1047 024c 0021     		movs	r1, #0
+ 1048 024e 82F8B611 		strb	r1, [r2, #438]
+ 676:rt-thread/components/finsh/shell.c **** 
+ 1049              		.loc 1 676 0
+ 1050 0252 B3F80822 		ldrh	r2, [r3, #520]
+ 1051 0256 02F5D872 		add	r2, r2, #432
+ 1052 025a 1344     		add	r3, r3, r2
+ 1053 025c 991D     		adds	r1, r3, #6
+ 1054 025e 2848     		ldr	r0, .L114+12
+ 1055 0260 FFF7FEFF 		bl	rt_kprintf
+ 1056              	.LVL94:
+ 679:rt-thread/components/finsh/shell.c ****                     rt_kprintf("\b");
+ 1057              		.loc 1 679 0
+ 1058 0264 2368     		ldr	r3, [r4]
+ 1059 0266 B3F80842 		ldrh	r4, [r3, #520]
+ 1060              	.LVL95:
+ 1061 026a 03E0     		b	.L83
+ 1062              	.L84:
+ 680:rt-thread/components/finsh/shell.c ****             }
+ 1063              		.loc 1 680 0 discriminator 3
+ 1064 026c 2348     		ldr	r0, .L114+8
+ 1065 026e FFF7FEFF 		bl	rt_kprintf
+ 1066              	.LVL96:
+ 679:rt-thread/components/finsh/shell.c ****                     rt_kprintf("\b");
+ 1067              		.loc 1 679 0 discriminator 3
+ 1068 0272 0134     		adds	r4, r4, #1
+ 1069              	.LVL97:
+ 1070              	.L83:
+ 679:rt-thread/components/finsh/shell.c ****                     rt_kprintf("\b");
+ 1071              		.loc 1 679 0 is_stmt 0 discriminator 1
+ 1072 0274 1F4B     		ldr	r3, .L114
+ 1073 0276 1B68     		ldr	r3, [r3]
+ 1074 0278 B3F80632 		ldrh	r3, [r3, #518]
+ 1075 027c 9C42     		cmp	r4, r3
+ 1076 027e F5DD     		ble	.L84
+ 1077 0280 DBE6     		b	.L63
+ 1078              	.LVL98:
+ 1079              	.L82:
+ 1080              	.LBE5:
+ 684:rt-thread/components/finsh/shell.c ****                 shell->line[shell->line_position] = 0;
+ 1081              		.loc 1 684 0 is_stmt 1
+ 1082 0282 2048     		ldr	r0, .L114+16
+ 1083              	.LVL99:
+ 1084 0284 FFF7FEFF 		bl	rt_kprintf
+ARM GAS  /tmp/ccy0WF1g.s 			page 35
+
+
+ 1085              	.LVL100:
+ 685:rt-thread/components/finsh/shell.c ****             }
+ 1086              		.loc 1 685 0
+ 1087 0288 1A4B     		ldr	r3, .L114
+ 1088 028a 1B68     		ldr	r3, [r3]
+ 1089 028c B3F80622 		ldrh	r2, [r3, #518]
+ 1090 0290 1344     		add	r3, r3, r2
+ 1091 0292 0022     		movs	r2, #0
+ 1092 0294 83F8B621 		strb	r2, [r3, #438]
+ 688:rt-thread/components/finsh/shell.c ****         }
+ 1093              		.loc 1 688 0
+ 1094 0298 CFE6     		b	.L63
+ 1095              	.LVL101:
+ 1096              	.L86:
+ 695:rt-thread/components/finsh/shell.c **** #endif
+ 1097              		.loc 1 695 0
+ 1098 029a 2846     		mov	r0, r5
+ 1099              	.LVL102:
+ 1100 029c FFF7FEFF 		bl	shell_push_history
+ 1101              	.LVL103:
+ 699:rt-thread/components/finsh/shell.c ****             {
+ 1102              		.loc 1 699 0
+ 1103 02a0 FFF7FEFF 		bl	msh_is_used
+ 1104              	.LVL104:
+ 1105 02a4 0128     		cmp	r0, #1
+ 1106 02a6 11D0     		beq	.L111
+ 1107              	.L88:
+ 718:rt-thread/components/finsh/shell.c ****             memset(shell->line, 0, sizeof(shell->line));
+ 1108              		.loc 1 718 0
+ 1109 02a8 FFF7FEFF 		bl	finsh_get_prompt
+ 1110              	.LVL105:
+ 1111 02ac FFF7FEFF 		bl	rt_kprintf
+ 1112              	.LVL106:
+ 719:rt-thread/components/finsh/shell.c ****             shell->line_curpos = shell->line_position = 0;
+ 1113              		.loc 1 719 0
+ 1114 02b0 104B     		ldr	r3, .L114
+ 1115 02b2 1C68     		ldr	r4, [r3]
+ 1116              	.LVL107:
+ 1117 02b4 5022     		movs	r2, #80
+ 1118 02b6 0021     		movs	r1, #0
+ 1119 02b8 04F5DB70 		add	r0, r4, #438
+ 1120 02bc FFF7FEFF 		bl	memset
+ 1121              	.LVL108:
+ 720:rt-thread/components/finsh/shell.c ****             continue;
+ 1122              		.loc 1 720 0
+ 1123 02c0 0023     		movs	r3, #0
+ 1124 02c2 A4F80632 		strh	r3, [r4, #518]	@ movhi
+ 1125 02c6 A4F80832 		strh	r3, [r4, #520]	@ movhi
+ 721:rt-thread/components/finsh/shell.c ****         }
+ 1126              		.loc 1 721 0
+ 1127 02ca B6E6     		b	.L63
+ 1128              	.LVL109:
+ 1129              	.L111:
+ 701:rt-thread/components/finsh/shell.c ****                     rt_kprintf("\n");
+ 1130              		.loc 1 701 0
+ 1131 02cc 094B     		ldr	r3, .L114
+ 1132 02ce 1B68     		ldr	r3, [r3]
+ARM GAS  /tmp/ccy0WF1g.s 			page 36
+
+
+ 1133 02d0 93F82130 		ldrb	r3, [r3, #33]	@ zero_extendqisi2
+ 1134 02d4 13F0010F 		tst	r3, #1
+ 1135 02d8 08D1     		bne	.L112
+ 1136              	.L89:
+ 703:rt-thread/components/finsh/shell.c ****             }
+ 1137              		.loc 1 703 0
+ 1138 02da 064B     		ldr	r3, .L114
+ 1139 02dc 1868     		ldr	r0, [r3]
+ 1140 02de B0F80612 		ldrh	r1, [r0, #518]
+ 1141 02e2 00F5DB70 		add	r0, r0, #438
+ 1142 02e6 FFF7FEFF 		bl	msh_exec
+ 1143              	.LVL110:
+ 1144 02ea DDE7     		b	.L88
+ 1145              	.L112:
+ 702:rt-thread/components/finsh/shell.c ****                 msh_exec(shell->line, shell->line_position);
+ 1146              		.loc 1 702 0
+ 1147 02ec 0648     		ldr	r0, .L114+20
+ 1148 02ee FFF7FEFF 		bl	rt_kprintf
+ 1149              	.LVL111:
+ 1150 02f2 F2E7     		b	.L89
+ 1151              	.L115:
+ 1152              		.align	2
+ 1153              	.L114:
+ 1154 02f4 00000000 		.word	shell
+ 1155 02f8 04000000 		.word	.LC8
+ 1156 02fc 00000000 		.word	.LC7
+ 1157 0300 08000000 		.word	.LC9
+ 1158 0304 10000000 		.word	.LC10
+ 1159 0308 00000000 		.word	.LC5
+ 1160              	.LVL112:
+ 1161              	.L104:
+ 1162              	.LBB6:
+ 733:rt-thread/components/finsh/shell.c ****                        &shell->line[shell->line_curpos],
+ 1163              		.loc 1 733 0
+ 1164 030c 02F2B110 		addw	r0, r2, #433
+ 1165              	.LVL113:
+ 1166 0310 2844     		add	r0, r0, r5
+ 734:rt-thread/components/finsh/shell.c ****                        shell->line_position - shell->line_curpos);
+ 1167              		.loc 1 734 0
+ 1168 0312 02F5D871 		add	r1, r2, #432
+ 1169 0316 2944     		add	r1, r1, r5
+ 733:rt-thread/components/finsh/shell.c ****                        &shell->line[shell->line_curpos],
+ 1170              		.loc 1 733 0
+ 1171 0318 9A1A     		subs	r2, r3, r2
+ 1172 031a 0631     		adds	r1, r1, #6
+ 1173 031c 0630     		adds	r0, r0, #6
+ 1174 031e FFF7FEFF 		bl	rt_memmove
+ 1175              	.LVL114:
+ 736:rt-thread/components/finsh/shell.c ****             if (shell->echo_mode)
+ 1176              		.loc 1 736 0
+ 1177 0322 144B     		ldr	r3, .L116
+ 1178 0324 1B68     		ldr	r3, [r3]
+ 1179 0326 B3F80822 		ldrh	r2, [r3, #520]
+ 1180 032a 9918     		adds	r1, r3, r2
+ 1181 032c 81F8B641 		strb	r4, [r1, #438]
+ 737:rt-thread/components/finsh/shell.c ****                 rt_kprintf("%s", &shell->line[shell->line_curpos]);
+ 1182              		.loc 1 737 0
+ARM GAS  /tmp/ccy0WF1g.s 			page 37
+
+
+ 1183 0330 93F82110 		ldrb	r1, [r3, #33]	@ zero_extendqisi2
+ 1184 0334 11F0010F 		tst	r1, #1
+ 1185 0338 04D1     		bne	.L113
+ 1186              	.L92:
+ 741:rt-thread/components/finsh/shell.c ****                 rt_kprintf("\b");
+ 1187              		.loc 1 741 0
+ 1188 033a 0E4B     		ldr	r3, .L116
+ 1189 033c 1B68     		ldr	r3, [r3]
+ 1190 033e B3F80842 		ldrh	r4, [r3, #520]
+ 1191              	.LVL115:
+ 1192 0342 0BE0     		b	.L93
+ 1193              	.LVL116:
+ 1194              	.L113:
+ 738:rt-thread/components/finsh/shell.c **** 
+ 1195              		.loc 1 738 0
+ 1196 0344 02F5D872 		add	r2, r2, #432
+ 1197 0348 1344     		add	r3, r3, r2
+ 1198 034a 991D     		adds	r1, r3, #6
+ 1199 034c 0A48     		ldr	r0, .L116+4
+ 1200 034e FFF7FEFF 		bl	rt_kprintf
+ 1201              	.LVL117:
+ 1202 0352 F2E7     		b	.L92
+ 1203              	.LVL118:
+ 1204              	.L94:
+ 742:rt-thread/components/finsh/shell.c ****         }
+ 1205              		.loc 1 742 0 discriminator 3
+ 1206 0354 0948     		ldr	r0, .L116+8
+ 1207 0356 FFF7FEFF 		bl	rt_kprintf
+ 1208              	.LVL119:
+ 741:rt-thread/components/finsh/shell.c ****                 rt_kprintf("\b");
+ 1209              		.loc 1 741 0 discriminator 3
+ 1210 035a 0134     		adds	r4, r4, #1
+ 1211              	.LVL120:
+ 1212              	.L93:
+ 741:rt-thread/components/finsh/shell.c ****                 rt_kprintf("\b");
+ 1213              		.loc 1 741 0 is_stmt 0 discriminator 1
+ 1214 035c 054B     		ldr	r3, .L116
+ 1215 035e 1B68     		ldr	r3, [r3]
+ 1216 0360 B3F80632 		ldrh	r3, [r3, #518]
+ 1217 0364 9C42     		cmp	r4, r3
+ 1218 0366 F5DB     		blt	.L94
+ 1219 0368 9FE6     		b	.L95
+ 1220              	.LVL121:
+ 1221              	.L105:
+ 1222              	.LBE6:
+ 748:rt-thread/components/finsh/shell.c ****         }
+ 1223              		.loc 1 748 0 is_stmt 1
+ 1224 036a 2146     		mov	r1, r4
+ 1225 036c 0448     		ldr	r0, .L116+12
+ 1226              	.LVL122:
+ 1227 036e FFF7FEFF 		bl	rt_kprintf
+ 1228              	.LVL123:
+ 1229 0372 9AE6     		b	.L95
+ 1230              	.L117:
+ 1231              		.align	2
+ 1232              	.L116:
+ 1233 0374 00000000 		.word	shell
+ARM GAS  /tmp/ccy0WF1g.s 			page 38
+
+
+ 1234 0378 14000000 		.word	.LC11
+ 1235 037c 00000000 		.word	.LC7
+ 1236 0380 04000000 		.word	.LC8
+ 1237              		.cfi_endproc
+ 1238              	.LFE29:
+ 1240              		.section	.text.finsh_get_device,"ax",%progbits
+ 1241              		.align	1
+ 1242              		.global	finsh_get_device
+ 1243              		.syntax unified
+ 1244              		.thumb
+ 1245              		.thumb_func
+ 1246              		.fpu fpv4-sp-d16
+ 1248              	finsh_get_device:
+ 1249              	.LFB23:
+ 247:rt-thread/components/finsh/shell.c ****     RT_ASSERT(shell != RT_NULL);
+ 1250              		.loc 1 247 0
+ 1251              		.cfi_startproc
+ 1252              		@ args = 0, pretend = 0, frame = 0
+ 1253              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1254              		@ link register save eliminated.
+ 249:rt-thread/components/finsh/shell.c **** }
+ 1255              		.loc 1 249 0
+ 1256 0000 024B     		ldr	r3, .L119
+ 1257 0002 1B68     		ldr	r3, [r3]
+ 250:rt-thread/components/finsh/shell.c **** #endif
+ 1258              		.loc 1 250 0
+ 1259 0004 D3F80C02 		ldr	r0, [r3, #524]
+ 1260 0008 7047     		bx	lr
+ 1261              	.L120:
+ 1262 000a 00BF     		.align	2
+ 1263              	.L119:
+ 1264 000c 00000000 		.word	shell
+ 1265              		.cfi_endproc
+ 1266              	.LFE23:
+ 1268              		.section	.text.finsh_set_echo,"ax",%progbits
+ 1269              		.align	1
+ 1270              		.global	finsh_set_echo
+ 1271              		.syntax unified
+ 1272              		.thumb
+ 1273              		.thumb_func
+ 1274              		.fpu fpv4-sp-d16
+ 1276              	finsh_set_echo:
+ 1277              	.LFB24:
+ 263:rt-thread/components/finsh/shell.c ****     RT_ASSERT(shell != RT_NULL);
+ 1278              		.loc 1 263 0
+ 1279              		.cfi_startproc
+ 1280              		@ args = 0, pretend = 0, frame = 0
+ 1281              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1282              		@ link register save eliminated.
+ 1283              	.LVL124:
+ 265:rt-thread/components/finsh/shell.c **** }
+ 1284              		.loc 1 265 0
+ 1285 0000 044B     		ldr	r3, .L122
+ 1286 0002 1B68     		ldr	r3, [r3]
+ 1287 0004 93F82120 		ldrb	r2, [r3, #33]	@ zero_extendqisi2
+ 1288 0008 60F30002 		bfi	r2, r0, #0, #1
+ 1289 000c 83F82120 		strb	r2, [r3, #33]
+ARM GAS  /tmp/ccy0WF1g.s 			page 39
+
+
+ 1290 0010 7047     		bx	lr
+ 1291              	.L123:
+ 1292 0012 00BF     		.align	2
+ 1293              	.L122:
+ 1294 0014 00000000 		.word	shell
+ 1295              		.cfi_endproc
+ 1296              	.LFE24:
+ 1298              		.section	.text.finsh_get_echo,"ax",%progbits
+ 1299              		.align	1
+ 1300              		.global	finsh_get_echo
+ 1301              		.syntax unified
+ 1302              		.thumb
+ 1303              		.thumb_func
+ 1304              		.fpu fpv4-sp-d16
+ 1306              	finsh_get_echo:
+ 1307              	.LFB25:
+ 276:rt-thread/components/finsh/shell.c ****     RT_ASSERT(shell != RT_NULL);
+ 1308              		.loc 1 276 0
+ 1309              		.cfi_startproc
+ 1310              		@ args = 0, pretend = 0, frame = 0
+ 1311              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1312              		@ link register save eliminated.
+ 279:rt-thread/components/finsh/shell.c **** }
+ 1313              		.loc 1 279 0
+ 1314 0000 034B     		ldr	r3, .L125
+ 1315 0002 1B68     		ldr	r3, [r3]
+ 1316 0004 93F82100 		ldrb	r0, [r3, #33]	@ zero_extendqisi2
+ 280:rt-thread/components/finsh/shell.c **** 
+ 1317              		.loc 1 280 0
+ 1318 0008 00F00100 		and	r0, r0, #1
+ 1319 000c 7047     		bx	lr
+ 1320              	.L126:
+ 1321 000e 00BF     		.align	2
+ 1322              	.L125:
+ 1323 0010 00000000 		.word	shell
+ 1324              		.cfi_endproc
+ 1325              	.LFE25:
+ 1327              		.section	.text.finsh_system_function_init,"ax",%progbits
+ 1328              		.align	1
+ 1329              		.global	finsh_system_function_init
+ 1330              		.syntax unified
+ 1331              		.thumb
+ 1332              		.thumb_func
+ 1333              		.fpu fpv4-sp-d16
+ 1335              	finsh_system_function_init:
+ 1336              	.LFB30:
+ 759:rt-thread/components/finsh/shell.c ****         }
+ 760:rt-thread/components/finsh/shell.c ****     } /* end of device read */
+ 761:rt-thread/components/finsh/shell.c **** }
+ 762:rt-thread/components/finsh/shell.c **** 
+ 763:rt-thread/components/finsh/shell.c **** void finsh_system_function_init(const void *begin, const void *end)
+ 764:rt-thread/components/finsh/shell.c **** {
+ 1337              		.loc 1 764 0
+ 1338              		.cfi_startproc
+ 1339              		@ args = 0, pretend = 0, frame = 0
+ 1340              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1341              		@ link register save eliminated.
+ARM GAS  /tmp/ccy0WF1g.s 			page 40
+
+
+ 1342              	.LVL125:
+ 765:rt-thread/components/finsh/shell.c ****     _syscall_table_begin = (struct finsh_syscall *) begin;
+ 1343              		.loc 1 765 0
+ 1344 0000 024B     		ldr	r3, .L128
+ 1345 0002 1860     		str	r0, [r3]
+ 766:rt-thread/components/finsh/shell.c ****     _syscall_table_end = (struct finsh_syscall *) end;
+ 1346              		.loc 1 766 0
+ 1347 0004 024B     		ldr	r3, .L128+4
+ 1348 0006 1960     		str	r1, [r3]
+ 1349 0008 7047     		bx	lr
+ 1350              	.L129:
+ 1351 000a 00BF     		.align	2
+ 1352              	.L128:
+ 1353 000c 00000000 		.word	.LANCHOR2
+ 1354 0010 00000000 		.word	.LANCHOR3
+ 1355              		.cfi_endproc
+ 1356              	.LFE30:
+ 1358              		.section	.text.finsh_system_var_init,"ax",%progbits
+ 1359              		.align	1
+ 1360              		.global	finsh_system_var_init
+ 1361              		.syntax unified
+ 1362              		.thumb
+ 1363              		.thumb_func
+ 1364              		.fpu fpv4-sp-d16
+ 1366              	finsh_system_var_init:
+ 1367              	.LFB31:
+ 767:rt-thread/components/finsh/shell.c **** }
+ 768:rt-thread/components/finsh/shell.c **** 
+ 769:rt-thread/components/finsh/shell.c **** void finsh_system_var_init(const void *begin, const void *end)
+ 770:rt-thread/components/finsh/shell.c **** {
+ 1368              		.loc 1 770 0
+ 1369              		.cfi_startproc
+ 1370              		@ args = 0, pretend = 0, frame = 0
+ 1371              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1372              		@ link register save eliminated.
+ 1373              	.LVL126:
+ 771:rt-thread/components/finsh/shell.c ****     _sysvar_table_begin = (struct finsh_sysvar *) begin;
+ 1374              		.loc 1 771 0
+ 1375 0000 024B     		ldr	r3, .L131
+ 1376 0002 1860     		str	r0, [r3]
+ 772:rt-thread/components/finsh/shell.c ****     _sysvar_table_end = (struct finsh_sysvar *) end;
+ 1377              		.loc 1 772 0
+ 1378 0004 024B     		ldr	r3, .L131+4
+ 1379 0006 1960     		str	r1, [r3]
+ 1380 0008 7047     		bx	lr
+ 1381              	.L132:
+ 1382 000a 00BF     		.align	2
+ 1383              	.L131:
+ 1384 000c 00000000 		.word	.LANCHOR4
+ 1385 0010 00000000 		.word	.LANCHOR5
+ 1386              		.cfi_endproc
+ 1387              	.LFE31:
+ 1389              		.section	.text.finsh_system_init,"ax",%progbits
+ 1390              		.align	1
+ 1391              		.global	finsh_system_init
+ 1392              		.syntax unified
+ 1393              		.thumb
+ARM GAS  /tmp/ccy0WF1g.s 			page 41
+
+
+ 1394              		.thumb_func
+ 1395              		.fpu fpv4-sp-d16
+ 1397              	finsh_system_init:
+ 1398              	.LFB32:
+ 773:rt-thread/components/finsh/shell.c **** }
+ 774:rt-thread/components/finsh/shell.c **** 
+ 775:rt-thread/components/finsh/shell.c **** #if defined(__ICCARM__) || defined(__ICCRX__)               /* for IAR compiler */
+ 776:rt-thread/components/finsh/shell.c **** #ifdef FINSH_USING_SYMTAB
+ 777:rt-thread/components/finsh/shell.c **** #pragma section="FSymTab"
+ 778:rt-thread/components/finsh/shell.c **** #pragma section="VSymTab"
+ 779:rt-thread/components/finsh/shell.c **** #endif
+ 780:rt-thread/components/finsh/shell.c **** #elif defined(__ADSPBLACKFIN__) /* for VisaulDSP++ Compiler*/
+ 781:rt-thread/components/finsh/shell.c **** #ifdef FINSH_USING_SYMTAB
+ 782:rt-thread/components/finsh/shell.c **** extern "asm" int __fsymtab_start;
+ 783:rt-thread/components/finsh/shell.c **** extern "asm" int __fsymtab_end;
+ 784:rt-thread/components/finsh/shell.c **** extern "asm" int __vsymtab_start;
+ 785:rt-thread/components/finsh/shell.c **** extern "asm" int __vsymtab_end;
+ 786:rt-thread/components/finsh/shell.c **** #endif
+ 787:rt-thread/components/finsh/shell.c **** #elif defined(_MSC_VER)
+ 788:rt-thread/components/finsh/shell.c **** #pragma section("FSymTab$a", read)
+ 789:rt-thread/components/finsh/shell.c **** const char __fsym_begin_name[] = "__start";
+ 790:rt-thread/components/finsh/shell.c **** const char __fsym_begin_desc[] = "begin of finsh";
+ 791:rt-thread/components/finsh/shell.c **** __declspec(allocate("FSymTab$a")) const struct finsh_syscall __fsym_begin =
+ 792:rt-thread/components/finsh/shell.c **** {
+ 793:rt-thread/components/finsh/shell.c ****     __fsym_begin_name,
+ 794:rt-thread/components/finsh/shell.c ****     __fsym_begin_desc,
+ 795:rt-thread/components/finsh/shell.c ****     NULL
+ 796:rt-thread/components/finsh/shell.c **** };
+ 797:rt-thread/components/finsh/shell.c **** 
+ 798:rt-thread/components/finsh/shell.c **** #pragma section("FSymTab$z", read)
+ 799:rt-thread/components/finsh/shell.c **** const char __fsym_end_name[] = "__end";
+ 800:rt-thread/components/finsh/shell.c **** const char __fsym_end_desc[] = "end of finsh";
+ 801:rt-thread/components/finsh/shell.c **** __declspec(allocate("FSymTab$z")) const struct finsh_syscall __fsym_end =
+ 802:rt-thread/components/finsh/shell.c **** {
+ 803:rt-thread/components/finsh/shell.c ****     __fsym_end_name,
+ 804:rt-thread/components/finsh/shell.c ****     __fsym_end_desc,
+ 805:rt-thread/components/finsh/shell.c ****     NULL
+ 806:rt-thread/components/finsh/shell.c **** };
+ 807:rt-thread/components/finsh/shell.c **** #endif
+ 808:rt-thread/components/finsh/shell.c **** 
+ 809:rt-thread/components/finsh/shell.c **** /*
+ 810:rt-thread/components/finsh/shell.c ****  * @ingroup finsh
+ 811:rt-thread/components/finsh/shell.c ****  *
+ 812:rt-thread/components/finsh/shell.c ****  * This function will initialize finsh shell
+ 813:rt-thread/components/finsh/shell.c ****  */
+ 814:rt-thread/components/finsh/shell.c **** int finsh_system_init(void)
+ 815:rt-thread/components/finsh/shell.c **** {
+ 1399              		.loc 1 815 0
+ 1400              		.cfi_startproc
+ 1401              		@ args = 0, pretend = 0, frame = 0
+ 1402              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1403 0000 10B5     		push	{r4, lr}
+ 1404              	.LCFI13:
+ 1405              		.cfi_def_cfa_offset 8
+ 1406              		.cfi_offset 4, -8
+ 1407              		.cfi_offset 14, -4
+ 1408 0002 82B0     		sub	sp, sp, #8
+ARM GAS  /tmp/ccy0WF1g.s 			page 42
+
+
+ 1409              	.LCFI14:
+ 1410              		.cfi_def_cfa_offset 16
+ 1411              	.LVL127:
+ 816:rt-thread/components/finsh/shell.c ****     rt_err_t result = RT_EOK;
+ 817:rt-thread/components/finsh/shell.c ****     rt_thread_t tid;
+ 818:rt-thread/components/finsh/shell.c **** 
+ 819:rt-thread/components/finsh/shell.c **** #ifdef FINSH_USING_SYMTAB
+ 820:rt-thread/components/finsh/shell.c **** #if defined(__CC_ARM) || defined(__CLANG_ARM)          /* ARM C Compiler */
+ 821:rt-thread/components/finsh/shell.c ****     extern const int FSymTab$$Base;
+ 822:rt-thread/components/finsh/shell.c ****     extern const int FSymTab$$Limit;
+ 823:rt-thread/components/finsh/shell.c ****     extern const int VSymTab$$Base;
+ 824:rt-thread/components/finsh/shell.c ****     extern const int VSymTab$$Limit;
+ 825:rt-thread/components/finsh/shell.c ****     finsh_system_function_init(&FSymTab$$Base, &FSymTab$$Limit);
+ 826:rt-thread/components/finsh/shell.c **** #ifndef FINSH_USING_MSH_ONLY
+ 827:rt-thread/components/finsh/shell.c ****     finsh_system_var_init(&VSymTab$$Base, &VSymTab$$Limit);
+ 828:rt-thread/components/finsh/shell.c **** #endif
+ 829:rt-thread/components/finsh/shell.c **** #elif defined (__ICCARM__) || defined(__ICCRX__)      /* for IAR Compiler */
+ 830:rt-thread/components/finsh/shell.c ****     finsh_system_function_init(__section_begin("FSymTab"),
+ 831:rt-thread/components/finsh/shell.c ****                                __section_end("FSymTab"));
+ 832:rt-thread/components/finsh/shell.c ****     finsh_system_var_init(__section_begin("VSymTab"),
+ 833:rt-thread/components/finsh/shell.c ****                           __section_end("VSymTab"));
+ 834:rt-thread/components/finsh/shell.c **** #elif defined (__GNUC__) || defined(__TI_COMPILER_VERSION__)
+ 835:rt-thread/components/finsh/shell.c ****     /* GNU GCC Compiler and TI CCS */
+ 836:rt-thread/components/finsh/shell.c ****     extern const int __fsymtab_start;
+ 837:rt-thread/components/finsh/shell.c ****     extern const int __fsymtab_end;
+ 838:rt-thread/components/finsh/shell.c ****     extern const int __vsymtab_start;
+ 839:rt-thread/components/finsh/shell.c ****     extern const int __vsymtab_end;
+ 840:rt-thread/components/finsh/shell.c ****     finsh_system_function_init(&__fsymtab_start, &__fsymtab_end);
+ 1412              		.loc 1 840 0
+ 1413 0004 1A49     		ldr	r1, .L139
+ 1414 0006 1B48     		ldr	r0, .L139+4
+ 1415 0008 FFF7FEFF 		bl	finsh_system_function_init
+ 1416              	.LVL128:
+ 841:rt-thread/components/finsh/shell.c ****     finsh_system_var_init(&__vsymtab_start, &__vsymtab_end);
+ 1417              		.loc 1 841 0
+ 1418 000c 1A49     		ldr	r1, .L139+8
+ 1419 000e 1B48     		ldr	r0, .L139+12
+ 1420 0010 FFF7FEFF 		bl	finsh_system_var_init
+ 1421              	.LVL129:
+ 842:rt-thread/components/finsh/shell.c **** #elif defined(__ADSPBLACKFIN__) /* for VisualDSP++ Compiler */
+ 843:rt-thread/components/finsh/shell.c ****     finsh_system_function_init(&__fsymtab_start, &__fsymtab_end);
+ 844:rt-thread/components/finsh/shell.c ****     finsh_system_var_init(&__vsymtab_start, &__vsymtab_end);
+ 845:rt-thread/components/finsh/shell.c **** #elif defined(_MSC_VER)
+ 846:rt-thread/components/finsh/shell.c ****     unsigned int *ptr_begin, *ptr_end;
+ 847:rt-thread/components/finsh/shell.c **** 		
+ 848:rt-thread/components/finsh/shell.c ****     if(shell)
+ 849:rt-thread/components/finsh/shell.c ****     {
+ 850:rt-thread/components/finsh/shell.c ****         rt_kprintf("finsh shell already init.\n");
+ 851:rt-thread/components/finsh/shell.c ****         return RT_EOK;
+ 852:rt-thread/components/finsh/shell.c ****     }
+ 853:rt-thread/components/finsh/shell.c **** 
+ 854:rt-thread/components/finsh/shell.c ****     ptr_begin = (unsigned int *)&__fsym_begin;
+ 855:rt-thread/components/finsh/shell.c ****     ptr_begin += (sizeof(struct finsh_syscall) / sizeof(unsigned int));
+ 856:rt-thread/components/finsh/shell.c ****     while (*ptr_begin == 0) ptr_begin ++;
+ 857:rt-thread/components/finsh/shell.c **** 
+ 858:rt-thread/components/finsh/shell.c ****     ptr_end = (unsigned int *) &__fsym_end;
+ 859:rt-thread/components/finsh/shell.c ****     ptr_end --;
+ARM GAS  /tmp/ccy0WF1g.s 			page 43
+
+
+ 860:rt-thread/components/finsh/shell.c ****     while (*ptr_end == 0) ptr_end --;
+ 861:rt-thread/components/finsh/shell.c **** 
+ 862:rt-thread/components/finsh/shell.c ****     finsh_system_function_init(ptr_begin, ptr_end);
+ 863:rt-thread/components/finsh/shell.c **** #endif
+ 864:rt-thread/components/finsh/shell.c **** #endif
+ 865:rt-thread/components/finsh/shell.c **** 
+ 866:rt-thread/components/finsh/shell.c **** #ifdef RT_USING_HEAP
+ 867:rt-thread/components/finsh/shell.c ****     /* create or set shell structure */
+ 868:rt-thread/components/finsh/shell.c ****     shell = (struct finsh_shell *)rt_calloc(1, sizeof(struct finsh_shell));
+ 1422              		.loc 1 868 0
+ 1423 0014 4FF40471 		mov	r1, #528
+ 1424 0018 0120     		movs	r0, #1
+ 1425 001a FFF7FEFF 		bl	rt_calloc
+ 1426              	.LVL130:
+ 1427 001e 184B     		ldr	r3, .L139+16
+ 1428 0020 1860     		str	r0, [r3]
+ 869:rt-thread/components/finsh/shell.c ****     if (shell == RT_NULL)
+ 1429              		.loc 1 869 0
+ 1430 0022 E0B1     		cbz	r0, .L138
+ 870:rt-thread/components/finsh/shell.c ****     {
+ 871:rt-thread/components/finsh/shell.c ****         rt_kprintf("no memory for shell\n");
+ 872:rt-thread/components/finsh/shell.c ****         return -1;
+ 873:rt-thread/components/finsh/shell.c ****     }
+ 874:rt-thread/components/finsh/shell.c ****     tid = rt_thread_create(FINSH_THREAD_NAME,
+ 1431              		.loc 1 874 0
+ 1432 0024 0A23     		movs	r3, #10
+ 1433 0026 0193     		str	r3, [sp, #4]
+ 1434 0028 1423     		movs	r3, #20
+ 1435 002a 0093     		str	r3, [sp]
+ 1436 002c 4FF47A73 		mov	r3, #1000
+ 1437 0030 0022     		movs	r2, #0
+ 1438 0032 1449     		ldr	r1, .L139+20
+ 1439 0034 1448     		ldr	r0, .L139+24
+ 1440 0036 FFF7FEFF 		bl	rt_thread_create
+ 1441              	.LVL131:
+ 1442 003a 0446     		mov	r4, r0
+ 1443              	.LVL132:
+ 875:rt-thread/components/finsh/shell.c ****                            finsh_thread_entry, RT_NULL,
+ 876:rt-thread/components/finsh/shell.c ****                            FINSH_THREAD_STACK_SIZE, FINSH_THREAD_PRIORITY, 10);
+ 877:rt-thread/components/finsh/shell.c **** #else
+ 878:rt-thread/components/finsh/shell.c ****     shell = &_shell;
+ 879:rt-thread/components/finsh/shell.c ****     tid = &finsh_thread;
+ 880:rt-thread/components/finsh/shell.c ****     result = rt_thread_init(&finsh_thread,
+ 881:rt-thread/components/finsh/shell.c ****                             FINSH_THREAD_NAME,
+ 882:rt-thread/components/finsh/shell.c ****                             finsh_thread_entry, RT_NULL,
+ 883:rt-thread/components/finsh/shell.c ****                             &finsh_thread_stack[0], sizeof(finsh_thread_stack),
+ 884:rt-thread/components/finsh/shell.c ****                             FINSH_THREAD_PRIORITY, 10);
+ 885:rt-thread/components/finsh/shell.c **** #endif /* RT_USING_HEAP */
+ 886:rt-thread/components/finsh/shell.c **** 
+ 887:rt-thread/components/finsh/shell.c ****     rt_sem_init(&(shell->rx_sem), "shrx", 0, 0);
+ 1444              		.loc 1 887 0
+ 1445 003c 0023     		movs	r3, #0
+ 1446 003e 1A46     		mov	r2, r3
+ 1447 0040 1249     		ldr	r1, .L139+28
+ 1448 0042 0F48     		ldr	r0, .L139+16
+ 1449              	.LVL133:
+ 1450 0044 0068     		ldr	r0, [r0]
+ARM GAS  /tmp/ccy0WF1g.s 			page 44
+
+
+ 1451 0046 FFF7FEFF 		bl	rt_sem_init
+ 1452              	.LVL134:
+ 888:rt-thread/components/finsh/shell.c ****     finsh_set_prompt_mode(1);
+ 1453              		.loc 1 888 0
+ 1454 004a 0120     		movs	r0, #1
+ 1455 004c FFF7FEFF 		bl	finsh_set_prompt_mode
+ 1456              	.LVL135:
+ 889:rt-thread/components/finsh/shell.c **** 
+ 890:rt-thread/components/finsh/shell.c ****     if (tid != NULL && result == RT_EOK)
+ 1457              		.loc 1 890 0
+ 1458 0050 5CB1     		cbz	r4, .L136
+ 891:rt-thread/components/finsh/shell.c ****         rt_thread_startup(tid);
+ 1459              		.loc 1 891 0
+ 1460 0052 2046     		mov	r0, r4
+ 1461 0054 FFF7FEFF 		bl	rt_thread_startup
+ 1462              	.LVL136:
+ 892:rt-thread/components/finsh/shell.c ****     return 0;
+ 1463              		.loc 1 892 0
+ 1464 0058 0020     		movs	r0, #0
+ 1465              	.LVL137:
+ 1466              	.L133:
+ 893:rt-thread/components/finsh/shell.c **** }
+ 1467              		.loc 1 893 0
+ 1468 005a 02B0     		add	sp, sp, #8
+ 1469              	.LCFI15:
+ 1470              		.cfi_remember_state
+ 1471              		.cfi_def_cfa_offset 8
+ 1472              		@ sp needed
+ 1473 005c 10BD     		pop	{r4, pc}
+ 1474              	.L138:
+ 1475              	.LCFI16:
+ 1476              		.cfi_restore_state
+ 871:rt-thread/components/finsh/shell.c ****         return -1;
+ 1477              		.loc 1 871 0
+ 1478 005e 0C48     		ldr	r0, .L139+32
+ 1479 0060 FFF7FEFF 		bl	rt_kprintf
+ 1480              	.LVL138:
+ 872:rt-thread/components/finsh/shell.c ****     }
+ 1481              		.loc 1 872 0
+ 1482 0064 4FF0FF30 		mov	r0, #-1
+ 1483 0068 F7E7     		b	.L133
+ 1484              	.LVL139:
+ 1485              	.L136:
+ 892:rt-thread/components/finsh/shell.c **** }
+ 1486              		.loc 1 892 0
+ 1487 006a 0020     		movs	r0, #0
+ 1488 006c F5E7     		b	.L133
+ 1489              	.L140:
+ 1490 006e 00BF     		.align	2
+ 1491              	.L139:
+ 1492 0070 00000000 		.word	__fsymtab_end
+ 1493 0074 00000000 		.word	__fsymtab_start
+ 1494 0078 00000000 		.word	__vsymtab_end
+ 1495 007c 00000000 		.word	__vsymtab_start
+ 1496 0080 00000000 		.word	shell
+ 1497 0084 00000000 		.word	finsh_thread_entry
+ 1498 0088 18000000 		.word	.LC13
+ARM GAS  /tmp/ccy0WF1g.s 			page 45
+
+
+ 1499 008c 20000000 		.word	.LC14
+ 1500 0090 00000000 		.word	.LC12
+ 1501              		.cfi_endproc
+ 1502              	.LFE32:
+ 1504              		.global	__rt_init_finsh_system_init
+ 1505              		.comm	shell,4,4
+ 1506              		.global	_sysvar_table_end
+ 1507              		.global	_sysvar_table_begin
+ 1508              		.global	_syscall_table_end
+ 1509              		.global	_syscall_table_begin
+ 1510              		.section	.bss._syscall_table_begin,"aw",%nobits
+ 1511              		.align	2
+ 1512              		.set	.LANCHOR2,. + 0
+ 1515              	_syscall_table_begin:
+ 1516 0000 00000000 		.space	4
+ 1517              		.section	.bss._syscall_table_end,"aw",%nobits
+ 1518              		.align	2
+ 1519              		.set	.LANCHOR3,. + 0
+ 1522              	_syscall_table_end:
+ 1523 0000 00000000 		.space	4
+ 1524              		.section	.bss._sysvar_table_begin,"aw",%nobits
+ 1525              		.align	2
+ 1526              		.set	.LANCHOR4,. + 0
+ 1529              	_sysvar_table_begin:
+ 1530 0000 00000000 		.space	4
+ 1531              		.section	.bss._sysvar_table_end,"aw",%nobits
+ 1532              		.align	2
+ 1533              		.set	.LANCHOR5,. + 0
+ 1536              	_sysvar_table_end:
+ 1537 0000 00000000 		.space	4
+ 1538              		.section	.bss.finsh_prompt.8212,"aw",%nobits
+ 1539              		.align	2
+ 1540              		.set	.LANCHOR1,. + 0
+ 1543              	finsh_prompt.8212:
+ 1544 0000 00000000 		.space	257
+ 1544      00000000 
+ 1544      00000000 
+ 1544      00000000 
+ 1544      00000000 
+ 1545              		.section	.bss.finsh_prompt_custom,"aw",%nobits
+ 1546              		.align	2
+ 1547              		.set	.LANCHOR0,. + 0
+ 1550              	finsh_prompt_custom:
+ 1551 0000 00000000 		.space	4
+ 1552              		.section	.rodata.finsh_get_prompt.str1.4,"aMS",%progbits,1
+ 1553              		.align	2
+ 1554              	.LC0:
+ 1555 0000 6D736820 		.ascii	"msh \000"
+ 1555      00
+ 1556 0005 000000   		.space	3
+ 1557              	.LC1:
+ 1558 0008 66696E73 		.ascii	"finsh \000"
+ 1558      682000
+ 1559 000f 00       		.space	1
+ 1560              	.LC2:
+ 1561 0010 3E00     		.ascii	">\000"
+ 1562              		.section	.rodata.finsh_set_device.str1.4,"aMS",%progbits,1
+ARM GAS  /tmp/ccy0WF1g.s 			page 46
+
+
+ 1563              		.align	2
+ 1564              	.LC6:
+ 1565 0000 66696E73 		.ascii	"finsh: can not find device: %s\012\000"
+ 1565      683A2063 
+ 1565      616E206E 
+ 1565      6F742066 
+ 1565      696E6420 
+ 1566              		.section	.rodata.finsh_system_init.str1.4,"aMS",%progbits,1
+ 1567              		.align	2
+ 1568              	.LC12:
+ 1569 0000 6E6F206D 		.ascii	"no memory for shell\012\000"
+ 1569      656D6F72 
+ 1569      7920666F 
+ 1569      72207368 
+ 1569      656C6C0A 
+ 1570 0015 000000   		.space	3
+ 1571              	.LC13:
+ 1572 0018 74736865 		.ascii	"tshell\000"
+ 1572      6C6C00
+ 1573 001f 00       		.space	1
+ 1574              	.LC14:
+ 1575 0020 73687278 		.ascii	"shrx\000"
+ 1575      00
+ 1576              		.section	.rodata.finsh_thread_entry.str1.4,"aMS",%progbits,1
+ 1577              		.align	2
+ 1578              	.LC7:
+ 1579 0000 0800     		.ascii	"\010\000"
+ 1580 0002 0000     		.space	2
+ 1581              	.LC8:
+ 1582 0004 256300   		.ascii	"%c\000"
+ 1583 0007 00       		.space	1
+ 1584              	.LC9:
+ 1585 0008 08257320 		.ascii	"\010%s  \010\000"
+ 1585      200800
+ 1586 000f 00       		.space	1
+ 1587              	.LC10:
+ 1588 0010 08200800 		.ascii	"\010 \010\000"
+ 1589              	.LC11:
+ 1590 0014 257300   		.ascii	"%s\000"
+ 1591              		.section	.rodata.shell_auto_complete.str1.4,"aMS",%progbits,1
+ 1592              		.align	2
+ 1593              	.LC5:
+ 1594 0000 0A00     		.ascii	"\012\000"
+ 1595              		.section	.rodata.shell_handle_history.str1.4,"aMS",%progbits,1
+ 1596              		.align	2
+ 1597              	.LC3:
+ 1598 0000 1B5B324B 		.ascii	"\033[2K\015\000"
+ 1598      0D00
+ 1599 0006 0000     		.space	2
+ 1600              	.LC4:
+ 1601 0008 25732573 		.ascii	"%s%s\000"
+ 1601      00
+ 1602              		.section	.rti_fn.6,"a",%progbits
+ 1603              		.align	2
+ 1606              	__rt_init_finsh_system_init:
+ 1607 0000 00000000 		.word	finsh_system_init
+ 1608              		.text
+ARM GAS  /tmp/ccy0WF1g.s 			page 47
+
+
+ 1609              	.Letext0:
+ 1610              		.file 2 "rt-thread/include/rtdef.h"
+ 1611              		.file 3 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/machine/_default_types.h"
+ 1612              		.file 4 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/lock.h"
+ 1613              		.file 5 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_types.h"
+ 1614              		.file 6 "/opt/gcc-arm-none-eabi-6-2017-q2-update/lib/gcc/arm-none-eabi/6.3.1/include/stddef.h"
+ 1615              		.file 7 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/reent.h"
+ 1616              		.file 8 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_stdint.h"
+ 1617              		.file 9 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/time.h"
+ 1618              		.file 10 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/errno.h"
+ 1619              		.file 11 "rt-thread/components/finsh/finsh_api.h"
+ 1620              		.file 12 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/ctype.h"
+ 1621              		.file 13 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/stdlib.h"
+ 1622              		.file 14 "rt-thread/components/finsh/finsh.h"
+ 1623              		.file 15 "rt-thread/components/finsh/shell.h"
+ 1624              		.file 16 "rt-thread/include/rtthread.h"
+ 1625              		.file 17 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/string.h"
+ 1626              		.file 18 "rt-thread/components/finsh/msh.h"
+ 1627              		.file 19 "<built-in>"
+ARM GAS  /tmp/ccy0WF1g.s 			page 48
+
+
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 shell.c
+     /tmp/ccy0WF1g.s:18     .text.finsh_rx_ind:0000000000000000 $t
+     /tmp/ccy0WF1g.s:24     .text.finsh_rx_ind:0000000000000000 finsh_rx_ind
+     /tmp/ccy0WF1g.s:49     .text.finsh_rx_ind:0000000000000010 $d
+                            *COM*:0000000000000004 shell
+     /tmp/ccy0WF1g.s:54     .text.finsh_getchar:0000000000000000 $t
+     /tmp/ccy0WF1g.s:60     .text.finsh_getchar:0000000000000000 finsh_getchar
+     /tmp/ccy0WF1g.s:107    .text.finsh_getchar:000000000000003c $d
+     /tmp/ccy0WF1g.s:112    .text.shell_push_history:0000000000000000 $t
+     /tmp/ccy0WF1g.s:118    .text.shell_push_history:0000000000000000 shell_push_history
+     /tmp/ccy0WF1g.s:253    .text.finsh_set_prompt:0000000000000000 $t
+     /tmp/ccy0WF1g.s:260    .text.finsh_set_prompt:0000000000000000 finsh_set_prompt
+     /tmp/ccy0WF1g.s:311    .text.finsh_set_prompt:0000000000000034 $d
+     /tmp/ccy0WF1g.s:316    .text.finsh_get_prompt:0000000000000000 $t
+     /tmp/ccy0WF1g.s:323    .text.finsh_get_prompt:0000000000000000 finsh_get_prompt
+     /tmp/ccy0WF1g.s:405    .text.finsh_get_prompt:0000000000000064 $d
+     /tmp/ccy0WF1g.s:415    .text.shell_handle_history:0000000000000000 $t
+     /tmp/ccy0WF1g.s:421    .text.shell_handle_history:0000000000000000 shell_handle_history
+     /tmp/ccy0WF1g.s:454    .text.shell_handle_history:0000000000000020 $d
+     /tmp/ccy0WF1g.s:460    .text.shell_auto_complete:0000000000000000 $t
+     /tmp/ccy0WF1g.s:466    .text.shell_auto_complete:0000000000000000 shell_auto_complete
+     /tmp/ccy0WF1g.s:509    .text.shell_auto_complete:000000000000002c $d
+     /tmp/ccy0WF1g.s:515    .text.finsh_get_prompt_mode:0000000000000000 $t
+     /tmp/ccy0WF1g.s:522    .text.finsh_get_prompt_mode:0000000000000000 finsh_get_prompt_mode
+     /tmp/ccy0WF1g.s:539    .text.finsh_get_prompt_mode:0000000000000010 $d
+     /tmp/ccy0WF1g.s:544    .text.finsh_set_prompt_mode:0000000000000000 $t
+     /tmp/ccy0WF1g.s:551    .text.finsh_set_prompt_mode:0000000000000000 finsh_set_prompt_mode
+     /tmp/ccy0WF1g.s:569    .text.finsh_set_prompt_mode:0000000000000014 $d
+     /tmp/ccy0WF1g.s:574    .text.finsh_set_device:0000000000000000 $t
+     /tmp/ccy0WF1g.s:581    .text.finsh_set_device:0000000000000000 finsh_set_device
+     /tmp/ccy0WF1g.s:666    .text.finsh_set_device:0000000000000070 $d
+     /tmp/ccy0WF1g.s:673    .text.finsh_thread_entry:0000000000000000 $t
+     /tmp/ccy0WF1g.s:680    .text.finsh_thread_entry:0000000000000000 finsh_thread_entry
+     /tmp/ccy0WF1g.s:1154   .text.finsh_thread_entry:00000000000002f4 $d
+     /tmp/ccy0WF1g.s:1164   .text.finsh_thread_entry:000000000000030c $t
+     /tmp/ccy0WF1g.s:1233   .text.finsh_thread_entry:0000000000000374 $d
+     /tmp/ccy0WF1g.s:1241   .text.finsh_get_device:0000000000000000 $t
+     /tmp/ccy0WF1g.s:1248   .text.finsh_get_device:0000000000000000 finsh_get_device
+     /tmp/ccy0WF1g.s:1264   .text.finsh_get_device:000000000000000c $d
+     /tmp/ccy0WF1g.s:1269   .text.finsh_set_echo:0000000000000000 $t
+     /tmp/ccy0WF1g.s:1276   .text.finsh_set_echo:0000000000000000 finsh_set_echo
+     /tmp/ccy0WF1g.s:1294   .text.finsh_set_echo:0000000000000014 $d
+     /tmp/ccy0WF1g.s:1299   .text.finsh_get_echo:0000000000000000 $t
+     /tmp/ccy0WF1g.s:1306   .text.finsh_get_echo:0000000000000000 finsh_get_echo
+     /tmp/ccy0WF1g.s:1323   .text.finsh_get_echo:0000000000000010 $d
+     /tmp/ccy0WF1g.s:1328   .text.finsh_system_function_init:0000000000000000 $t
+     /tmp/ccy0WF1g.s:1335   .text.finsh_system_function_init:0000000000000000 finsh_system_function_init
+     /tmp/ccy0WF1g.s:1353   .text.finsh_system_function_init:000000000000000c $d
+     /tmp/ccy0WF1g.s:1359   .text.finsh_system_var_init:0000000000000000 $t
+     /tmp/ccy0WF1g.s:1366   .text.finsh_system_var_init:0000000000000000 finsh_system_var_init
+     /tmp/ccy0WF1g.s:1384   .text.finsh_system_var_init:000000000000000c $d
+     /tmp/ccy0WF1g.s:1390   .text.finsh_system_init:0000000000000000 $t
+     /tmp/ccy0WF1g.s:1397   .text.finsh_system_init:0000000000000000 finsh_system_init
+     /tmp/ccy0WF1g.s:1492   .text.finsh_system_init:0000000000000070 $d
+     /tmp/ccy0WF1g.s:1606   .rti_fn.6:0000000000000000 __rt_init_finsh_system_init
+     /tmp/ccy0WF1g.s:1536   .bss._sysvar_table_end:0000000000000000 _sysvar_table_end
+ARM GAS  /tmp/ccy0WF1g.s 			page 49
+
+
+     /tmp/ccy0WF1g.s:1529   .bss._sysvar_table_begin:0000000000000000 _sysvar_table_begin
+     /tmp/ccy0WF1g.s:1522   .bss._syscall_table_end:0000000000000000 _syscall_table_end
+     /tmp/ccy0WF1g.s:1515   .bss._syscall_table_begin:0000000000000000 _syscall_table_begin
+     /tmp/ccy0WF1g.s:1511   .bss._syscall_table_begin:0000000000000000 $d
+     /tmp/ccy0WF1g.s:1518   .bss._syscall_table_end:0000000000000000 $d
+     /tmp/ccy0WF1g.s:1525   .bss._sysvar_table_begin:0000000000000000 $d
+     /tmp/ccy0WF1g.s:1532   .bss._sysvar_table_end:0000000000000000 $d
+     /tmp/ccy0WF1g.s:1539   .bss.finsh_prompt.8212:0000000000000000 $d
+     /tmp/ccy0WF1g.s:1543   .bss.finsh_prompt.8212:0000000000000000 finsh_prompt.8212
+     /tmp/ccy0WF1g.s:1546   .bss.finsh_prompt_custom:0000000000000000 $d
+     /tmp/ccy0WF1g.s:1550   .bss.finsh_prompt_custom:0000000000000000 finsh_prompt_custom
+     /tmp/ccy0WF1g.s:1553   .rodata.finsh_get_prompt.str1.4:0000000000000000 $d
+     /tmp/ccy0WF1g.s:1563   .rodata.finsh_set_device.str1.4:0000000000000000 $d
+     /tmp/ccy0WF1g.s:1567   .rodata.finsh_system_init.str1.4:0000000000000000 $d
+     /tmp/ccy0WF1g.s:1577   .rodata.finsh_thread_entry.str1.4:0000000000000000 $d
+     /tmp/ccy0WF1g.s:1592   .rodata.shell_auto_complete.str1.4:0000000000000000 $d
+     /tmp/ccy0WF1g.s:1596   .rodata.shell_handle_history.str1.4:0000000000000000 $d
+     /tmp/ccy0WF1g.s:1603   .rti_fn.6:0000000000000000 $d
+                     .debug_frame:0000000000000010 $d
+
+UNDEFINED SYMBOLS
+rt_sem_release
+rt_sem_take
+rt_device_read
+memcmp
+memcpy
+memset
+rt_free
+strlen
+rt_malloc
+strcpy
+strncpy
+msh_is_used
+rt_kprintf
+msh_auto_complete
+rt_device_find
+rt_device_open
+rt_device_close
+rt_device_set_rx_indicate
+rt_console_get_device
+rt_memmove
+msh_exec
+rt_calloc
+rt_thread_create
+rt_sem_init
+rt_thread_startup
+__fsymtab_end
+__fsymtab_start
+__vsymtab_end
+__vsymtab_start

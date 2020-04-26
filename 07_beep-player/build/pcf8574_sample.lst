@@ -1,0 +1,235 @@
+ARM GAS  /tmp/ccH1VU38.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.eabi_attribute 27, 1
+   3              		.eabi_attribute 28, 1
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.file	"pcf8574_sample.c"
+  14              		.text
+  15              	.Ltext0:
+  16              		.cfi_sections	.debug_frame
+  17              		.section	.text.pcf8574_sample,"ax",%progbits
+  18              		.align	1
+  19              		.global	pcf8574_sample
+  20              		.syntax unified
+  21              		.thumb
+  22              		.thumb_func
+  23              		.fpu fpv4-sp-d16
+  25              	pcf8574_sample:
+  26              	.LFB19:
+  27              		.file 1 "hardware/pcf8574/pcf8574_sample.c"
+   1:hardware/pcf8574/pcf8574_sample.c **** /*
+   2:hardware/pcf8574/pcf8574_sample.c ****  * Copyright (c) 2006-2018, RT-Thread Development Team
+   3:hardware/pcf8574/pcf8574_sample.c ****  *
+   4:hardware/pcf8574/pcf8574_sample.c ****  * SPDX-License-Identifier: Apache-2.0
+   5:hardware/pcf8574/pcf8574_sample.c ****  *
+   6:hardware/pcf8574/pcf8574_sample.c ****  *
+   7:hardware/pcf8574/pcf8574_sample.c ****  * Change Logs:
+   8:hardware/pcf8574/pcf8574_sample.c ****  * Date           Author       Notes
+   9:hardware/pcf8574/pcf8574_sample.c ****  * 2018-11-22     flybreak     Make the first version of pcf8574's package
+  10:hardware/pcf8574/pcf8574_sample.c ****  */
+  11:hardware/pcf8574/pcf8574_sample.c **** 
+  12:hardware/pcf8574/pcf8574_sample.c **** #include <rtthread.h>
+  13:hardware/pcf8574/pcf8574_sample.c **** #include "pcf8574.h"
+  14:hardware/pcf8574/pcf8574_sample.c **** 
+  15:hardware/pcf8574/pcf8574_sample.c **** #define TEST_IO    0 //(0-7)
+  16:hardware/pcf8574/pcf8574_sample.c **** #define I2C_BUS    "i2c1"
+  17:hardware/pcf8574/pcf8574_sample.c **** 
+  18:hardware/pcf8574/pcf8574_sample.c **** int pcf8574_sample(void)
+  19:hardware/pcf8574/pcf8574_sample.c **** {
+  28              		.loc 1 19 0
+  29              		.cfi_startproc
+  30              		@ args = 0, pretend = 0, frame = 0
+  31              		@ frame_needed = 0, uses_anonymous_args = 0
+  32 0000 38B5     		push	{r3, r4, r5, lr}
+  33              	.LCFI0:
+  34              		.cfi_def_cfa_offset 16
+  35              		.cfi_offset 3, -16
+  36              		.cfi_offset 4, -12
+  37              		.cfi_offset 5, -8
+  38              		.cfi_offset 14, -4
+  39              	.LVL0:
+ARM GAS  /tmp/ccH1VU38.s 			page 2
+
+
+  20:hardware/pcf8574/pcf8574_sample.c ****     rt_uint8_t value;
+  21:hardware/pcf8574/pcf8574_sample.c ****     pcf8574_device_t dev = RT_NULL;
+  22:hardware/pcf8574/pcf8574_sample.c ****     
+  23:hardware/pcf8574/pcf8574_sample.c ****     dev = pcf8574_init(I2C_BUS, RT_NULL);
+  40              		.loc 1 23 0
+  41 0002 0021     		movs	r1, #0
+  42 0004 1648     		ldr	r0, .L5
+  43 0006 FFF7FEFF 		bl	pcf8574_init
+  44              	.LVL1:
+  24:hardware/pcf8574/pcf8574_sample.c **** 
+  25:hardware/pcf8574/pcf8574_sample.c ****     if (dev == RT_NULL)
+  45              		.loc 1 25 0
+  46 000a 28B3     		cbz	r0, .L3
+  47 000c 0446     		mov	r4, r0
+  26:hardware/pcf8574/pcf8574_sample.c ****         return -1;
+  27:hardware/pcf8574/pcf8574_sample.c **** 
+  28:hardware/pcf8574/pcf8574_sample.c ****     pcf8574_pin_write(dev, TEST_IO, 0);
+  48              		.loc 1 28 0
+  49 000e 0022     		movs	r2, #0
+  50 0010 1146     		mov	r1, r2
+  51 0012 FFF7FEFF 		bl	pcf8574_pin_write
+  52              	.LVL2:
+  29:hardware/pcf8574/pcf8574_sample.c **** 
+  30:hardware/pcf8574/pcf8574_sample.c ****     value = pcf8574_pin_read(dev, TEST_IO);
+  53              		.loc 1 30 0
+  54 0016 0021     		movs	r1, #0
+  55 0018 2046     		mov	r0, r4
+  56 001a FFF7FEFF 		bl	pcf8574_pin_read
+  57              	.LVL3:
+  31:hardware/pcf8574/pcf8574_sample.c ****     rt_kprintf("The value of pcf8574.P%d is %d\n", TEST_IO, value);
+  58              		.loc 1 31 0
+  59 001e 114D     		ldr	r5, .L5+4
+  60 0020 0246     		mov	r2, r0
+  61 0022 0021     		movs	r1, #0
+  62 0024 2846     		mov	r0, r5
+  63              	.LVL4:
+  64 0026 FFF7FEFF 		bl	rt_kprintf
+  65              	.LVL5:
+  32:hardware/pcf8574/pcf8574_sample.c **** 
+  33:hardware/pcf8574/pcf8574_sample.c ****     rt_thread_mdelay(1000);
+  66              		.loc 1 33 0
+  67 002a 4FF47A70 		mov	r0, #1000
+  68 002e FFF7FEFF 		bl	rt_thread_mdelay
+  69              	.LVL6:
+  34:hardware/pcf8574/pcf8574_sample.c **** 
+  35:hardware/pcf8574/pcf8574_sample.c ****     pcf8574_pin_write(dev, TEST_IO, 1);
+  70              		.loc 1 35 0
+  71 0032 0122     		movs	r2, #1
+  72 0034 0021     		movs	r1, #0
+  73 0036 2046     		mov	r0, r4
+  74 0038 FFF7FEFF 		bl	pcf8574_pin_write
+  75              	.LVL7:
+  36:hardware/pcf8574/pcf8574_sample.c **** 
+  37:hardware/pcf8574/pcf8574_sample.c ****     value = pcf8574_pin_read(dev, TEST_IO);
+  76              		.loc 1 37 0
+  77 003c 0021     		movs	r1, #0
+  78 003e 2046     		mov	r0, r4
+ARM GAS  /tmp/ccH1VU38.s 			page 3
+
+
+  79 0040 FFF7FEFF 		bl	pcf8574_pin_read
+  80              	.LVL8:
+  38:hardware/pcf8574/pcf8574_sample.c ****     rt_kprintf("The value of pcf8574.P%d is %d\n", TEST_IO, value);
+  81              		.loc 1 38 0
+  82 0044 0246     		mov	r2, r0
+  83 0046 0021     		movs	r1, #0
+  84 0048 2846     		mov	r0, r5
+  85              	.LVL9:
+  86 004a FFF7FEFF 		bl	rt_kprintf
+  87              	.LVL10:
+  39:hardware/pcf8574/pcf8574_sample.c **** 
+  40:hardware/pcf8574/pcf8574_sample.c ****     pcf8574_deinit(dev);
+  88              		.loc 1 40 0
+  89 004e 2046     		mov	r0, r4
+  90 0050 FFF7FEFF 		bl	pcf8574_deinit
+  91              	.LVL11:
+  41:hardware/pcf8574/pcf8574_sample.c **** 
+  42:hardware/pcf8574/pcf8574_sample.c ****     return 0;
+  92              		.loc 1 42 0
+  93 0054 0020     		movs	r0, #0
+  94 0056 38BD     		pop	{r3, r4, r5, pc}
+  95              	.LVL12:
+  96              	.L3:
+  26:hardware/pcf8574/pcf8574_sample.c **** 
+  97              		.loc 1 26 0
+  98 0058 4FF0FF30 		mov	r0, #-1
+  99              	.LVL13:
+  43:hardware/pcf8574/pcf8574_sample.c **** }
+ 100              		.loc 1 43 0
+ 101 005c 38BD     		pop	{r3, r4, r5, pc}
+ 102              	.L6:
+ 103 005e 00BF     		.align	2
+ 104              	.L5:
+ 105 0060 00000000 		.word	.LC0
+ 106 0064 08000000 		.word	.LC1
+ 107              		.cfi_endproc
+ 108              	.LFE19:
+ 110              		.global	__fsym___cmd_pcf8574_sample
+ 111              		.global	__fsym___cmd_pcf8574_sample_desc
+ 112              		.global	__fsym___cmd_pcf8574_sample_name
+ 113              		.section	.rodata.name,"a",%progbits
+ 114              		.align	2
+ 117              	__fsym___cmd_pcf8574_sample_desc:
+ 118 0000 61207063 		.ascii	"a pcf8574 sample\000"
+ 118      66383537 
+ 118      34207361 
+ 118      6D706C65 
+ 118      00
+ 119 0011 000000   		.space	3
+ 122              	__fsym___cmd_pcf8574_sample_name:
+ 123 0014 5F5F636D 		.ascii	"__cmd_pcf8574_sample\000"
+ 123      645F7063 
+ 123      66383537 
+ 123      345F7361 
+ 123      6D706C65 
+ 124              		.section	.rodata.pcf8574_sample.str1.4,"aMS",%progbits,1
+ 125              		.align	2
+ARM GAS  /tmp/ccH1VU38.s 			page 4
+
+
+ 126              	.LC0:
+ 127 0000 69326331 		.ascii	"i2c1\000"
+ 127      00
+ 128 0005 000000   		.space	3
+ 129              	.LC1:
+ 130 0008 54686520 		.ascii	"The value of pcf8574.P%d is %d\012\000"
+ 130      76616C75 
+ 130      65206F66 
+ 130      20706366 
+ 130      38353734 
+ 131              		.section	FSymTab,"a",%progbits
+ 132              		.align	2
+ 135              	__fsym___cmd_pcf8574_sample:
+ 136 0000 00000000 		.word	__fsym___cmd_pcf8574_sample_name
+ 137 0004 00000000 		.word	__fsym___cmd_pcf8574_sample_desc
+ 138 0008 00000000 		.word	pcf8574_sample
+ 139              		.text
+ 140              	.Letext0:
+ 141              		.file 2 "rt-thread/include/rtdef.h"
+ 142              		.file 3 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/lock.h"
+ 143              		.file 4 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_types.h"
+ 144              		.file 5 "/opt/gcc-arm-none-eabi-6-2017-q2-update/lib/gcc/arm-none-eabi/6.3.1/include/stddef.h"
+ 145              		.file 6 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/reent.h"
+ 146              		.file 7 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/time.h"
+ 147              		.file 8 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/errno.h"
+ 148              		.file 9 "rt-thread/components/finsh/finsh_api.h"
+ 149              		.file 10 "rt-thread/components/drivers/include/drivers/i2c.h"
+ 150              		.file 11 "hardware/pcf8574/pcf8574.h"
+ 151              		.file 12 "rt-thread/include/rtthread.h"
+ARM GAS  /tmp/ccH1VU38.s 			page 5
+
+
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 pcf8574_sample.c
+     /tmp/ccH1VU38.s:18     .text.pcf8574_sample:0000000000000000 $t
+     /tmp/ccH1VU38.s:25     .text.pcf8574_sample:0000000000000000 pcf8574_sample
+     /tmp/ccH1VU38.s:105    .text.pcf8574_sample:0000000000000060 $d
+     /tmp/ccH1VU38.s:135    FSymTab:0000000000000000 __fsym___cmd_pcf8574_sample
+     /tmp/ccH1VU38.s:117    .rodata.name:0000000000000000 __fsym___cmd_pcf8574_sample_desc
+     /tmp/ccH1VU38.s:122    .rodata.name:0000000000000014 __fsym___cmd_pcf8574_sample_name
+     /tmp/ccH1VU38.s:114    .rodata.name:0000000000000000 $d
+     /tmp/ccH1VU38.s:125    .rodata.pcf8574_sample.str1.4:0000000000000000 $d
+     /tmp/ccH1VU38.s:132    FSymTab:0000000000000000 $d
+                     .debug_frame:0000000000000010 $d
+
+UNDEFINED SYMBOLS
+pcf8574_init
+pcf8574_pin_write
+pcf8574_pin_read
+rt_kprintf
+rt_thread_mdelay
+pcf8574_deinit

@@ -1,0 +1,753 @@
+ARM GAS  /tmp/ccwtdiNn.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.eabi_attribute 27, 1
+   3              		.eabi_attribute 28, 1
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.file	"decode.c"
+  14              		.text
+  15              	.Ltext0:
+  16              		.cfi_sections	.debug_frame
+  17              		.section	.text.beep_song_decode_new_freq,"ax",%progbits
+  18              		.align	1
+  19              		.syntax unified
+  20              		.thumb
+  21              		.thumb_func
+  22              		.fpu fpv4-sp-d16
+  24              	beep_song_decode_new_freq:
+  25              	.LFB15:
+  26              		.file 1 "hardware/decode/decode.c"
+   1:hardware/decode/decode.c **** #include "decode.h"
+   2:hardware/decode/decode.c **** #include "rtdef.h"
+   3:hardware/decode/decode.c **** #include <stdint.h>
+   4:hardware/decode/decode.c **** #include <sys/stat.h>
+   5:hardware/decode/decode.c **** #include <sys/types.h>
+   6:hardware/decode/decode.c **** 
+   7:hardware/decode/decode.c **** static const uint16_t freq_tab[12] = {262, 277, 294, 311, 330, 349, 369, 392, 415, 440, 466, 494};	
+   8:hardware/decode/decode.c **** static const uint8_t sign_tab[7] = {0, 2, 4, 5, 7, 9, 11};	/* 1~7 在频率表中的位置 */
+   9:hardware/decode/decode.c **** static const uint8_t length_tab[7] = {1, 2, 4, 8, 16, 32, 64};	/* 几分音符 2^0,2^1,2^2,2^3... *
+  10:hardware/decode/decode.c **** static rt_uint16_t freq_tab_new[12];	/* 新的频率表 */
+  11:hardware/decode/decode.c **** 
+  12:hardware/decode/decode.c **** /* signature -> 调号（0-11）：乐曲多少个半音演奏
+  13:hardware/decode/decode.c ****  * octachord ->	升降八度（-2～+2）：<0 -> 降几个八度， >0 -> 升几个八度
+  14:hardware/decode/decode.c ****  */
+  15:hardware/decode/decode.c **** static int beep_song_decode_new_freq(rt_uint8_t signature, rt_uint8_t octachord)
+  16:hardware/decode/decode.c **** {
+  27              		.loc 1 16 0
+  28              		.cfi_startproc
+  29              		@ args = 0, pretend = 0, frame = 0
+  30              		@ frame_needed = 0, uses_anonymous_args = 0
+  31              		@ link register save eliminated.
+  32              	.LVL0:
+  17:hardware/decode/decode.c **** 	uint8_t i, j;
+  18:hardware/decode/decode.c **** 	for (i = 0; i < 12; i++)		/* 根据调号及升降八度来生成新的频率表 */
+  33              		.loc 1 18 0
+  34 0000 0023     		movs	r3, #0
+  35              	.LVL1:
+  36 0002 0B2B     		cmp	r3, #11
+  37 0004 26D8     		bhi	.L11
+  16:hardware/decode/decode.c **** 	uint8_t i, j;
+  38              		.loc 1 16 0
+  39 0006 10B4     		push	{r4}
+ARM GAS  /tmp/ccwtdiNn.s 			page 2
+
+
+  40              	.LCFI0:
+  41              		.cfi_def_cfa_offset 4
+  42              		.cfi_offset 4, -4
+  43 0008 0AE0     		b	.L6
+  44              	.LVL2:
+  45              	.L3:
+  19:hardware/decode/decode.c **** 	{
+  20:hardware/decode/decode.c **** 		j = i + signature;
+  21:hardware/decode/decode.c **** 
+  22:hardware/decode/decode.c **** 		if (j > 11)					/* 升完之后超出本组基本音级，就跳到下一组音级 */
+  23:hardware/decode/decode.c **** 		{
+  24:hardware/decode/decode.c **** 			j = j - 12;
+  25:hardware/decode/decode.c **** 			freq_tab_new[i] = freq_tab[j] * 2;
+  26:hardware/decode/decode.c **** 		}
+  27:hardware/decode/decode.c **** 		else
+  28:hardware/decode/decode.c **** 		{
+  29:hardware/decode/decode.c **** 			freq_tab_new[i] = freq_tab[j];
+  46              		.loc 1 29 0
+  47 000a 134C     		ldr	r4, .L13
+  48 000c 34F81240 		ldrh	r4, [r4, r2, lsl #1]
+  49 0010 124A     		ldr	r2, .L13+4
+  50              	.LVL3:
+  51 0012 22F81340 		strh	r4, [r2, r3, lsl #1]	@ movhi
+  52 0016 10E0     		b	.L4
+  53              	.LVL4:
+  54              	.L5:
+  18:hardware/decode/decode.c **** 	{
+  55              		.loc 1 18 0 discriminator 2
+  56 0018 0133     		adds	r3, r3, #1
+  57              	.LVL5:
+  58 001a DBB2     		uxtb	r3, r3
+  59              	.LVL6:
+  60 001c 0B2B     		cmp	r3, #11
+  61 001e 15D8     		bhi	.L12
+  62              	.L6:
+  20:hardware/decode/decode.c **** 
+  63              		.loc 1 20 0
+  64 0020 1A18     		adds	r2, r3, r0
+  65 0022 D2B2     		uxtb	r2, r2
+  66              	.LVL7:
+  22:hardware/decode/decode.c **** 		{
+  67              		.loc 1 22 0
+  68 0024 0B2A     		cmp	r2, #11
+  69 0026 F0D9     		bls	.L3
+  24:hardware/decode/decode.c **** 			freq_tab_new[i] = freq_tab[j] * 2;
+  70              		.loc 1 24 0
+  71 0028 0C3A     		subs	r2, r2, #12
+  72              	.LVL8:
+  73 002a D2B2     		uxtb	r2, r2
+  74              	.LVL9:
+  25:hardware/decode/decode.c **** 		}
+  75              		.loc 1 25 0
+  76 002c 0A4C     		ldr	r4, .L13
+  77 002e 34F81220 		ldrh	r2, [r4, r2, lsl #1]
+  78              	.LVL10:
+  79 0032 5200     		lsls	r2, r2, #1
+  80 0034 094C     		ldr	r4, .L13+4
+ARM GAS  /tmp/ccwtdiNn.s 			page 3
+
+
+  81 0036 24F81320 		strh	r2, [r4, r3, lsl #1]	@ movhi
+  82              	.LVL11:
+  83              	.L4:
+  30:hardware/decode/decode.c **** 		}
+  31:hardware/decode/decode.c **** 
+  32:hardware/decode/decode.c **** 		/* 升降八度 */
+  33:hardware/decode/decode.c **** 		if (octachord < 0)
+  34:hardware/decode/decode.c **** 		{
+  35:hardware/decode/decode.c **** 			freq_tab_new[i] >>= (- octachord);
+  36:hardware/decode/decode.c **** 		}
+  37:hardware/decode/decode.c **** 		else if (octachord > 0)
+  84              		.loc 1 37 0
+  85 003a 0029     		cmp	r1, #0
+  86 003c ECD0     		beq	.L5
+  38:hardware/decode/decode.c **** 		{
+  39:hardware/decode/decode.c **** 			freq_tab_new[i] <<= octachord;		/* 每升一个八度，频率就翻一倍 */
+  87              		.loc 1 39 0
+  88 003e 074C     		ldr	r4, .L13+4
+  89 0040 34F81320 		ldrh	r2, [r4, r3, lsl #1]
+  90 0044 8A40     		lsls	r2, r2, r1
+  91 0046 24F81320 		strh	r2, [r4, r3, lsl #1]	@ movhi
+  92 004a E5E7     		b	.L5
+  93              	.L12:
+  40:hardware/decode/decode.c **** 		}
+  41:hardware/decode/decode.c **** 	}
+  42:hardware/decode/decode.c **** 	return 0;
+  43:hardware/decode/decode.c **** }
+  94              		.loc 1 43 0
+  95 004c 0020     		movs	r0, #0
+  96              	.LVL12:
+  97 004e 5DF8044B 		ldr	r4, [sp], #4
+  98              	.LCFI1:
+  99              		.cfi_restore 4
+ 100              		.cfi_def_cfa_offset 0
+ 101 0052 7047     		bx	lr
+ 102              	.LVL13:
+ 103              	.L11:
+ 104 0054 0020     		movs	r0, #0
+ 105              	.LVL14:
+ 106 0056 7047     		bx	lr
+ 107              	.L14:
+ 108              		.align	2
+ 109              	.L13:
+ 110 0058 00000000 		.word	.LANCHOR0
+ 111 005c 00000000 		.word	.LANCHOR1
+ 112              		.cfi_endproc
+ 113              	.LFE15:
+ 115              		.section	.text.beep_song_decode,"ax",%progbits
+ 116              		.align	1
+ 117              		.syntax unified
+ 118              		.thumb
+ 119              		.thumb_func
+ 120              		.fpu fpv4-sp-d16
+ 122              	beep_song_decode:
+ 123              	.LFB16:
+  44:hardware/decode/decode.c **** 									   
+  45:hardware/decode/decode.c **** static int beep_song_decode(rt_uint16_t tone, rt_uint16_t length, rt_uint16_t *freq, rt_uint16_t *s
+ARM GAS  /tmp/ccwtdiNn.s 			page 4
+
+
+  46:hardware/decode/decode.c **** {
+ 124              		.loc 1 46 0
+ 125              		.cfi_startproc
+ 126              		@ args = 4, pretend = 0, frame = 0
+ 127              		@ frame_needed = 0, uses_anonymous_args = 0
+ 128              		@ link register save eliminated.
+ 129              	.LVL15:
+ 130 0000 F0B4     		push	{r4, r5, r6, r7}
+ 131              	.LCFI2:
+ 132              		.cfi_def_cfa_offset 16
+ 133              		.cfi_offset 4, -16
+ 134              		.cfi_offset 5, -12
+ 135              		.cfi_offset 6, -8
+ 136              		.cfi_offset 7, -4
+  47:hardware/decode/decode.c **** 	static const rt_uint16_t div0_len = SEMIBREVE_LEN;		/* 全音符的长度 ms */
+  48:hardware/decode/decode.c **** 	rt_uint16_t note_len, note_sound_len, current_freq;
+  49:hardware/decode/decode.c **** 	rt_uint8_t note, sharp, range, note_div, effect, dotted;
+  50:hardware/decode/decode.c **** 
+  51:hardware/decode/decode.c **** 	note = tone % 10;			/* 计算出音符 */
+ 137              		.loc 1 51 0
+ 138 0002 354E     		ldr	r6, .L30
+ 139 0004 A6FB0054 		umull	r5, r4, r6, r0
+ 140 0008 E408     		lsrs	r4, r4, #3
+ 141 000a 04EB8407 		add	r7, r4, r4, lsl #2
+ 142 000e 7D00     		lsls	r5, r7, #1
+ 143 0010 451B     		subs	r5, r0, r5
+ 144 0012 EDB2     		uxtb	r5, r5
+ 145              	.LVL16:
+  52:hardware/decode/decode.c **** 	range = tone / 10 % 10;		/* 计算出高低音 */
+ 146              		.loc 1 52 0
+ 147 0014 A4B2     		uxth	r4, r4
+ 148 0016 A6FB0476 		umull	r7, r6, r6, r4
+ 149 001a F608     		lsrs	r6, r6, #3
+ 150 001c 06EB8606 		add	r6, r6, r6, lsl #2
+ 151 0020 7700     		lsls	r7, r6, #1
+ 152 0022 E41B     		subs	r4, r4, r7
+ 153              	.LVL17:
+  53:hardware/decode/decode.c **** 	sharp = tone / 100;			/* 计算出是否升半音 */
+ 154              		.loc 1 53 0
+ 155 0024 2D4E     		ldr	r6, .L30+4
+ 156 0026 A6FB0060 		umull	r6, r0, r6, r0
+ 157              	.LVL18:
+ 158 002a C0F34710 		ubfx	r0, r0, #5, #8
+ 159              	.LVL19:
+  54:hardware/decode/decode.c **** 
+  55:hardware/decode/decode.c **** 	current_freq = freq_tab_new[sign_tab[note - 1] + sharp];	/* 查出对应音符的频率 */
+ 160              		.loc 1 55 0
+ 161 002e 6E1E     		subs	r6, r5, #1
+ 162 0030 2B4F     		ldr	r7, .L30+8
+ 163 0032 BE5D     		ldrb	r6, [r7, r6]	@ zero_extendqisi2
+ 164 0034 3044     		add	r0, r0, r6
+ 165              	.LVL20:
+ 166 0036 2B4E     		ldr	r6, .L30+12
+ 167 0038 36F81000 		ldrh	r0, [r6, r0, lsl #1]
+ 168              	.LVL21:
+  56:hardware/decode/decode.c **** 
+  57:hardware/decode/decode.c **** 	if (note != 0)
+ARM GAS  /tmp/ccwtdiNn.s 			page 5
+
+
+ 169              		.loc 1 57 0
+ 170 003c 002D     		cmp	r5, #0
+ 171 003e 3DD0     		beq	.L16
+ 172 0040 E4B2     		uxtb	r4, r4
+  58:hardware/decode/decode.c **** 	{
+  59:hardware/decode/decode.c **** 		if (range == 1)		/* 低音降八度 */
+ 173              		.loc 1 59 0
+ 174 0042 012C     		cmp	r4, #1
+ 175 0044 35D0     		beq	.L27
+ 176              	.L17:
+  60:hardware/decode/decode.c **** 		{
+  61:hardware/decode/decode.c **** 			current_freq >>= 1;	
+  62:hardware/decode/decode.c **** 		}
+  63:hardware/decode/decode.c **** 		if (range == 3)		/* 高音升八度 */
+ 177              		.loc 1 63 0
+ 178 0046 032C     		cmp	r4, #3
+ 179 0048 35D0     		beq	.L28
+ 180              	.L18:
+  64:hardware/decode/decode.c **** 		{
+  65:hardware/decode/decode.c **** 			current_freq <<= 1;
+  66:hardware/decode/decode.c **** 		}
+  67:hardware/decode/decode.c **** 		*freq = current_freq;
+ 181              		.loc 1 67 0
+ 182 004a 1080     		strh	r0, [r2]	@ movhi
+ 183              	.LVL22:
+ 184              	.L19:
+  68:hardware/decode/decode.c **** 	}
+  69:hardware/decode/decode.c **** 	else
+  70:hardware/decode/decode.c **** 	{
+  71:hardware/decode/decode.c **** 		*freq = 0;
+  72:hardware/decode/decode.c **** 	}
+  73:hardware/decode/decode.c **** 	note_div = length_tab[length % 10];		/* 算出是几分音符 */
+ 185              		.loc 1 73 0
+ 186 004c 2248     		ldr	r0, .L30
+ 187 004e A0FB0142 		umull	r4, r2, r0, r1
+ 188              	.LVL23:
+ 189 0052 D208     		lsrs	r2, r2, #3
+ 190 0054 02EB8206 		add	r6, r2, r2, lsl #2
+ 191 0058 7400     		lsls	r4, r6, #1
+ 192 005a 0C1B     		subs	r4, r1, r4
+ 193 005c A4B2     		uxth	r4, r4
+ 194 005e 224E     		ldr	r6, .L30+16
+ 195 0060 345D     		ldrb	r4, [r6, r4]	@ zero_extendqisi2
+ 196              	.LVL24:
+  74:hardware/decode/decode.c **** 	
+  75:hardware/decode/decode.c **** 	effect = length / 10 % 10;				/* 算出音符类型（0 -> 普通，1 -> 连音， 2 -> 顿音）*
+ 197              		.loc 1 75 0
+ 198 0062 92B2     		uxth	r2, r2
+ 199 0064 A0FB0260 		umull	r6, r0, r0, r2
+ 200 0068 C008     		lsrs	r0, r0, #3
+ 201 006a 00EB8000 		add	r0, r0, r0, lsl #2
+ 202 006e 4600     		lsls	r6, r0, #1
+ 203 0070 921B     		subs	r2, r2, r6
+ 204 0072 D2B2     		uxtb	r2, r2
+ 205              	.LVL25:
+  76:hardware/decode/decode.c **** 	dotted = length / 100;					/* 算出是否附点 */
+ 206              		.loc 1 76 0
+ARM GAS  /tmp/ccwtdiNn.s 			page 6
+
+
+ 207 0074 1948     		ldr	r0, .L30+4
+ 208 0076 A0FB0101 		umull	r0, r1, r0, r1
+ 209              	.LVL26:
+ 210 007a C1F34711 		ubfx	r1, r1, #5, #8
+ 211              	.LVL27:
+  77:hardware/decode/decode.c **** 
+  78:hardware/decode/decode.c **** 	note_len = div0_len / note_div;			/* 算出音符的时长 */
+ 212              		.loc 1 78 0
+ 213 007e 40F26C70 		movw	r0, #1900
+ 214 0082 90FBF4F0 		sdiv	r0, r0, r4
+ 215              	.LVL28:
+  79:hardware/decode/decode.c **** 
+  80:hardware/decode/decode.c **** 	if (dotted == 1)
+ 216              		.loc 1 80 0
+ 217 0086 0129     		cmp	r1, #1
+ 218 0088 1BD0     		beq	.L29
+ 219              	.LVL29:
+ 220              	.L20:
+  81:hardware/decode/decode.c **** 	{
+  82:hardware/decode/decode.c **** 		note_len = note_len + note_len / 2;
+  83:hardware/decode/decode.c **** 	}
+  84:hardware/decode/decode.c **** 
+  85:hardware/decode/decode.c **** 	if (effect != 1)
+ 221              		.loc 1 85 0
+ 222 008a 012A     		cmp	r2, #1
+ 223 008c 21D0     		beq	.L24
+  86:hardware/decode/decode.c **** 	{
+  87:hardware/decode/decode.c **** 		if (effect == 0)	/* 算出普通音符的演奏长度 */
+ 224              		.loc 1 87 0
+ 225 008e EAB9     		cbnz	r2, .L22
+  88:hardware/decode/decode.c **** 		{
+  89:hardware/decode/decode.c **** 			note_sound_len = note_len * SOUND_SPACE;
+ 226              		.loc 1 89 0
+ 227 0090 8100     		lsls	r1, r0, #2
+ 228 0092 164C     		ldr	r4, .L30+20
+ 229              	.LVL30:
+ 230 0094 84FB0124 		smull	r2, r4, r4, r1
+ 231              	.LVL31:
+ 232 0098 CA17     		asrs	r2, r1, #31
+ 233 009a C2EB6402 		rsb	r2, r2, r4, asr #1
+ 234 009e 92B2     		uxth	r2, r2
+ 235              	.LVL32:
+ 236              	.L21:
+  90:hardware/decode/decode.c **** 		}
+  91:hardware/decode/decode.c **** 		else				/* 算出顿音的演奏时间 */
+  92:hardware/decode/decode.c **** 		{
+  93:hardware/decode/decode.c **** 			note_sound_len = note_len / 2;
+  94:hardware/decode/decode.c **** 		}
+  95:hardware/decode/decode.c **** 	}
+  96:hardware/decode/decode.c **** 	else			/* 算出连音的演奏时间 */
+  97:hardware/decode/decode.c **** 	{
+  98:hardware/decode/decode.c **** 		note_sound_len = note_len;
+  99:hardware/decode/decode.c **** 	}
+ 100:hardware/decode/decode.c **** 
+ 101:hardware/decode/decode.c **** 	if (note == 0)
+ 237              		.loc 1 101 0
+ 238 00a0 05B9     		cbnz	r5, .L23
+ARM GAS  /tmp/ccwtdiNn.s 			page 7
+
+
+ 102:hardware/decode/decode.c **** 	{
+ 103:hardware/decode/decode.c **** 		note_sound_len = 0;
+ 239              		.loc 1 103 0
+ 240 00a2 0022     		movs	r2, #0
+ 241              	.LVL33:
+ 242              	.L23:
+ 104:hardware/decode/decode.c **** 	}
+ 105:hardware/decode/decode.c **** 
+ 106:hardware/decode/decode.c **** 	*sound_len = note_sound_len;
+ 243              		.loc 1 106 0
+ 244 00a4 1A80     		strh	r2, [r3]	@ movhi
+ 107:hardware/decode/decode.c **** 	*nosound_len = note_len - note_sound_len;	/* 算出不发音的长度 */
+ 245              		.loc 1 107 0
+ 246 00a6 801A     		subs	r0, r0, r2
+ 247              	.LVL34:
+ 248 00a8 049B     		ldr	r3, [sp, #16]
+ 249              	.LVL35:
+ 250 00aa 1880     		strh	r0, [r3]	@ movhi
+ 108:hardware/decode/decode.c **** 
+ 109:hardware/decode/decode.c **** 	return 0;
+ 110:hardware/decode/decode.c **** }
+ 251              		.loc 1 110 0
+ 252 00ac 0020     		movs	r0, #0
+ 253 00ae F0BC     		pop	{r4, r5, r6, r7}
+ 254              	.LCFI3:
+ 255              		.cfi_remember_state
+ 256              		.cfi_restore 7
+ 257              		.cfi_restore 6
+ 258              		.cfi_restore 5
+ 259              		.cfi_restore 4
+ 260              		.cfi_def_cfa_offset 0
+ 261              	.LVL36:
+ 262 00b0 7047     		bx	lr
+ 263              	.LVL37:
+ 264              	.L27:
+ 265              	.LCFI4:
+ 266              		.cfi_restore_state
+  61:hardware/decode/decode.c **** 		}
+ 267              		.loc 1 61 0
+ 268 00b2 4008     		lsrs	r0, r0, #1
+ 269              	.LVL38:
+ 270 00b4 C7E7     		b	.L17
+ 271              	.L28:
+  65:hardware/decode/decode.c **** 		}
+ 272              		.loc 1 65 0
+ 273 00b6 4000     		lsls	r0, r0, #1
+ 274              	.LVL39:
+ 275 00b8 80B2     		uxth	r0, r0
+ 276              	.LVL40:
+ 277 00ba C6E7     		b	.L18
+ 278              	.L16:
+  71:hardware/decode/decode.c **** 	}
+ 279              		.loc 1 71 0
+ 280 00bc 0020     		movs	r0, #0
+ 281              	.LVL41:
+ 282 00be 1080     		strh	r0, [r2]	@ movhi
+ 283 00c0 C4E7     		b	.L19
+ARM GAS  /tmp/ccwtdiNn.s 			page 8
+
+
+ 284              	.LVL42:
+ 285              	.L29:
+  82:hardware/decode/decode.c **** 	}
+ 286              		.loc 1 82 0
+ 287 00c2 C0F34F01 		ubfx	r1, r0, #1, #16
+ 288              	.LVL43:
+ 289 00c6 0844     		add	r0, r0, r1
+ 290              	.LVL44:
+ 291 00c8 80B2     		uxth	r0, r0
+ 292              	.LVL45:
+ 293 00ca DEE7     		b	.L20
+ 294              	.L22:
+  93:hardware/decode/decode.c **** 		}
+ 295              		.loc 1 93 0
+ 296 00cc C0F34F02 		ubfx	r2, r0, #1, #16
+ 297              	.LVL46:
+ 298 00d0 E6E7     		b	.L21
+ 299              	.LVL47:
+ 300              	.L24:
+  98:hardware/decode/decode.c **** 	}
+ 301              		.loc 1 98 0
+ 302 00d2 0246     		mov	r2, r0
+ 303              	.LVL48:
+ 304 00d4 E4E7     		b	.L21
+ 305              	.L31:
+ 306 00d6 00BF     		.align	2
+ 307              	.L30:
+ 308 00d8 CDCCCCCC 		.word	-858993459
+ 309 00dc 1F85EB51 		.word	1374389535
+ 310 00e0 00000000 		.word	.LANCHOR2
+ 311 00e4 00000000 		.word	.LANCHOR1
+ 312 00e8 00000000 		.word	.LANCHOR3
+ 313 00ec 67666666 		.word	1717986919
+ 314              		.cfi_endproc
+ 315              	.LFE16:
+ 317              		.section	.text.beep_song_get_len,"ax",%progbits
+ 318              		.align	1
+ 319              		.global	beep_song_get_len
+ 320              		.syntax unified
+ 321              		.thumb
+ 322              		.thumb_func
+ 323              		.fpu fpv4-sp-d16
+ 325              	beep_song_get_len:
+ 326              	.LFB17:
+ 111:hardware/decode/decode.c **** 
+ 112:hardware/decode/decode.c **** uint16_t beep_song_get_len(const struct beep_song *song)
+ 113:hardware/decode/decode.c **** {
+ 327              		.loc 1 113 0
+ 328              		.cfi_startproc
+ 329              		@ args = 0, pretend = 0, frame = 0
+ 330              		@ frame_needed = 0, uses_anonymous_args = 0
+ 331              		@ link register save eliminated.
+ 332              	.LVL49:
+ 114:hardware/decode/decode.c **** 	uint16_t cnt = 0;
+ 333              		.loc 1 114 0
+ 334 0000 0023     		movs	r3, #0
+ 115:hardware/decode/decode.c **** 
+ARM GAS  /tmp/ccwtdiNn.s 			page 9
+
+
+ 116:hardware/decode/decode.c **** 	/* 歌曲以 0x00,0x00 结尾，检测结束标志 */
+ 117:hardware/decode/decode.c **** 	while (song->data[cnt])
+ 335              		.loc 1 117 0
+ 336 0002 01E0     		b	.L33
+ 337              	.LVL50:
+ 338              	.L34:
+ 118:hardware/decode/decode.c **** 	{
+ 119:hardware/decode/decode.c **** 		cnt += 2;
+ 339              		.loc 1 119 0
+ 340 0004 0233     		adds	r3, r3, #2
+ 341              	.LVL51:
+ 342 0006 9BB2     		uxth	r3, r3
+ 343              	.LVL52:
+ 344              	.L33:
+ 117:hardware/decode/decode.c **** 	{
+ 345              		.loc 1 117 0
+ 346 0008 C218     		adds	r2, r0, r3
+ 347 000a 927F     		ldrb	r2, [r2, #30]	@ zero_extendqisi2
+ 348 000c 002A     		cmp	r2, #0
+ 349 000e F9D1     		bne	.L34
+ 120:hardware/decode/decode.c **** 	}
+ 121:hardware/decode/decode.c **** 
+ 122:hardware/decode/decode.c **** 	return cnt / 2;
+ 123:hardware/decode/decode.c **** }
+ 350              		.loc 1 123 0
+ 351 0010 5808     		lsrs	r0, r3, #1
+ 352              	.LVL53:
+ 353 0012 7047     		bx	lr
+ 354              		.cfi_endproc
+ 355              	.LFE17:
+ 357              		.section	.text.beep_song_get_name,"ax",%progbits
+ 358              		.align	1
+ 359              		.global	beep_song_get_name
+ 360              		.syntax unified
+ 361              		.thumb
+ 362              		.thumb_func
+ 363              		.fpu fpv4-sp-d16
+ 365              	beep_song_get_name:
+ 366              	.LFB18:
+ 124:hardware/decode/decode.c **** 
+ 125:hardware/decode/decode.c **** int beep_song_get_name(const struct beep_song *song, char *name)
+ 126:hardware/decode/decode.c **** {
+ 367              		.loc 1 126 0
+ 368              		.cfi_startproc
+ 369              		@ args = 0, pretend = 0, frame = 0
+ 370              		@ frame_needed = 0, uses_anonymous_args = 0
+ 371              		@ link register save eliminated.
+ 372              	.LVL54:
+ 127:hardware/decode/decode.c **** 	int i = 0;
+ 373              		.loc 1 127 0
+ 374 0000 0023     		movs	r3, #0
+ 128:hardware/decode/decode.c **** 	while (song->name[i])
+ 375              		.loc 1 128 0
+ 376 0002 01E0     		b	.L36
+ 377              	.LVL55:
+ 378              	.L37:
+ 129:hardware/decode/decode.c **** 	{
+ARM GAS  /tmp/ccwtdiNn.s 			page 10
+
+
+ 130:hardware/decode/decode.c **** 		name[i] = song->name[i];
+ 379              		.loc 1 130 0
+ 380 0004 CA54     		strb	r2, [r1, r3]
+ 131:hardware/decode/decode.c **** 		i++;
+ 381              		.loc 1 131 0
+ 382 0006 0133     		adds	r3, r3, #1
+ 383              	.LVL56:
+ 384              	.L36:
+ 128:hardware/decode/decode.c **** 	while (song->name[i])
+ 385              		.loc 1 128 0
+ 386 0008 C25C     		ldrb	r2, [r0, r3]	@ zero_extendqisi2
+ 387 000a 002A     		cmp	r2, #0
+ 388 000c FAD1     		bne	.L37
+ 132:hardware/decode/decode.c **** 	}
+ 133:hardware/decode/decode.c **** 	name[i] = '\0';
+ 389              		.loc 1 133 0
+ 390 000e 0020     		movs	r0, #0
+ 391              	.LVL57:
+ 392 0010 C854     		strb	r0, [r1, r3]
+ 134:hardware/decode/decode.c **** 	return 0;
+ 135:hardware/decode/decode.c **** }
+ 393              		.loc 1 135 0
+ 394 0012 7047     		bx	lr
+ 395              		.cfi_endproc
+ 396              	.LFE18:
+ 398              		.section	.text.beep_song_get_data,"ax",%progbits
+ 399              		.align	1
+ 400              		.global	beep_song_get_data
+ 401              		.syntax unified
+ 402              		.thumb
+ 403              		.thumb_func
+ 404              		.fpu fpv4-sp-d16
+ 406              	beep_song_get_data:
+ 407              	.LFB19:
+ 136:hardware/decode/decode.c **** 
+ 137:hardware/decode/decode.c **** uint16_t beep_song_get_data(const struct beep_song *song, uint16_t index, struct beep_song_data *da
+ 138:hardware/decode/decode.c **** {
+ 408              		.loc 1 138 0
+ 409              		.cfi_startproc
+ 410              		@ args = 0, pretend = 0, frame = 0
+ 411              		@ frame_needed = 0, uses_anonymous_args = 0
+ 412              	.LVL58:
+ 413 0000 10B5     		push	{r4, lr}
+ 414              	.LCFI5:
+ 415              		.cfi_def_cfa_offset 8
+ 416              		.cfi_offset 4, -8
+ 417              		.cfi_offset 14, -4
+ 418 0002 82B0     		sub	sp, sp, #8
+ 419              	.LCFI6:
+ 420              		.cfi_def_cfa_offset 16
+ 421 0004 1346     		mov	r3, r2
+ 139:hardware/decode/decode.c **** 	beep_song_decode(song->data[index * 2], song->data[index * 2 + 1], &data->freq, &data->sound_len, 
+ 422              		.loc 1 139 0
+ 423 0006 4900     		lsls	r1, r1, #1
+ 424              	.LVL59:
+ 425 0008 4418     		adds	r4, r0, r1
+ 426 000a 0131     		adds	r1, r1, #1
+ARM GAS  /tmp/ccwtdiNn.s 			page 11
+
+
+ 427 000c 0844     		add	r0, r0, r1
+ 428              	.LVL60:
+ 429 000e 817F     		ldrb	r1, [r0, #30]	@ zero_extendqisi2
+ 430 0010 A07F     		ldrb	r0, [r4, #30]	@ zero_extendqisi2
+ 431 0012 141D     		adds	r4, r2, #4
+ 432 0014 0094     		str	r4, [sp]
+ 433 0016 0233     		adds	r3, r3, #2
+ 434 0018 FFF7FEFF 		bl	beep_song_decode
+ 435              	.LVL61:
+ 140:hardware/decode/decode.c **** 	return 2;
+ 141:hardware/decode/decode.c **** }
+ 436              		.loc 1 141 0
+ 437 001c 0220     		movs	r0, #2
+ 438 001e 02B0     		add	sp, sp, #8
+ 439              	.LCFI7:
+ 440              		.cfi_def_cfa_offset 8
+ 441              		@ sp needed
+ 442 0020 10BD     		pop	{r4, pc}
+ 443              		.cfi_endproc
+ 444              	.LFE19:
+ 446              		.section	.text.beep_song_decode_init,"ax",%progbits
+ 447              		.align	1
+ 448              		.global	beep_song_decode_init
+ 449              		.syntax unified
+ 450              		.thumb
+ 451              		.thumb_func
+ 452              		.fpu fpv4-sp-d16
+ 454              	beep_song_decode_init:
+ 455              	.LFB20:
+ 142:hardware/decode/decode.c **** 
+ 143:hardware/decode/decode.c **** int beep_song_decode_init(void)
+ 144:hardware/decode/decode.c **** {
+ 456              		.loc 1 144 0
+ 457              		.cfi_startproc
+ 458              		@ args = 0, pretend = 0, frame = 0
+ 459              		@ frame_needed = 0, uses_anonymous_args = 0
+ 460 0000 08B5     		push	{r3, lr}
+ 461              	.LCFI8:
+ 462              		.cfi_def_cfa_offset 8
+ 463              		.cfi_offset 3, -8
+ 464              		.cfi_offset 14, -4
+ 145:hardware/decode/decode.c **** 	beep_song_decode_new_freq(SOUND_SIGNATURE, SOUND_OCTACHORD);
+ 465              		.loc 1 145 0
+ 466 0002 0121     		movs	r1, #1
+ 467 0004 0020     		movs	r0, #0
+ 468 0006 FFF7FEFF 		bl	beep_song_decode_new_freq
+ 469              	.LVL62:
+ 146:hardware/decode/decode.c **** 	return 0;
+ 147:hardware/decode/decode.c **** }
+ 470              		.loc 1 147 0
+ 471 000a 0020     		movs	r0, #0
+ 472 000c 08BD     		pop	{r3, pc}
+ 473              		.cfi_endproc
+ 474              	.LFE20:
+ 476              		.section	.bss.freq_tab_new,"aw",%nobits
+ 477              		.align	2
+ 478              		.set	.LANCHOR1,. + 0
+ARM GAS  /tmp/ccwtdiNn.s 			page 12
+
+
+ 481              	freq_tab_new:
+ 482 0000 00000000 		.space	24
+ 482      00000000 
+ 482      00000000 
+ 482      00000000 
+ 482      00000000 
+ 483              		.section	.rodata.freq_tab,"a",%progbits
+ 484              		.align	2
+ 485              		.set	.LANCHOR0,. + 0
+ 488              	freq_tab:
+ 489 0000 0601     		.short	262
+ 490 0002 1501     		.short	277
+ 491 0004 2601     		.short	294
+ 492 0006 3701     		.short	311
+ 493 0008 4A01     		.short	330
+ 494 000a 5D01     		.short	349
+ 495 000c 7101     		.short	369
+ 496 000e 8801     		.short	392
+ 497 0010 9F01     		.short	415
+ 498 0012 B801     		.short	440
+ 499 0014 D201     		.short	466
+ 500 0016 EE01     		.short	494
+ 501              		.section	.rodata.length_tab,"a",%progbits
+ 502              		.align	2
+ 503              		.set	.LANCHOR3,. + 0
+ 506              	length_tab:
+ 507 0000 01       		.byte	1
+ 508 0001 02       		.byte	2
+ 509 0002 04       		.byte	4
+ 510 0003 08       		.byte	8
+ 511 0004 10       		.byte	16
+ 512 0005 20       		.byte	32
+ 513 0006 40       		.byte	64
+ 514              		.section	.rodata.sign_tab,"a",%progbits
+ 515              		.align	2
+ 516              		.set	.LANCHOR2,. + 0
+ 519              	sign_tab:
+ 520 0000 00       		.byte	0
+ 521 0001 02       		.byte	2
+ 522 0002 04       		.byte	4
+ 523 0003 05       		.byte	5
+ 524 0004 07       		.byte	7
+ 525 0005 09       		.byte	9
+ 526 0006 0B       		.byte	11
+ 527              		.text
+ 528              	.Letext0:
+ 529              		.file 2 "rt-thread/include/rtdef.h"
+ 530              		.file 3 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/machine/_default_types.h"
+ 531              		.file 4 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/lock.h"
+ 532              		.file 5 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_types.h"
+ 533              		.file 6 "/opt/gcc-arm-none-eabi-6-2017-q2-update/lib/gcc/arm-none-eabi/6.3.1/include/stddef.h"
+ 534              		.file 7 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/reent.h"
+ 535              		.file 8 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_stdint.h"
+ 536              		.file 9 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/time.h"
+ 537              		.file 10 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/errno.h"
+ 538              		.file 11 "rt-thread/components/finsh/finsh_api.h"
+ 539              		.file 12 "hardware/decode/decode.h"
+ARM GAS  /tmp/ccwtdiNn.s 			page 13
+
+
+ARM GAS  /tmp/ccwtdiNn.s 			page 14
+
+
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 decode.c
+     /tmp/ccwtdiNn.s:18     .text.beep_song_decode_new_freq:0000000000000000 $t
+     /tmp/ccwtdiNn.s:24     .text.beep_song_decode_new_freq:0000000000000000 beep_song_decode_new_freq
+     /tmp/ccwtdiNn.s:110    .text.beep_song_decode_new_freq:0000000000000058 $d
+     /tmp/ccwtdiNn.s:116    .text.beep_song_decode:0000000000000000 $t
+     /tmp/ccwtdiNn.s:122    .text.beep_song_decode:0000000000000000 beep_song_decode
+     /tmp/ccwtdiNn.s:308    .text.beep_song_decode:00000000000000d8 $d
+     /tmp/ccwtdiNn.s:318    .text.beep_song_get_len:0000000000000000 $t
+     /tmp/ccwtdiNn.s:325    .text.beep_song_get_len:0000000000000000 beep_song_get_len
+     /tmp/ccwtdiNn.s:358    .text.beep_song_get_name:0000000000000000 $t
+     /tmp/ccwtdiNn.s:365    .text.beep_song_get_name:0000000000000000 beep_song_get_name
+     /tmp/ccwtdiNn.s:399    .text.beep_song_get_data:0000000000000000 $t
+     /tmp/ccwtdiNn.s:406    .text.beep_song_get_data:0000000000000000 beep_song_get_data
+     /tmp/ccwtdiNn.s:447    .text.beep_song_decode_init:0000000000000000 $t
+     /tmp/ccwtdiNn.s:454    .text.beep_song_decode_init:0000000000000000 beep_song_decode_init
+     /tmp/ccwtdiNn.s:477    .bss.freq_tab_new:0000000000000000 $d
+     /tmp/ccwtdiNn.s:481    .bss.freq_tab_new:0000000000000000 freq_tab_new
+     /tmp/ccwtdiNn.s:484    .rodata.freq_tab:0000000000000000 $d
+     /tmp/ccwtdiNn.s:488    .rodata.freq_tab:0000000000000000 freq_tab
+     /tmp/ccwtdiNn.s:502    .rodata.length_tab:0000000000000000 $d
+     /tmp/ccwtdiNn.s:506    .rodata.length_tab:0000000000000000 length_tab
+     /tmp/ccwtdiNn.s:515    .rodata.sign_tab:0000000000000000 $d
+     /tmp/ccwtdiNn.s:519    .rodata.sign_tab:0000000000000000 sign_tab
+                     .debug_frame:0000000000000010 $d
+
+NO UNDEFINED SYMBOLS

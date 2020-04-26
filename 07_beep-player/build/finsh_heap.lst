@@ -1,0 +1,1053 @@
+ARM GAS  /tmp/ccEFSjId.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.eabi_attribute 27, 1
+   3              		.eabi_attribute 28, 1
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.file	"finsh_heap.c"
+  14              		.text
+  15              	.Ltext0:
+  16              		.cfi_sections	.debug_frame
+  17              		.section	.text.finsh_block_insert,"ax",%progbits
+  18              		.align	1
+  19              		.syntax unified
+  20              		.thumb
+  21              		.thumb_func
+  22              		.fpu fpv4-sp-d16
+  24              	finsh_block_insert:
+  25              	.LFB20:
+  26              		.file 1 "rt-thread/components/finsh/finsh_heap.c"
+   1:rt-thread/components/finsh/finsh_heap.c **** /*
+   2:rt-thread/components/finsh/finsh_heap.c ****  * Copyright (c) 2006-2018, RT-Thread Development Team
+   3:rt-thread/components/finsh/finsh_heap.c ****  *
+   4:rt-thread/components/finsh/finsh_heap.c ****  * SPDX-License-Identifier: Apache-2.0
+   5:rt-thread/components/finsh/finsh_heap.c ****  *
+   6:rt-thread/components/finsh/finsh_heap.c ****  * Change Logs:
+   7:rt-thread/components/finsh/finsh_heap.c ****  * Date           Author       Notes
+   8:rt-thread/components/finsh/finsh_heap.c ****  * 2010-03-22     Bernard      first version
+   9:rt-thread/components/finsh/finsh_heap.c ****  */
+  10:rt-thread/components/finsh/finsh_heap.c **** #include <finsh.h>
+  11:rt-thread/components/finsh/finsh_heap.c **** 
+  12:rt-thread/components/finsh/finsh_heap.c **** #include "finsh_var.h"
+  13:rt-thread/components/finsh/finsh_heap.c **** 
+  14:rt-thread/components/finsh/finsh_heap.c **** ALIGN(RT_ALIGN_SIZE)
+  15:rt-thread/components/finsh/finsh_heap.c **** uint8_t finsh_heap[FINSH_HEAP_MAX];
+  16:rt-thread/components/finsh/finsh_heap.c **** struct finsh_block_header
+  17:rt-thread/components/finsh/finsh_heap.c **** {
+  18:rt-thread/components/finsh/finsh_heap.c ****     uint32_t length;
+  19:rt-thread/components/finsh/finsh_heap.c ****     struct finsh_block_header* next;
+  20:rt-thread/components/finsh/finsh_heap.c **** };
+  21:rt-thread/components/finsh/finsh_heap.c **** #define BLOCK_HEADER(x)                 (struct finsh_block_header*)(x)
+  22:rt-thread/components/finsh/finsh_heap.c **** #define finsh_block_get_header(data)    (struct finsh_block_header*)((uint8_t*)data - sizeof(struct
+  23:rt-thread/components/finsh/finsh_heap.c **** #define finsh_block_get_data(header)    (uint8_t*)((struct finsh_block_header*)header + 1)
+  24:rt-thread/components/finsh/finsh_heap.c **** #define HEAP_ALIGN_SIZE(size)           (((size) + HEAP_ALIGNMENT - 1) & ~(HEAP_ALIGNMENT-1))
+  25:rt-thread/components/finsh/finsh_heap.c **** 
+  26:rt-thread/components/finsh/finsh_heap.c **** static struct finsh_block_header* free_list;
+  27:rt-thread/components/finsh/finsh_heap.c **** static struct finsh_block_header* allocate_list;
+  28:rt-thread/components/finsh/finsh_heap.c **** 
+  29:rt-thread/components/finsh/finsh_heap.c **** static void finsh_heap_gc(void);
+  30:rt-thread/components/finsh/finsh_heap.c **** 
+  31:rt-thread/components/finsh/finsh_heap.c **** static void finsh_block_insert(struct finsh_block_header** list, struct finsh_block_header* header)
+  32:rt-thread/components/finsh/finsh_heap.c **** static void finsh_block_remove(struct finsh_block_header** list, struct finsh_block_header* header)
+ARM GAS  /tmp/ccEFSjId.s 			page 2
+
+
+  33:rt-thread/components/finsh/finsh_heap.c **** static void finsh_block_split(struct finsh_block_header* header, size_t size);
+  34:rt-thread/components/finsh/finsh_heap.c **** static void finsh_block_merge(struct finsh_block_header** list, struct finsh_block_header* header);
+  35:rt-thread/components/finsh/finsh_heap.c **** 
+  36:rt-thread/components/finsh/finsh_heap.c **** int finsh_heap_init(void)
+  37:rt-thread/components/finsh/finsh_heap.c **** {
+  38:rt-thread/components/finsh/finsh_heap.c ****     /* clear heap to zero */
+  39:rt-thread/components/finsh/finsh_heap.c ****     memset(&finsh_heap[0], 0, sizeof(finsh_heap));
+  40:rt-thread/components/finsh/finsh_heap.c **** 
+  41:rt-thread/components/finsh/finsh_heap.c ****     /* init free and alloc list */
+  42:rt-thread/components/finsh/finsh_heap.c ****     free_list           = BLOCK_HEADER(&finsh_heap[0]);
+  43:rt-thread/components/finsh/finsh_heap.c ****     free_list->length   = FINSH_HEAP_MAX - sizeof(struct finsh_block_header);
+  44:rt-thread/components/finsh/finsh_heap.c ****     free_list->next     = NULL;
+  45:rt-thread/components/finsh/finsh_heap.c **** 
+  46:rt-thread/components/finsh/finsh_heap.c ****     allocate_list       = NULL;
+  47:rt-thread/components/finsh/finsh_heap.c **** 
+  48:rt-thread/components/finsh/finsh_heap.c ****     return 0;
+  49:rt-thread/components/finsh/finsh_heap.c **** }
+  50:rt-thread/components/finsh/finsh_heap.c **** 
+  51:rt-thread/components/finsh/finsh_heap.c **** /**
+  52:rt-thread/components/finsh/finsh_heap.c ****  * allocate a block from heap
+  53:rt-thread/components/finsh/finsh_heap.c ****  */
+  54:rt-thread/components/finsh/finsh_heap.c **** void* finsh_heap_allocate(size_t size)
+  55:rt-thread/components/finsh/finsh_heap.c **** {
+  56:rt-thread/components/finsh/finsh_heap.c ****     struct finsh_block_header* header;
+  57:rt-thread/components/finsh/finsh_heap.c **** 
+  58:rt-thread/components/finsh/finsh_heap.c ****     size = HEAP_ALIGN_SIZE(size);
+  59:rt-thread/components/finsh/finsh_heap.c **** 
+  60:rt-thread/components/finsh/finsh_heap.c ****     /* find the first fit block */
+  61:rt-thread/components/finsh/finsh_heap.c ****     for (header = free_list;
+  62:rt-thread/components/finsh/finsh_heap.c ****         ((header != NULL) && (header->length <= size + sizeof(struct finsh_block_header)));
+  63:rt-thread/components/finsh/finsh_heap.c ****         header = header->next) ;
+  64:rt-thread/components/finsh/finsh_heap.c **** 
+  65:rt-thread/components/finsh/finsh_heap.c ****     if (header == NULL)
+  66:rt-thread/components/finsh/finsh_heap.c ****     {
+  67:rt-thread/components/finsh/finsh_heap.c ****         finsh_heap_gc();
+  68:rt-thread/components/finsh/finsh_heap.c **** 
+  69:rt-thread/components/finsh/finsh_heap.c ****         /* find the first fit block */
+  70:rt-thread/components/finsh/finsh_heap.c ****         for (header = free_list;
+  71:rt-thread/components/finsh/finsh_heap.c ****             ((header != NULL) && (header->length < size + sizeof(struct finsh_block_header)));
+  72:rt-thread/components/finsh/finsh_heap.c ****             header = header->next) ;
+  73:rt-thread/components/finsh/finsh_heap.c **** 
+  74:rt-thread/components/finsh/finsh_heap.c ****         /* there is no memory */
+  75:rt-thread/components/finsh/finsh_heap.c ****         if (header == NULL) return NULL;
+  76:rt-thread/components/finsh/finsh_heap.c ****     }
+  77:rt-thread/components/finsh/finsh_heap.c **** 
+  78:rt-thread/components/finsh/finsh_heap.c ****     /* split block */
+  79:rt-thread/components/finsh/finsh_heap.c ****     finsh_block_split(header, size);
+  80:rt-thread/components/finsh/finsh_heap.c **** 
+  81:rt-thread/components/finsh/finsh_heap.c ****     /* remove from free list */
+  82:rt-thread/components/finsh/finsh_heap.c ****     finsh_block_remove(&free_list, header);
+  83:rt-thread/components/finsh/finsh_heap.c ****     header->next = NULL;
+  84:rt-thread/components/finsh/finsh_heap.c **** 
+  85:rt-thread/components/finsh/finsh_heap.c ****     /* insert to allocate list */
+  86:rt-thread/components/finsh/finsh_heap.c ****     finsh_block_insert(&allocate_list, header);
+  87:rt-thread/components/finsh/finsh_heap.c **** 
+  88:rt-thread/components/finsh/finsh_heap.c ****     memset(finsh_block_get_data(header), 0, size);
+  89:rt-thread/components/finsh/finsh_heap.c **** 
+ARM GAS  /tmp/ccEFSjId.s 			page 3
+
+
+  90:rt-thread/components/finsh/finsh_heap.c ****     return finsh_block_get_data(header);
+  91:rt-thread/components/finsh/finsh_heap.c **** }
+  92:rt-thread/components/finsh/finsh_heap.c **** 
+  93:rt-thread/components/finsh/finsh_heap.c **** /**
+  94:rt-thread/components/finsh/finsh_heap.c ****  * release the allocated block
+  95:rt-thread/components/finsh/finsh_heap.c ****  */
+  96:rt-thread/components/finsh/finsh_heap.c **** void  finsh_heap_free(void*ptr)
+  97:rt-thread/components/finsh/finsh_heap.c **** {
+  98:rt-thread/components/finsh/finsh_heap.c ****     struct finsh_block_header* header;
+  99:rt-thread/components/finsh/finsh_heap.c **** 
+ 100:rt-thread/components/finsh/finsh_heap.c ****     /* get block header */
+ 101:rt-thread/components/finsh/finsh_heap.c ****     header = finsh_block_get_header(ptr);
+ 102:rt-thread/components/finsh/finsh_heap.c **** 
+ 103:rt-thread/components/finsh/finsh_heap.c ****     /* remove from allocate list */
+ 104:rt-thread/components/finsh/finsh_heap.c ****     finsh_block_remove(&allocate_list, header);
+ 105:rt-thread/components/finsh/finsh_heap.c **** 
+ 106:rt-thread/components/finsh/finsh_heap.c ****     /* insert to free list */
+ 107:rt-thread/components/finsh/finsh_heap.c ****     finsh_block_insert(&free_list, header);
+ 108:rt-thread/components/finsh/finsh_heap.c ****     finsh_block_merge(&free_list, header);
+ 109:rt-thread/components/finsh/finsh_heap.c **** }
+ 110:rt-thread/components/finsh/finsh_heap.c **** 
+ 111:rt-thread/components/finsh/finsh_heap.c **** /**
+ 112:rt-thread/components/finsh/finsh_heap.c ****  * garbage collector
+ 113:rt-thread/components/finsh/finsh_heap.c ****  */
+ 114:rt-thread/components/finsh/finsh_heap.c **** static void finsh_heap_gc(void)
+ 115:rt-thread/components/finsh/finsh_heap.c **** {
+ 116:rt-thread/components/finsh/finsh_heap.c ****     int i;
+ 117:rt-thread/components/finsh/finsh_heap.c ****     struct finsh_block_header *header, *temp;
+ 118:rt-thread/components/finsh/finsh_heap.c **** 
+ 119:rt-thread/components/finsh/finsh_heap.c ****     temp = NULL;
+ 120:rt-thread/components/finsh/finsh_heap.c **** 
+ 121:rt-thread/components/finsh/finsh_heap.c ****     /* find the first fit block */
+ 122:rt-thread/components/finsh/finsh_heap.c ****     for (header = allocate_list; header != NULL; )
+ 123:rt-thread/components/finsh/finsh_heap.c ****     {
+ 124:rt-thread/components/finsh/finsh_heap.c ****         for (i = 0; i < FINSH_VARIABLE_MAX; i ++)
+ 125:rt-thread/components/finsh/finsh_heap.c ****         {
+ 126:rt-thread/components/finsh/finsh_heap.c ****             if (global_variable[i].type != finsh_type_unknown)
+ 127:rt-thread/components/finsh/finsh_heap.c ****             {
+ 128:rt-thread/components/finsh/finsh_heap.c ****                 if (global_variable[i].value.ptr == finsh_block_get_data(header))
+ 129:rt-thread/components/finsh/finsh_heap.c ****                     break;
+ 130:rt-thread/components/finsh/finsh_heap.c ****             }
+ 131:rt-thread/components/finsh/finsh_heap.c ****         }
+ 132:rt-thread/components/finsh/finsh_heap.c **** 
+ 133:rt-thread/components/finsh/finsh_heap.c ****         temp   = header;
+ 134:rt-thread/components/finsh/finsh_heap.c ****         header = header->next;
+ 135:rt-thread/components/finsh/finsh_heap.c **** 
+ 136:rt-thread/components/finsh/finsh_heap.c ****         /* this block is an unused block, release it */
+ 137:rt-thread/components/finsh/finsh_heap.c ****         if (i == FINSH_VARIABLE_MAX)
+ 138:rt-thread/components/finsh/finsh_heap.c ****         {
+ 139:rt-thread/components/finsh/finsh_heap.c ****             finsh_heap_free(finsh_block_get_data(temp));
+ 140:rt-thread/components/finsh/finsh_heap.c ****         }
+ 141:rt-thread/components/finsh/finsh_heap.c ****     }
+ 142:rt-thread/components/finsh/finsh_heap.c **** }
+ 143:rt-thread/components/finsh/finsh_heap.c **** 
+ 144:rt-thread/components/finsh/finsh_heap.c **** /**
+ 145:rt-thread/components/finsh/finsh_heap.c ****  * insert a block to list
+ 146:rt-thread/components/finsh/finsh_heap.c ****  */
+ARM GAS  /tmp/ccEFSjId.s 			page 4
+
+
+ 147:rt-thread/components/finsh/finsh_heap.c **** void finsh_block_insert(struct finsh_block_header** list, struct finsh_block_header* header)
+ 148:rt-thread/components/finsh/finsh_heap.c **** {
+  27              		.loc 1 148 0
+  28              		.cfi_startproc
+  29              		@ args = 0, pretend = 0, frame = 0
+  30              		@ frame_needed = 0, uses_anonymous_args = 0
+  31              		@ link register save eliminated.
+  32              	.LVL0:
+ 149:rt-thread/components/finsh/finsh_heap.c ****     struct finsh_block_header* node;
+ 150:rt-thread/components/finsh/finsh_heap.c **** 
+ 151:rt-thread/components/finsh/finsh_heap.c ****     if (*list == NULL)
+  33              		.loc 1 151 0
+  34 0000 0268     		ldr	r2, [r0]
+  35 0002 42B1     		cbz	r2, .L8
+  36              	.LVL1:
+ 152:rt-thread/components/finsh/finsh_heap.c ****     {
+ 153:rt-thread/components/finsh/finsh_heap.c ****         *list = header;
+ 154:rt-thread/components/finsh/finsh_heap.c ****         return;
+ 155:rt-thread/components/finsh/finsh_heap.c ****     }
+ 156:rt-thread/components/finsh/finsh_heap.c **** 
+ 157:rt-thread/components/finsh/finsh_heap.c ****     /* find out insert point */
+ 158:rt-thread/components/finsh/finsh_heap.c ****     node = *list;
+ 159:rt-thread/components/finsh/finsh_heap.c **** 
+ 160:rt-thread/components/finsh/finsh_heap.c ****     if (node > header)
+  37              		.loc 1 160 0
+  38 0004 8A42     		cmp	r2, r1
+  39 0006 08D8     		bhi	.L9
+  40              	.LVL2:
+  41              	.L4:
+ 161:rt-thread/components/finsh/finsh_heap.c ****     {
+ 162:rt-thread/components/finsh/finsh_heap.c ****         /* insert node in the header of list */
+ 163:rt-thread/components/finsh/finsh_heap.c ****         header->next = node;
+ 164:rt-thread/components/finsh/finsh_heap.c ****         *list = header;
+ 165:rt-thread/components/finsh/finsh_heap.c **** 
+ 166:rt-thread/components/finsh/finsh_heap.c ****         return;
+ 167:rt-thread/components/finsh/finsh_heap.c ****     }
+ 168:rt-thread/components/finsh/finsh_heap.c ****     else
+ 169:rt-thread/components/finsh/finsh_heap.c ****     {
+ 170:rt-thread/components/finsh/finsh_heap.c ****         for (node = *list; node; node = node->next)
+  42              		.loc 1 170 0 discriminator 1
+  43 0008 52B1     		cbz	r2, .L5
+ 171:rt-thread/components/finsh/finsh_heap.c ****         {
+ 172:rt-thread/components/finsh/finsh_heap.c ****             if (node->next > header) break;
+  44              		.loc 1 172 0
+  45 000a 5368     		ldr	r3, [r2, #4]
+  46 000c 9942     		cmp	r1, r3
+  47 000e 07D3     		bcc	.L5
+ 173:rt-thread/components/finsh/finsh_heap.c **** 
+ 174:rt-thread/components/finsh/finsh_heap.c ****             if (node->next == NULL) break;
+  48              		.loc 1 174 0
+  49 0010 33B1     		cbz	r3, .L5
+ 170:rt-thread/components/finsh/finsh_heap.c ****         {
+  50              		.loc 1 170 0
+  51 0012 1A46     		mov	r2, r3
+  52              	.LVL3:
+  53 0014 F8E7     		b	.L4
+  54              	.L8:
+ARM GAS  /tmp/ccEFSjId.s 			page 5
+
+
+ 153:rt-thread/components/finsh/finsh_heap.c ****         return;
+  55              		.loc 1 153 0
+  56 0016 0160     		str	r1, [r0]
+ 154:rt-thread/components/finsh/finsh_heap.c ****     }
+  57              		.loc 1 154 0
+  58 0018 7047     		bx	lr
+  59              	.LVL4:
+  60              	.L9:
+ 163:rt-thread/components/finsh/finsh_heap.c ****         *list = header;
+  61              		.loc 1 163 0
+  62 001a 4A60     		str	r2, [r1, #4]
+ 164:rt-thread/components/finsh/finsh_heap.c **** 
+  63              		.loc 1 164 0
+  64 001c 0160     		str	r1, [r0]
+ 166:rt-thread/components/finsh/finsh_heap.c ****     }
+  65              		.loc 1 166 0
+  66 001e 7047     		bx	lr
+  67              	.L5:
+ 175:rt-thread/components/finsh/finsh_heap.c ****         }
+ 176:rt-thread/components/finsh/finsh_heap.c ****     }
+ 177:rt-thread/components/finsh/finsh_heap.c **** 
+ 178:rt-thread/components/finsh/finsh_heap.c ****     /* insert node */
+ 179:rt-thread/components/finsh/finsh_heap.c ****     if (node->next != NULL) header->next = node->next;
+  68              		.loc 1 179 0
+  69 0020 5368     		ldr	r3, [r2, #4]
+  70 0022 03B1     		cbz	r3, .L7
+  71              		.loc 1 179 0 is_stmt 0 discriminator 1
+  72 0024 4B60     		str	r3, [r1, #4]
+  73              	.L7:
+ 180:rt-thread/components/finsh/finsh_heap.c ****     node->next      = header;
+  74              		.loc 1 180 0 is_stmt 1
+  75 0026 5160     		str	r1, [r2, #4]
+  76 0028 7047     		bx	lr
+  77              		.cfi_endproc
+  78              	.LFE20:
+  80              		.section	.text.finsh_block_remove,"ax",%progbits
+  81              		.align	1
+  82              		.syntax unified
+  83              		.thumb
+  84              		.thumb_func
+  85              		.fpu fpv4-sp-d16
+  87              	finsh_block_remove:
+  88              	.LFB21:
+ 181:rt-thread/components/finsh/finsh_heap.c **** }
+ 182:rt-thread/components/finsh/finsh_heap.c **** 
+ 183:rt-thread/components/finsh/finsh_heap.c **** /**
+ 184:rt-thread/components/finsh/finsh_heap.c ****  * remove block from list
+ 185:rt-thread/components/finsh/finsh_heap.c ****  */
+ 186:rt-thread/components/finsh/finsh_heap.c **** void finsh_block_remove(struct finsh_block_header** list, struct finsh_block_header* header)
+ 187:rt-thread/components/finsh/finsh_heap.c **** {
+  89              		.loc 1 187 0
+  90              		.cfi_startproc
+  91              		@ args = 0, pretend = 0, frame = 0
+  92              		@ frame_needed = 0, uses_anonymous_args = 0
+  93              		@ link register save eliminated.
+  94              	.LVL5:
+ 188:rt-thread/components/finsh/finsh_heap.c ****     struct finsh_block_header* node;
+ARM GAS  /tmp/ccEFSjId.s 			page 6
+
+
+ 189:rt-thread/components/finsh/finsh_heap.c **** 
+ 190:rt-thread/components/finsh/finsh_heap.c ****     node = *list;
+  95              		.loc 1 190 0
+  96 0000 0368     		ldr	r3, [r0]
+  97              	.LVL6:
+ 191:rt-thread/components/finsh/finsh_heap.c ****     if (node == header)
+  98              		.loc 1 191 0
+  99 0002 8B42     		cmp	r3, r1
+ 100 0004 05D0     		beq	.L15
+ 101              	.LVL7:
+ 102              	.L11:
+ 192:rt-thread/components/finsh/finsh_heap.c ****     {
+ 193:rt-thread/components/finsh/finsh_heap.c ****         /* remove list header */
+ 194:rt-thread/components/finsh/finsh_heap.c ****         *list = header->next;
+ 195:rt-thread/components/finsh/finsh_heap.c ****         header->next = NULL;
+ 196:rt-thread/components/finsh/finsh_heap.c **** 
+ 197:rt-thread/components/finsh/finsh_heap.c ****         return;
+ 198:rt-thread/components/finsh/finsh_heap.c ****     }
+ 199:rt-thread/components/finsh/finsh_heap.c **** 
+ 200:rt-thread/components/finsh/finsh_heap.c ****     for (node = *list; node != NULL; node = node->next)
+ 103              		.loc 1 200 0 discriminator 1
+ 104 0006 63B1     		cbz	r3, .L16
+ 201:rt-thread/components/finsh/finsh_heap.c ****     {
+ 202:rt-thread/components/finsh/finsh_heap.c ****         if (node->next == header)
+ 105              		.loc 1 202 0
+ 106 0008 5A68     		ldr	r2, [r3, #4]
+ 107 000a 9142     		cmp	r1, r2
+ 108 000c 06D0     		beq	.L17
+ 200:rt-thread/components/finsh/finsh_heap.c ****     {
+ 109              		.loc 1 200 0
+ 110 000e 1346     		mov	r3, r2
+ 111              	.LVL8:
+ 112 0010 F9E7     		b	.L11
+ 113              	.LVL9:
+ 114              	.L15:
+ 194:rt-thread/components/finsh/finsh_heap.c ****         header->next = NULL;
+ 115              		.loc 1 194 0
+ 116 0012 4B68     		ldr	r3, [r1, #4]
+ 117              	.LVL10:
+ 118 0014 0360     		str	r3, [r0]
+ 119              	.LVL11:
+ 195:rt-thread/components/finsh/finsh_heap.c **** 
+ 120              		.loc 1 195 0
+ 121 0016 0023     		movs	r3, #0
+ 122 0018 4B60     		str	r3, [r1, #4]
+ 197:rt-thread/components/finsh/finsh_heap.c ****     }
+ 123              		.loc 1 197 0
+ 124 001a 7047     		bx	lr
+ 125              	.LVL12:
+ 126              	.L17:
+ 203:rt-thread/components/finsh/finsh_heap.c ****         {
+ 204:rt-thread/components/finsh/finsh_heap.c ****             node->next = header->next;
+ 127              		.loc 1 204 0
+ 128 001c 4A68     		ldr	r2, [r1, #4]
+ 129 001e 5A60     		str	r2, [r3, #4]
+ 205:rt-thread/components/finsh/finsh_heap.c ****             break;
+ 130              		.loc 1 205 0
+ARM GAS  /tmp/ccEFSjId.s 			page 7
+
+
+ 131 0020 7047     		bx	lr
+ 132              	.L16:
+ 133 0022 7047     		bx	lr
+ 134              		.cfi_endproc
+ 135              	.LFE21:
+ 137              		.section	.text.finsh_block_split,"ax",%progbits
+ 138              		.align	1
+ 139              		.syntax unified
+ 140              		.thumb
+ 141              		.thumb_func
+ 142              		.fpu fpv4-sp-d16
+ 144              	finsh_block_split:
+ 145              	.LFB22:
+ 206:rt-thread/components/finsh/finsh_heap.c ****         }
+ 207:rt-thread/components/finsh/finsh_heap.c ****     }
+ 208:rt-thread/components/finsh/finsh_heap.c **** }
+ 209:rt-thread/components/finsh/finsh_heap.c **** 
+ 210:rt-thread/components/finsh/finsh_heap.c **** /**
+ 211:rt-thread/components/finsh/finsh_heap.c ****  * split block
+ 212:rt-thread/components/finsh/finsh_heap.c ****  */
+ 213:rt-thread/components/finsh/finsh_heap.c **** void finsh_block_split(struct finsh_block_header* header, size_t size)
+ 214:rt-thread/components/finsh/finsh_heap.c **** {
+ 146              		.loc 1 214 0
+ 147              		.cfi_startproc
+ 148              		@ args = 0, pretend = 0, frame = 0
+ 149              		@ frame_needed = 0, uses_anonymous_args = 0
+ 150              		@ link register save eliminated.
+ 151              	.LVL13:
+ 152 0000 10B4     		push	{r4}
+ 153              	.LCFI0:
+ 154              		.cfi_def_cfa_offset 4
+ 155              		.cfi_offset 4, -4
+ 215:rt-thread/components/finsh/finsh_heap.c ****     struct finsh_block_header* next;
+ 216:rt-thread/components/finsh/finsh_heap.c **** 
+ 217:rt-thread/components/finsh/finsh_heap.c ****     /*
+ 218:rt-thread/components/finsh/finsh_heap.c ****      * split header into two node:
+ 219:rt-thread/components/finsh/finsh_heap.c ****      * header->next->...
+ 220:rt-thread/components/finsh/finsh_heap.c ****      */
+ 221:rt-thread/components/finsh/finsh_heap.c ****     next = BLOCK_HEADER((uint8_t*)header + sizeof(struct finsh_block_header) + size);
+ 156              		.loc 1 221 0
+ 157 0002 01F10804 		add	r4, r1, #8
+ 158 0006 0219     		adds	r2, r0, r4
+ 159              	.LVL14:
+ 222:rt-thread/components/finsh/finsh_heap.c ****     next->length = header->length - sizeof(struct finsh_block_header) - size;
+ 160              		.loc 1 222 0
+ 161 0008 0368     		ldr	r3, [r0]
+ 162 000a 5B1A     		subs	r3, r3, r1
+ 163 000c 083B     		subs	r3, r3, #8
+ 164 000e 0351     		str	r3, [r0, r4]
+ 223:rt-thread/components/finsh/finsh_heap.c ****     header->length = size;
+ 165              		.loc 1 223 0
+ 166 0010 0160     		str	r1, [r0]
+ 224:rt-thread/components/finsh/finsh_heap.c ****     next->next = header->next;
+ 167              		.loc 1 224 0
+ 168 0012 4368     		ldr	r3, [r0, #4]
+ 169 0014 5360     		str	r3, [r2, #4]
+ 225:rt-thread/components/finsh/finsh_heap.c **** 
+ARM GAS  /tmp/ccEFSjId.s 			page 8
+
+
+ 226:rt-thread/components/finsh/finsh_heap.c ****     header->next = next;
+ 170              		.loc 1 226 0
+ 171 0016 4260     		str	r2, [r0, #4]
+ 227:rt-thread/components/finsh/finsh_heap.c **** }
+ 172              		.loc 1 227 0
+ 173 0018 5DF8044B 		ldr	r4, [sp], #4
+ 174              	.LCFI1:
+ 175              		.cfi_restore 4
+ 176              		.cfi_def_cfa_offset 0
+ 177 001c 7047     		bx	lr
+ 178              		.cfi_endproc
+ 179              	.LFE22:
+ 181              		.section	.text.finsh_block_merge,"ax",%progbits
+ 182              		.align	1
+ 183              		.syntax unified
+ 184              		.thumb
+ 185              		.thumb_func
+ 186              		.fpu fpv4-sp-d16
+ 188              	finsh_block_merge:
+ 189              	.LFB23:
+ 228:rt-thread/components/finsh/finsh_heap.c **** 
+ 229:rt-thread/components/finsh/finsh_heap.c **** void finsh_block_merge(struct finsh_block_header** list, struct finsh_block_header* header)
+ 230:rt-thread/components/finsh/finsh_heap.c **** {
+ 190              		.loc 1 230 0
+ 191              		.cfi_startproc
+ 192              		@ args = 0, pretend = 0, frame = 0
+ 193              		@ frame_needed = 0, uses_anonymous_args = 0
+ 194              		@ link register save eliminated.
+ 195              	.LVL15:
+ 196 0000 30B4     		push	{r4, r5}
+ 197              	.LCFI2:
+ 198              		.cfi_def_cfa_offset 8
+ 199              		.cfi_offset 4, -8
+ 200              		.cfi_offset 5, -4
+ 231:rt-thread/components/finsh/finsh_heap.c ****     struct finsh_block_header* prev_node;
+ 232:rt-thread/components/finsh/finsh_heap.c ****     struct finsh_block_header* next_node;
+ 233:rt-thread/components/finsh/finsh_heap.c **** 
+ 234:rt-thread/components/finsh/finsh_heap.c ****     next_node = header->next;
+ 201              		.loc 1 234 0
+ 202 0002 4C68     		ldr	r4, [r1, #4]
+ 203              	.LVL16:
+ 235:rt-thread/components/finsh/finsh_heap.c **** 
+ 236:rt-thread/components/finsh/finsh_heap.c ****     if (*list == header) prev_node = NULL;
+ 204              		.loc 1 236 0
+ 205 0004 0368     		ldr	r3, [r0]
+ 206 0006 9942     		cmp	r1, r3
+ 207 0008 05D0     		beq	.L29
+ 208              	.L22:
+ 209              	.LVL17:
+ 237:rt-thread/components/finsh/finsh_heap.c ****     else
+ 238:rt-thread/components/finsh/finsh_heap.c ****     {
+ 239:rt-thread/components/finsh/finsh_heap.c ****         /* find out the previous header */
+ 240:rt-thread/components/finsh/finsh_heap.c ****         for (prev_node = *list; prev_node; prev_node =prev_node->next)
+ 210              		.loc 1 240 0 discriminator 1
+ 211 000a 2BB1     		cbz	r3, .L21
+ 241:rt-thread/components/finsh/finsh_heap.c ****         {
+ 242:rt-thread/components/finsh/finsh_heap.c ****             if (prev_node->next == header)
+ARM GAS  /tmp/ccEFSjId.s 			page 9
+
+
+ 212              		.loc 1 242 0
+ 213 000c 5A68     		ldr	r2, [r3, #4]
+ 214 000e 9142     		cmp	r1, r2
+ 215 0010 02D0     		beq	.L21
+ 240:rt-thread/components/finsh/finsh_heap.c ****         {
+ 216              		.loc 1 240 0
+ 217 0012 1346     		mov	r3, r2
+ 218              	.LVL18:
+ 219 0014 F9E7     		b	.L22
+ 220              	.L29:
+ 236:rt-thread/components/finsh/finsh_heap.c ****     else
+ 221              		.loc 1 236 0
+ 222 0016 0023     		movs	r3, #0
+ 223              	.L21:
+ 224              	.LVL19:
+ 243:rt-thread/components/finsh/finsh_heap.c ****                 break;
+ 244:rt-thread/components/finsh/finsh_heap.c ****         }
+ 245:rt-thread/components/finsh/finsh_heap.c ****     }
+ 246:rt-thread/components/finsh/finsh_heap.c **** 
+ 247:rt-thread/components/finsh/finsh_heap.c ****     /* try merge node */
+ 248:rt-thread/components/finsh/finsh_heap.c **** 
+ 249:rt-thread/components/finsh/finsh_heap.c ****     /* merge to previous node */
+ 250:rt-thread/components/finsh/finsh_heap.c ****     if (prev_node != NULL &&
+ 225              		.loc 1 250 0
+ 226 0018 2BB1     		cbz	r3, .L24
+ 251:rt-thread/components/finsh/finsh_heap.c ****         ((uint8_t*)prev_node + prev_node->length + sizeof(struct finsh_block_header)
+ 227              		.loc 1 251 0 discriminator 1
+ 228 001a 1868     		ldr	r0, [r3]
+ 229              	.LVL20:
+ 230 001c 00F10802 		add	r2, r0, #8
+ 231 0020 1A44     		add	r2, r2, r3
+ 250:rt-thread/components/finsh/finsh_heap.c ****         ((uint8_t*)prev_node + prev_node->length + sizeof(struct finsh_block_header)
+ 232              		.loc 1 250 0 discriminator 1
+ 233 0022 9142     		cmp	r1, r2
+ 234 0024 08D0     		beq	.L30
+ 235              	.L24:
+ 252:rt-thread/components/finsh/finsh_heap.c ****         == (uint8_t*)header))
+ 253:rt-thread/components/finsh/finsh_heap.c ****     {
+ 254:rt-thread/components/finsh/finsh_heap.c ****         /* is it close to next node? */
+ 255:rt-thread/components/finsh/finsh_heap.c ****         if ((next_node != NULL) &&
+ 256:rt-thread/components/finsh/finsh_heap.c ****             ((uint8_t*)header + header->length + sizeof(struct finsh_block_header)
+ 257:rt-thread/components/finsh/finsh_heap.c ****             == (uint8_t*)next_node))
+ 258:rt-thread/components/finsh/finsh_heap.c ****         {
+ 259:rt-thread/components/finsh/finsh_heap.c ****             /* merge three node */
+ 260:rt-thread/components/finsh/finsh_heap.c ****             prev_node->length += header->length + next_node->length +
+ 261:rt-thread/components/finsh/finsh_heap.c ****                 2 * sizeof(struct finsh_block_header);
+ 262:rt-thread/components/finsh/finsh_heap.c **** 
+ 263:rt-thread/components/finsh/finsh_heap.c ****             prev_node->next = next_node->next;
+ 264:rt-thread/components/finsh/finsh_heap.c ****         }
+ 265:rt-thread/components/finsh/finsh_heap.c ****         else
+ 266:rt-thread/components/finsh/finsh_heap.c ****         {
+ 267:rt-thread/components/finsh/finsh_heap.c ****             prev_node->length += header->length + sizeof(struct finsh_block_header);
+ 268:rt-thread/components/finsh/finsh_heap.c ****             prev_node->next = header->next;
+ 269:rt-thread/components/finsh/finsh_heap.c ****         }
+ 270:rt-thread/components/finsh/finsh_heap.c ****     }
+ 271:rt-thread/components/finsh/finsh_heap.c ****     else /* merge to last node */
+ 272:rt-thread/components/finsh/finsh_heap.c ****     if ( (next_node != NULL) &&
+ARM GAS  /tmp/ccEFSjId.s 			page 10
+
+
+ 236              		.loc 1 272 0
+ 237 0026 2CB1     		cbz	r4, .L20
+ 273:rt-thread/components/finsh/finsh_heap.c ****         ((uint8_t*)header + header->length + sizeof(struct finsh_block_header)
+ 238              		.loc 1 273 0 discriminator 1
+ 239 0028 0A68     		ldr	r2, [r1]
+ 240 002a 02F10803 		add	r3, r2, #8
+ 241              	.LVL21:
+ 242 002e 0B44     		add	r3, r3, r1
+ 272:rt-thread/components/finsh/finsh_heap.c ****         ((uint8_t*)header + header->length + sizeof(struct finsh_block_header)
+ 243              		.loc 1 272 0 discriminator 1
+ 244 0030 9C42     		cmp	r4, r3
+ 245 0032 17D0     		beq	.L31
+ 246              	.L20:
+ 274:rt-thread/components/finsh/finsh_heap.c ****         == (uint8_t*)next_node))
+ 275:rt-thread/components/finsh/finsh_heap.c ****     {
+ 276:rt-thread/components/finsh/finsh_heap.c ****         header->length += next_node->length + sizeof(struct finsh_block_header);
+ 277:rt-thread/components/finsh/finsh_heap.c ****         header->next = next_node->next;
+ 278:rt-thread/components/finsh/finsh_heap.c ****     }
+ 279:rt-thread/components/finsh/finsh_heap.c **** }
+ 247              		.loc 1 279 0
+ 248 0034 30BC     		pop	{r4, r5}
+ 249              	.LCFI3:
+ 250              		.cfi_remember_state
+ 251              		.cfi_restore 5
+ 252              		.cfi_restore 4
+ 253              		.cfi_def_cfa_offset 0
+ 254              	.LVL22:
+ 255 0036 7047     		bx	lr
+ 256              	.LVL23:
+ 257              	.L30:
+ 258              	.LCFI4:
+ 259              		.cfi_restore_state
+ 255:rt-thread/components/finsh/finsh_heap.c ****             ((uint8_t*)header + header->length + sizeof(struct finsh_block_header)
+ 260              		.loc 1 255 0
+ 261 0038 2CB1     		cbz	r4, .L25
+ 256:rt-thread/components/finsh/finsh_heap.c ****             == (uint8_t*)next_node))
+ 262              		.loc 1 256 0 discriminator 1
+ 263 003a 0D68     		ldr	r5, [r1]
+ 264 003c 05F10802 		add	r2, r5, #8
+ 265 0040 0A44     		add	r2, r2, r1
+ 255:rt-thread/components/finsh/finsh_heap.c ****             ((uint8_t*)header + header->length + sizeof(struct finsh_block_header)
+ 266              		.loc 1 255 0 discriminator 1
+ 267 0042 9442     		cmp	r4, r2
+ 268 0044 06D0     		beq	.L32
+ 269              	.L25:
+ 267:rt-thread/components/finsh/finsh_heap.c ****             prev_node->next = header->next;
+ 270              		.loc 1 267 0
+ 271 0046 0A68     		ldr	r2, [r1]
+ 272 0048 0244     		add	r2, r2, r0
+ 273 004a 0832     		adds	r2, r2, #8
+ 274 004c 1A60     		str	r2, [r3]
+ 268:rt-thread/components/finsh/finsh_heap.c ****         }
+ 275              		.loc 1 268 0
+ 276 004e 4A68     		ldr	r2, [r1, #4]
+ 277 0050 5A60     		str	r2, [r3, #4]
+ 278 0052 EFE7     		b	.L20
+ 279              	.L32:
+ARM GAS  /tmp/ccEFSjId.s 			page 11
+
+
+ 260:rt-thread/components/finsh/finsh_heap.c ****                 2 * sizeof(struct finsh_block_header);
+ 280              		.loc 1 260 0
+ 281 0054 2268     		ldr	r2, [r4]
+ 282 0056 2A44     		add	r2, r2, r5
+ 283 0058 0244     		add	r2, r2, r0
+ 284 005a 1032     		adds	r2, r2, #16
+ 285 005c 1A60     		str	r2, [r3]
+ 263:rt-thread/components/finsh/finsh_heap.c ****         }
+ 286              		.loc 1 263 0
+ 287 005e 6268     		ldr	r2, [r4, #4]
+ 288 0060 5A60     		str	r2, [r3, #4]
+ 289 0062 E7E7     		b	.L20
+ 290              	.LVL24:
+ 291              	.L31:
+ 276:rt-thread/components/finsh/finsh_heap.c ****         header->next = next_node->next;
+ 292              		.loc 1 276 0
+ 293 0064 2368     		ldr	r3, [r4]
+ 294 0066 1A44     		add	r2, r2, r3
+ 295 0068 0832     		adds	r2, r2, #8
+ 296 006a 0A60     		str	r2, [r1]
+ 277:rt-thread/components/finsh/finsh_heap.c ****     }
+ 297              		.loc 1 277 0
+ 298 006c 6368     		ldr	r3, [r4, #4]
+ 299 006e 4B60     		str	r3, [r1, #4]
+ 300              		.loc 1 279 0
+ 301 0070 E0E7     		b	.L20
+ 302              		.cfi_endproc
+ 303              	.LFE23:
+ 305              		.section	.text.finsh_heap_init,"ax",%progbits
+ 306              		.align	1
+ 307              		.global	finsh_heap_init
+ 308              		.syntax unified
+ 309              		.thumb
+ 310              		.thumb_func
+ 311              		.fpu fpv4-sp-d16
+ 313              	finsh_heap_init:
+ 314              	.LFB16:
+  37:rt-thread/components/finsh/finsh_heap.c ****     /* clear heap to zero */
+ 315              		.loc 1 37 0
+ 316              		.cfi_startproc
+ 317              		@ args = 0, pretend = 0, frame = 0
+ 318              		@ frame_needed = 0, uses_anonymous_args = 0
+ 319 0000 10B5     		push	{r4, lr}
+ 320              	.LCFI5:
+ 321              		.cfi_def_cfa_offset 8
+ 322              		.cfi_offset 4, -8
+ 323              		.cfi_offset 14, -4
+  39:rt-thread/components/finsh/finsh_heap.c **** 
+ 324              		.loc 1 39 0
+ 325 0002 074C     		ldr	r4, .L35
+ 326 0004 8022     		movs	r2, #128
+ 327 0006 0021     		movs	r1, #0
+ 328 0008 2046     		mov	r0, r4
+ 329 000a FFF7FEFF 		bl	memset
+ 330              	.LVL25:
+  42:rt-thread/components/finsh/finsh_heap.c ****     free_list->length   = FINSH_HEAP_MAX - sizeof(struct finsh_block_header);
+ 331              		.loc 1 42 0
+ARM GAS  /tmp/ccEFSjId.s 			page 12
+
+
+ 332 000e 054B     		ldr	r3, .L35+4
+ 333 0010 1C60     		str	r4, [r3]
+  43:rt-thread/components/finsh/finsh_heap.c ****     free_list->next     = NULL;
+ 334              		.loc 1 43 0
+ 335 0012 7823     		movs	r3, #120
+ 336 0014 2360     		str	r3, [r4]
+  46:rt-thread/components/finsh/finsh_heap.c **** 
+ 337              		.loc 1 46 0
+ 338 0016 0020     		movs	r0, #0
+ 339 0018 034B     		ldr	r3, .L35+8
+ 340 001a 1860     		str	r0, [r3]
+  49:rt-thread/components/finsh/finsh_heap.c **** 
+ 341              		.loc 1 49 0
+ 342 001c 10BD     		pop	{r4, pc}
+ 343              	.L36:
+ 344 001e 00BF     		.align	2
+ 345              	.L35:
+ 346 0020 00000000 		.word	finsh_heap
+ 347 0024 00000000 		.word	.LANCHOR0
+ 348 0028 00000000 		.word	.LANCHOR1
+ 349              		.cfi_endproc
+ 350              	.LFE16:
+ 352              		.section	.text.finsh_heap_free,"ax",%progbits
+ 353              		.align	1
+ 354              		.global	finsh_heap_free
+ 355              		.syntax unified
+ 356              		.thumb
+ 357              		.thumb_func
+ 358              		.fpu fpv4-sp-d16
+ 360              	finsh_heap_free:
+ 361              	.LFB18:
+  97:rt-thread/components/finsh/finsh_heap.c ****     struct finsh_block_header* header;
+ 362              		.loc 1 97 0
+ 363              		.cfi_startproc
+ 364              		@ args = 0, pretend = 0, frame = 0
+ 365              		@ frame_needed = 0, uses_anonymous_args = 0
+ 366              	.LVL26:
+ 367 0000 38B5     		push	{r3, r4, r5, lr}
+ 368              	.LCFI6:
+ 369              		.cfi_def_cfa_offset 16
+ 370              		.cfi_offset 3, -16
+ 371              		.cfi_offset 4, -12
+ 372              		.cfi_offset 5, -8
+ 373              		.cfi_offset 14, -4
+ 101:rt-thread/components/finsh/finsh_heap.c **** 
+ 374              		.loc 1 101 0
+ 375 0002 A0F10804 		sub	r4, r0, #8
+ 376              	.LVL27:
+ 104:rt-thread/components/finsh/finsh_heap.c **** 
+ 377              		.loc 1 104 0
+ 378 0006 2146     		mov	r1, r4
+ 379 0008 0648     		ldr	r0, .L39
+ 380              	.LVL28:
+ 381 000a FFF7FEFF 		bl	finsh_block_remove
+ 382              	.LVL29:
+ 107:rt-thread/components/finsh/finsh_heap.c ****     finsh_block_merge(&free_list, header);
+ 383              		.loc 1 107 0
+ARM GAS  /tmp/ccEFSjId.s 			page 13
+
+
+ 384 000e 064D     		ldr	r5, .L39+4
+ 385 0010 2146     		mov	r1, r4
+ 386 0012 2846     		mov	r0, r5
+ 387 0014 FFF7FEFF 		bl	finsh_block_insert
+ 388              	.LVL30:
+ 108:rt-thread/components/finsh/finsh_heap.c **** }
+ 389              		.loc 1 108 0
+ 390 0018 2146     		mov	r1, r4
+ 391 001a 2846     		mov	r0, r5
+ 392 001c FFF7FEFF 		bl	finsh_block_merge
+ 393              	.LVL31:
+ 394 0020 38BD     		pop	{r3, r4, r5, pc}
+ 395              	.LVL32:
+ 396              	.L40:
+ 397 0022 00BF     		.align	2
+ 398              	.L39:
+ 399 0024 00000000 		.word	.LANCHOR1
+ 400 0028 00000000 		.word	.LANCHOR0
+ 401              		.cfi_endproc
+ 402              	.LFE18:
+ 404              		.section	.text.finsh_heap_gc,"ax",%progbits
+ 405              		.align	1
+ 406              		.syntax unified
+ 407              		.thumb
+ 408              		.thumb_func
+ 409              		.fpu fpv4-sp-d16
+ 411              	finsh_heap_gc:
+ 412              	.LFB19:
+ 115:rt-thread/components/finsh/finsh_heap.c ****     int i;
+ 413              		.loc 1 115 0
+ 414              		.cfi_startproc
+ 415              		@ args = 0, pretend = 0, frame = 0
+ 416              		@ frame_needed = 0, uses_anonymous_args = 0
+ 417              	.LVL33:
+ 122:rt-thread/components/finsh/finsh_heap.c ****     {
+ 418              		.loc 1 122 0
+ 419 0000 114B     		ldr	r3, .L55
+ 420 0002 1868     		ldr	r0, [r3]
+ 421              	.LVL34:
+ 422 0004 F8B1     		cbz	r0, .L52
+ 115:rt-thread/components/finsh/finsh_heap.c ****     int i;
+ 423              		.loc 1 115 0
+ 424 0006 10B5     		push	{r4, lr}
+ 425              	.LCFI7:
+ 426              		.cfi_def_cfa_offset 8
+ 427              		.cfi_offset 4, -8
+ 428              		.cfi_offset 14, -4
+ 429 0008 16E0     		b	.L48
+ 430              	.LVL35:
+ 431              	.L43:
+ 124:rt-thread/components/finsh/finsh_heap.c ****         {
+ 432              		.loc 1 124 0 discriminator 2
+ 433 000a 0133     		adds	r3, r3, #1
+ 434              	.LVL36:
+ 435              	.L47:
+ 124:rt-thread/components/finsh/finsh_heap.c ****         {
+ 436              		.loc 1 124 0 is_stmt 0 discriminator 1
+ARM GAS  /tmp/ccEFSjId.s 			page 14
+
+
+ 437 000c 072B     		cmp	r3, #7
+ 438 000e 0EDC     		bgt	.L44
+ 126:rt-thread/components/finsh/finsh_heap.c ****             {
+ 439              		.loc 1 126 0 is_stmt 1
+ 440 0010 03EB4302 		add	r2, r3, r3, lsl #1
+ 441 0014 D100     		lsls	r1, r2, #3
+ 442 0016 0D4A     		ldr	r2, .L55+4
+ 443 0018 0A44     		add	r2, r2, r1
+ 444 001a 527C     		ldrb	r2, [r2, #17]	@ zero_extendqisi2
+ 445 001c 002A     		cmp	r2, #0
+ 446 001e F4D0     		beq	.L43
+ 128:rt-thread/components/finsh/finsh_heap.c ****                     break;
+ 447              		.loc 1 128 0
+ 448 0020 0A4A     		ldr	r2, .L55+4
+ 449 0022 0A44     		add	r2, r2, r1
+ 450 0024 5169     		ldr	r1, [r2, #20]
+ 451 0026 00F10802 		add	r2, r0, #8
+ 452 002a 9142     		cmp	r1, r2
+ 453 002c EDD1     		bne	.L43
+ 454              	.L44:
+ 455              	.LVL37:
+ 134:rt-thread/components/finsh/finsh_heap.c **** 
+ 456              		.loc 1 134 0
+ 457 002e 4468     		ldr	r4, [r0, #4]
+ 458              	.LVL38:
+ 137:rt-thread/components/finsh/finsh_heap.c ****         {
+ 459              		.loc 1 137 0
+ 460 0030 082B     		cmp	r3, #8
+ 461 0032 03D0     		beq	.L53
+ 462              	.LVL39:
+ 463              	.L46:
+ 464 0034 2046     		mov	r0, r4
+ 465              	.LVL40:
+ 122:rt-thread/components/finsh/finsh_heap.c ****     {
+ 466              		.loc 1 122 0 discriminator 1
+ 467 0036 2CB1     		cbz	r4, .L54
+ 468              	.L48:
+ 469 0038 0023     		movs	r3, #0
+ 470 003a E7E7     		b	.L47
+ 471              	.LVL41:
+ 472              	.L53:
+ 139:rt-thread/components/finsh/finsh_heap.c ****         }
+ 473              		.loc 1 139 0
+ 474 003c 0830     		adds	r0, r0, #8
+ 475              	.LVL42:
+ 476 003e FFF7FEFF 		bl	finsh_heap_free
+ 477              	.LVL43:
+ 478 0042 F7E7     		b	.L46
+ 479              	.LVL44:
+ 480              	.L54:
+ 142:rt-thread/components/finsh/finsh_heap.c **** 
+ 481              		.loc 1 142 0
+ 482 0044 10BD     		pop	{r4, pc}
+ 483              	.LVL45:
+ 484              	.L52:
+ 485              	.LCFI8:
+ 486              		.cfi_def_cfa_offset 0
+ARM GAS  /tmp/ccEFSjId.s 			page 15
+
+
+ 487              		.cfi_restore 4
+ 488              		.cfi_restore 14
+ 489 0046 7047     		bx	lr
+ 490              	.L56:
+ 491              		.align	2
+ 492              	.L55:
+ 493 0048 00000000 		.word	.LANCHOR1
+ 494 004c 00000000 		.word	global_variable
+ 495              		.cfi_endproc
+ 496              	.LFE19:
+ 498              		.section	.text.finsh_heap_allocate,"ax",%progbits
+ 499              		.align	1
+ 500              		.global	finsh_heap_allocate
+ 501              		.syntax unified
+ 502              		.thumb
+ 503              		.thumb_func
+ 504              		.fpu fpv4-sp-d16
+ 506              	finsh_heap_allocate:
+ 507              	.LFB17:
+  55:rt-thread/components/finsh/finsh_heap.c ****     struct finsh_block_header* header;
+ 508              		.loc 1 55 0
+ 509              		.cfi_startproc
+ 510              		@ args = 0, pretend = 0, frame = 0
+ 511              		@ frame_needed = 0, uses_anonymous_args = 0
+ 512              	.LVL46:
+ 513 0000 70B5     		push	{r4, r5, r6, lr}
+ 514              	.LCFI9:
+ 515              		.cfi_def_cfa_offset 16
+ 516              		.cfi_offset 4, -16
+ 517              		.cfi_offset 5, -12
+ 518              		.cfi_offset 6, -8
+ 519              		.cfi_offset 14, -4
+  58:rt-thread/components/finsh/finsh_heap.c **** 
+ 520              		.loc 1 58 0
+ 521 0002 0330     		adds	r0, r0, #3
+ 522              	.LVL47:
+ 523 0004 20F00305 		bic	r5, r0, #3
+ 524              	.LVL48:
+  61:rt-thread/components/finsh/finsh_heap.c ****         ((header != NULL) && (header->length <= size + sizeof(struct finsh_block_header)));
+ 525              		.loc 1 61 0
+ 526 0008 184B     		ldr	r3, .L69
+ 527 000a 1C68     		ldr	r4, [r3]
+ 528              	.LVL49:
+ 529 000c 00E0     		b	.L58
+ 530              	.L60:
+  63:rt-thread/components/finsh/finsh_heap.c **** 
+ 531              		.loc 1 63 0
+ 532 000e 6468     		ldr	r4, [r4, #4]
+ 533              	.LVL50:
+ 534              	.L58:
+  61:rt-thread/components/finsh/finsh_heap.c ****         ((header != NULL) && (header->length <= size + sizeof(struct finsh_block_header)));
+ 535              		.loc 1 61 0 discriminator 1
+ 536 0010 24B1     		cbz	r4, .L59
+  62:rt-thread/components/finsh/finsh_heap.c ****         header = header->next) ;
+ 537              		.loc 1 62 0
+ 538 0012 2268     		ldr	r2, [r4]
+ 539 0014 05F10803 		add	r3, r5, #8
+ARM GAS  /tmp/ccEFSjId.s 			page 16
+
+
+ 540 0018 9A42     		cmp	r2, r3
+ 541 001a F8D9     		bls	.L60
+ 542              	.L59:
+  65:rt-thread/components/finsh/finsh_heap.c ****     {
+ 543              		.loc 1 65 0
+ 544 001c ACB1     		cbz	r4, .L68
+ 545              	.L61:
+  79:rt-thread/components/finsh/finsh_heap.c **** 
+ 546              		.loc 1 79 0
+ 547 001e 2946     		mov	r1, r5
+ 548 0020 2046     		mov	r0, r4
+ 549 0022 FFF7FEFF 		bl	finsh_block_split
+ 550              	.LVL51:
+  82:rt-thread/components/finsh/finsh_heap.c ****     header->next = NULL;
+ 551              		.loc 1 82 0
+ 552 0026 2146     		mov	r1, r4
+ 553 0028 1048     		ldr	r0, .L69
+ 554 002a FFF7FEFF 		bl	finsh_block_remove
+ 555              	.LVL52:
+  83:rt-thread/components/finsh/finsh_heap.c **** 
+ 556              		.loc 1 83 0
+ 557 002e 0026     		movs	r6, #0
+ 558 0030 6660     		str	r6, [r4, #4]
+  86:rt-thread/components/finsh/finsh_heap.c **** 
+ 559              		.loc 1 86 0
+ 560 0032 2146     		mov	r1, r4
+ 561 0034 0E48     		ldr	r0, .L69+4
+ 562 0036 FFF7FEFF 		bl	finsh_block_insert
+ 563              	.LVL53:
+  88:rt-thread/components/finsh/finsh_heap.c **** 
+ 564              		.loc 1 88 0
+ 565 003a 0834     		adds	r4, r4, #8
+ 566              	.LVL54:
+ 567 003c 2A46     		mov	r2, r5
+ 568 003e 3146     		mov	r1, r6
+ 569 0040 2046     		mov	r0, r4
+ 570 0042 FFF7FEFF 		bl	memset
+ 571              	.LVL55:
+  90:rt-thread/components/finsh/finsh_heap.c **** }
+ 572              		.loc 1 90 0
+ 573 0046 2046     		mov	r0, r4
+ 574 0048 70BD     		pop	{r4, r5, r6, pc}
+ 575              	.LVL56:
+ 576              	.L68:
+  67:rt-thread/components/finsh/finsh_heap.c **** 
+ 577              		.loc 1 67 0
+ 578 004a FFF7FEFF 		bl	finsh_heap_gc
+ 579              	.LVL57:
+  70:rt-thread/components/finsh/finsh_heap.c ****             ((header != NULL) && (header->length < size + sizeof(struct finsh_block_header)));
+ 580              		.loc 1 70 0
+ 581 004e 074B     		ldr	r3, .L69
+ 582 0050 1C68     		ldr	r4, [r3]
+ 583              	.LVL58:
+ 584 0052 00E0     		b	.L62
+ 585              	.L64:
+  72:rt-thread/components/finsh/finsh_heap.c **** 
+ 586              		.loc 1 72 0
+ARM GAS  /tmp/ccEFSjId.s 			page 17
+
+
+ 587 0054 6468     		ldr	r4, [r4, #4]
+ 588              	.LVL59:
+ 589              	.L62:
+  70:rt-thread/components/finsh/finsh_heap.c ****             ((header != NULL) && (header->length < size + sizeof(struct finsh_block_header)));
+ 590              		.loc 1 70 0 discriminator 1
+ 591 0056 24B1     		cbz	r4, .L63
+  71:rt-thread/components/finsh/finsh_heap.c ****             header = header->next) ;
+ 592              		.loc 1 71 0
+ 593 0058 2268     		ldr	r2, [r4]
+ 594 005a 05F10803 		add	r3, r5, #8
+ 595 005e 9A42     		cmp	r2, r3
+ 596 0060 F8D3     		bcc	.L64
+ 597              	.L63:
+  75:rt-thread/components/finsh/finsh_heap.c ****     }
+ 598              		.loc 1 75 0
+ 599 0062 002C     		cmp	r4, #0
+ 600 0064 DBD1     		bne	.L61
+ 601 0066 0020     		movs	r0, #0
+  91:rt-thread/components/finsh/finsh_heap.c **** 
+ 602              		.loc 1 91 0
+ 603 0068 70BD     		pop	{r4, r5, r6, pc}
+ 604              	.LVL60:
+ 605              	.L70:
+ 606 006a 00BF     		.align	2
+ 607              	.L69:
+ 608 006c 00000000 		.word	.LANCHOR0
+ 609 0070 00000000 		.word	.LANCHOR1
+ 610              		.cfi_endproc
+ 611              	.LFE17:
+ 613              		.comm	finsh_heap,128,4
+ 614              		.section	.bss.allocate_list,"aw",%nobits
+ 615              		.align	2
+ 616              		.set	.LANCHOR1,. + 0
+ 619              	allocate_list:
+ 620 0000 00000000 		.space	4
+ 621              		.section	.bss.free_list,"aw",%nobits
+ 622              		.align	2
+ 623              		.set	.LANCHOR0,. + 0
+ 626              	free_list:
+ 627 0000 00000000 		.space	4
+ 628              		.text
+ 629              	.Letext0:
+ 630              		.file 2 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/machine/_default_types.h"
+ 631              		.file 3 "/opt/gcc-arm-none-eabi-6-2017-q2-update/lib/gcc/arm-none-eabi/6.3.1/include/stddef.h"
+ 632              		.file 4 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/lock.h"
+ 633              		.file 5 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_types.h"
+ 634              		.file 6 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/reent.h"
+ 635              		.file 7 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_stdint.h"
+ 636              		.file 8 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/time.h"
+ 637              		.file 9 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/errno.h"
+ 638              		.file 10 "rt-thread/components/finsh/finsh_api.h"
+ 639              		.file 11 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/ctype.h"
+ 640              		.file 12 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/stdlib.h"
+ 641              		.file 13 "rt-thread/components/finsh/finsh.h"
+ 642              		.file 14 "rt-thread/components/finsh/finsh_var.h"
+ARM GAS  /tmp/ccEFSjId.s 			page 18
+
+
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 finsh_heap.c
+     /tmp/ccEFSjId.s:18     .text.finsh_block_insert:0000000000000000 $t
+     /tmp/ccEFSjId.s:24     .text.finsh_block_insert:0000000000000000 finsh_block_insert
+     /tmp/ccEFSjId.s:81     .text.finsh_block_remove:0000000000000000 $t
+     /tmp/ccEFSjId.s:87     .text.finsh_block_remove:0000000000000000 finsh_block_remove
+     /tmp/ccEFSjId.s:138    .text.finsh_block_split:0000000000000000 $t
+     /tmp/ccEFSjId.s:144    .text.finsh_block_split:0000000000000000 finsh_block_split
+     /tmp/ccEFSjId.s:182    .text.finsh_block_merge:0000000000000000 $t
+     /tmp/ccEFSjId.s:188    .text.finsh_block_merge:0000000000000000 finsh_block_merge
+     /tmp/ccEFSjId.s:306    .text.finsh_heap_init:0000000000000000 $t
+     /tmp/ccEFSjId.s:313    .text.finsh_heap_init:0000000000000000 finsh_heap_init
+     /tmp/ccEFSjId.s:346    .text.finsh_heap_init:0000000000000020 $d
+                            *COM*:0000000000000080 finsh_heap
+     /tmp/ccEFSjId.s:353    .text.finsh_heap_free:0000000000000000 $t
+     /tmp/ccEFSjId.s:360    .text.finsh_heap_free:0000000000000000 finsh_heap_free
+     /tmp/ccEFSjId.s:399    .text.finsh_heap_free:0000000000000024 $d
+     /tmp/ccEFSjId.s:405    .text.finsh_heap_gc:0000000000000000 $t
+     /tmp/ccEFSjId.s:411    .text.finsh_heap_gc:0000000000000000 finsh_heap_gc
+     /tmp/ccEFSjId.s:493    .text.finsh_heap_gc:0000000000000048 $d
+     /tmp/ccEFSjId.s:499    .text.finsh_heap_allocate:0000000000000000 $t
+     /tmp/ccEFSjId.s:506    .text.finsh_heap_allocate:0000000000000000 finsh_heap_allocate
+     /tmp/ccEFSjId.s:608    .text.finsh_heap_allocate:000000000000006c $d
+     /tmp/ccEFSjId.s:615    .bss.allocate_list:0000000000000000 $d
+     /tmp/ccEFSjId.s:619    .bss.allocate_list:0000000000000000 allocate_list
+     /tmp/ccEFSjId.s:622    .bss.free_list:0000000000000000 $d
+     /tmp/ccEFSjId.s:626    .bss.free_list:0000000000000000 free_list
+                     .debug_frame:0000000000000010 $d
+
+UNDEFINED SYMBOLS
+memset
+global_variable

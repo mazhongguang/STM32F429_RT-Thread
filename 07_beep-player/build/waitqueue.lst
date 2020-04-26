@@ -1,0 +1,733 @@
+ARM GAS  /tmp/ccFtd6SC.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.eabi_attribute 27, 1
+   3              		.eabi_attribute 28, 1
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.file	"waitqueue.c"
+  14              		.text
+  15              	.Ltext0:
+  16              		.cfi_sections	.debug_frame
+  17              		.section	.text.__wqueue_default_wake,"ax",%progbits
+  18              		.align	1
+  19              		.global	__wqueue_default_wake
+  20              		.syntax unified
+  21              		.thumb
+  22              		.thumb_func
+  23              		.fpu fpv4-sp-d16
+  25              	__wqueue_default_wake:
+  26              	.LFB21:
+  27              		.file 1 "rt-thread/components/drivers/src/waitqueue.c"
+   1:rt-thread/components/drivers/src/waitqueue.c **** /*
+   2:rt-thread/components/drivers/src/waitqueue.c ****  * Copyright (c) 2006-2018, RT-Thread Development Team
+   3:rt-thread/components/drivers/src/waitqueue.c ****  *
+   4:rt-thread/components/drivers/src/waitqueue.c ****  * SPDX-License-Identifier: Apache-2.0
+   5:rt-thread/components/drivers/src/waitqueue.c ****  *
+   6:rt-thread/components/drivers/src/waitqueue.c ****  * Change Logs:
+   7:rt-thread/components/drivers/src/waitqueue.c ****  * Date           Author       Notes
+   8:rt-thread/components/drivers/src/waitqueue.c ****  * 2018/06/26     Bernard      Fix the wait queue issue when wakeup a soon 
+   9:rt-thread/components/drivers/src/waitqueue.c ****  *                             to blocked thread.
+  10:rt-thread/components/drivers/src/waitqueue.c ****  */
+  11:rt-thread/components/drivers/src/waitqueue.c **** 
+  12:rt-thread/components/drivers/src/waitqueue.c **** #include <stdint.h>
+  13:rt-thread/components/drivers/src/waitqueue.c **** 
+  14:rt-thread/components/drivers/src/waitqueue.c **** #include <rthw.h>
+  15:rt-thread/components/drivers/src/waitqueue.c **** #include <rtdevice.h>
+  16:rt-thread/components/drivers/src/waitqueue.c **** #include <rtservice.h>
+  17:rt-thread/components/drivers/src/waitqueue.c **** 
+  18:rt-thread/components/drivers/src/waitqueue.c **** void rt_wqueue_add(rt_wqueue_t *queue, struct rt_wqueue_node *node)
+  19:rt-thread/components/drivers/src/waitqueue.c **** {
+  20:rt-thread/components/drivers/src/waitqueue.c ****     rt_base_t level;
+  21:rt-thread/components/drivers/src/waitqueue.c **** 
+  22:rt-thread/components/drivers/src/waitqueue.c ****     level = rt_hw_interrupt_disable();
+  23:rt-thread/components/drivers/src/waitqueue.c ****     rt_list_insert_before(&(queue->waiting_list), &(node->list));
+  24:rt-thread/components/drivers/src/waitqueue.c ****     rt_hw_interrupt_enable(level);
+  25:rt-thread/components/drivers/src/waitqueue.c **** }
+  26:rt-thread/components/drivers/src/waitqueue.c **** 
+  27:rt-thread/components/drivers/src/waitqueue.c **** void rt_wqueue_remove(struct rt_wqueue_node *node)
+  28:rt-thread/components/drivers/src/waitqueue.c **** {
+  29:rt-thread/components/drivers/src/waitqueue.c ****     rt_base_t level;
+  30:rt-thread/components/drivers/src/waitqueue.c **** 
+  31:rt-thread/components/drivers/src/waitqueue.c ****     level = rt_hw_interrupt_disable();
+ARM GAS  /tmp/ccFtd6SC.s 			page 2
+
+
+  32:rt-thread/components/drivers/src/waitqueue.c ****     rt_list_remove(&(node->list));
+  33:rt-thread/components/drivers/src/waitqueue.c ****     rt_hw_interrupt_enable(level);
+  34:rt-thread/components/drivers/src/waitqueue.c **** }
+  35:rt-thread/components/drivers/src/waitqueue.c **** 
+  36:rt-thread/components/drivers/src/waitqueue.c **** int __wqueue_default_wake(struct rt_wqueue_node *wait, void *key)
+  37:rt-thread/components/drivers/src/waitqueue.c **** {
+  28              		.loc 1 37 0
+  29              		.cfi_startproc
+  30              		@ args = 0, pretend = 0, frame = 0
+  31              		@ frame_needed = 0, uses_anonymous_args = 0
+  32              		@ link register save eliminated.
+  33              	.LVL0:
+  38:rt-thread/components/drivers/src/waitqueue.c ****     return 0;
+  39:rt-thread/components/drivers/src/waitqueue.c **** }
+  34              		.loc 1 39 0
+  35 0000 0020     		movs	r0, #0
+  36              	.LVL1:
+  37 0002 7047     		bx	lr
+  38              		.cfi_endproc
+  39              	.LFE21:
+  41              		.section	.text.rt_wqueue_add,"ax",%progbits
+  42              		.align	1
+  43              		.global	rt_wqueue_add
+  44              		.syntax unified
+  45              		.thumb
+  46              		.thumb_func
+  47              		.fpu fpv4-sp-d16
+  49              	rt_wqueue_add:
+  50              	.LFB19:
+  19:rt-thread/components/drivers/src/waitqueue.c ****     rt_base_t level;
+  51              		.loc 1 19 0
+  52              		.cfi_startproc
+  53              		@ args = 0, pretend = 0, frame = 0
+  54              		@ frame_needed = 0, uses_anonymous_args = 0
+  55              	.LVL2:
+  56 0000 38B5     		push	{r3, r4, r5, lr}
+  57              	.LCFI0:
+  58              		.cfi_def_cfa_offset 16
+  59              		.cfi_offset 3, -16
+  60              		.cfi_offset 4, -12
+  61              		.cfi_offset 5, -8
+  62              		.cfi_offset 14, -4
+  63 0002 0446     		mov	r4, r0
+  64 0004 0D46     		mov	r5, r1
+  22:rt-thread/components/drivers/src/waitqueue.c ****     rt_list_insert_before(&(queue->waiting_list), &(node->list));
+  65              		.loc 1 22 0
+  66 0006 FFF7FEFF 		bl	rt_hw_interrupt_disable
+  67              	.LVL3:
+  23:rt-thread/components/drivers/src/waitqueue.c ****     rt_hw_interrupt_enable(level);
+  68              		.loc 1 23 0
+  69 000a 221D     		adds	r2, r4, #4
+  70 000c 2B1D     		adds	r3, r5, #4
+  71              	.LVL4:
+  72              	.LBB10:
+  73              	.LBB11:
+  74              		.file 2 "rt-thread/include/rtservice.h"
+   1:rt-thread/include/rtservice.h **** /*
+ARM GAS  /tmp/ccFtd6SC.s 			page 3
+
+
+   2:rt-thread/include/rtservice.h ****  * Copyright (c) 2006-2018, RT-Thread Development Team
+   3:rt-thread/include/rtservice.h ****  *
+   4:rt-thread/include/rtservice.h ****  * SPDX-License-Identifier: Apache-2.0
+   5:rt-thread/include/rtservice.h ****  *
+   6:rt-thread/include/rtservice.h ****  * Change Logs:
+   7:rt-thread/include/rtservice.h ****  * Date           Author       Notes
+   8:rt-thread/include/rtservice.h ****  * 2006-03-16     Bernard      the first version
+   9:rt-thread/include/rtservice.h ****  * 2006-09-07     Bernard      move the kservice APIs to rtthread.h
+  10:rt-thread/include/rtservice.h ****  * 2007-06-27     Bernard      fix the rt_list_remove bug
+  11:rt-thread/include/rtservice.h ****  * 2012-03-22     Bernard      rename kservice.h to rtservice.h
+  12:rt-thread/include/rtservice.h ****  * 2017-11-15     JasonJia     Modify rt_slist_foreach to rt_slist_for_each_entry.
+  13:rt-thread/include/rtservice.h ****  *                             Make code cleanup.
+  14:rt-thread/include/rtservice.h ****  */
+  15:rt-thread/include/rtservice.h **** 
+  16:rt-thread/include/rtservice.h **** #ifndef __RT_SERVICE_H__
+  17:rt-thread/include/rtservice.h **** #define __RT_SERVICE_H__
+  18:rt-thread/include/rtservice.h **** 
+  19:rt-thread/include/rtservice.h **** #ifdef __cplusplus
+  20:rt-thread/include/rtservice.h **** extern "C" {
+  21:rt-thread/include/rtservice.h **** #endif
+  22:rt-thread/include/rtservice.h **** 
+  23:rt-thread/include/rtservice.h **** /**
+  24:rt-thread/include/rtservice.h ****  * @addtogroup KernelService
+  25:rt-thread/include/rtservice.h ****  */
+  26:rt-thread/include/rtservice.h **** 
+  27:rt-thread/include/rtservice.h **** /**@{*/
+  28:rt-thread/include/rtservice.h **** 
+  29:rt-thread/include/rtservice.h **** /**
+  30:rt-thread/include/rtservice.h ****  * rt_container_of - return the member address of ptr, if the type of ptr is the
+  31:rt-thread/include/rtservice.h ****  * struct type.
+  32:rt-thread/include/rtservice.h ****  */
+  33:rt-thread/include/rtservice.h **** #define rt_container_of(ptr, type, member) \
+  34:rt-thread/include/rtservice.h ****     ((type *)((char *)(ptr) - (unsigned long)(&((type *)0)->member)))
+  35:rt-thread/include/rtservice.h **** 
+  36:rt-thread/include/rtservice.h **** 
+  37:rt-thread/include/rtservice.h **** /**
+  38:rt-thread/include/rtservice.h ****  * @brief initialize a list object
+  39:rt-thread/include/rtservice.h ****  */
+  40:rt-thread/include/rtservice.h **** #define RT_LIST_OBJECT_INIT(object) { &(object), &(object) }
+  41:rt-thread/include/rtservice.h **** 
+  42:rt-thread/include/rtservice.h **** /**
+  43:rt-thread/include/rtservice.h ****  * @brief initialize a list
+  44:rt-thread/include/rtservice.h ****  *
+  45:rt-thread/include/rtservice.h ****  * @param l list to be initialized
+  46:rt-thread/include/rtservice.h ****  */
+  47:rt-thread/include/rtservice.h **** rt_inline void rt_list_init(rt_list_t *l)
+  48:rt-thread/include/rtservice.h **** {
+  49:rt-thread/include/rtservice.h ****     l->next = l->prev = l;
+  50:rt-thread/include/rtservice.h **** }
+  51:rt-thread/include/rtservice.h **** 
+  52:rt-thread/include/rtservice.h **** /**
+  53:rt-thread/include/rtservice.h ****  * @brief insert a node after a list
+  54:rt-thread/include/rtservice.h ****  *
+  55:rt-thread/include/rtservice.h ****  * @param l list to insert it
+  56:rt-thread/include/rtservice.h ****  * @param n new node to be inserted
+  57:rt-thread/include/rtservice.h ****  */
+  58:rt-thread/include/rtservice.h **** rt_inline void rt_list_insert_after(rt_list_t *l, rt_list_t *n)
+ARM GAS  /tmp/ccFtd6SC.s 			page 4
+
+
+  59:rt-thread/include/rtservice.h **** {
+  60:rt-thread/include/rtservice.h ****     l->next->prev = n;
+  61:rt-thread/include/rtservice.h ****     n->next = l->next;
+  62:rt-thread/include/rtservice.h **** 
+  63:rt-thread/include/rtservice.h ****     l->next = n;
+  64:rt-thread/include/rtservice.h ****     n->prev = l;
+  65:rt-thread/include/rtservice.h **** }
+  66:rt-thread/include/rtservice.h **** 
+  67:rt-thread/include/rtservice.h **** /**
+  68:rt-thread/include/rtservice.h ****  * @brief insert a node before a list
+  69:rt-thread/include/rtservice.h ****  *
+  70:rt-thread/include/rtservice.h ****  * @param n new node to be inserted
+  71:rt-thread/include/rtservice.h ****  * @param l list to insert it
+  72:rt-thread/include/rtservice.h ****  */
+  73:rt-thread/include/rtservice.h **** rt_inline void rt_list_insert_before(rt_list_t *l, rt_list_t *n)
+  74:rt-thread/include/rtservice.h **** {
+  75:rt-thread/include/rtservice.h ****     l->prev->next = n;
+  75              		.loc 2 75 0
+  76 000e A168     		ldr	r1, [r4, #8]
+  77 0010 0B60     		str	r3, [r1]
+  76:rt-thread/include/rtservice.h ****     n->prev = l->prev;
+  78              		.loc 2 76 0
+  79 0012 A168     		ldr	r1, [r4, #8]
+  80 0014 A960     		str	r1, [r5, #8]
+  77:rt-thread/include/rtservice.h **** 
+  78:rt-thread/include/rtservice.h ****     l->prev = n;
+  81              		.loc 2 78 0
+  82 0016 A360     		str	r3, [r4, #8]
+  79:rt-thread/include/rtservice.h ****     n->next = l;
+  83              		.loc 2 79 0
+  84 0018 6A60     		str	r2, [r5, #4]
+  85              	.LVL5:
+  86              	.LBE11:
+  87              	.LBE10:
+  24:rt-thread/components/drivers/src/waitqueue.c **** }
+  88              		.loc 1 24 0
+  89 001a FFF7FEFF 		bl	rt_hw_interrupt_enable
+  90              	.LVL6:
+  91 001e 38BD     		pop	{r3, r4, r5, pc}
+  92              		.cfi_endproc
+  93              	.LFE19:
+  95              		.section	.text.rt_wqueue_remove,"ax",%progbits
+  96              		.align	1
+  97              		.global	rt_wqueue_remove
+  98              		.syntax unified
+  99              		.thumb
+ 100              		.thumb_func
+ 101              		.fpu fpv4-sp-d16
+ 103              	rt_wqueue_remove:
+ 104              	.LFB20:
+  28:rt-thread/components/drivers/src/waitqueue.c ****     rt_base_t level;
+ 105              		.loc 1 28 0
+ 106              		.cfi_startproc
+ 107              		@ args = 0, pretend = 0, frame = 0
+ 108              		@ frame_needed = 0, uses_anonymous_args = 0
+ 109              	.LVL7:
+ 110 0000 10B5     		push	{r4, lr}
+ARM GAS  /tmp/ccFtd6SC.s 			page 5
+
+
+ 111              	.LCFI1:
+ 112              		.cfi_def_cfa_offset 8
+ 113              		.cfi_offset 4, -8
+ 114              		.cfi_offset 14, -4
+ 115 0002 0446     		mov	r4, r0
+  31:rt-thread/components/drivers/src/waitqueue.c ****     rt_list_remove(&(node->list));
+ 116              		.loc 1 31 0
+ 117 0004 FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 118              	.LVL8:
+  32:rt-thread/components/drivers/src/waitqueue.c ****     rt_hw_interrupt_enable(level);
+ 119              		.loc 1 32 0
+ 120 0008 231D     		adds	r3, r4, #4
+ 121              	.LVL9:
+ 122              	.LBB12:
+ 123              	.LBB13:
+  80:rt-thread/include/rtservice.h **** }
+  81:rt-thread/include/rtservice.h **** 
+  82:rt-thread/include/rtservice.h **** /**
+  83:rt-thread/include/rtservice.h ****  * @brief remove node from list.
+  84:rt-thread/include/rtservice.h ****  * @param n the node to remove from the list.
+  85:rt-thread/include/rtservice.h ****  */
+  86:rt-thread/include/rtservice.h **** rt_inline void rt_list_remove(rt_list_t *n)
+  87:rt-thread/include/rtservice.h **** {
+  88:rt-thread/include/rtservice.h ****     n->next->prev = n->prev;
+ 124              		.loc 2 88 0
+ 125 000a 6268     		ldr	r2, [r4, #4]
+ 126 000c A168     		ldr	r1, [r4, #8]
+ 127 000e 5160     		str	r1, [r2, #4]
+  89:rt-thread/include/rtservice.h ****     n->prev->next = n->next;
+ 128              		.loc 2 89 0
+ 129 0010 A268     		ldr	r2, [r4, #8]
+ 130 0012 6168     		ldr	r1, [r4, #4]
+ 131 0014 1160     		str	r1, [r2]
+  90:rt-thread/include/rtservice.h **** 
+  91:rt-thread/include/rtservice.h ****     n->next = n->prev = n;
+ 132              		.loc 2 91 0
+ 133 0016 A360     		str	r3, [r4, #8]
+ 134 0018 6360     		str	r3, [r4, #4]
+ 135              	.LVL10:
+ 136              	.LBE13:
+ 137              	.LBE12:
+  33:rt-thread/components/drivers/src/waitqueue.c **** }
+ 138              		.loc 1 33 0
+ 139 001a FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 140              	.LVL11:
+ 141 001e 10BD     		pop	{r4, pc}
+ 142              		.cfi_endproc
+ 143              	.LFE20:
+ 145              		.section	.text.rt_wqueue_wakeup,"ax",%progbits
+ 146              		.align	1
+ 147              		.global	rt_wqueue_wakeup
+ 148              		.syntax unified
+ 149              		.thumb
+ 150              		.thumb_func
+ 151              		.fpu fpv4-sp-d16
+ 153              	rt_wqueue_wakeup:
+ 154              	.LFB22:
+ARM GAS  /tmp/ccFtd6SC.s 			page 6
+
+
+  40:rt-thread/components/drivers/src/waitqueue.c **** 
+  41:rt-thread/components/drivers/src/waitqueue.c **** void rt_wqueue_wakeup(rt_wqueue_t *queue, void *key)
+  42:rt-thread/components/drivers/src/waitqueue.c **** {
+ 155              		.loc 1 42 0
+ 156              		.cfi_startproc
+ 157              		@ args = 0, pretend = 0, frame = 0
+ 158              		@ frame_needed = 0, uses_anonymous_args = 0
+ 159              	.LVL12:
+ 160 0000 2DE9F041 		push	{r4, r5, r6, r7, r8, lr}
+ 161              	.LCFI2:
+ 162              		.cfi_def_cfa_offset 24
+ 163              		.cfi_offset 4, -24
+ 164              		.cfi_offset 5, -20
+ 165              		.cfi_offset 6, -16
+ 166              		.cfi_offset 7, -12
+ 167              		.cfi_offset 8, -8
+ 168              		.cfi_offset 14, -4
+ 169 0004 0446     		mov	r4, r0
+ 170 0006 0F46     		mov	r7, r1
+ 171              	.LVL13:
+  43:rt-thread/components/drivers/src/waitqueue.c ****     rt_base_t level;
+  44:rt-thread/components/drivers/src/waitqueue.c ****     register int need_schedule = 0;
+  45:rt-thread/components/drivers/src/waitqueue.c **** 
+  46:rt-thread/components/drivers/src/waitqueue.c ****     rt_list_t *queue_list;
+  47:rt-thread/components/drivers/src/waitqueue.c ****     struct rt_list_node *node;
+  48:rt-thread/components/drivers/src/waitqueue.c ****     struct rt_wqueue_node *entry;
+  49:rt-thread/components/drivers/src/waitqueue.c **** 
+  50:rt-thread/components/drivers/src/waitqueue.c ****     queue_list = &(queue->waiting_list);
+ 172              		.loc 1 50 0
+ 173 0008 061D     		adds	r6, r0, #4
+ 174              	.LVL14:
+  51:rt-thread/components/drivers/src/waitqueue.c **** 
+  52:rt-thread/components/drivers/src/waitqueue.c ****     level = rt_hw_interrupt_disable();
+ 175              		.loc 1 52 0
+ 176 000a FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 177              	.LVL15:
+ 178 000e 8046     		mov	r8, r0
+ 179              	.LVL16:
+  53:rt-thread/components/drivers/src/waitqueue.c ****     /* set wakeup flag in the queue */
+  54:rt-thread/components/drivers/src/waitqueue.c ****     queue->flag = RT_WQ_FLAG_WAKEUP;
+ 180              		.loc 1 54 0
+ 181 0010 0123     		movs	r3, #1
+ 182 0012 2360     		str	r3, [r4]
+ 183              	.LVL17:
+ 184              	.LBB14:
+ 185              	.LBB15:
+  92:rt-thread/include/rtservice.h **** }
+  93:rt-thread/include/rtservice.h **** 
+  94:rt-thread/include/rtservice.h **** /**
+  95:rt-thread/include/rtservice.h ****  * @brief tests whether a list is empty
+  96:rt-thread/include/rtservice.h ****  * @param l the list to test.
+  97:rt-thread/include/rtservice.h ****  */
+  98:rt-thread/include/rtservice.h **** rt_inline int rt_list_isempty(const rt_list_t *l)
+  99:rt-thread/include/rtservice.h **** {
+ 100:rt-thread/include/rtservice.h ****     return l->next == l;
+ 186              		.loc 2 100 0
+ 187 0014 6468     		ldr	r4, [r4, #4]
+ARM GAS  /tmp/ccFtd6SC.s 			page 7
+
+
+ 188              	.LVL18:
+ 189              	.LBE15:
+ 190              	.LBE14:
+  55:rt-thread/components/drivers/src/waitqueue.c **** 
+  56:rt-thread/components/drivers/src/waitqueue.c ****     if (!(rt_list_isempty(queue_list)))
+ 191              		.loc 1 56 0
+ 192 0016 A642     		cmp	r6, r4
+ 193 0018 09D0     		beq	.L13
+ 194              	.LVL19:
+ 195              	.L7:
+  57:rt-thread/components/drivers/src/waitqueue.c ****     {
+  58:rt-thread/components/drivers/src/waitqueue.c ****         for (node = queue_list->next; node != queue_list; node = node->next)
+ 196              		.loc 1 58 0 discriminator 1
+ 197 001a B442     		cmp	r4, r6
+ 198 001c 12D0     		beq	.L14
+  59:rt-thread/components/drivers/src/waitqueue.c ****         {
+  60:rt-thread/components/drivers/src/waitqueue.c ****             entry = rt_list_entry(node, struct rt_wqueue_node, list);
+ 199              		.loc 1 60 0
+ 200 001e 251F     		subs	r5, r4, #4
+ 201              	.LVL20:
+  61:rt-thread/components/drivers/src/waitqueue.c ****             if (entry->wakeup(entry, key) == 0)
+ 202              		.loc 1 61 0
+ 203 0020 A368     		ldr	r3, [r4, #8]
+ 204 0022 3946     		mov	r1, r7
+ 205 0024 2846     		mov	r0, r5
+ 206 0026 9847     		blx	r3
+ 207              	.LVL21:
+ 208 0028 18B1     		cbz	r0, .L15
+  58:rt-thread/components/drivers/src/waitqueue.c ****         {
+ 209              		.loc 1 58 0 discriminator 2
+ 210 002a 2468     		ldr	r4, [r4]
+ 211              	.LVL22:
+ 212 002c F5E7     		b	.L7
+ 213              	.LVL23:
+ 214              	.L13:
+  44:rt-thread/components/drivers/src/waitqueue.c **** 
+ 215              		.loc 1 44 0
+ 216 002e 0024     		movs	r4, #0
+ 217 0030 09E0     		b	.L8
+ 218              	.LVL24:
+ 219              	.L15:
+  62:rt-thread/components/drivers/src/waitqueue.c ****             {
+  63:rt-thread/components/drivers/src/waitqueue.c ****                 rt_thread_resume(entry->polling_thread);
+ 220              		.loc 1 63 0
+ 221 0032 54F8040C 		ldr	r0, [r4, #-4]
+ 222 0036 FFF7FEFF 		bl	rt_thread_resume
+ 223              	.LVL25:
+  64:rt-thread/components/drivers/src/waitqueue.c ****                 need_schedule = 1;
+  65:rt-thread/components/drivers/src/waitqueue.c **** 
+  66:rt-thread/components/drivers/src/waitqueue.c ****                 rt_wqueue_remove(entry);
+ 224              		.loc 1 66 0
+ 225 003a 2846     		mov	r0, r5
+ 226 003c FFF7FEFF 		bl	rt_wqueue_remove
+ 227              	.LVL26:
+  64:rt-thread/components/drivers/src/waitqueue.c ****                 need_schedule = 1;
+ 228              		.loc 1 64 0
+ 229 0040 0124     		movs	r4, #1
+ARM GAS  /tmp/ccFtd6SC.s 			page 8
+
+
+ 230              	.LVL27:
+  67:rt-thread/components/drivers/src/waitqueue.c ****                 break;
+ 231              		.loc 1 67 0
+ 232 0042 00E0     		b	.L8
+ 233              	.LVL28:
+ 234              	.L14:
+  44:rt-thread/components/drivers/src/waitqueue.c **** 
+ 235              		.loc 1 44 0
+ 236 0044 0024     		movs	r4, #0
+ 237              	.LVL29:
+ 238              	.L8:
+  68:rt-thread/components/drivers/src/waitqueue.c ****             }
+  69:rt-thread/components/drivers/src/waitqueue.c ****         }
+  70:rt-thread/components/drivers/src/waitqueue.c ****     }
+  71:rt-thread/components/drivers/src/waitqueue.c ****     rt_hw_interrupt_enable(level);
+ 239              		.loc 1 71 0
+ 240 0046 4046     		mov	r0, r8
+ 241 0048 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 242              	.LVL30:
+  72:rt-thread/components/drivers/src/waitqueue.c **** 
+  73:rt-thread/components/drivers/src/waitqueue.c ****     if (need_schedule)
+ 243              		.loc 1 73 0
+ 244 004c 0CB9     		cbnz	r4, .L16
+ 245              	.L6:
+ 246 004e BDE8F081 		pop	{r4, r5, r6, r7, r8, pc}
+ 247              	.LVL31:
+ 248              	.L16:
+  74:rt-thread/components/drivers/src/waitqueue.c ****         rt_schedule();
+ 249              		.loc 1 74 0
+ 250 0052 FFF7FEFF 		bl	rt_schedule
+ 251              	.LVL32:
+  75:rt-thread/components/drivers/src/waitqueue.c **** }
+ 252              		.loc 1 75 0
+ 253 0056 FAE7     		b	.L6
+ 254              		.cfi_endproc
+ 255              	.LFE22:
+ 257              		.section	.text.rt_wqueue_wait,"ax",%progbits
+ 258              		.align	1
+ 259              		.global	rt_wqueue_wait
+ 260              		.syntax unified
+ 261              		.thumb
+ 262              		.thumb_func
+ 263              		.fpu fpv4-sp-d16
+ 265              	rt_wqueue_wait:
+ 266              	.LFB23:
+  76:rt-thread/components/drivers/src/waitqueue.c **** 
+  77:rt-thread/components/drivers/src/waitqueue.c **** int rt_wqueue_wait(rt_wqueue_t *queue, int condition, int msec)
+  78:rt-thread/components/drivers/src/waitqueue.c **** {
+ 267              		.loc 1 78 0
+ 268              		.cfi_startproc
+ 269              		@ args = 0, pretend = 0, frame = 24
+ 270              		@ frame_needed = 0, uses_anonymous_args = 0
+ 271              	.LVL33:
+ 272 0000 2DE9F041 		push	{r4, r5, r6, r7, r8, lr}
+ 273              	.LCFI3:
+ 274              		.cfi_def_cfa_offset 24
+ 275              		.cfi_offset 4, -24
+ARM GAS  /tmp/ccFtd6SC.s 			page 9
+
+
+ 276              		.cfi_offset 5, -20
+ 277              		.cfi_offset 6, -16
+ 278              		.cfi_offset 7, -12
+ 279              		.cfi_offset 8, -8
+ 280              		.cfi_offset 14, -4
+ 281 0004 86B0     		sub	sp, sp, #24
+ 282              	.LCFI4:
+ 283              		.cfi_def_cfa_offset 48
+ 284 0006 0746     		mov	r7, r0
+ 285 0008 0D46     		mov	r5, r1
+ 286 000a 1646     		mov	r6, r2
+  79:rt-thread/components/drivers/src/waitqueue.c ****     int tick;
+  80:rt-thread/components/drivers/src/waitqueue.c ****     rt_thread_t tid = rt_thread_self();
+ 287              		.loc 1 80 0
+ 288 000c FFF7FEFF 		bl	rt_thread_self
+ 289              	.LVL34:
+ 290 0010 0446     		mov	r4, r0
+ 291              	.LVL35:
+  81:rt-thread/components/drivers/src/waitqueue.c ****     rt_timer_t  tmr = &(tid->thread_timer);
+ 292              		.loc 1 81 0
+ 293 0012 00F14C08 		add	r8, r0, #76
+ 294              	.LVL36:
+  82:rt-thread/components/drivers/src/waitqueue.c ****     struct rt_wqueue_node __wait;
+  83:rt-thread/components/drivers/src/waitqueue.c ****     rt_base_t level;
+  84:rt-thread/components/drivers/src/waitqueue.c **** 
+  85:rt-thread/components/drivers/src/waitqueue.c ****     /* current context checking */
+  86:rt-thread/components/drivers/src/waitqueue.c ****     RT_DEBUG_NOT_IN_INTERRUPT;
+  87:rt-thread/components/drivers/src/waitqueue.c **** 
+  88:rt-thread/components/drivers/src/waitqueue.c ****     tick = rt_tick_from_millisecond(msec);
+ 295              		.loc 1 88 0
+ 296 0016 3046     		mov	r0, r6
+ 297              	.LVL37:
+ 298 0018 FFF7FEFF 		bl	rt_tick_from_millisecond
+ 299              	.LVL38:
+ 300 001c 0590     		str	r0, [sp, #20]
+  89:rt-thread/components/drivers/src/waitqueue.c **** 
+  90:rt-thread/components/drivers/src/waitqueue.c ****     if ((condition) || (tick == 0))
+ 301              		.loc 1 90 0
+ 302 001e 05B9     		cbnz	r5, .L18
+ 303              		.loc 1 90 0 is_stmt 0 discriminator 1
+ 304 0020 18B9     		cbnz	r0, .L22
+ 305              	.LVL39:
+ 306              	.L18:
+  91:rt-thread/components/drivers/src/waitqueue.c ****         return 0;
+  92:rt-thread/components/drivers/src/waitqueue.c **** 
+  93:rt-thread/components/drivers/src/waitqueue.c ****     __wait.polling_thread = rt_thread_self();
+  94:rt-thread/components/drivers/src/waitqueue.c ****     __wait.key = 0;
+  95:rt-thread/components/drivers/src/waitqueue.c ****     __wait.wakeup = __wqueue_default_wake;
+  96:rt-thread/components/drivers/src/waitqueue.c ****     rt_list_init(&__wait.list);
+  97:rt-thread/components/drivers/src/waitqueue.c **** 
+  98:rt-thread/components/drivers/src/waitqueue.c ****     level = rt_hw_interrupt_disable();
+  99:rt-thread/components/drivers/src/waitqueue.c ****     if (queue->flag == RT_WQ_FLAG_WAKEUP)
+ 100:rt-thread/components/drivers/src/waitqueue.c ****     {
+ 101:rt-thread/components/drivers/src/waitqueue.c ****         /* already wakeup */
+ 102:rt-thread/components/drivers/src/waitqueue.c ****         goto __exit_wakeup;
+ 103:rt-thread/components/drivers/src/waitqueue.c ****     }
+ 104:rt-thread/components/drivers/src/waitqueue.c **** 
+ARM GAS  /tmp/ccFtd6SC.s 			page 10
+
+
+ 105:rt-thread/components/drivers/src/waitqueue.c ****     rt_wqueue_add(queue, &__wait);
+ 106:rt-thread/components/drivers/src/waitqueue.c ****     rt_thread_suspend(tid);
+ 107:rt-thread/components/drivers/src/waitqueue.c **** 
+ 108:rt-thread/components/drivers/src/waitqueue.c ****     /* start timer */
+ 109:rt-thread/components/drivers/src/waitqueue.c ****     if (tick != RT_WAITING_FOREVER)
+ 110:rt-thread/components/drivers/src/waitqueue.c ****     {
+ 111:rt-thread/components/drivers/src/waitqueue.c ****         rt_timer_control(tmr,
+ 112:rt-thread/components/drivers/src/waitqueue.c ****                          RT_TIMER_CTRL_SET_TIME,
+ 113:rt-thread/components/drivers/src/waitqueue.c ****                          &tick);
+ 114:rt-thread/components/drivers/src/waitqueue.c **** 
+ 115:rt-thread/components/drivers/src/waitqueue.c ****         rt_timer_start(tmr);
+ 116:rt-thread/components/drivers/src/waitqueue.c ****     }
+ 117:rt-thread/components/drivers/src/waitqueue.c ****     rt_hw_interrupt_enable(level);
+ 118:rt-thread/components/drivers/src/waitqueue.c **** 
+ 119:rt-thread/components/drivers/src/waitqueue.c ****     rt_schedule();
+ 120:rt-thread/components/drivers/src/waitqueue.c **** 
+ 121:rt-thread/components/drivers/src/waitqueue.c ****     level = rt_hw_interrupt_disable();
+ 122:rt-thread/components/drivers/src/waitqueue.c **** 
+ 123:rt-thread/components/drivers/src/waitqueue.c **** __exit_wakeup:
+ 124:rt-thread/components/drivers/src/waitqueue.c ****     queue->flag = 0;
+ 125:rt-thread/components/drivers/src/waitqueue.c ****     rt_hw_interrupt_enable(level);
+ 126:rt-thread/components/drivers/src/waitqueue.c **** 
+ 127:rt-thread/components/drivers/src/waitqueue.c ****     rt_wqueue_remove(&__wait);
+ 128:rt-thread/components/drivers/src/waitqueue.c **** 
+ 129:rt-thread/components/drivers/src/waitqueue.c ****     return 0;
+ 130:rt-thread/components/drivers/src/waitqueue.c **** }
+ 307              		.loc 1 130 0 is_stmt 1
+ 308 0022 0020     		movs	r0, #0
+ 309 0024 06B0     		add	sp, sp, #24
+ 310              	.LCFI5:
+ 311              		.cfi_remember_state
+ 312              		.cfi_def_cfa_offset 24
+ 313              		@ sp needed
+ 314 0026 BDE8F081 		pop	{r4, r5, r6, r7, r8, pc}
+ 315              	.LVL40:
+ 316              	.L22:
+ 317              	.LCFI6:
+ 318              		.cfi_restore_state
+  93:rt-thread/components/drivers/src/waitqueue.c ****     __wait.key = 0;
+ 319              		.loc 1 93 0
+ 320 002a FFF7FEFF 		bl	rt_thread_self
+ 321              	.LVL41:
+ 322 002e 0090     		str	r0, [sp]
+  94:rt-thread/components/drivers/src/waitqueue.c ****     __wait.wakeup = __wqueue_default_wake;
+ 323              		.loc 1 94 0
+ 324 0030 0023     		movs	r3, #0
+ 325 0032 0493     		str	r3, [sp, #16]
+  95:rt-thread/components/drivers/src/waitqueue.c ****     rt_list_init(&__wait.list);
+ 326              		.loc 1 95 0
+ 327 0034 174B     		ldr	r3, .L23
+ 328 0036 0393     		str	r3, [sp, #12]
+ 329              	.LVL42:
+ 330              	.LBB16:
+ 331              	.LBB17:
+  49:rt-thread/include/rtservice.h **** }
+ 332              		.loc 2 49 0
+ 333 0038 01AB     		add	r3, sp, #4
+ARM GAS  /tmp/ccFtd6SC.s 			page 11
+
+
+ 334              	.LVL43:
+ 335 003a 0293     		str	r3, [sp, #8]
+ 336 003c 0193     		str	r3, [sp, #4]
+ 337              	.LVL44:
+ 338              	.LBE17:
+ 339              	.LBE16:
+  98:rt-thread/components/drivers/src/waitqueue.c ****     if (queue->flag == RT_WQ_FLAG_WAKEUP)
+ 340              		.loc 1 98 0
+ 341 003e FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 342              	.LVL45:
+ 343 0042 0546     		mov	r5, r0
+ 344              	.LVL46:
+  99:rt-thread/components/drivers/src/waitqueue.c ****     {
+ 345              		.loc 1 99 0
+ 346 0044 3B68     		ldr	r3, [r7]
+ 347 0046 012B     		cmp	r3, #1
+ 348 0048 1AD0     		beq	.L19
+ 105:rt-thread/components/drivers/src/waitqueue.c ****     rt_thread_suspend(tid);
+ 349              		.loc 1 105 0
+ 350 004a 6946     		mov	r1, sp
+ 351 004c 3846     		mov	r0, r7
+ 352              	.LVL47:
+ 353 004e FFF7FEFF 		bl	rt_wqueue_add
+ 354              	.LVL48:
+ 106:rt-thread/components/drivers/src/waitqueue.c **** 
+ 355              		.loc 1 106 0
+ 356 0052 2046     		mov	r0, r4
+ 357 0054 FFF7FEFF 		bl	rt_thread_suspend
+ 358              	.LVL49:
+ 109:rt-thread/components/drivers/src/waitqueue.c ****     {
+ 359              		.loc 1 109 0
+ 360 0058 059B     		ldr	r3, [sp, #20]
+ 361 005a B3F1FF3F 		cmp	r3, #-1
+ 362 005e 07D0     		beq	.L20
+ 111:rt-thread/components/drivers/src/waitqueue.c ****                          RT_TIMER_CTRL_SET_TIME,
+ 363              		.loc 1 111 0
+ 364 0060 05AA     		add	r2, sp, #20
+ 365 0062 0021     		movs	r1, #0
+ 366 0064 4046     		mov	r0, r8
+ 367 0066 FFF7FEFF 		bl	rt_timer_control
+ 368              	.LVL50:
+ 115:rt-thread/components/drivers/src/waitqueue.c ****     }
+ 369              		.loc 1 115 0
+ 370 006a 4046     		mov	r0, r8
+ 371 006c FFF7FEFF 		bl	rt_timer_start
+ 372              	.LVL51:
+ 373              	.L20:
+ 117:rt-thread/components/drivers/src/waitqueue.c **** 
+ 374              		.loc 1 117 0
+ 375 0070 2846     		mov	r0, r5
+ 376 0072 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 377              	.LVL52:
+ 119:rt-thread/components/drivers/src/waitqueue.c **** 
+ 378              		.loc 1 119 0
+ 379 0076 FFF7FEFF 		bl	rt_schedule
+ 380              	.LVL53:
+ 121:rt-thread/components/drivers/src/waitqueue.c **** 
+ARM GAS  /tmp/ccFtd6SC.s 			page 12
+
+
+ 381              		.loc 1 121 0
+ 382 007a FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 383              	.LVL54:
+ 384 007e 0546     		mov	r5, r0
+ 385              	.LVL55:
+ 386              	.L19:
+ 124:rt-thread/components/drivers/src/waitqueue.c ****     rt_hw_interrupt_enable(level);
+ 387              		.loc 1 124 0
+ 388 0080 0023     		movs	r3, #0
+ 389 0082 3B60     		str	r3, [r7]
+ 125:rt-thread/components/drivers/src/waitqueue.c **** 
+ 390              		.loc 1 125 0
+ 391 0084 2846     		mov	r0, r5
+ 392 0086 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 393              	.LVL56:
+ 127:rt-thread/components/drivers/src/waitqueue.c **** 
+ 394              		.loc 1 127 0
+ 395 008a 6846     		mov	r0, sp
+ 396 008c FFF7FEFF 		bl	rt_wqueue_remove
+ 397              	.LVL57:
+ 129:rt-thread/components/drivers/src/waitqueue.c **** }
+ 398              		.loc 1 129 0
+ 399 0090 C7E7     		b	.L18
+ 400              	.L24:
+ 401 0092 00BF     		.align	2
+ 402              	.L23:
+ 403 0094 00000000 		.word	__wqueue_default_wake
+ 404              		.cfi_endproc
+ 405              	.LFE23:
+ 407              		.text
+ 408              	.Letext0:
+ 409              		.file 3 "rt-thread/include/rtdef.h"
+ 410              		.file 4 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/lock.h"
+ 411              		.file 5 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_types.h"
+ 412              		.file 6 "/opt/gcc-arm-none-eabi-6-2017-q2-update/lib/gcc/arm-none-eabi/6.3.1/include/stddef.h"
+ 413              		.file 7 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/reent.h"
+ 414              		.file 8 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/time.h"
+ 415              		.file 9 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/errno.h"
+ 416              		.file 10 "rt-thread/components/finsh/finsh_api.h"
+ 417              		.file 11 "rt-thread/components/drivers/include/ipc/waitqueue.h"
+ 418              		.file 12 "rt-thread/include/rtthread.h"
+ 419              		.file 13 "rt-thread/include/rthw.h"
+ARM GAS  /tmp/ccFtd6SC.s 			page 13
+
+
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 waitqueue.c
+     /tmp/ccFtd6SC.s:18     .text.__wqueue_default_wake:0000000000000000 $t
+     /tmp/ccFtd6SC.s:25     .text.__wqueue_default_wake:0000000000000000 __wqueue_default_wake
+     /tmp/ccFtd6SC.s:42     .text.rt_wqueue_add:0000000000000000 $t
+     /tmp/ccFtd6SC.s:49     .text.rt_wqueue_add:0000000000000000 rt_wqueue_add
+     /tmp/ccFtd6SC.s:96     .text.rt_wqueue_remove:0000000000000000 $t
+     /tmp/ccFtd6SC.s:103    .text.rt_wqueue_remove:0000000000000000 rt_wqueue_remove
+     /tmp/ccFtd6SC.s:146    .text.rt_wqueue_wakeup:0000000000000000 $t
+     /tmp/ccFtd6SC.s:153    .text.rt_wqueue_wakeup:0000000000000000 rt_wqueue_wakeup
+     /tmp/ccFtd6SC.s:258    .text.rt_wqueue_wait:0000000000000000 $t
+     /tmp/ccFtd6SC.s:265    .text.rt_wqueue_wait:0000000000000000 rt_wqueue_wait
+     /tmp/ccFtd6SC.s:403    .text.rt_wqueue_wait:0000000000000094 $d
+                     .debug_frame:0000000000000010 $d
+
+UNDEFINED SYMBOLS
+rt_hw_interrupt_disable
+rt_hw_interrupt_enable
+rt_thread_resume
+rt_schedule
+rt_thread_self
+rt_tick_from_millisecond
+rt_thread_suspend
+rt_timer_control
+rt_timer_start

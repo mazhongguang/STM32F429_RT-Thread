@@ -1,0 +1,717 @@
+ARM GAS  /tmp/cc4EzJPC.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.eabi_attribute 27, 1
+   3              		.eabi_attribute 28, 1
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.file	"components.c"
+  14              		.text
+  15              	.Ltext0:
+  16              		.cfi_sections	.debug_frame
+  17              		.section	.text.rti_start,"ax",%progbits
+  18              		.align	1
+  19              		.syntax unified
+  20              		.thumb
+  21              		.thumb_func
+  22              		.fpu fpv4-sp-d16
+  24              	rti_start:
+  25              	.LFB19:
+  26              		.file 1 "rt-thread/src/components.c"
+   1:rt-thread/src/components.c **** /*
+   2:rt-thread/src/components.c ****  * Copyright (c) 2006-2018, RT-Thread Development Team
+   3:rt-thread/src/components.c ****  *
+   4:rt-thread/src/components.c ****  * SPDX-License-Identifier: Apache-2.0
+   5:rt-thread/src/components.c ****  *
+   6:rt-thread/src/components.c ****  * Change Logs:
+   7:rt-thread/src/components.c ****  * Date           Author       Notes
+   8:rt-thread/src/components.c ****  * 2012-09-20     Bernard      Change the name to components.c
+   9:rt-thread/src/components.c ****  *                             And all components related header files.
+  10:rt-thread/src/components.c ****  * 2012-12-23     Bernard      fix the pthread initialization issue.
+  11:rt-thread/src/components.c ****  * 2013-06-23     Bernard      Add the init_call for components initialization.
+  12:rt-thread/src/components.c ****  * 2013-07-05     Bernard      Remove initialization feature for MS VC++ compiler
+  13:rt-thread/src/components.c ****  * 2015-02-06     Bernard      Remove the MS VC++ support and move to the kernel
+  14:rt-thread/src/components.c ****  * 2015-05-04     Bernard      Rename it to components.c because compiling issue
+  15:rt-thread/src/components.c ****  *                             in some IDEs.
+  16:rt-thread/src/components.c ****  * 2015-07-29     Arda.Fu      Add support to use RT_USING_USER_MAIN with IAR
+  17:rt-thread/src/components.c ****  * 2018-11-22     Jesven       Add secondary cpu boot up
+  18:rt-thread/src/components.c ****  */
+  19:rt-thread/src/components.c **** 
+  20:rt-thread/src/components.c **** #include "rt_drv_pwm.h"
+  21:rt-thread/src/components.c **** #include "rtdef.h"
+  22:rt-thread/src/components.c **** #include <rthw.h>
+  23:rt-thread/src/components.c **** #include <rtthread.h>
+  24:rt-thread/src/components.c **** 
+  25:rt-thread/src/components.c **** #ifdef RT_USING_USER_MAIN
+  26:rt-thread/src/components.c **** #ifndef RT_MAIN_THREAD_STACK_SIZE
+  27:rt-thread/src/components.c **** #define RT_MAIN_THREAD_STACK_SIZE     2048
+  28:rt-thread/src/components.c **** #endif
+  29:rt-thread/src/components.c **** #ifndef RT_MAIN_THREAD_PRIORITY
+  30:rt-thread/src/components.c **** #define RT_MAIN_THREAD_PRIORITY       (RT_THREAD_PRIORITY_MAX / 3)
+  31:rt-thread/src/components.c **** #endif
+  32:rt-thread/src/components.c **** #endif
+ARM GAS  /tmp/cc4EzJPC.s 			page 2
+
+
+  33:rt-thread/src/components.c **** 
+  34:rt-thread/src/components.c **** #ifdef RT_USING_COMPONENTS_INIT
+  35:rt-thread/src/components.c **** /*
+  36:rt-thread/src/components.c ****  * Components Initialization will initialize some driver and components as following
+  37:rt-thread/src/components.c ****  * order:
+  38:rt-thread/src/components.c ****  * rti_start         --> 0
+  39:rt-thread/src/components.c ****  * BOARD_EXPORT      --> 1
+  40:rt-thread/src/components.c ****  * rti_board_end     --> 1.end
+  41:rt-thread/src/components.c ****  *
+  42:rt-thread/src/components.c ****  * DEVICE_EXPORT     --> 2
+  43:rt-thread/src/components.c ****  * COMPONENT_EXPORT  --> 3
+  44:rt-thread/src/components.c ****  * FS_EXPORT         --> 4
+  45:rt-thread/src/components.c ****  * ENV_EXPORT        --> 5
+  46:rt-thread/src/components.c ****  * APP_EXPORT        --> 6
+  47:rt-thread/src/components.c ****  *
+  48:rt-thread/src/components.c ****  * rti_end           --> 6.end
+  49:rt-thread/src/components.c ****  *
+  50:rt-thread/src/components.c ****  * These automatically initialization, the driver or component initial function must
+  51:rt-thread/src/components.c ****  * be defined with:
+  52:rt-thread/src/components.c ****  * INIT_BOARD_EXPORT(fn);
+  53:rt-thread/src/components.c ****  * INIT_DEVICE_EXPORT(fn);
+  54:rt-thread/src/components.c ****  * ...
+  55:rt-thread/src/components.c ****  * INIT_APP_EXPORT(fn);
+  56:rt-thread/src/components.c ****  * etc.
+  57:rt-thread/src/components.c ****  */
+  58:rt-thread/src/components.c **** static int rti_start(void)
+  59:rt-thread/src/components.c **** {
+  27              		.loc 1 59 0
+  28              		.cfi_startproc
+  29              		@ args = 0, pretend = 0, frame = 0
+  30              		@ frame_needed = 0, uses_anonymous_args = 0
+  31              		@ link register save eliminated.
+  60:rt-thread/src/components.c ****     return 0;
+  61:rt-thread/src/components.c **** }
+  32              		.loc 1 61 0
+  33 0000 0020     		movs	r0, #0
+  34 0002 7047     		bx	lr
+  35              		.cfi_endproc
+  36              	.LFE19:
+  38              		.section	.text.rti_board_start,"ax",%progbits
+  39              		.align	1
+  40              		.syntax unified
+  41              		.thumb
+  42              		.thumb_func
+  43              		.fpu fpv4-sp-d16
+  45              	rti_board_start:
+  46              	.LFB20:
+  62:rt-thread/src/components.c **** INIT_EXPORT(rti_start, "0");
+  63:rt-thread/src/components.c **** 
+  64:rt-thread/src/components.c **** static int rti_board_start(void)
+  65:rt-thread/src/components.c **** {
+  47              		.loc 1 65 0
+  48              		.cfi_startproc
+  49              		@ args = 0, pretend = 0, frame = 0
+  50              		@ frame_needed = 0, uses_anonymous_args = 0
+  51              		@ link register save eliminated.
+  66:rt-thread/src/components.c ****     return 0;
+ARM GAS  /tmp/cc4EzJPC.s 			page 3
+
+
+  67:rt-thread/src/components.c **** }
+  52              		.loc 1 67 0
+  53 0000 0020     		movs	r0, #0
+  54 0002 7047     		bx	lr
+  55              		.cfi_endproc
+  56              	.LFE20:
+  58              		.section	.text.rti_board_end,"ax",%progbits
+  59              		.align	1
+  60              		.syntax unified
+  61              		.thumb
+  62              		.thumb_func
+  63              		.fpu fpv4-sp-d16
+  65              	rti_board_end:
+  66              	.LFB21:
+  68:rt-thread/src/components.c **** INIT_EXPORT(rti_board_start, "0.end");
+  69:rt-thread/src/components.c **** 
+  70:rt-thread/src/components.c **** static int rti_board_end(void)
+  71:rt-thread/src/components.c **** {
+  67              		.loc 1 71 0
+  68              		.cfi_startproc
+  69              		@ args = 0, pretend = 0, frame = 0
+  70              		@ frame_needed = 0, uses_anonymous_args = 0
+  71              		@ link register save eliminated.
+  72:rt-thread/src/components.c ****     return 0;
+  73:rt-thread/src/components.c **** }
+  72              		.loc 1 73 0
+  73 0000 0020     		movs	r0, #0
+  74 0002 7047     		bx	lr
+  75              		.cfi_endproc
+  76              	.LFE21:
+  78              		.section	.text.rti_end,"ax",%progbits
+  79              		.align	1
+  80              		.syntax unified
+  81              		.thumb
+  82              		.thumb_func
+  83              		.fpu fpv4-sp-d16
+  85              	rti_end:
+  86              	.LFB22:
+  74:rt-thread/src/components.c **** INIT_EXPORT(rti_board_end, "1.end");
+  75:rt-thread/src/components.c **** 
+  76:rt-thread/src/components.c **** static int rti_end(void)
+  77:rt-thread/src/components.c **** {
+  87              		.loc 1 77 0
+  88              		.cfi_startproc
+  89              		@ args = 0, pretend = 0, frame = 0
+  90              		@ frame_needed = 0, uses_anonymous_args = 0
+  91              		@ link register save eliminated.
+  78:rt-thread/src/components.c ****     return 0;
+  79:rt-thread/src/components.c **** }
+  92              		.loc 1 79 0
+  93 0000 0020     		movs	r0, #0
+  94 0002 7047     		bx	lr
+  95              		.cfi_endproc
+  96              	.LFE22:
+  98              		.section	.text.rt_components_board_init,"ax",%progbits
+  99              		.align	1
+ 100              		.global	rt_components_board_init
+ARM GAS  /tmp/cc4EzJPC.s 			page 4
+
+
+ 101              		.syntax unified
+ 102              		.thumb
+ 103              		.thumb_func
+ 104              		.fpu fpv4-sp-d16
+ 106              	rt_components_board_init:
+ 107              	.LFB23:
+  80:rt-thread/src/components.c **** INIT_EXPORT(rti_end, "6.end");
+  81:rt-thread/src/components.c **** 
+  82:rt-thread/src/components.c **** /**
+  83:rt-thread/src/components.c ****  * RT-Thread Components Initialization for board
+  84:rt-thread/src/components.c ****  */
+  85:rt-thread/src/components.c **** void rt_components_board_init(void)
+  86:rt-thread/src/components.c **** {
+ 108              		.loc 1 86 0
+ 109              		.cfi_startproc
+ 110              		@ args = 0, pretend = 0, frame = 0
+ 111              		@ frame_needed = 0, uses_anonymous_args = 0
+ 112 0000 10B5     		push	{r4, lr}
+ 113              	.LCFI0:
+ 114              		.cfi_def_cfa_offset 8
+ 115              		.cfi_offset 4, -8
+ 116              		.cfi_offset 14, -4
+  87:rt-thread/src/components.c **** #if RT_DEBUG_INIT
+  88:rt-thread/src/components.c ****     int result;
+  89:rt-thread/src/components.c ****     const struct rt_init_desc *desc;
+  90:rt-thread/src/components.c ****     for (desc = &__rt_init_desc_rti_board_start; desc < &__rt_init_desc_rti_board_end; desc ++)
+  91:rt-thread/src/components.c ****     {
+  92:rt-thread/src/components.c ****         rt_kprintf("initialize %s", desc->fn_name);
+  93:rt-thread/src/components.c ****         result = desc->fn();
+  94:rt-thread/src/components.c ****         rt_kprintf(":%d done\n", result);
+  95:rt-thread/src/components.c ****     }
+  96:rt-thread/src/components.c **** #else
+  97:rt-thread/src/components.c ****     const init_fn_t *fn_ptr;
+  98:rt-thread/src/components.c **** 
+  99:rt-thread/src/components.c ****     for (fn_ptr = &__rt_init_rti_board_start; fn_ptr < &__rt_init_rti_board_end; fn_ptr++)
+ 117              		.loc 1 99 0
+ 118 0002 044C     		ldr	r4, .L9
+ 119 0004 02E0     		b	.L6
+ 120              	.LVL0:
+ 121              	.L7:
+ 100:rt-thread/src/components.c ****     {
+ 101:rt-thread/src/components.c ****         (*fn_ptr)();
+ 122              		.loc 1 101 0 discriminator 3
+ 123 0006 54F8043B 		ldr	r3, [r4], #4
+ 124              	.LVL1:
+ 125 000a 9847     		blx	r3
+ 126              	.LVL2:
+ 127              	.L6:
+  99:rt-thread/src/components.c ****     {
+ 128              		.loc 1 99 0 discriminator 1
+ 129 000c 024B     		ldr	r3, .L9+4
+ 130 000e 9C42     		cmp	r4, r3
+ 131 0010 F9D3     		bcc	.L7
+ 102:rt-thread/src/components.c ****     }
+ 103:rt-thread/src/components.c **** #endif
+ 104:rt-thread/src/components.c **** }
+ 132              		.loc 1 104 0
+ARM GAS  /tmp/cc4EzJPC.s 			page 5
+
+
+ 133 0012 10BD     		pop	{r4, pc}
+ 134              	.LVL3:
+ 135              	.L10:
+ 136              		.align	2
+ 137              	.L9:
+ 138 0014 00000000 		.word	.LANCHOR0
+ 139 0018 00000000 		.word	.LANCHOR1
+ 140              		.cfi_endproc
+ 141              	.LFE23:
+ 143              		.section	.text.rt_components_init,"ax",%progbits
+ 144              		.align	1
+ 145              		.global	rt_components_init
+ 146              		.syntax unified
+ 147              		.thumb
+ 148              		.thumb_func
+ 149              		.fpu fpv4-sp-d16
+ 151              	rt_components_init:
+ 152              	.LFB24:
+ 105:rt-thread/src/components.c **** 
+ 106:rt-thread/src/components.c **** /**
+ 107:rt-thread/src/components.c ****  * RT-Thread Components Initialization
+ 108:rt-thread/src/components.c ****  */
+ 109:rt-thread/src/components.c **** void rt_components_init(void)
+ 110:rt-thread/src/components.c **** {
+ 153              		.loc 1 110 0
+ 154              		.cfi_startproc
+ 155              		@ args = 0, pretend = 0, frame = 0
+ 156              		@ frame_needed = 0, uses_anonymous_args = 0
+ 157 0000 10B5     		push	{r4, lr}
+ 158              	.LCFI1:
+ 159              		.cfi_def_cfa_offset 8
+ 160              		.cfi_offset 4, -8
+ 161              		.cfi_offset 14, -4
+ 111:rt-thread/src/components.c **** #if RT_DEBUG_INIT
+ 112:rt-thread/src/components.c ****     int result;
+ 113:rt-thread/src/components.c ****     const struct rt_init_desc *desc;
+ 114:rt-thread/src/components.c **** 
+ 115:rt-thread/src/components.c ****     rt_kprintf("do components initialization.\n");
+ 116:rt-thread/src/components.c ****     for (desc = &__rt_init_desc_rti_board_end; desc < &__rt_init_desc_rti_end; desc ++)
+ 117:rt-thread/src/components.c ****     {
+ 118:rt-thread/src/components.c ****         rt_kprintf("initialize %s", desc->fn_name);
+ 119:rt-thread/src/components.c ****         result = desc->fn();
+ 120:rt-thread/src/components.c ****         rt_kprintf(":%d done\n", result);
+ 121:rt-thread/src/components.c ****     }
+ 122:rt-thread/src/components.c **** #else
+ 123:rt-thread/src/components.c ****     const init_fn_t *fn_ptr;
+ 124:rt-thread/src/components.c **** 
+ 125:rt-thread/src/components.c ****     for (fn_ptr = &__rt_init_rti_board_end; fn_ptr < &__rt_init_rti_end; fn_ptr ++)
+ 162              		.loc 1 125 0
+ 163 0002 044C     		ldr	r4, .L15
+ 164 0004 02E0     		b	.L12
+ 165              	.LVL4:
+ 166              	.L13:
+ 126:rt-thread/src/components.c ****     {
+ 127:rt-thread/src/components.c ****         (*fn_ptr)();
+ 167              		.loc 1 127 0 discriminator 3
+ 168 0006 54F8043B 		ldr	r3, [r4], #4
+ARM GAS  /tmp/cc4EzJPC.s 			page 6
+
+
+ 169              	.LVL5:
+ 170 000a 9847     		blx	r3
+ 171              	.LVL6:
+ 172              	.L12:
+ 125:rt-thread/src/components.c ****     {
+ 173              		.loc 1 125 0 discriminator 1
+ 174 000c 024B     		ldr	r3, .L15+4
+ 175 000e 9C42     		cmp	r4, r3
+ 176 0010 F9D3     		bcc	.L13
+ 128:rt-thread/src/components.c ****     }
+ 129:rt-thread/src/components.c **** #endif
+ 130:rt-thread/src/components.c **** }
+ 177              		.loc 1 130 0
+ 178 0012 10BD     		pop	{r4, pc}
+ 179              	.LVL7:
+ 180              	.L16:
+ 181              		.align	2
+ 182              	.L15:
+ 183 0014 00000000 		.word	.LANCHOR1
+ 184 0018 00000000 		.word	.LANCHOR2
+ 185              		.cfi_endproc
+ 186              	.LFE24:
+ 188              		.section	.text.main_thread_entry,"ax",%progbits
+ 189              		.align	1
+ 190              		.global	main_thread_entry
+ 191              		.syntax unified
+ 192              		.thumb
+ 193              		.thumb_func
+ 194              		.fpu fpv4-sp-d16
+ 196              	main_thread_entry:
+ 197              	.LFB26:
+ 131:rt-thread/src/components.c **** #endif   /* RT_USING_COMPONENTS_INIT */
+ 132:rt-thread/src/components.c **** 
+ 133:rt-thread/src/components.c **** #ifdef RT_USING_USER_MAIN
+ 134:rt-thread/src/components.c **** 
+ 135:rt-thread/src/components.c **** void rt_application_init(void);
+ 136:rt-thread/src/components.c **** void rt_hw_board_init(void);
+ 137:rt-thread/src/components.c **** int rtthread_startup(void);
+ 138:rt-thread/src/components.c **** 
+ 139:rt-thread/src/components.c **** #if defined(__CC_ARM) || defined(__CLANG_ARM)
+ 140:rt-thread/src/components.c **** extern int $Super$$main(void);
+ 141:rt-thread/src/components.c **** /* re-define main function */
+ 142:rt-thread/src/components.c **** int $Sub$$main(void)
+ 143:rt-thread/src/components.c **** {
+ 144:rt-thread/src/components.c ****     rtthread_startup();
+ 145:rt-thread/src/components.c ****     return 0;
+ 146:rt-thread/src/components.c **** }
+ 147:rt-thread/src/components.c **** #elif defined(__ICCARM__)
+ 148:rt-thread/src/components.c **** extern int main(void);
+ 149:rt-thread/src/components.c **** /* __low_level_init will auto called by IAR cstartup */
+ 150:rt-thread/src/components.c **** extern void __iar_data_init3(void);
+ 151:rt-thread/src/components.c **** int __low_level_init(void)
+ 152:rt-thread/src/components.c **** {
+ 153:rt-thread/src/components.c ****     // call IAR table copy function.
+ 154:rt-thread/src/components.c ****     __iar_data_init3();
+ 155:rt-thread/src/components.c ****     rtthread_startup();
+ 156:rt-thread/src/components.c ****     return 0;
+ARM GAS  /tmp/cc4EzJPC.s 			page 7
+
+
+ 157:rt-thread/src/components.c **** }
+ 158:rt-thread/src/components.c **** #elif defined(__GNUC__)
+ 159:rt-thread/src/components.c **** /* Add -eentry to arm-none-eabi-gcc argument */
+ 160:rt-thread/src/components.c **** int entry(void)
+ 161:rt-thread/src/components.c **** {
+ 162:rt-thread/src/components.c ****     rtthread_startup();
+ 163:rt-thread/src/components.c ****     return 0;
+ 164:rt-thread/src/components.c **** }
+ 165:rt-thread/src/components.c **** #endif
+ 166:rt-thread/src/components.c **** 
+ 167:rt-thread/src/components.c **** #ifndef RT_USING_HEAP
+ 168:rt-thread/src/components.c **** /* if there is not enable heap, we should use static thread and stack. */
+ 169:rt-thread/src/components.c **** ALIGN(8)
+ 170:rt-thread/src/components.c **** static rt_uint8_t main_stack[RT_MAIN_THREAD_STACK_SIZE];
+ 171:rt-thread/src/components.c **** struct rt_thread main_thread;
+ 172:rt-thread/src/components.c **** #endif
+ 173:rt-thread/src/components.c **** 
+ 174:rt-thread/src/components.c **** /* the system main thread */
+ 175:rt-thread/src/components.c **** void main_thread_entry(void *parameter)
+ 176:rt-thread/src/components.c **** {
+ 198              		.loc 1 176 0
+ 199              		.cfi_startproc
+ 200              		@ args = 0, pretend = 0, frame = 0
+ 201              		@ frame_needed = 0, uses_anonymous_args = 0
+ 202              	.LVL8:
+ 203 0000 08B5     		push	{r3, lr}
+ 204              	.LCFI2:
+ 205              		.cfi_def_cfa_offset 8
+ 206              		.cfi_offset 3, -8
+ 207              		.cfi_offset 14, -4
+ 177:rt-thread/src/components.c ****     extern int main(void);
+ 178:rt-thread/src/components.c ****     extern int $Super$$main(void);
+ 179:rt-thread/src/components.c ****     
+ 180:rt-thread/src/components.c **** #ifdef RT_USING_COMPONENTS_INIT
+ 181:rt-thread/src/components.c ****     /* RT-Thread components initialization */
+ 182:rt-thread/src/components.c ****     rt_components_init();
+ 208              		.loc 1 182 0
+ 209 0002 FFF7FEFF 		bl	rt_components_init
+ 210              	.LVL9:
+ 183:rt-thread/src/components.c **** #endif    
+ 184:rt-thread/src/components.c **** #ifdef RT_USING_SMP
+ 185:rt-thread/src/components.c ****     rt_hw_secondary_cpu_up();
+ 186:rt-thread/src/components.c **** #endif
+ 187:rt-thread/src/components.c ****     /* invoke system main function */
+ 188:rt-thread/src/components.c **** #if defined(__CC_ARM) || defined(__CLANG_ARM)
+ 189:rt-thread/src/components.c ****     $Super$$main(); /* for ARMCC. */
+ 190:rt-thread/src/components.c **** #elif defined(__ICCARM__) || defined(__GNUC__)
+ 191:rt-thread/src/components.c ****     main();
+ 211              		.loc 1 191 0
+ 212 0006 FFF7FEFF 		bl	main
+ 213              	.LVL10:
+ 214 000a 08BD     		pop	{r3, pc}
+ 215              		.cfi_endproc
+ 216              	.LFE26:
+ 218              		.section	.text.rt_application_init,"ax",%progbits
+ 219              		.align	1
+ 220              		.global	rt_application_init
+ARM GAS  /tmp/cc4EzJPC.s 			page 8
+
+
+ 221              		.syntax unified
+ 222              		.thumb
+ 223              		.thumb_func
+ 224              		.fpu fpv4-sp-d16
+ 226              	rt_application_init:
+ 227              	.LFB27:
+ 192:rt-thread/src/components.c **** #endif
+ 193:rt-thread/src/components.c **** }
+ 194:rt-thread/src/components.c **** 
+ 195:rt-thread/src/components.c **** void rt_application_init(void)
+ 196:rt-thread/src/components.c **** {
+ 228              		.loc 1 196 0
+ 229              		.cfi_startproc
+ 230              		@ args = 0, pretend = 0, frame = 0
+ 231              		@ frame_needed = 0, uses_anonymous_args = 0
+ 232 0000 00B5     		push	{lr}
+ 233              	.LCFI3:
+ 234              		.cfi_def_cfa_offset 4
+ 235              		.cfi_offset 14, -4
+ 236 0002 83B0     		sub	sp, sp, #12
+ 237              	.LCFI4:
+ 238              		.cfi_def_cfa_offset 16
+ 197:rt-thread/src/components.c ****     rt_thread_t tid;
+ 198:rt-thread/src/components.c **** 
+ 199:rt-thread/src/components.c **** #ifdef RT_USING_HEAP
+ 200:rt-thread/src/components.c ****     tid = rt_thread_create("main", main_thread_entry, RT_NULL,
+ 239              		.loc 1 200 0
+ 240 0004 1423     		movs	r3, #20
+ 241 0006 0193     		str	r3, [sp, #4]
+ 242 0008 0A23     		movs	r3, #10
+ 243 000a 0093     		str	r3, [sp]
+ 244 000c 4FF44873 		mov	r3, #800
+ 245 0010 0022     		movs	r2, #0
+ 246 0012 0449     		ldr	r1, .L21
+ 247 0014 0448     		ldr	r0, .L21+4
+ 248 0016 FFF7FEFF 		bl	rt_thread_create
+ 249              	.LVL11:
+ 201:rt-thread/src/components.c ****                            RT_MAIN_THREAD_STACK_SIZE, RT_MAIN_THREAD_PRIORITY, 20);
+ 202:rt-thread/src/components.c ****     RT_ASSERT(tid != RT_NULL);
+ 203:rt-thread/src/components.c **** #else
+ 204:rt-thread/src/components.c ****     rt_err_t result;
+ 205:rt-thread/src/components.c **** 
+ 206:rt-thread/src/components.c ****     tid = &main_thread;
+ 207:rt-thread/src/components.c ****     result = rt_thread_init(tid, "main", main_thread_entry, RT_NULL,
+ 208:rt-thread/src/components.c ****                             main_stack, sizeof(main_stack), RT_MAIN_THREAD_PRIORITY, 20);
+ 209:rt-thread/src/components.c ****     RT_ASSERT(result == RT_EOK);
+ 210:rt-thread/src/components.c **** 
+ 211:rt-thread/src/components.c ****     /* if not define RT_USING_HEAP, using to eliminate the warning */
+ 212:rt-thread/src/components.c ****     (void)result;
+ 213:rt-thread/src/components.c **** #endif
+ 214:rt-thread/src/components.c **** 
+ 215:rt-thread/src/components.c ****     rt_thread_startup(tid);
+ 250              		.loc 1 215 0
+ 251 001a FFF7FEFF 		bl	rt_thread_startup
+ 252              	.LVL12:
+ 216:rt-thread/src/components.c **** }
+ 253              		.loc 1 216 0
+ARM GAS  /tmp/cc4EzJPC.s 			page 9
+
+
+ 254 001e 03B0     		add	sp, sp, #12
+ 255              	.LCFI5:
+ 256              		.cfi_def_cfa_offset 4
+ 257              		@ sp needed
+ 258 0020 5DF804FB 		ldr	pc, [sp], #4
+ 259              	.L22:
+ 260              		.align	2
+ 261              	.L21:
+ 262 0024 00000000 		.word	main_thread_entry
+ 263 0028 00000000 		.word	.LC0
+ 264              		.cfi_endproc
+ 265              	.LFE27:
+ 267              		.section	.text.rtthread_startup,"ax",%progbits
+ 268              		.align	1
+ 269              		.global	rtthread_startup
+ 270              		.syntax unified
+ 271              		.thumb
+ 272              		.thumb_func
+ 273              		.fpu fpv4-sp-d16
+ 275              	rtthread_startup:
+ 276              	.LFB28:
+ 217:rt-thread/src/components.c **** 
+ 218:rt-thread/src/components.c **** int rtthread_startup(void)
+ 219:rt-thread/src/components.c **** {
+ 277              		.loc 1 219 0
+ 278              		.cfi_startproc
+ 279              		@ args = 0, pretend = 0, frame = 0
+ 280              		@ frame_needed = 0, uses_anonymous_args = 0
+ 281 0000 08B5     		push	{r3, lr}
+ 282              	.LCFI6:
+ 283              		.cfi_def_cfa_offset 8
+ 284              		.cfi_offset 3, -8
+ 285              		.cfi_offset 14, -4
+ 220:rt-thread/src/components.c ****     rt_hw_interrupt_disable();
+ 286              		.loc 1 220 0
+ 287 0002 FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 288              	.LVL13:
+ 221:rt-thread/src/components.c **** 
+ 222:rt-thread/src/components.c ****     /* board level initialization
+ 223:rt-thread/src/components.c ****      * NOTE: please initialize heap inside board initialization.
+ 224:rt-thread/src/components.c ****      */
+ 225:rt-thread/src/components.c ****     rt_hw_board_init();
+ 289              		.loc 1 225 0
+ 290 0006 FFF7FEFF 		bl	rt_hw_board_init
+ 291              	.LVL14:
+ 226:rt-thread/src/components.c **** 
+ 227:rt-thread/src/components.c ****     /* show RT-Thread version */
+ 228:rt-thread/src/components.c ****     rt_show_version();
+ 292              		.loc 1 228 0
+ 293 000a FFF7FEFF 		bl	rt_show_version
+ 294              	.LVL15:
+ 229:rt-thread/src/components.c **** 
+ 230:rt-thread/src/components.c ****     /* timer system initialization */
+ 231:rt-thread/src/components.c ****     rt_system_timer_init();
+ 295              		.loc 1 231 0
+ 296 000e FFF7FEFF 		bl	rt_system_timer_init
+ 297              	.LVL16:
+ARM GAS  /tmp/cc4EzJPC.s 			page 10
+
+
+ 232:rt-thread/src/components.c **** 
+ 233:rt-thread/src/components.c ****     /* scheduler system initialization */
+ 234:rt-thread/src/components.c ****     rt_system_scheduler_init();
+ 298              		.loc 1 234 0
+ 299 0012 FFF7FEFF 		bl	rt_system_scheduler_init
+ 300              	.LVL17:
+ 235:rt-thread/src/components.c **** 
+ 236:rt-thread/src/components.c **** #ifdef RT_USING_SIGNALS
+ 237:rt-thread/src/components.c ****     /* signal system initialization */
+ 238:rt-thread/src/components.c ****     rt_system_signal_init();
+ 239:rt-thread/src/components.c **** #endif
+ 240:rt-thread/src/components.c **** 
+ 241:rt-thread/src/components.c ****     /* create init_thread */
+ 242:rt-thread/src/components.c ****     rt_application_init();
+ 301              		.loc 1 242 0
+ 302 0016 FFF7FEFF 		bl	rt_application_init
+ 303              	.LVL18:
+ 243:rt-thread/src/components.c **** 
+ 244:rt-thread/src/components.c ****     /* timer thread initialization */
+ 245:rt-thread/src/components.c ****     rt_system_timer_thread_init();
+ 304              		.loc 1 245 0
+ 305 001a FFF7FEFF 		bl	rt_system_timer_thread_init
+ 306              	.LVL19:
+ 246:rt-thread/src/components.c **** 
+ 247:rt-thread/src/components.c ****     /* idle thread initialization */
+ 248:rt-thread/src/components.c ****     rt_thread_idle_init();
+ 307              		.loc 1 248 0
+ 308 001e FFF7FEFF 		bl	rt_thread_idle_init
+ 309              	.LVL20:
+ 249:rt-thread/src/components.c **** 
+ 250:rt-thread/src/components.c **** #ifdef RT_USING_SMP
+ 251:rt-thread/src/components.c ****     rt_hw_spin_lock(&_cpus_lock);
+ 252:rt-thread/src/components.c **** #endif /*RT_USING_SMP*/
+ 253:rt-thread/src/components.c **** 
+ 254:rt-thread/src/components.c ****     /* start scheduler */
+ 255:rt-thread/src/components.c ****     rt_system_scheduler_start();
+ 310              		.loc 1 255 0
+ 311 0022 FFF7FEFF 		bl	rt_system_scheduler_start
+ 312              	.LVL21:
+ 256:rt-thread/src/components.c **** 
+ 257:rt-thread/src/components.c ****     /* never reach here */
+ 258:rt-thread/src/components.c ****     return 0;
+ 259:rt-thread/src/components.c **** }
+ 313              		.loc 1 259 0
+ 314 0026 0020     		movs	r0, #0
+ 315 0028 08BD     		pop	{r3, pc}
+ 316              		.cfi_endproc
+ 317              	.LFE28:
+ 319              		.section	.text.entry,"ax",%progbits
+ 320              		.align	1
+ 321              		.global	entry
+ 322              		.syntax unified
+ 323              		.thumb
+ 324              		.thumb_func
+ 325              		.fpu fpv4-sp-d16
+ 327              	entry:
+ 328              	.LFB25:
+ARM GAS  /tmp/cc4EzJPC.s 			page 11
+
+
+ 161:rt-thread/src/components.c ****     rtthread_startup();
+ 329              		.loc 1 161 0
+ 330              		.cfi_startproc
+ 331              		@ args = 0, pretend = 0, frame = 0
+ 332              		@ frame_needed = 0, uses_anonymous_args = 0
+ 333 0000 08B5     		push	{r3, lr}
+ 334              	.LCFI7:
+ 335              		.cfi_def_cfa_offset 8
+ 336              		.cfi_offset 3, -8
+ 337              		.cfi_offset 14, -4
+ 162:rt-thread/src/components.c ****     return 0;
+ 338              		.loc 1 162 0
+ 339 0002 FFF7FEFF 		bl	rtthread_startup
+ 340              	.LVL22:
+ 164:rt-thread/src/components.c **** #endif
+ 341              		.loc 1 164 0
+ 342 0006 0020     		movs	r0, #0
+ 343 0008 08BD     		pop	{r3, pc}
+ 344              		.cfi_endproc
+ 345              	.LFE25:
+ 347              		.global	__rt_init_rti_end
+ 348              		.global	__rt_init_rti_board_end
+ 349              		.global	__rt_init_rti_board_start
+ 350              		.global	__rt_init_rti_start
+ 351              		.section	.rodata.rt_application_init.str1.4,"aMS",%progbits,1
+ 352              		.align	2
+ 353              	.LC0:
+ 354 0000 6D61696E 		.ascii	"main\000"
+ 354      00
+ 355              		.section	.rti_fn.0,"a",%progbits
+ 356              		.align	2
+ 359              	__rt_init_rti_start:
+ 360 0000 00000000 		.word	rti_start
+ 361              		.section	.rti_fn.0.end,"a",%progbits
+ 362              		.align	2
+ 363              		.set	.LANCHOR0,. + 0
+ 366              	__rt_init_rti_board_start:
+ 367 0000 00000000 		.word	rti_board_start
+ 368              		.section	.rti_fn.1.end,"a",%progbits
+ 369              		.align	2
+ 370              		.set	.LANCHOR1,. + 0
+ 373              	__rt_init_rti_board_end:
+ 374 0000 00000000 		.word	rti_board_end
+ 375              		.section	.rti_fn.6.end,"a",%progbits
+ 376              		.align	2
+ 377              		.set	.LANCHOR2,. + 0
+ 380              	__rt_init_rti_end:
+ 381 0000 00000000 		.word	rti_end
+ 382              		.text
+ 383              	.Letext0:
+ 384              		.file 2 "rt-thread/include/rtdef.h"
+ 385              		.file 3 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/lock.h"
+ 386              		.file 4 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_types.h"
+ 387              		.file 5 "/opt/gcc-arm-none-eabi-6-2017-q2-update/lib/gcc/arm-none-eabi/6.3.1/include/stddef.h"
+ 388              		.file 6 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/reent.h"
+ 389              		.file 7 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/time.h"
+ 390              		.file 8 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/errno.h"
+ARM GAS  /tmp/cc4EzJPC.s 			page 12
+
+
+ 391              		.file 9 "rt-thread/components/finsh/finsh_api.h"
+ 392              		.file 10 "rt-thread/include/rthw.h"
+ 393              		.file 11 "rt-thread/include/rtthread.h"
+ARM GAS  /tmp/cc4EzJPC.s 			page 13
+
+
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 components.c
+     /tmp/cc4EzJPC.s:18     .text.rti_start:0000000000000000 $t
+     /tmp/cc4EzJPC.s:24     .text.rti_start:0000000000000000 rti_start
+     /tmp/cc4EzJPC.s:39     .text.rti_board_start:0000000000000000 $t
+     /tmp/cc4EzJPC.s:45     .text.rti_board_start:0000000000000000 rti_board_start
+     /tmp/cc4EzJPC.s:59     .text.rti_board_end:0000000000000000 $t
+     /tmp/cc4EzJPC.s:65     .text.rti_board_end:0000000000000000 rti_board_end
+     /tmp/cc4EzJPC.s:79     .text.rti_end:0000000000000000 $t
+     /tmp/cc4EzJPC.s:85     .text.rti_end:0000000000000000 rti_end
+     /tmp/cc4EzJPC.s:99     .text.rt_components_board_init:0000000000000000 $t
+     /tmp/cc4EzJPC.s:106    .text.rt_components_board_init:0000000000000000 rt_components_board_init
+     /tmp/cc4EzJPC.s:138    .text.rt_components_board_init:0000000000000014 $d
+     /tmp/cc4EzJPC.s:144    .text.rt_components_init:0000000000000000 $t
+     /tmp/cc4EzJPC.s:151    .text.rt_components_init:0000000000000000 rt_components_init
+     /tmp/cc4EzJPC.s:183    .text.rt_components_init:0000000000000014 $d
+     /tmp/cc4EzJPC.s:189    .text.main_thread_entry:0000000000000000 $t
+     /tmp/cc4EzJPC.s:196    .text.main_thread_entry:0000000000000000 main_thread_entry
+     /tmp/cc4EzJPC.s:219    .text.rt_application_init:0000000000000000 $t
+     /tmp/cc4EzJPC.s:226    .text.rt_application_init:0000000000000000 rt_application_init
+     /tmp/cc4EzJPC.s:262    .text.rt_application_init:0000000000000024 $d
+     /tmp/cc4EzJPC.s:268    .text.rtthread_startup:0000000000000000 $t
+     /tmp/cc4EzJPC.s:275    .text.rtthread_startup:0000000000000000 rtthread_startup
+     /tmp/cc4EzJPC.s:320    .text.entry:0000000000000000 $t
+     /tmp/cc4EzJPC.s:327    .text.entry:0000000000000000 entry
+     /tmp/cc4EzJPC.s:380    .rti_fn.6.end:0000000000000000 __rt_init_rti_end
+     /tmp/cc4EzJPC.s:373    .rti_fn.1.end:0000000000000000 __rt_init_rti_board_end
+     /tmp/cc4EzJPC.s:366    .rti_fn.0.end:0000000000000000 __rt_init_rti_board_start
+     /tmp/cc4EzJPC.s:359    .rti_fn.0:0000000000000000 __rt_init_rti_start
+     /tmp/cc4EzJPC.s:352    .rodata.rt_application_init.str1.4:0000000000000000 $d
+     /tmp/cc4EzJPC.s:356    .rti_fn.0:0000000000000000 $d
+     /tmp/cc4EzJPC.s:362    .rti_fn.0.end:0000000000000000 $d
+     /tmp/cc4EzJPC.s:369    .rti_fn.1.end:0000000000000000 $d
+     /tmp/cc4EzJPC.s:376    .rti_fn.6.end:0000000000000000 $d
+                     .debug_frame:0000000000000010 $d
+
+UNDEFINED SYMBOLS
+main
+rt_thread_create
+rt_thread_startup
+rt_hw_interrupt_disable
+rt_hw_board_init
+rt_show_version
+rt_system_timer_init
+rt_system_scheduler_init
+rt_system_timer_thread_init
+rt_thread_idle_init
+rt_system_scheduler_start

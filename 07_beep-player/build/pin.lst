@@ -1,0 +1,871 @@
+ARM GAS  /tmp/ccXIU6et.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.eabi_attribute 27, 1
+   3              		.eabi_attribute 28, 1
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.file	"pin.c"
+  14              		.text
+  15              	.Ltext0:
+  16              		.cfi_sections	.debug_frame
+  17              		.section	.text._pin_read,"ax",%progbits
+  18              		.align	1
+  19              		.syntax unified
+  20              		.thumb
+  21              		.thumb_func
+  22              		.fpu fpv4-sp-d16
+  24              	_pin_read:
+  25              	.LFB20:
+  26              		.file 1 "rt-thread/components/drivers/misc/pin.c"
+   1:rt-thread/components/drivers/misc/pin.c **** /*
+   2:rt-thread/components/drivers/misc/pin.c ****  * Copyright (c) 2006-2018, RT-Thread Development Team
+   3:rt-thread/components/drivers/misc/pin.c ****  *
+   4:rt-thread/components/drivers/misc/pin.c ****  * SPDX-License-Identifier: Apache-2.0
+   5:rt-thread/components/drivers/misc/pin.c ****  *
+   6:rt-thread/components/drivers/misc/pin.c ****  * Change Logs:
+   7:rt-thread/components/drivers/misc/pin.c ****  * Date           Author       Notes
+   8:rt-thread/components/drivers/misc/pin.c ****  * 2015-01-20     Bernard      the first version
+   9:rt-thread/components/drivers/misc/pin.c ****  */
+  10:rt-thread/components/drivers/misc/pin.c **** 
+  11:rt-thread/components/drivers/misc/pin.c **** #include "rtthread.h"
+  12:rt-thread/components/drivers/misc/pin.c **** #include <drivers/pin.h>
+  13:rt-thread/components/drivers/misc/pin.c **** 
+  14:rt-thread/components/drivers/misc/pin.c **** #ifdef RT_USING_FINSH
+  15:rt-thread/components/drivers/misc/pin.c **** #include <finsh.h>
+  16:rt-thread/components/drivers/misc/pin.c **** #endif
+  17:rt-thread/components/drivers/misc/pin.c **** 
+  18:rt-thread/components/drivers/misc/pin.c **** static struct rt_device_pin _hw_pin;
+  19:rt-thread/components/drivers/misc/pin.c **** static rt_size_t _pin_read(rt_device_t dev, rt_off_t pos, void *buffer, rt_size_t size)
+  20:rt-thread/components/drivers/misc/pin.c **** {
+  27              		.loc 1 20 0
+  28              		.cfi_startproc
+  29              		@ args = 0, pretend = 0, frame = 0
+  30              		@ frame_needed = 0, uses_anonymous_args = 0
+  31              	.LVL0:
+  21:rt-thread/components/drivers/misc/pin.c ****     struct rt_device_pin_status *status;
+  22:rt-thread/components/drivers/misc/pin.c ****     struct rt_device_pin *pin = (struct rt_device_pin *)dev;
+  23:rt-thread/components/drivers/misc/pin.c **** 
+  24:rt-thread/components/drivers/misc/pin.c ****     /* check parameters */
+  25:rt-thread/components/drivers/misc/pin.c ****     RT_ASSERT(pin != RT_NULL);
+  26:rt-thread/components/drivers/misc/pin.c **** 
+  27:rt-thread/components/drivers/misc/pin.c ****     status = (struct rt_device_pin_status *) buffer;
+ARM GAS  /tmp/ccXIU6et.s 			page 2
+
+
+  28:rt-thread/components/drivers/misc/pin.c ****     if (status == RT_NULL || size != sizeof(*status)) return 0;
+  32              		.loc 1 28 0
+  33 0000 6AB1     		cbz	r2, .L3
+  20:rt-thread/components/drivers/misc/pin.c ****     struct rt_device_pin_status *status;
+  34              		.loc 1 20 0 discriminator 2
+  35 0002 38B5     		push	{r3, r4, r5, lr}
+  36              	.LCFI0:
+  37              		.cfi_def_cfa_offset 16
+  38              		.cfi_offset 3, -16
+  39              		.cfi_offset 4, -12
+  40              		.cfi_offset 5, -8
+  41              		.cfi_offset 14, -4
+  42 0004 1546     		mov	r5, r2
+  43              		.loc 1 28 0 discriminator 2
+  44 0006 042B     		cmp	r3, #4
+  45 0008 01D0     		beq	.L9
+  46              		.loc 1 28 0 is_stmt 0
+  47 000a 0020     		movs	r0, #0
+  48              	.LVL1:
+  29:rt-thread/components/drivers/misc/pin.c **** 
+  30:rt-thread/components/drivers/misc/pin.c ****     status->status = pin->ops->pin_read(dev, status->pin);
+  31:rt-thread/components/drivers/misc/pin.c ****     return size;
+  32:rt-thread/components/drivers/misc/pin.c **** }
+  49              		.loc 1 32 0 is_stmt 1
+  50 000c 38BD     		pop	{r3, r4, r5, pc}
+  51              	.LVL2:
+  52              	.L9:
+  53 000e 1C46     		mov	r4, r3
+  30:rt-thread/components/drivers/misc/pin.c ****     return size;
+  54              		.loc 1 30 0
+  55 0010 C36A     		ldr	r3, [r0, #44]
+  56              	.LVL3:
+  57 0012 9B68     		ldr	r3, [r3, #8]
+  58 0014 1188     		ldrh	r1, [r2]
+  59              	.LVL4:
+  60 0016 9847     		blx	r3
+  61              	.LVL5:
+  62 0018 6880     		strh	r0, [r5, #2]	@ movhi
+  31:rt-thread/components/drivers/misc/pin.c **** }
+  63              		.loc 1 31 0
+  64 001a 2046     		mov	r0, r4
+  65 001c 38BD     		pop	{r3, r4, r5, pc}
+  66              	.LVL6:
+  67              	.L3:
+  68              	.LCFI1:
+  69              		.cfi_def_cfa_offset 0
+  70              		.cfi_restore 3
+  71              		.cfi_restore 4
+  72              		.cfi_restore 5
+  73              		.cfi_restore 14
+  28:rt-thread/components/drivers/misc/pin.c **** 
+  74              		.loc 1 28 0
+  75 001e 0020     		movs	r0, #0
+  76              	.LVL7:
+  77 0020 7047     		bx	lr
+  78              		.cfi_endproc
+  79              	.LFE20:
+ARM GAS  /tmp/ccXIU6et.s 			page 3
+
+
+  81              		.section	.text._pin_write,"ax",%progbits
+  82              		.align	1
+  83              		.syntax unified
+  84              		.thumb
+  85              		.thumb_func
+  86              		.fpu fpv4-sp-d16
+  88              	_pin_write:
+  89              	.LFB21:
+  33:rt-thread/components/drivers/misc/pin.c **** 
+  34:rt-thread/components/drivers/misc/pin.c **** static rt_size_t _pin_write(rt_device_t dev, rt_off_t pos, const void *buffer, rt_size_t size)
+  35:rt-thread/components/drivers/misc/pin.c **** {
+  90              		.loc 1 35 0
+  91              		.cfi_startproc
+  92              		@ args = 0, pretend = 0, frame = 0
+  93              		@ frame_needed = 0, uses_anonymous_args = 0
+  94              	.LVL8:
+  36:rt-thread/components/drivers/misc/pin.c ****     struct rt_device_pin_status *status;
+  37:rt-thread/components/drivers/misc/pin.c ****     struct rt_device_pin *pin = (struct rt_device_pin *)dev;
+  38:rt-thread/components/drivers/misc/pin.c **** 
+  39:rt-thread/components/drivers/misc/pin.c ****     /* check parameters */
+  40:rt-thread/components/drivers/misc/pin.c ****     RT_ASSERT(pin != RT_NULL);
+  41:rt-thread/components/drivers/misc/pin.c **** 
+  42:rt-thread/components/drivers/misc/pin.c ****     status = (struct rt_device_pin_status *) buffer;
+  43:rt-thread/components/drivers/misc/pin.c ****     if (status == RT_NULL || size != sizeof(*status)) return 0;
+  95              		.loc 1 43 0
+  96 0000 6AB1     		cbz	r2, .L12
+  97 0002 1146     		mov	r1, r2
+  98              	.LVL9:
+  99              		.loc 1 43 0 is_stmt 0 discriminator 2
+ 100 0004 042B     		cmp	r3, #4
+ 101 0006 01D0     		beq	.L18
+ 102              		.loc 1 43 0
+ 103 0008 0020     		movs	r0, #0
+ 104              	.LVL10:
+ 105 000a 7047     		bx	lr
+ 106              	.LVL11:
+ 107              	.L18:
+  35:rt-thread/components/drivers/misc/pin.c ****     struct rt_device_pin_status *status;
+ 108              		.loc 1 35 0 is_stmt 1
+ 109 000c 10B5     		push	{r4, lr}
+ 110              	.LCFI2:
+ 111              		.cfi_def_cfa_offset 8
+ 112              		.cfi_offset 4, -8
+ 113              		.cfi_offset 14, -4
+ 114 000e 1C46     		mov	r4, r3
+  44:rt-thread/components/drivers/misc/pin.c **** 
+  45:rt-thread/components/drivers/misc/pin.c ****     pin->ops->pin_write(dev, (rt_base_t)status->pin, (rt_base_t)status->status);
+ 115              		.loc 1 45 0
+ 116 0010 C36A     		ldr	r3, [r0, #44]
+ 117              	.LVL12:
+ 118 0012 5B68     		ldr	r3, [r3, #4]
+ 119 0014 5288     		ldrh	r2, [r2, #2]
+ 120              	.LVL13:
+ 121 0016 0988     		ldrh	r1, [r1]
+ 122              	.LVL14:
+ 123 0018 9847     		blx	r3
+ 124              	.LVL15:
+ARM GAS  /tmp/ccXIU6et.s 			page 4
+
+
+  46:rt-thread/components/drivers/misc/pin.c **** 
+  47:rt-thread/components/drivers/misc/pin.c ****     return size;
+ 125              		.loc 1 47 0
+ 126 001a 2046     		mov	r0, r4
+ 127 001c 10BD     		pop	{r4, pc}
+ 128              	.LVL16:
+ 129              	.L12:
+ 130              	.LCFI3:
+ 131              		.cfi_def_cfa_offset 0
+ 132              		.cfi_restore 4
+ 133              		.cfi_restore 14
+  43:rt-thread/components/drivers/misc/pin.c **** 
+ 134              		.loc 1 43 0
+ 135 001e 0020     		movs	r0, #0
+ 136              	.LVL17:
+ 137 0020 7047     		bx	lr
+ 138              		.cfi_endproc
+ 139              	.LFE21:
+ 141              		.section	.text._pin_control,"ax",%progbits
+ 142              		.align	1
+ 143              		.syntax unified
+ 144              		.thumb
+ 145              		.thumb_func
+ 146              		.fpu fpv4-sp-d16
+ 148              	_pin_control:
+ 149              	.LFB22:
+  48:rt-thread/components/drivers/misc/pin.c **** }
+  49:rt-thread/components/drivers/misc/pin.c **** 
+  50:rt-thread/components/drivers/misc/pin.c **** static rt_err_t  _pin_control(rt_device_t dev, int cmd, void *args)
+  51:rt-thread/components/drivers/misc/pin.c **** {
+ 150              		.loc 1 51 0
+ 151              		.cfi_startproc
+ 152              		@ args = 0, pretend = 0, frame = 0
+ 153              		@ frame_needed = 0, uses_anonymous_args = 0
+ 154              	.LVL18:
+  52:rt-thread/components/drivers/misc/pin.c ****     struct rt_device_pin_mode *mode;
+  53:rt-thread/components/drivers/misc/pin.c ****     struct rt_device_pin *pin = (struct rt_device_pin *)dev;
+  54:rt-thread/components/drivers/misc/pin.c **** 
+  55:rt-thread/components/drivers/misc/pin.c ****     /* check parameters */
+  56:rt-thread/components/drivers/misc/pin.c ****     RT_ASSERT(pin != RT_NULL);
+  57:rt-thread/components/drivers/misc/pin.c **** 
+  58:rt-thread/components/drivers/misc/pin.c ****     mode = (struct rt_device_pin_mode *) args;
+  59:rt-thread/components/drivers/misc/pin.c ****     if (mode == RT_NULL) return -RT_ERROR;
+ 155              		.loc 1 59 0
+ 156 0000 42B1     		cbz	r2, .L21
+  51:rt-thread/components/drivers/misc/pin.c ****     struct rt_device_pin_mode *mode;
+ 157              		.loc 1 51 0
+ 158 0002 10B5     		push	{r4, lr}
+ 159              	.LCFI4:
+ 160              		.cfi_def_cfa_offset 8
+ 161              		.cfi_offset 4, -8
+ 162              		.cfi_offset 14, -4
+ 163 0004 1346     		mov	r3, r2
+  60:rt-thread/components/drivers/misc/pin.c **** 
+  61:rt-thread/components/drivers/misc/pin.c ****     pin->ops->pin_mode(dev, (rt_base_t)mode->pin, (rt_base_t)mode->mode);
+ 164              		.loc 1 61 0
+ 165 0006 C26A     		ldr	r2, [r0, #44]
+ARM GAS  /tmp/ccXIU6et.s 			page 5
+
+
+ 166              	.LVL19:
+ 167 0008 1468     		ldr	r4, [r2]
+ 168 000a 5A88     		ldrh	r2, [r3, #2]
+ 169 000c 1988     		ldrh	r1, [r3]
+ 170              	.LVL20:
+ 171 000e A047     		blx	r4
+ 172              	.LVL21:
+  62:rt-thread/components/drivers/misc/pin.c **** 
+  63:rt-thread/components/drivers/misc/pin.c ****     return 0;
+ 173              		.loc 1 63 0
+ 174 0010 0020     		movs	r0, #0
+ 175 0012 10BD     		pop	{r4, pc}
+ 176              	.LVL22:
+ 177              	.L21:
+ 178              	.LCFI5:
+ 179              		.cfi_def_cfa_offset 0
+ 180              		.cfi_restore 4
+ 181              		.cfi_restore 14
+  59:rt-thread/components/drivers/misc/pin.c **** 
+ 182              		.loc 1 59 0
+ 183 0014 4FF0FF30 		mov	r0, #-1
+ 184              	.LVL23:
+ 185 0018 7047     		bx	lr
+ 186              		.cfi_endproc
+ 187              	.LFE22:
+ 189              		.section	.text.rt_pin_mode,"ax",%progbits
+ 190              		.align	1
+ 191              		.global	rt_pin_mode
+ 192              		.syntax unified
+ 193              		.thumb
+ 194              		.thumb_func
+ 195              		.fpu fpv4-sp-d16
+ 197              	rt_pin_mode:
+ 198              	.LFB27:
+  64:rt-thread/components/drivers/misc/pin.c **** }
+  65:rt-thread/components/drivers/misc/pin.c **** 
+  66:rt-thread/components/drivers/misc/pin.c **** #ifdef RT_USING_DEVICE_OPS
+  67:rt-thread/components/drivers/misc/pin.c **** const static struct rt_device_ops pin_ops =
+  68:rt-thread/components/drivers/misc/pin.c **** {
+  69:rt-thread/components/drivers/misc/pin.c ****     RT_NULL,
+  70:rt-thread/components/drivers/misc/pin.c ****     RT_NULL,
+  71:rt-thread/components/drivers/misc/pin.c ****     RT_NULL,
+  72:rt-thread/components/drivers/misc/pin.c ****     _pin_read,
+  73:rt-thread/components/drivers/misc/pin.c ****     _pin_write,
+  74:rt-thread/components/drivers/misc/pin.c ****     _pin_control
+  75:rt-thread/components/drivers/misc/pin.c **** };
+  76:rt-thread/components/drivers/misc/pin.c **** #endif
+  77:rt-thread/components/drivers/misc/pin.c **** 
+  78:rt-thread/components/drivers/misc/pin.c **** int rt_device_pin_register(const char *name, const struct rt_pin_ops *ops, void *user_data)
+  79:rt-thread/components/drivers/misc/pin.c **** {
+  80:rt-thread/components/drivers/misc/pin.c ****     _hw_pin.parent.type         = RT_Device_Class_Miscellaneous;
+  81:rt-thread/components/drivers/misc/pin.c ****     _hw_pin.parent.rx_indicate  = RT_NULL;
+  82:rt-thread/components/drivers/misc/pin.c ****     _hw_pin.parent.tx_complete  = RT_NULL;
+  83:rt-thread/components/drivers/misc/pin.c **** 
+  84:rt-thread/components/drivers/misc/pin.c **** #ifdef RT_USING_DEVICE_OPS
+  85:rt-thread/components/drivers/misc/pin.c ****     _hw_pin.parent.ops          = &pin_ops;
+  86:rt-thread/components/drivers/misc/pin.c **** #else
+ARM GAS  /tmp/ccXIU6et.s 			page 6
+
+
+  87:rt-thread/components/drivers/misc/pin.c ****     _hw_pin.parent.init         = RT_NULL;
+  88:rt-thread/components/drivers/misc/pin.c ****     _hw_pin.parent.open         = RT_NULL;
+  89:rt-thread/components/drivers/misc/pin.c ****     _hw_pin.parent.close        = RT_NULL;
+  90:rt-thread/components/drivers/misc/pin.c ****     _hw_pin.parent.read         = _pin_read;
+  91:rt-thread/components/drivers/misc/pin.c ****     _hw_pin.parent.write        = _pin_write;
+  92:rt-thread/components/drivers/misc/pin.c ****     _hw_pin.parent.control      = _pin_control;
+  93:rt-thread/components/drivers/misc/pin.c **** #endif
+  94:rt-thread/components/drivers/misc/pin.c **** 
+  95:rt-thread/components/drivers/misc/pin.c ****     _hw_pin.ops                 = ops;
+  96:rt-thread/components/drivers/misc/pin.c ****     _hw_pin.parent.user_data    = user_data;
+  97:rt-thread/components/drivers/misc/pin.c **** 
+  98:rt-thread/components/drivers/misc/pin.c ****     /* register a character device */
+  99:rt-thread/components/drivers/misc/pin.c ****     rt_device_register(&_hw_pin.parent, name, RT_DEVICE_FLAG_RDWR);
+ 100:rt-thread/components/drivers/misc/pin.c **** 
+ 101:rt-thread/components/drivers/misc/pin.c ****     return 0;
+ 102:rt-thread/components/drivers/misc/pin.c **** }
+ 103:rt-thread/components/drivers/misc/pin.c **** 
+ 104:rt-thread/components/drivers/misc/pin.c **** rt_err_t rt_pin_attach_irq(rt_int32_t pin, rt_uint32_t mode,
+ 105:rt-thread/components/drivers/misc/pin.c ****                              void (*hdr)(void *args), void  *args)
+ 106:rt-thread/components/drivers/misc/pin.c **** {
+ 107:rt-thread/components/drivers/misc/pin.c ****     RT_ASSERT(_hw_pin.ops != RT_NULL);
+ 108:rt-thread/components/drivers/misc/pin.c ****     if(_hw_pin.ops->pin_attach_irq)
+ 109:rt-thread/components/drivers/misc/pin.c ****     {
+ 110:rt-thread/components/drivers/misc/pin.c ****         return _hw_pin.ops->pin_attach_irq(&_hw_pin.parent, pin, mode, hdr, args);
+ 111:rt-thread/components/drivers/misc/pin.c ****     }
+ 112:rt-thread/components/drivers/misc/pin.c ****     return RT_ENOSYS;
+ 113:rt-thread/components/drivers/misc/pin.c **** }
+ 114:rt-thread/components/drivers/misc/pin.c **** rt_err_t rt_pin_detach_irq(rt_int32_t pin)
+ 115:rt-thread/components/drivers/misc/pin.c **** {
+ 116:rt-thread/components/drivers/misc/pin.c ****     RT_ASSERT(_hw_pin.ops != RT_NULL);
+ 117:rt-thread/components/drivers/misc/pin.c ****     if(_hw_pin.ops->pin_detach_irq)
+ 118:rt-thread/components/drivers/misc/pin.c ****     {
+ 119:rt-thread/components/drivers/misc/pin.c ****         return _hw_pin.ops->pin_detach_irq(&_hw_pin.parent, pin);
+ 120:rt-thread/components/drivers/misc/pin.c ****     }
+ 121:rt-thread/components/drivers/misc/pin.c ****     return RT_ENOSYS;
+ 122:rt-thread/components/drivers/misc/pin.c **** }
+ 123:rt-thread/components/drivers/misc/pin.c **** 
+ 124:rt-thread/components/drivers/misc/pin.c **** rt_err_t rt_pin_irq_enable(rt_base_t pin, rt_uint32_t enabled)
+ 125:rt-thread/components/drivers/misc/pin.c **** {
+ 126:rt-thread/components/drivers/misc/pin.c ****     RT_ASSERT(_hw_pin.ops != RT_NULL);
+ 127:rt-thread/components/drivers/misc/pin.c ****     if(_hw_pin.ops->pin_irq_enable)
+ 128:rt-thread/components/drivers/misc/pin.c ****     {
+ 129:rt-thread/components/drivers/misc/pin.c ****         return _hw_pin.ops->pin_irq_enable(&_hw_pin.parent, pin, enabled);
+ 130:rt-thread/components/drivers/misc/pin.c ****     }
+ 131:rt-thread/components/drivers/misc/pin.c ****     return RT_ENOSYS;
+ 132:rt-thread/components/drivers/misc/pin.c **** }
+ 133:rt-thread/components/drivers/misc/pin.c **** 
+ 134:rt-thread/components/drivers/misc/pin.c **** /* RT-Thread Hardware PIN APIs */
+ 135:rt-thread/components/drivers/misc/pin.c **** void rt_pin_mode(rt_base_t pin, rt_base_t mode)
+ 136:rt-thread/components/drivers/misc/pin.c **** {
+ 199              		.loc 1 136 0
+ 200              		.cfi_startproc
+ 201              		@ args = 0, pretend = 0, frame = 0
+ 202              		@ frame_needed = 0, uses_anonymous_args = 0
+ 203              	.LVL24:
+ 204 0000 10B5     		push	{r4, lr}
+ 205              	.LCFI6:
+ARM GAS  /tmp/ccXIU6et.s 			page 7
+
+
+ 206              		.cfi_def_cfa_offset 8
+ 207              		.cfi_offset 4, -8
+ 208              		.cfi_offset 14, -4
+ 137:rt-thread/components/drivers/misc/pin.c **** 	RT_ASSERT(_hw_pin.ops != RT_NULL);
+ 138:rt-thread/components/drivers/misc/pin.c ****     _hw_pin.ops->pin_mode(&_hw_pin.parent, pin, mode);
+ 209              		.loc 1 138 0
+ 210 0002 044B     		ldr	r3, .L28
+ 211 0004 DA6A     		ldr	r2, [r3, #44]
+ 212 0006 1468     		ldr	r4, [r2]
+ 213 0008 0A46     		mov	r2, r1
+ 214 000a 0146     		mov	r1, r0
+ 215              	.LVL25:
+ 216 000c 1846     		mov	r0, r3
+ 217              	.LVL26:
+ 218 000e A047     		blx	r4
+ 219              	.LVL27:
+ 220 0010 10BD     		pop	{r4, pc}
+ 221              	.L29:
+ 222 0012 00BF     		.align	2
+ 223              	.L28:
+ 224 0014 00000000 		.word	.LANCHOR0
+ 225              		.cfi_endproc
+ 226              	.LFE27:
+ 228              		.section	.text.rt_pin_write,"ax",%progbits
+ 229              		.align	1
+ 230              		.global	rt_pin_write
+ 231              		.syntax unified
+ 232              		.thumb
+ 233              		.thumb_func
+ 234              		.fpu fpv4-sp-d16
+ 236              	rt_pin_write:
+ 237              	.LFB28:
+ 139:rt-thread/components/drivers/misc/pin.c **** }
+ 140:rt-thread/components/drivers/misc/pin.c **** FINSH_FUNCTION_EXPORT_ALIAS(rt_pin_mode, pinMode, set hardware pin mode);
+ 141:rt-thread/components/drivers/misc/pin.c **** 
+ 142:rt-thread/components/drivers/misc/pin.c **** void rt_pin_write(rt_base_t pin, rt_base_t value)
+ 143:rt-thread/components/drivers/misc/pin.c **** {
+ 238              		.loc 1 143 0
+ 239              		.cfi_startproc
+ 240              		@ args = 0, pretend = 0, frame = 0
+ 241              		@ frame_needed = 0, uses_anonymous_args = 0
+ 242              	.LVL28:
+ 243 0000 10B5     		push	{r4, lr}
+ 244              	.LCFI7:
+ 245              		.cfi_def_cfa_offset 8
+ 246              		.cfi_offset 4, -8
+ 247              		.cfi_offset 14, -4
+ 144:rt-thread/components/drivers/misc/pin.c **** 	RT_ASSERT(_hw_pin.ops != RT_NULL);
+ 145:rt-thread/components/drivers/misc/pin.c ****     _hw_pin.ops->pin_write(&_hw_pin.parent, pin, value);
+ 248              		.loc 1 145 0
+ 249 0002 044B     		ldr	r3, .L32
+ 250 0004 DA6A     		ldr	r2, [r3, #44]
+ 251 0006 5468     		ldr	r4, [r2, #4]
+ 252 0008 0A46     		mov	r2, r1
+ 253 000a 0146     		mov	r1, r0
+ 254              	.LVL29:
+ 255 000c 1846     		mov	r0, r3
+ARM GAS  /tmp/ccXIU6et.s 			page 8
+
+
+ 256              	.LVL30:
+ 257 000e A047     		blx	r4
+ 258              	.LVL31:
+ 259 0010 10BD     		pop	{r4, pc}
+ 260              	.L33:
+ 261 0012 00BF     		.align	2
+ 262              	.L32:
+ 263 0014 00000000 		.word	.LANCHOR0
+ 264              		.cfi_endproc
+ 265              	.LFE28:
+ 267              		.section	.text.rt_pin_read,"ax",%progbits
+ 268              		.align	1
+ 269              		.global	rt_pin_read
+ 270              		.syntax unified
+ 271              		.thumb
+ 272              		.thumb_func
+ 273              		.fpu fpv4-sp-d16
+ 275              	rt_pin_read:
+ 276              	.LFB29:
+ 146:rt-thread/components/drivers/misc/pin.c **** }
+ 147:rt-thread/components/drivers/misc/pin.c **** FINSH_FUNCTION_EXPORT_ALIAS(rt_pin_write, pinWrite, write value to hardware pin);
+ 148:rt-thread/components/drivers/misc/pin.c **** 
+ 149:rt-thread/components/drivers/misc/pin.c **** int  rt_pin_read(rt_base_t pin)
+ 150:rt-thread/components/drivers/misc/pin.c **** {
+ 277              		.loc 1 150 0
+ 278              		.cfi_startproc
+ 279              		@ args = 0, pretend = 0, frame = 0
+ 280              		@ frame_needed = 0, uses_anonymous_args = 0
+ 281              	.LVL32:
+ 282 0000 08B5     		push	{r3, lr}
+ 283              	.LCFI8:
+ 284              		.cfi_def_cfa_offset 8
+ 285              		.cfi_offset 3, -8
+ 286              		.cfi_offset 14, -4
+ 151:rt-thread/components/drivers/misc/pin.c ****     RT_ASSERT(_hw_pin.ops != RT_NULL);
+ 152:rt-thread/components/drivers/misc/pin.c ****     return _hw_pin.ops->pin_read(&_hw_pin.parent, pin);
+ 287              		.loc 1 152 0
+ 288 0002 034B     		ldr	r3, .L36
+ 289 0004 DA6A     		ldr	r2, [r3, #44]
+ 290 0006 9268     		ldr	r2, [r2, #8]
+ 291 0008 0146     		mov	r1, r0
+ 292 000a 1846     		mov	r0, r3
+ 293              	.LVL33:
+ 294 000c 9047     		blx	r2
+ 295              	.LVL34:
+ 153:rt-thread/components/drivers/misc/pin.c **** }
+ 296              		.loc 1 153 0
+ 297 000e 08BD     		pop	{r3, pc}
+ 298              	.L37:
+ 299              		.align	2
+ 300              	.L36:
+ 301 0010 00000000 		.word	.LANCHOR0
+ 302              		.cfi_endproc
+ 303              	.LFE29:
+ 305              		.section	.text.rt_device_pin_register,"ax",%progbits
+ 306              		.align	1
+ 307              		.global	rt_device_pin_register
+ARM GAS  /tmp/ccXIU6et.s 			page 9
+
+
+ 308              		.syntax unified
+ 309              		.thumb
+ 310              		.thumb_func
+ 311              		.fpu fpv4-sp-d16
+ 313              	rt_device_pin_register:
+ 314              	.LFB23:
+  79:rt-thread/components/drivers/misc/pin.c ****     _hw_pin.parent.type         = RT_Device_Class_Miscellaneous;
+ 315              		.loc 1 79 0
+ 316              		.cfi_startproc
+ 317              		@ args = 0, pretend = 0, frame = 0
+ 318              		@ frame_needed = 0, uses_anonymous_args = 0
+ 319              	.LVL35:
+ 320 0000 38B5     		push	{r3, r4, r5, lr}
+ 321              	.LCFI9:
+ 322              		.cfi_def_cfa_offset 16
+ 323              		.cfi_offset 3, -16
+ 324              		.cfi_offset 4, -12
+ 325              		.cfi_offset 5, -8
+ 326              		.cfi_offset 14, -4
+  80:rt-thread/components/drivers/misc/pin.c ****     _hw_pin.parent.rx_indicate  = RT_NULL;
+ 327              		.loc 1 80 0
+ 328 0002 084B     		ldr	r3, .L40
+ 329 0004 1224     		movs	r4, #18
+ 330 0006 1C75     		strb	r4, [r3, #20]
+  81:rt-thread/components/drivers/misc/pin.c ****     _hw_pin.parent.tx_complete  = RT_NULL;
+ 331              		.loc 1 81 0
+ 332 0008 0024     		movs	r4, #0
+ 333 000a DC61     		str	r4, [r3, #28]
+  82:rt-thread/components/drivers/misc/pin.c **** 
+ 334              		.loc 1 82 0
+ 335 000c 1C62     		str	r4, [r3, #32]
+  85:rt-thread/components/drivers/misc/pin.c **** #else
+ 336              		.loc 1 85 0
+ 337 000e 064D     		ldr	r5, .L40+4
+ 338 0010 5D62     		str	r5, [r3, #36]
+  95:rt-thread/components/drivers/misc/pin.c ****     _hw_pin.parent.user_data    = user_data;
+ 339              		.loc 1 95 0
+ 340 0012 D962     		str	r1, [r3, #44]
+  96:rt-thread/components/drivers/misc/pin.c **** 
+ 341              		.loc 1 96 0
+ 342 0014 9A62     		str	r2, [r3, #40]
+  99:rt-thread/components/drivers/misc/pin.c **** 
+ 343              		.loc 1 99 0
+ 344 0016 0322     		movs	r2, #3
+ 345              	.LVL36:
+ 346 0018 0146     		mov	r1, r0
+ 347              	.LVL37:
+ 348 001a 1846     		mov	r0, r3
+ 349              	.LVL38:
+ 350 001c FFF7FEFF 		bl	rt_device_register
+ 351              	.LVL39:
+ 102:rt-thread/components/drivers/misc/pin.c **** 
+ 352              		.loc 1 102 0
+ 353 0020 2046     		mov	r0, r4
+ 354 0022 38BD     		pop	{r3, r4, r5, pc}
+ 355              	.L41:
+ 356              		.align	2
+ARM GAS  /tmp/ccXIU6et.s 			page 10
+
+
+ 357              	.L40:
+ 358 0024 00000000 		.word	.LANCHOR0
+ 359 0028 00000000 		.word	.LANCHOR1
+ 360              		.cfi_endproc
+ 361              	.LFE23:
+ 363              		.section	.text.rt_pin_attach_irq,"ax",%progbits
+ 364              		.align	1
+ 365              		.global	rt_pin_attach_irq
+ 366              		.syntax unified
+ 367              		.thumb
+ 368              		.thumb_func
+ 369              		.fpu fpv4-sp-d16
+ 371              	rt_pin_attach_irq:
+ 372              	.LFB24:
+ 106:rt-thread/components/drivers/misc/pin.c ****     RT_ASSERT(_hw_pin.ops != RT_NULL);
+ 373              		.loc 1 106 0
+ 374              		.cfi_startproc
+ 375              		@ args = 0, pretend = 0, frame = 0
+ 376              		@ frame_needed = 0, uses_anonymous_args = 0
+ 377              	.LVL40:
+ 378 0000 30B5     		push	{r4, r5, lr}
+ 379              	.LCFI10:
+ 380              		.cfi_def_cfa_offset 12
+ 381              		.cfi_offset 4, -12
+ 382              		.cfi_offset 5, -8
+ 383              		.cfi_offset 14, -4
+ 384 0002 83B0     		sub	sp, sp, #12
+ 385              	.LCFI11:
+ 386              		.cfi_def_cfa_offset 24
+ 108:rt-thread/components/drivers/misc/pin.c ****     {
+ 387              		.loc 1 108 0
+ 388 0004 074C     		ldr	r4, .L46
+ 389 0006 E46A     		ldr	r4, [r4, #44]
+ 390 0008 E468     		ldr	r4, [r4, #12]
+ 391 000a 44B1     		cbz	r4, .L44
+ 392 000c 1D46     		mov	r5, r3
+ 393 000e 1346     		mov	r3, r2
+ 394              	.LVL41:
+ 395 0010 0A46     		mov	r2, r1
+ 396              	.LVL42:
+ 397 0012 0146     		mov	r1, r0
+ 398              	.LVL43:
+ 110:rt-thread/components/drivers/misc/pin.c ****     }
+ 399              		.loc 1 110 0
+ 400 0014 0095     		str	r5, [sp]
+ 401 0016 0348     		ldr	r0, .L46
+ 402              	.LVL44:
+ 403 0018 A047     		blx	r4
+ 404              	.LVL45:
+ 405              	.L42:
+ 113:rt-thread/components/drivers/misc/pin.c **** rt_err_t rt_pin_detach_irq(rt_int32_t pin)
+ 406              		.loc 1 113 0
+ 407 001a 03B0     		add	sp, sp, #12
+ 408              	.LCFI12:
+ 409              		.cfi_remember_state
+ 410              		.cfi_def_cfa_offset 12
+ 411              		@ sp needed
+ARM GAS  /tmp/ccXIU6et.s 			page 11
+
+
+ 412 001c 30BD     		pop	{r4, r5, pc}
+ 413              	.LVL46:
+ 414              	.L44:
+ 415              	.LCFI13:
+ 416              		.cfi_restore_state
+ 112:rt-thread/components/drivers/misc/pin.c **** }
+ 417              		.loc 1 112 0
+ 418 001e 0620     		movs	r0, #6
+ 419              	.LVL47:
+ 420 0020 FBE7     		b	.L42
+ 421              	.L47:
+ 422 0022 00BF     		.align	2
+ 423              	.L46:
+ 424 0024 00000000 		.word	.LANCHOR0
+ 425              		.cfi_endproc
+ 426              	.LFE24:
+ 428              		.section	.text.rt_pin_detach_irq,"ax",%progbits
+ 429              		.align	1
+ 430              		.global	rt_pin_detach_irq
+ 431              		.syntax unified
+ 432              		.thumb
+ 433              		.thumb_func
+ 434              		.fpu fpv4-sp-d16
+ 436              	rt_pin_detach_irq:
+ 437              	.LFB25:
+ 115:rt-thread/components/drivers/misc/pin.c ****     RT_ASSERT(_hw_pin.ops != RT_NULL);
+ 438              		.loc 1 115 0
+ 439              		.cfi_startproc
+ 440              		@ args = 0, pretend = 0, frame = 0
+ 441              		@ frame_needed = 0, uses_anonymous_args = 0
+ 442              	.LVL48:
+ 443 0000 08B5     		push	{r3, lr}
+ 444              	.LCFI14:
+ 445              		.cfi_def_cfa_offset 8
+ 446              		.cfi_offset 3, -8
+ 447              		.cfi_offset 14, -4
+ 117:rt-thread/components/drivers/misc/pin.c ****     {
+ 448              		.loc 1 117 0
+ 449 0002 054B     		ldr	r3, .L52
+ 450 0004 DB6A     		ldr	r3, [r3, #44]
+ 451 0006 1B69     		ldr	r3, [r3, #16]
+ 452 0008 1BB1     		cbz	r3, .L50
+ 453 000a 0146     		mov	r1, r0
+ 119:rt-thread/components/drivers/misc/pin.c ****     }
+ 454              		.loc 1 119 0
+ 455 000c 0248     		ldr	r0, .L52
+ 456              	.LVL49:
+ 457 000e 9847     		blx	r3
+ 458              	.LVL50:
+ 459 0010 08BD     		pop	{r3, pc}
+ 460              	.LVL51:
+ 461              	.L50:
+ 121:rt-thread/components/drivers/misc/pin.c **** }
+ 462              		.loc 1 121 0
+ 463 0012 0620     		movs	r0, #6
+ 464              	.LVL52:
+ 122:rt-thread/components/drivers/misc/pin.c **** 
+ARM GAS  /tmp/ccXIU6et.s 			page 12
+
+
+ 465              		.loc 1 122 0
+ 466 0014 08BD     		pop	{r3, pc}
+ 467              	.L53:
+ 468 0016 00BF     		.align	2
+ 469              	.L52:
+ 470 0018 00000000 		.word	.LANCHOR0
+ 471              		.cfi_endproc
+ 472              	.LFE25:
+ 474              		.section	.text.rt_pin_irq_enable,"ax",%progbits
+ 475              		.align	1
+ 476              		.global	rt_pin_irq_enable
+ 477              		.syntax unified
+ 478              		.thumb
+ 479              		.thumb_func
+ 480              		.fpu fpv4-sp-d16
+ 482              	rt_pin_irq_enable:
+ 483              	.LFB26:
+ 125:rt-thread/components/drivers/misc/pin.c ****     RT_ASSERT(_hw_pin.ops != RT_NULL);
+ 484              		.loc 1 125 0
+ 485              		.cfi_startproc
+ 486              		@ args = 0, pretend = 0, frame = 0
+ 487              		@ frame_needed = 0, uses_anonymous_args = 0
+ 488              	.LVL53:
+ 489 0000 08B5     		push	{r3, lr}
+ 490              	.LCFI15:
+ 491              		.cfi_def_cfa_offset 8
+ 492              		.cfi_offset 3, -8
+ 493              		.cfi_offset 14, -4
+ 127:rt-thread/components/drivers/misc/pin.c ****     {
+ 494              		.loc 1 127 0
+ 495 0002 054B     		ldr	r3, .L58
+ 496 0004 DB6A     		ldr	r3, [r3, #44]
+ 497 0006 5B69     		ldr	r3, [r3, #20]
+ 498 0008 23B1     		cbz	r3, .L56
+ 499 000a 0A46     		mov	r2, r1
+ 500 000c 0146     		mov	r1, r0
+ 501              	.LVL54:
+ 129:rt-thread/components/drivers/misc/pin.c ****     }
+ 502              		.loc 1 129 0
+ 503 000e 0248     		ldr	r0, .L58
+ 504              	.LVL55:
+ 505 0010 9847     		blx	r3
+ 506              	.LVL56:
+ 507 0012 08BD     		pop	{r3, pc}
+ 508              	.LVL57:
+ 509              	.L56:
+ 131:rt-thread/components/drivers/misc/pin.c **** }
+ 510              		.loc 1 131 0
+ 511 0014 0620     		movs	r0, #6
+ 512              	.LVL58:
+ 132:rt-thread/components/drivers/misc/pin.c **** 
+ 513              		.loc 1 132 0
+ 514 0016 08BD     		pop	{r3, pc}
+ 515              	.L59:
+ 516              		.align	2
+ 517              	.L58:
+ 518 0018 00000000 		.word	.LANCHOR0
+ARM GAS  /tmp/ccXIU6et.s 			page 13
+
+
+ 519              		.cfi_endproc
+ 520              	.LFE26:
+ 522              		.global	__fsym_pinRead
+ 523              		.global	__fsym_pinRead_desc
+ 524              		.global	__fsym_pinRead_name
+ 525              		.global	__fsym_pinWrite
+ 526              		.global	__fsym_pinWrite_desc
+ 527              		.global	__fsym_pinWrite_name
+ 528              		.global	__fsym_pinMode
+ 529              		.global	__fsym_pinMode_desc
+ 530              		.global	__fsym_pinMode_name
+ 531              		.section	.bss._hw_pin,"aw",%nobits
+ 532              		.align	2
+ 533              		.set	.LANCHOR0,. + 0
+ 536              	_hw_pin:
+ 537 0000 00000000 		.space	48
+ 537      00000000 
+ 537      00000000 
+ 537      00000000 
+ 537      00000000 
+ 538              		.section	.rodata.name,"a",%progbits
+ 539              		.align	2
+ 542              	__fsym_pinRead_desc:
+ 543 0000 72656164 		.ascii	"read status from hardware pin\000"
+ 543      20737461 
+ 543      74757320 
+ 543      66726F6D 
+ 543      20686172 
+ 544 001e 0000     		.space	2
+ 547              	__fsym_pinRead_name:
+ 548 0020 70696E52 		.ascii	"pinRead\000"
+ 548      65616400 
+ 551              	__fsym_pinWrite_desc:
+ 552 0028 77726974 		.ascii	"write value to hardware pin\000"
+ 552      65207661 
+ 552      6C756520 
+ 552      746F2068 
+ 552      61726477 
+ 555              	__fsym_pinWrite_name:
+ 556 0044 70696E57 		.ascii	"pinWrite\000"
+ 556      72697465 
+ 556      00
+ 557 004d 000000   		.space	3
+ 560              	__fsym_pinMode_desc:
+ 561 0050 73657420 		.ascii	"set hardware pin mode\000"
+ 561      68617264 
+ 561      77617265 
+ 561      2070696E 
+ 561      206D6F64 
+ 562 0066 0000     		.space	2
+ 565              	__fsym_pinMode_name:
+ 566 0068 70696E4D 		.ascii	"pinMode\000"
+ 566      6F646500 
+ 567              		.section	.rodata.pin_ops,"a",%progbits
+ 568              		.align	2
+ 569              		.set	.LANCHOR1,. + 0
+ 572              	pin_ops:
+ARM GAS  /tmp/ccXIU6et.s 			page 14
+
+
+ 573 0000 00000000 		.word	0
+ 574 0004 00000000 		.word	0
+ 575 0008 00000000 		.word	0
+ 576 000c 00000000 		.word	_pin_read
+ 577 0010 00000000 		.word	_pin_write
+ 578 0014 00000000 		.word	_pin_control
+ 579              		.section	FSymTab,"a",%progbits
+ 580              		.align	2
+ 583              	__fsym_pinRead:
+ 584 0000 00000000 		.word	__fsym_pinRead_name
+ 585 0004 00000000 		.word	__fsym_pinRead_desc
+ 586 0008 00000000 		.word	rt_pin_read
+ 589              	__fsym_pinWrite:
+ 590 000c 00000000 		.word	__fsym_pinWrite_name
+ 591 0010 00000000 		.word	__fsym_pinWrite_desc
+ 592 0014 00000000 		.word	rt_pin_write
+ 595              	__fsym_pinMode:
+ 596 0018 00000000 		.word	__fsym_pinMode_name
+ 597 001c 00000000 		.word	__fsym_pinMode_desc
+ 598 0020 00000000 		.word	rt_pin_mode
+ 599              		.text
+ 600              	.Letext0:
+ 601              		.file 2 "rt-thread/include/rtdef.h"
+ 602              		.file 3 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/machine/_default_types.h"
+ 603              		.file 4 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/lock.h"
+ 604              		.file 5 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_types.h"
+ 605              		.file 6 "/opt/gcc-arm-none-eabi-6-2017-q2-update/lib/gcc/arm-none-eabi/6.3.1/include/stddef.h"
+ 606              		.file 7 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/reent.h"
+ 607              		.file 8 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_stdint.h"
+ 608              		.file 9 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/time.h"
+ 609              		.file 10 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/errno.h"
+ 610              		.file 11 "rt-thread/components/finsh/finsh_api.h"
+ 611              		.file 12 "rt-thread/components/drivers/include/drivers/pin.h"
+ 612              		.file 13 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/ctype.h"
+ 613              		.file 14 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/stdlib.h"
+ 614              		.file 15 "rt-thread/components/finsh/finsh.h"
+ 615              		.file 16 "rt-thread/include/rtthread.h"
+ARM GAS  /tmp/ccXIU6et.s 			page 15
+
+
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 pin.c
+     /tmp/ccXIU6et.s:18     .text._pin_read:0000000000000000 $t
+     /tmp/ccXIU6et.s:24     .text._pin_read:0000000000000000 _pin_read
+     /tmp/ccXIU6et.s:82     .text._pin_write:0000000000000000 $t
+     /tmp/ccXIU6et.s:88     .text._pin_write:0000000000000000 _pin_write
+     /tmp/ccXIU6et.s:142    .text._pin_control:0000000000000000 $t
+     /tmp/ccXIU6et.s:148    .text._pin_control:0000000000000000 _pin_control
+     /tmp/ccXIU6et.s:190    .text.rt_pin_mode:0000000000000000 $t
+     /tmp/ccXIU6et.s:197    .text.rt_pin_mode:0000000000000000 rt_pin_mode
+     /tmp/ccXIU6et.s:224    .text.rt_pin_mode:0000000000000014 $d
+     /tmp/ccXIU6et.s:229    .text.rt_pin_write:0000000000000000 $t
+     /tmp/ccXIU6et.s:236    .text.rt_pin_write:0000000000000000 rt_pin_write
+     /tmp/ccXIU6et.s:263    .text.rt_pin_write:0000000000000014 $d
+     /tmp/ccXIU6et.s:268    .text.rt_pin_read:0000000000000000 $t
+     /tmp/ccXIU6et.s:275    .text.rt_pin_read:0000000000000000 rt_pin_read
+     /tmp/ccXIU6et.s:301    .text.rt_pin_read:0000000000000010 $d
+     /tmp/ccXIU6et.s:306    .text.rt_device_pin_register:0000000000000000 $t
+     /tmp/ccXIU6et.s:313    .text.rt_device_pin_register:0000000000000000 rt_device_pin_register
+     /tmp/ccXIU6et.s:358    .text.rt_device_pin_register:0000000000000024 $d
+     /tmp/ccXIU6et.s:364    .text.rt_pin_attach_irq:0000000000000000 $t
+     /tmp/ccXIU6et.s:371    .text.rt_pin_attach_irq:0000000000000000 rt_pin_attach_irq
+     /tmp/ccXIU6et.s:424    .text.rt_pin_attach_irq:0000000000000024 $d
+     /tmp/ccXIU6et.s:429    .text.rt_pin_detach_irq:0000000000000000 $t
+     /tmp/ccXIU6et.s:436    .text.rt_pin_detach_irq:0000000000000000 rt_pin_detach_irq
+     /tmp/ccXIU6et.s:470    .text.rt_pin_detach_irq:0000000000000018 $d
+     /tmp/ccXIU6et.s:475    .text.rt_pin_irq_enable:0000000000000000 $t
+     /tmp/ccXIU6et.s:482    .text.rt_pin_irq_enable:0000000000000000 rt_pin_irq_enable
+     /tmp/ccXIU6et.s:518    .text.rt_pin_irq_enable:0000000000000018 $d
+     /tmp/ccXIU6et.s:583    FSymTab:0000000000000000 __fsym_pinRead
+     /tmp/ccXIU6et.s:542    .rodata.name:0000000000000000 __fsym_pinRead_desc
+     /tmp/ccXIU6et.s:547    .rodata.name:0000000000000020 __fsym_pinRead_name
+     /tmp/ccXIU6et.s:589    FSymTab:000000000000000c __fsym_pinWrite
+     /tmp/ccXIU6et.s:551    .rodata.name:0000000000000028 __fsym_pinWrite_desc
+     /tmp/ccXIU6et.s:555    .rodata.name:0000000000000044 __fsym_pinWrite_name
+     /tmp/ccXIU6et.s:595    FSymTab:0000000000000018 __fsym_pinMode
+     /tmp/ccXIU6et.s:560    .rodata.name:0000000000000050 __fsym_pinMode_desc
+     /tmp/ccXIU6et.s:565    .rodata.name:0000000000000068 __fsym_pinMode_name
+     /tmp/ccXIU6et.s:532    .bss._hw_pin:0000000000000000 $d
+     /tmp/ccXIU6et.s:536    .bss._hw_pin:0000000000000000 _hw_pin
+     /tmp/ccXIU6et.s:539    .rodata.name:0000000000000000 $d
+     /tmp/ccXIU6et.s:568    .rodata.pin_ops:0000000000000000 $d
+     /tmp/ccXIU6et.s:572    .rodata.pin_ops:0000000000000000 pin_ops
+     /tmp/ccXIU6et.s:580    FSymTab:0000000000000000 $d
+                     .debug_frame:0000000000000010 $d
+
+UNDEFINED SYMBOLS
+rt_device_register

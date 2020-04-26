@@ -1,0 +1,534 @@
+ARM GAS  /tmp/ccOUSwGG.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.eabi_attribute 27, 1
+   3              		.eabi_attribute 28, 1
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.file	"key.c"
+  14              		.text
+  15              	.Ltext0:
+  16              		.cfi_sections	.debug_frame
+  17              		.section	.text.beep_key_press_long,"ax",%progbits
+  18              		.align	1
+  19              		.syntax unified
+  20              		.thumb
+  21              		.thumb_func
+  22              		.fpu fpv4-sp-d16
+  24              	beep_key_press_long:
+  25              	.LFB138:
+  26              		.file 1 "hardware/key/key.c"
+   1:hardware/key/key.c **** #include <rtthread.h>
+   2:hardware/key/key.c **** #include <rtdevice.h>
+   3:hardware/key/key.c **** #include <stdint.h>
+   4:hardware/key/key.c **** 
+   5:hardware/key/key.c **** #include "button.h"
+   6:hardware/key/key.c **** #include "key.h"
+   7:hardware/key/key.c **** #include "led.h"
+   8:hardware/key/key.c **** #include "player.h"
+   9:hardware/key/key.c **** #include "rtdef.h"
+  10:hardware/key/key.c **** #include "serial.h"
+  11:hardware/key/key.c **** 
+  12:hardware/key/key.c **** extern struct player player;
+  13:hardware/key/key.c **** 
+  14:hardware/key/key.c **** struct my_button btn_last = {0}, btn_next = {0}, btn_play = {0};
+  15:hardware/key/key.c **** 
+  16:hardware/key/key.c **** static void beep_key_press_long(rt_uint32_t pin)
+  17:hardware/key/key.c **** {
+  27              		.loc 1 17 0
+  28              		.cfi_startproc
+  29              		@ args = 0, pretend = 0, frame = 8
+  30              		@ frame_needed = 0, uses_anonymous_args = 0
+  31              	.LVL0:
+  32 0000 00B5     		push	{lr}
+  33              	.LCFI0:
+  34              		.cfi_def_cfa_offset 4
+  35              		.cfi_offset 14, -4
+  36 0002 83B0     		sub	sp, sp, #12
+  37              	.LCFI1:
+  38              		.cfi_def_cfa_offset 16
+  18:hardware/key/key.c **** 	uint8_t volume;
+  19:hardware/key/key.c **** 	switch (pin)
+  39              		.loc 1 19 0
+ARM GAS  /tmp/ccOUSwGG.s 			page 2
+
+
+  40 0004 2D28     		cmp	r0, #45
+  41 0006 04D0     		beq	.L3
+  42 0008 7328     		cmp	r0, #115
+  43 000a 15D0     		beq	.L4
+  44              	.LVL1:
+  45              	.L1:
+  20:hardware/key/key.c **** 	{
+  21:hardware/key/key.c **** 		case KEY_PLAY_PIN:
+  22:hardware/key/key.c **** 			break;
+  23:hardware/key/key.c **** 		case KEY_LAST_PIN:
+  24:hardware/key/key.c **** 			player_control(&player, PLAYER_CMD_GET_VOL, &volume);
+  25:hardware/key/key.c **** 			if (volume > 1)
+  26:hardware/key/key.c **** 			{
+  27:hardware/key/key.c **** 				volume--;
+  28:hardware/key/key.c **** 				player_control(&player, PLAYER_CMD_SET_VOL, &volume);
+  29:hardware/key/key.c **** 			}
+  30:hardware/key/key.c **** 			break;
+  31:hardware/key/key.c **** 		case KEY_NEXT_PIN:
+  32:hardware/key/key.c **** 			player_control(&player, PLAYER_CMD_GET_VOL, &volume);
+  33:hardware/key/key.c **** 			if (volume < 99)
+  34:hardware/key/key.c **** 			{
+  35:hardware/key/key.c **** 				volume++;
+  36:hardware/key/key.c **** 				player_control(&player, PLAYER_CMD_SET_VOL, &volume);
+  37:hardware/key/key.c **** 			}
+  38:hardware/key/key.c **** 			break;
+  39:hardware/key/key.c **** 	}
+  40:hardware/key/key.c **** }
+  46              		.loc 1 40 0
+  47 000c 03B0     		add	sp, sp, #12
+  48              	.LCFI2:
+  49              		.cfi_remember_state
+  50              		.cfi_def_cfa_offset 4
+  51              		@ sp needed
+  52 000e 5DF804FB 		ldr	pc, [sp], #4
+  53              	.LVL2:
+  54              	.L3:
+  55              	.LCFI3:
+  56              		.cfi_restore_state
+  24:hardware/key/key.c **** 			if (volume > 1)
+  57              		.loc 1 24 0
+  58 0012 0DF10702 		add	r2, sp, #7
+  59 0016 0521     		movs	r1, #5
+  60 0018 1148     		ldr	r0, .L6
+  61              	.LVL3:
+  62 001a FFF7FEFF 		bl	player_control
+  63              	.LVL4:
+  25:hardware/key/key.c **** 			{
+  64              		.loc 1 25 0
+  65 001e 9DF80730 		ldrb	r3, [sp, #7]	@ zero_extendqisi2
+  66 0022 012B     		cmp	r3, #1
+  67 0024 F2D9     		bls	.L1
+  27:hardware/key/key.c **** 				player_control(&player, PLAYER_CMD_SET_VOL, &volume);
+  68              		.loc 1 27 0
+  69 0026 013B     		subs	r3, r3, #1
+  70 0028 02AA     		add	r2, sp, #8
+  71 002a 02F8013D 		strb	r3, [r2, #-1]!
+  28:hardware/key/key.c **** 			}
+ARM GAS  /tmp/ccOUSwGG.s 			page 3
+
+
+  72              		.loc 1 28 0
+  73 002e 0421     		movs	r1, #4
+  74 0030 0B48     		ldr	r0, .L6
+  75 0032 FFF7FEFF 		bl	player_control
+  76              	.LVL5:
+  77 0036 E9E7     		b	.L1
+  78              	.LVL6:
+  79              	.L4:
+  32:hardware/key/key.c **** 			if (volume < 99)
+  80              		.loc 1 32 0
+  81 0038 0DF10702 		add	r2, sp, #7
+  82 003c 0521     		movs	r1, #5
+  83 003e 0848     		ldr	r0, .L6
+  84              	.LVL7:
+  85 0040 FFF7FEFF 		bl	player_control
+  86              	.LVL8:
+  33:hardware/key/key.c **** 			{
+  87              		.loc 1 33 0
+  88 0044 9DF80730 		ldrb	r3, [sp, #7]	@ zero_extendqisi2
+  89 0048 622B     		cmp	r3, #98
+  90 004a DFD8     		bhi	.L1
+  35:hardware/key/key.c **** 				player_control(&player, PLAYER_CMD_SET_VOL, &volume);
+  91              		.loc 1 35 0
+  92 004c 0133     		adds	r3, r3, #1
+  93 004e 02AA     		add	r2, sp, #8
+  94 0050 02F8013D 		strb	r3, [r2, #-1]!
+  36:hardware/key/key.c **** 			}
+  95              		.loc 1 36 0
+  96 0054 0421     		movs	r1, #4
+  97 0056 0248     		ldr	r0, .L6
+  98 0058 FFF7FEFF 		bl	player_control
+  99              	.LVL9:
+ 100              		.loc 1 40 0
+ 101 005c D6E7     		b	.L1
+ 102              	.L7:
+ 103 005e 00BF     		.align	2
+ 104              	.L6:
+ 105 0060 00000000 		.word	player
+ 106              		.cfi_endproc
+ 107              	.LFE138:
+ 109              		.section	.text.beep_key_press_short,"ax",%progbits
+ 110              		.align	1
+ 111              		.syntax unified
+ 112              		.thumb
+ 113              		.thumb_func
+ 114              		.fpu fpv4-sp-d16
+ 116              	beep_key_press_short:
+ 117              	.LFB139:
+  41:hardware/key/key.c **** 
+  42:hardware/key/key.c **** static void beep_key_press_short(rt_uint32_t pin)
+  43:hardware/key/key.c **** {
+ 118              		.loc 1 43 0
+ 119              		.cfi_startproc
+ 120              		@ args = 0, pretend = 0, frame = 0
+ 121              		@ frame_needed = 0, uses_anonymous_args = 0
+ 122              	.LVL10:
+ 123 0000 10B5     		push	{r4, lr}
+ARM GAS  /tmp/ccOUSwGG.s 			page 4
+
+
+ 124              	.LCFI4:
+ 125              		.cfi_def_cfa_offset 8
+ 126              		.cfi_offset 4, -8
+ 127              		.cfi_offset 14, -4
+  44:hardware/key/key.c **** 	switch (pin)
+ 128              		.loc 1 44 0
+ 129 0002 7228     		cmp	r0, #114
+ 130 0004 04D0     		beq	.L10
+ 131 0006 7328     		cmp	r0, #115
+ 132 0008 1ED0     		beq	.L11
+ 133 000a 2D28     		cmp	r0, #45
+ 134 000c 12D0     		beq	.L16
+ 135              	.LVL11:
+ 136              	.L8:
+ 137 000e 10BD     		pop	{r4, pc}
+ 138              	.LVL12:
+ 139              	.L10:
+  45:hardware/key/key.c **** 	{
+  46:hardware/key/key.c **** 		case KEY_PLAY_PIN:
+  47:hardware/key/key.c **** 			/* change to play status */
+  48:hardware/key/key.c **** 			if (player.status == PLAYER_RUNNING)
+ 140              		.loc 1 48 0
+ 141 0010 104B     		ldr	r3, .L17
+ 142 0012 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 143 0014 43B9     		cbnz	r3, .L13
+  49:hardware/key/key.c **** 			{
+  50:hardware/key/key.c **** 				player_control(&player, PLAYER_CMD_STOP, RT_NULL);
+ 144              		.loc 1 50 0
+ 145 0016 0022     		movs	r2, #0
+ 146 0018 0121     		movs	r1, #1
+ 147 001a 0E48     		ldr	r0, .L17
+ 148              	.LVL13:
+ 149 001c FFF7FEFF 		bl	player_control
+ 150              	.LVL14:
+ 151              	.L14:
+  51:hardware/key/key.c **** 			}
+  52:hardware/key/key.c **** 			else
+  53:hardware/key/key.c **** 			{
+  54:hardware/key/key.c **** 				player_control(&player, PLAYER_CMD_PLAY, RT_NULL);
+  55:hardware/key/key.c **** 			}
+  56:hardware/key/key.c **** 			
+  57:hardware/key/key.c **** 			/* print once playing status */
+  58:hardware/key/key.c **** 			player_show(&player);
+ 152              		.loc 1 58 0
+ 153 0020 0C48     		ldr	r0, .L17
+ 154 0022 FFF7FEFF 		bl	player_show
+ 155              	.LVL15:
+  59:hardware/key/key.c **** 			break;
+ 156              		.loc 1 59 0
+ 157 0026 10BD     		pop	{r4, pc}
+ 158              	.LVL16:
+ 159              	.L13:
+  54:hardware/key/key.c **** 			}
+ 160              		.loc 1 54 0
+ 161 0028 0022     		movs	r2, #0
+ 162 002a 1146     		mov	r1, r2
+ 163 002c 0948     		ldr	r0, .L17
+ARM GAS  /tmp/ccOUSwGG.s 			page 5
+
+
+ 164              	.LVL17:
+ 165 002e FFF7FEFF 		bl	player_control
+ 166              	.LVL18:
+ 167 0032 F5E7     		b	.L14
+ 168              	.LVL19:
+ 169              	.L16:
+  60:hardware/key/key.c **** 		case KEY_LAST_PIN:
+  61:hardware/key/key.c **** 			player_control(&player, PLAYER_CMD_LAST, RT_NULL);
+ 170              		.loc 1 61 0
+ 171 0034 074C     		ldr	r4, .L17
+ 172 0036 0022     		movs	r2, #0
+ 173 0038 0221     		movs	r1, #2
+ 174 003a 2046     		mov	r0, r4
+ 175              	.LVL20:
+ 176 003c FFF7FEFF 		bl	player_control
+ 177              	.LVL21:
+  62:hardware/key/key.c **** 
+  63:hardware/key/key.c **** 			/* print once playing status */
+  64:hardware/key/key.c **** 			player_show(&player);
+ 178              		.loc 1 64 0
+ 179 0040 2046     		mov	r0, r4
+ 180 0042 FFF7FEFF 		bl	player_show
+ 181              	.LVL22:
+  65:hardware/key/key.c **** 			break;
+ 182              		.loc 1 65 0
+ 183 0046 10BD     		pop	{r4, pc}
+ 184              	.LVL23:
+ 185              	.L11:
+  66:hardware/key/key.c **** 		case KEY_NEXT_PIN:
+  67:hardware/key/key.c **** 			player_control(&player, PLAYER_CMD_NEXT, RT_NULL);
+ 186              		.loc 1 67 0
+ 187 0048 0022     		movs	r2, #0
+ 188 004a 0321     		movs	r1, #3
+ 189 004c 0148     		ldr	r0, .L17
+ 190              	.LVL24:
+ 191 004e FFF7FEFF 		bl	player_control
+ 192              	.LVL25:
+  68:hardware/key/key.c **** 
+  69:hardware/key/key.c **** 			/* print once playing status */
+  70:hardware/key/key.c **** 			break;
+  71:hardware/key/key.c **** 	}
+  72:hardware/key/key.c **** }
+ 193              		.loc 1 72 0
+ 194 0052 DCE7     		b	.L8
+ 195              	.L18:
+ 196              		.align	2
+ 197              	.L17:
+ 198 0054 00000000 		.word	player
+ 199              		.cfi_endproc
+ 200              	.LFE139:
+ 202              		.section	.text.btn_cb,"ax",%progbits
+ 203              		.align	1
+ 204              		.global	btn_cb
+ 205              		.syntax unified
+ 206              		.thumb
+ 207              		.thumb_func
+ 208              		.fpu fpv4-sp-d16
+ARM GAS  /tmp/ccOUSwGG.s 			page 6
+
+
+ 210              	btn_cb:
+ 211              	.LFB140:
+  73:hardware/key/key.c **** 
+  74:hardware/key/key.c **** void btn_cb(struct my_button *button)
+  75:hardware/key/key.c **** {
+ 212              		.loc 1 75 0
+ 213              		.cfi_startproc
+ 214              		@ args = 0, pretend = 0, frame = 0
+ 215              		@ frame_needed = 0, uses_anonymous_args = 0
+ 216              	.LVL26:
+ 217 0000 08B5     		push	{r3, lr}
+ 218              	.LCFI5:
+ 219              		.cfi_def_cfa_offset 8
+ 220              		.cfi_offset 3, -8
+ 221              		.cfi_offset 14, -4
+  76:hardware/key/key.c **** 	switch (button->event)
+ 222              		.loc 1 76 0
+ 223 0002 037A     		ldrb	r3, [r0, #8]	@ zero_extendqisi2
+ 224 0004 012B     		cmp	r3, #1
+ 225 0006 02D0     		beq	.L21
+ 226 0008 032B     		cmp	r3, #3
+ 227 000a 04D0     		beq	.L22
+ 228 000c 08BD     		pop	{r3, pc}
+ 229              	.L21:
+  77:hardware/key/key.c **** 	{
+  78:hardware/key/key.c **** 		case BUTTON_EVENT_CLICK_UP:
+  79:hardware/key/key.c **** 			beep_key_press_short(button->pin);
+ 230              		.loc 1 79 0
+ 231 000e C088     		ldrh	r0, [r0, #6]
+ 232              	.LVL27:
+ 233 0010 FFF7FEFF 		bl	beep_key_press_short
+ 234              	.LVL28:
+  80:hardware/key/key.c **** 			break;
+ 235              		.loc 1 80 0
+ 236 0014 08BD     		pop	{r3, pc}
+ 237              	.LVL29:
+ 238              	.L22:
+  81:hardware/key/key.c **** 		case BUTTON_EVENT_HOLD_CYC:
+  82:hardware/key/key.c **** 			beep_key_press_long(button->pin);
+ 239              		.loc 1 82 0
+ 240 0016 C088     		ldrh	r0, [r0, #6]
+ 241              	.LVL30:
+ 242 0018 FFF7FEFF 		bl	beep_key_press_long
+ 243              	.LVL31:
+ 244 001c 08BD     		pop	{r3, pc}
+ 245              		.cfi_endproc
+ 246              	.LFE140:
+ 248              		.section	.text.key_init,"ax",%progbits
+ 249              		.align	1
+ 250              		.global	key_init
+ 251              		.syntax unified
+ 252              		.thumb
+ 253              		.thumb_func
+ 254              		.fpu fpv4-sp-d16
+ 256              	key_init:
+ 257              	.LFB141:
+  83:hardware/key/key.c **** 			break;
+ARM GAS  /tmp/ccOUSwGG.s 			page 7
+
+
+  84:hardware/key/key.c **** 		default:
+  85:hardware/key/key.c **** 			;
+  86:hardware/key/key.c **** 	}
+  87:hardware/key/key.c **** }
+  88:hardware/key/key.c **** 
+  89:hardware/key/key.c **** int key_init(void)
+  90:hardware/key/key.c **** {
+ 258              		.loc 1 90 0
+ 259              		.cfi_startproc
+ 260              		@ args = 0, pretend = 0, frame = 0
+ 261              		@ frame_needed = 0, uses_anonymous_args = 0
+ 262 0000 F8B5     		push	{r3, r4, r5, r6, r7, lr}
+ 263              	.LCFI6:
+ 264              		.cfi_def_cfa_offset 24
+ 265              		.cfi_offset 3, -24
+ 266              		.cfi_offset 4, -20
+ 267              		.cfi_offset 5, -16
+ 268              		.cfi_offset 6, -12
+ 269              		.cfi_offset 7, -8
+ 270              		.cfi_offset 14, -4
+  91:hardware/key/key.c **** 	btn_last.press_logic_level = KEY_PRESS_LEVEL;
+ 271              		.loc 1 91 0
+ 272 0002 114D     		ldr	r5, .L26
+ 273 0004 0027     		movs	r7, #0
+ 274 0006 2F70     		strb	r7, [r5]
+  92:hardware/key/key.c **** 	btn_last.hold_cyc_period = 100;
+ 275              		.loc 1 92 0
+ 276 0008 6423     		movs	r3, #100
+ 277 000a AB80     		strh	r3, [r5, #4]	@ movhi
+  93:hardware/key/key.c **** 	btn_last.cb = (my_button_callback)btn_cb;
+ 278              		.loc 1 93 0
+ 279 000c 0F4B     		ldr	r3, .L26+4
+ 280 000e EB60     		str	r3, [r5, #12]
+  94:hardware/key/key.c **** 
+  95:hardware/key/key.c **** 	btn_next = btn_play = btn_last;
+ 281              		.loc 1 95 0
+ 282 0010 0F4C     		ldr	r4, .L26+8
+ 283 0012 95E80F00 		ldm	r5, {r0, r1, r2, r3}
+ 284 0016 84E80F00 		stm	r4, {r0, r1, r2, r3}
+ 285 001a 0E4E     		ldr	r6, .L26+12
+ 286 001c 86E80F00 		stm	r6, {r0, r1, r2, r3}
+  96:hardware/key/key.c **** 
+  97:hardware/key/key.c **** 	btn_last.pin = KEY_LAST_PIN;
+ 287              		.loc 1 97 0
+ 288 0020 2D23     		movs	r3, #45
+ 289 0022 EB80     		strh	r3, [r5, #6]	@ movhi
+  98:hardware/key/key.c **** 	btn_next.pin = KEY_NEXT_PIN;
+ 290              		.loc 1 98 0
+ 291 0024 7323     		movs	r3, #115
+ 292 0026 F380     		strh	r3, [r6, #6]	@ movhi
+  99:hardware/key/key.c **** 	btn_play.pin = KEY_PLAY_PIN;
+ 293              		.loc 1 99 0
+ 294 0028 7223     		movs	r3, #114
+ 295 002a E380     		strh	r3, [r4, #6]	@ movhi
+ 100:hardware/key/key.c **** 
+ 101:hardware/key/key.c **** 	my_button_register(&btn_last);
+ 296              		.loc 1 101 0
+ARM GAS  /tmp/ccOUSwGG.s 			page 8
+
+
+ 297 002c 2846     		mov	r0, r5
+ 298 002e FFF7FEFF 		bl	my_button_register
+ 299              	.LVL32:
+ 102:hardware/key/key.c **** 	my_button_register(&btn_next);
+ 300              		.loc 1 102 0
+ 301 0032 3046     		mov	r0, r6
+ 302 0034 FFF7FEFF 		bl	my_button_register
+ 303              	.LVL33:
+ 103:hardware/key/key.c **** 	my_button_register(&btn_play);
+ 304              		.loc 1 103 0
+ 305 0038 2046     		mov	r0, r4
+ 306 003a FFF7FEFF 		bl	my_button_register
+ 307              	.LVL34:
+ 104:hardware/key/key.c **** 
+ 105:hardware/key/key.c **** 	my_button_start();
+ 308              		.loc 1 105 0
+ 309 003e FFF7FEFF 		bl	my_button_start
+ 310              	.LVL35:
+ 106:hardware/key/key.c **** 	
+ 107:hardware/key/key.c **** 	return 0;
+ 108:hardware/key/key.c **** }
+ 311              		.loc 1 108 0
+ 312 0042 3846     		mov	r0, r7
+ 313 0044 F8BD     		pop	{r3, r4, r5, r6, r7, pc}
+ 314              	.L27:
+ 315 0046 00BF     		.align	2
+ 316              	.L26:
+ 317 0048 00000000 		.word	.LANCHOR0
+ 318 004c 00000000 		.word	btn_cb
+ 319 0050 00000000 		.word	.LANCHOR1
+ 320 0054 00000000 		.word	.LANCHOR2
+ 321              		.cfi_endproc
+ 322              	.LFE141:
+ 324              		.global	btn_play
+ 325              		.global	btn_next
+ 326              		.global	btn_last
+ 327              		.section	.bss.btn_last,"aw",%nobits
+ 328              		.align	2
+ 329              		.set	.LANCHOR0,. + 0
+ 332              	btn_last:
+ 333 0000 00000000 		.space	16
+ 333      00000000 
+ 333      00000000 
+ 333      00000000 
+ 334              		.section	.bss.btn_next,"aw",%nobits
+ 335              		.align	2
+ 336              		.set	.LANCHOR2,. + 0
+ 339              	btn_next:
+ 340 0000 00000000 		.space	16
+ 340      00000000 
+ 340      00000000 
+ 340      00000000 
+ 341              		.section	.bss.btn_play,"aw",%nobits
+ 342              		.align	2
+ 343              		.set	.LANCHOR1,. + 0
+ 346              	btn_play:
+ 347 0000 00000000 		.space	16
+ARM GAS  /tmp/ccOUSwGG.s 			page 9
+
+
+ 347      00000000 
+ 347      00000000 
+ 347      00000000 
+ 348              		.text
+ 349              	.Letext0:
+ 350              		.file 2 "rt-thread/include/rtdef.h"
+ 351              		.file 3 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/machine/_default_types.h"
+ 352              		.file 4 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/lock.h"
+ 353              		.file 5 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_types.h"
+ 354              		.file 6 "/opt/gcc-arm-none-eabi-6-2017-q2-update/lib/gcc/arm-none-eabi/6.3.1/include/stddef.h"
+ 355              		.file 7 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/reent.h"
+ 356              		.file 8 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_stdint.h"
+ 357              		.file 9 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/time.h"
+ 358              		.file 10 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/errno.h"
+ 359              		.file 11 "rt-thread/components/finsh/finsh_api.h"
+ 360              		.file 12 "hardware/button/button.h"
+ 361              		.file 13 "hardware/player/player.h"
+ 362              		.file 14 "CORE/core_cm4.h"
+ 363              		.file 15 "USER/system_stm32f4xx.h"
+ 364              		.file 16 "HALLIB/Inc/stm32f4xx_hal.h"
+ 365              		.file 17 "board/board.h"
+ARM GAS  /tmp/ccOUSwGG.s 			page 10
+
+
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 key.c
+     /tmp/ccOUSwGG.s:18     .text.beep_key_press_long:0000000000000000 $t
+     /tmp/ccOUSwGG.s:24     .text.beep_key_press_long:0000000000000000 beep_key_press_long
+     /tmp/ccOUSwGG.s:105    .text.beep_key_press_long:0000000000000060 $d
+     /tmp/ccOUSwGG.s:110    .text.beep_key_press_short:0000000000000000 $t
+     /tmp/ccOUSwGG.s:116    .text.beep_key_press_short:0000000000000000 beep_key_press_short
+     /tmp/ccOUSwGG.s:198    .text.beep_key_press_short:0000000000000054 $d
+     /tmp/ccOUSwGG.s:203    .text.btn_cb:0000000000000000 $t
+     /tmp/ccOUSwGG.s:210    .text.btn_cb:0000000000000000 btn_cb
+     /tmp/ccOUSwGG.s:249    .text.key_init:0000000000000000 $t
+     /tmp/ccOUSwGG.s:256    .text.key_init:0000000000000000 key_init
+     /tmp/ccOUSwGG.s:317    .text.key_init:0000000000000048 $d
+     /tmp/ccOUSwGG.s:346    .bss.btn_play:0000000000000000 btn_play
+     /tmp/ccOUSwGG.s:339    .bss.btn_next:0000000000000000 btn_next
+     /tmp/ccOUSwGG.s:332    .bss.btn_last:0000000000000000 btn_last
+     /tmp/ccOUSwGG.s:328    .bss.btn_last:0000000000000000 $d
+     /tmp/ccOUSwGG.s:335    .bss.btn_next:0000000000000000 $d
+     /tmp/ccOUSwGG.s:342    .bss.btn_play:0000000000000000 $d
+                     .debug_frame:0000000000000010 $d
+
+UNDEFINED SYMBOLS
+player_control
+player
+player_show
+my_button_register
+my_button_start

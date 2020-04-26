@@ -1,0 +1,1042 @@
+ARM GAS  /tmp/ccUwub7w.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.eabi_attribute 27, 1
+   3              		.eabi_attribute 28, 1
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.file	"idle.c"
+  14              		.text
+  15              	.Ltext0:
+  16              		.cfi_sections	.debug_frame
+  17              		.section	.text.rt_thread_idle_sethook,"ax",%progbits
+  18              		.align	1
+  19              		.global	rt_thread_idle_sethook
+  20              		.syntax unified
+  21              		.thumb
+  22              		.thumb_func
+  23              		.fpu fpv4-sp-d16
+  25              	rt_thread_idle_sethook:
+  26              	.LFB15:
+  27              		.file 1 "rt-thread/src/idle.c"
+   1:rt-thread/src/idle.c **** /*
+   2:rt-thread/src/idle.c ****  * Copyright (c) 2006-2018, RT-Thread Development Team
+   3:rt-thread/src/idle.c ****  *
+   4:rt-thread/src/idle.c ****  * SPDX-License-Identifier: Apache-2.0
+   5:rt-thread/src/idle.c ****  *
+   6:rt-thread/src/idle.c ****  * Change Logs:
+   7:rt-thread/src/idle.c ****  * Date           Author       Notes
+   8:rt-thread/src/idle.c ****  * 2006-03-23     Bernard      the first version
+   9:rt-thread/src/idle.c ****  * 2010-11-10     Bernard      add cleanup callback function in thread exit.
+  10:rt-thread/src/idle.c ****  * 2012-12-29     Bernard      fix compiling warning.
+  11:rt-thread/src/idle.c ****  * 2013-12-21     Grissiom     let rt_thread_idle_excute loop until there is no
+  12:rt-thread/src/idle.c ****  *                             dead thread.
+  13:rt-thread/src/idle.c ****  * 2016-08-09     ArdaFu       add method to get the handler of the idle thread.
+  14:rt-thread/src/idle.c ****  * 2018-02-07     Bernard      lock scheduler to protect tid->cleanup.
+  15:rt-thread/src/idle.c ****  * 2018-07-14     armink       add idle hook list
+  16:rt-thread/src/idle.c ****  * 2018-11-22     Jesven       add per cpu idle task
+  17:rt-thread/src/idle.c ****  *                             combine the code of primary and secondary cpu
+  18:rt-thread/src/idle.c ****  */
+  19:rt-thread/src/idle.c **** 
+  20:rt-thread/src/idle.c **** #include <rthw.h>
+  21:rt-thread/src/idle.c **** #include <rtthread.h>
+  22:rt-thread/src/idle.c **** 
+  23:rt-thread/src/idle.c **** #ifdef RT_USING_MODULE
+  24:rt-thread/src/idle.c **** #include <dlmodule.h>
+  25:rt-thread/src/idle.c **** #endif
+  26:rt-thread/src/idle.c **** 
+  27:rt-thread/src/idle.c **** #if defined (RT_USING_HOOK)
+  28:rt-thread/src/idle.c **** #ifndef RT_USING_IDLE_HOOK
+  29:rt-thread/src/idle.c **** #define RT_USING_IDLE_HOOK
+  30:rt-thread/src/idle.c **** #endif
+  31:rt-thread/src/idle.c **** #endif
+ARM GAS  /tmp/ccUwub7w.s 			page 2
+
+
+  32:rt-thread/src/idle.c **** 
+  33:rt-thread/src/idle.c **** #ifndef IDLE_THREAD_STACK_SIZE
+  34:rt-thread/src/idle.c **** #if defined (RT_USING_IDLE_HOOK) || defined(RT_USING_HEAP)
+  35:rt-thread/src/idle.c **** #define IDLE_THREAD_STACK_SIZE  256
+  36:rt-thread/src/idle.c **** #else
+  37:rt-thread/src/idle.c **** #define IDLE_THREAD_STACK_SIZE  128
+  38:rt-thread/src/idle.c **** #endif
+  39:rt-thread/src/idle.c **** #endif
+  40:rt-thread/src/idle.c **** 
+  41:rt-thread/src/idle.c **** #ifdef RT_USING_SMP
+  42:rt-thread/src/idle.c **** #define _CPUS_NR                RT_CPUS_NR
+  43:rt-thread/src/idle.c **** #else
+  44:rt-thread/src/idle.c **** #define _CPUS_NR                1
+  45:rt-thread/src/idle.c **** #endif
+  46:rt-thread/src/idle.c **** 
+  47:rt-thread/src/idle.c **** extern rt_list_t rt_thread_defunct;
+  48:rt-thread/src/idle.c **** 
+  49:rt-thread/src/idle.c **** static struct rt_thread idle[_CPUS_NR];
+  50:rt-thread/src/idle.c **** ALIGN(RT_ALIGN_SIZE)
+  51:rt-thread/src/idle.c **** static rt_uint8_t rt_thread_stack[_CPUS_NR][IDLE_THREAD_STACK_SIZE];
+  52:rt-thread/src/idle.c **** 
+  53:rt-thread/src/idle.c **** #ifdef RT_USING_IDLE_HOOK
+  54:rt-thread/src/idle.c **** #ifndef RT_IDLE_HOOK_LIST_SIZE
+  55:rt-thread/src/idle.c **** #define RT_IDLE_HOOK_LIST_SIZE  4
+  56:rt-thread/src/idle.c **** #endif
+  57:rt-thread/src/idle.c **** 
+  58:rt-thread/src/idle.c **** static void (*idle_hook_list[RT_IDLE_HOOK_LIST_SIZE])(void);
+  59:rt-thread/src/idle.c **** 
+  60:rt-thread/src/idle.c **** /**
+  61:rt-thread/src/idle.c ****  * @ingroup Hook
+  62:rt-thread/src/idle.c ****  * This function sets a hook function to idle thread loop. When the system performs
+  63:rt-thread/src/idle.c ****  * idle loop, this hook function should be invoked.
+  64:rt-thread/src/idle.c ****  *
+  65:rt-thread/src/idle.c ****  * @param hook the specified hook function
+  66:rt-thread/src/idle.c ****  *
+  67:rt-thread/src/idle.c ****  * @return RT_EOK: set OK
+  68:rt-thread/src/idle.c ****  *         -RT_EFULL: hook list is full
+  69:rt-thread/src/idle.c ****  *
+  70:rt-thread/src/idle.c ****  * @note the hook function must be simple and never be blocked or suspend.
+  71:rt-thread/src/idle.c ****  */
+  72:rt-thread/src/idle.c **** rt_err_t rt_thread_idle_sethook(void (*hook)(void))
+  73:rt-thread/src/idle.c **** {
+  28              		.loc 1 73 0
+  29              		.cfi_startproc
+  30              		@ args = 0, pretend = 0, frame = 0
+  31              		@ frame_needed = 0, uses_anonymous_args = 0
+  32              	.LVL0:
+  33 0000 10B5     		push	{r4, lr}
+  34              	.LCFI0:
+  35              		.cfi_def_cfa_offset 8
+  36              		.cfi_offset 4, -8
+  37              		.cfi_offset 14, -4
+  38 0002 0446     		mov	r4, r0
+  39              	.LVL1:
+  74:rt-thread/src/idle.c ****     rt_size_t i;
+  75:rt-thread/src/idle.c ****     rt_base_t level;
+  76:rt-thread/src/idle.c ****     rt_err_t ret = -RT_EFULL;
+ARM GAS  /tmp/ccUwub7w.s 			page 3
+
+
+  77:rt-thread/src/idle.c **** 
+  78:rt-thread/src/idle.c ****     /* disable interrupt */
+  79:rt-thread/src/idle.c ****     level = rt_hw_interrupt_disable();
+  40              		.loc 1 79 0
+  41 0004 FFF7FEFF 		bl	rt_hw_interrupt_disable
+  42              	.LVL2:
+  80:rt-thread/src/idle.c **** 
+  81:rt-thread/src/idle.c ****     for (i = 0; i < RT_IDLE_HOOK_LIST_SIZE; i++)
+  43              		.loc 1 81 0
+  44 0008 0023     		movs	r3, #0
+  45              	.LVL3:
+  46              	.L2:
+  47              		.loc 1 81 0 is_stmt 0 discriminator 1
+  48 000a 032B     		cmp	r3, #3
+  49 000c 0AD8     		bhi	.L7
+  82:rt-thread/src/idle.c ****     {
+  83:rt-thread/src/idle.c ****         if (idle_hook_list[i] == RT_NULL)
+  50              		.loc 1 83 0 is_stmt 1
+  51 000e 084A     		ldr	r2, .L9
+  52 0010 52F82320 		ldr	r2, [r2, r3, lsl #2]
+  53 0014 0AB1     		cbz	r2, .L8
+  81:rt-thread/src/idle.c ****     {
+  54              		.loc 1 81 0 discriminator 2
+  55 0016 0133     		adds	r3, r3, #1
+  56              	.LVL4:
+  57 0018 F7E7     		b	.L2
+  58              	.L8:
+  84:rt-thread/src/idle.c ****         {
+  85:rt-thread/src/idle.c ****             idle_hook_list[i] = hook;
+  59              		.loc 1 85 0
+  60 001a 054A     		ldr	r2, .L9
+  61 001c 42F82340 		str	r4, [r2, r3, lsl #2]
+  62              	.LVL5:
+  86:rt-thread/src/idle.c ****             ret = RT_EOK;
+  63              		.loc 1 86 0
+  64 0020 0024     		movs	r4, #0
+  65              	.LVL6:
+  87:rt-thread/src/idle.c ****             break;
+  66              		.loc 1 87 0
+  67 0022 01E0     		b	.L4
+  68              	.LVL7:
+  69              	.L7:
+  76:rt-thread/src/idle.c **** 
+  70              		.loc 1 76 0
+  71 0024 6FF00204 		mvn	r4, #2
+  72              	.LVL8:
+  73              	.L4:
+  88:rt-thread/src/idle.c ****         }
+  89:rt-thread/src/idle.c ****     }
+  90:rt-thread/src/idle.c ****     /* enable interrupt */
+  91:rt-thread/src/idle.c ****     rt_hw_interrupt_enable(level);
+  74              		.loc 1 91 0
+  75 0028 FFF7FEFF 		bl	rt_hw_interrupt_enable
+  76              	.LVL9:
+  92:rt-thread/src/idle.c **** 
+  93:rt-thread/src/idle.c ****     return ret;
+  94:rt-thread/src/idle.c **** }
+ARM GAS  /tmp/ccUwub7w.s 			page 4
+
+
+  77              		.loc 1 94 0
+  78 002c 2046     		mov	r0, r4
+  79 002e 10BD     		pop	{r4, pc}
+  80              	.LVL10:
+  81              	.L10:
+  82              		.align	2
+  83              	.L9:
+  84 0030 00000000 		.word	.LANCHOR0
+  85              		.cfi_endproc
+  86              	.LFE15:
+  88              		.section	.text.rt_thread_idle_delhook,"ax",%progbits
+  89              		.align	1
+  90              		.global	rt_thread_idle_delhook
+  91              		.syntax unified
+  92              		.thumb
+  93              		.thumb_func
+  94              		.fpu fpv4-sp-d16
+  96              	rt_thread_idle_delhook:
+  97              	.LFB16:
+  95:rt-thread/src/idle.c **** 
+  96:rt-thread/src/idle.c **** /**
+  97:rt-thread/src/idle.c ****  * delete the idle hook on hook list
+  98:rt-thread/src/idle.c ****  *
+  99:rt-thread/src/idle.c ****  * @param hook the specified hook function
+ 100:rt-thread/src/idle.c ****  *
+ 101:rt-thread/src/idle.c ****  * @return RT_EOK: delete OK
+ 102:rt-thread/src/idle.c ****  *         -RT_ENOSYS: hook was not found
+ 103:rt-thread/src/idle.c ****  */
+ 104:rt-thread/src/idle.c **** rt_err_t rt_thread_idle_delhook(void (*hook)(void))
+ 105:rt-thread/src/idle.c **** {
+  98              		.loc 1 105 0
+  99              		.cfi_startproc
+ 100              		@ args = 0, pretend = 0, frame = 0
+ 101              		@ frame_needed = 0, uses_anonymous_args = 0
+ 102              	.LVL11:
+ 103 0000 10B5     		push	{r4, lr}
+ 104              	.LCFI1:
+ 105              		.cfi_def_cfa_offset 8
+ 106              		.cfi_offset 4, -8
+ 107              		.cfi_offset 14, -4
+ 108 0002 0446     		mov	r4, r0
+ 109              	.LVL12:
+ 106:rt-thread/src/idle.c ****     rt_size_t i;
+ 107:rt-thread/src/idle.c ****     rt_base_t level;
+ 108:rt-thread/src/idle.c ****     rt_err_t ret = -RT_ENOSYS;
+ 109:rt-thread/src/idle.c **** 
+ 110:rt-thread/src/idle.c ****     /* disable interrupt */
+ 111:rt-thread/src/idle.c ****     level = rt_hw_interrupt_disable();
+ 110              		.loc 1 111 0
+ 111 0004 FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 112              	.LVL13:
+ 112:rt-thread/src/idle.c **** 
+ 113:rt-thread/src/idle.c ****     for (i = 0; i < RT_IDLE_HOOK_LIST_SIZE; i++)
+ 113              		.loc 1 113 0
+ 114 0008 0023     		movs	r3, #0
+ 115              	.LVL14:
+ 116              	.L12:
+ARM GAS  /tmp/ccUwub7w.s 			page 5
+
+
+ 117              		.loc 1 113 0 is_stmt 0 discriminator 1
+ 118 000a 032B     		cmp	r3, #3
+ 119 000c 0BD8     		bhi	.L17
+ 114:rt-thread/src/idle.c ****     {
+ 115:rt-thread/src/idle.c ****         if (idle_hook_list[i] == hook)
+ 120              		.loc 1 115 0 is_stmt 1
+ 121 000e 094A     		ldr	r2, .L19
+ 122 0010 52F82320 		ldr	r2, [r2, r3, lsl #2]
+ 123 0014 A242     		cmp	r2, r4
+ 124 0016 01D0     		beq	.L18
+ 113:rt-thread/src/idle.c ****     {
+ 125              		.loc 1 113 0 discriminator 2
+ 126 0018 0133     		adds	r3, r3, #1
+ 127              	.LVL15:
+ 128 001a F6E7     		b	.L12
+ 129              	.L18:
+ 116:rt-thread/src/idle.c ****         {
+ 117:rt-thread/src/idle.c ****             idle_hook_list[i] = RT_NULL;
+ 130              		.loc 1 117 0
+ 131 001c 0024     		movs	r4, #0
+ 132              	.LVL16:
+ 133 001e 054A     		ldr	r2, .L19
+ 134 0020 42F82340 		str	r4, [r2, r3, lsl #2]
+ 135              	.LVL17:
+ 118:rt-thread/src/idle.c ****             ret = RT_EOK;
+ 119:rt-thread/src/idle.c ****             break;
+ 136              		.loc 1 119 0
+ 137 0024 01E0     		b	.L14
+ 138              	.LVL18:
+ 139              	.L17:
+ 108:rt-thread/src/idle.c **** 
+ 140              		.loc 1 108 0
+ 141 0026 6FF00504 		mvn	r4, #5
+ 142              	.LVL19:
+ 143              	.L14:
+ 120:rt-thread/src/idle.c ****         }
+ 121:rt-thread/src/idle.c ****     }
+ 122:rt-thread/src/idle.c ****     /* enable interrupt */
+ 123:rt-thread/src/idle.c ****     rt_hw_interrupt_enable(level);
+ 144              		.loc 1 123 0
+ 145 002a FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 146              	.LVL20:
+ 124:rt-thread/src/idle.c **** 
+ 125:rt-thread/src/idle.c ****     return ret;
+ 126:rt-thread/src/idle.c **** }
+ 147              		.loc 1 126 0
+ 148 002e 2046     		mov	r0, r4
+ 149 0030 10BD     		pop	{r4, pc}
+ 150              	.LVL21:
+ 151              	.L20:
+ 152 0032 00BF     		.align	2
+ 153              	.L19:
+ 154 0034 00000000 		.word	.LANCHOR0
+ 155              		.cfi_endproc
+ 156              	.LFE16:
+ 158              		.section	.text.rt_thread_idle_excute,"ax",%progbits
+ 159              		.align	1
+ARM GAS  /tmp/ccUwub7w.s 			page 6
+
+
+ 160              		.global	rt_thread_idle_excute
+ 161              		.syntax unified
+ 162              		.thumb
+ 163              		.thumb_func
+ 164              		.fpu fpv4-sp-d16
+ 166              	rt_thread_idle_excute:
+ 167              	.LFB18:
+ 127:rt-thread/src/idle.c **** 
+ 128:rt-thread/src/idle.c **** #endif
+ 129:rt-thread/src/idle.c **** 
+ 130:rt-thread/src/idle.c **** /* Return whether there is defunctional thread to be deleted. */
+ 131:rt-thread/src/idle.c **** rt_inline int _has_defunct_thread(void)
+ 132:rt-thread/src/idle.c **** {
+ 133:rt-thread/src/idle.c ****     /* The rt_list_isempty has prototype of "int rt_list_isempty(const rt_list_t *l)".
+ 134:rt-thread/src/idle.c ****      * So the compiler has a good reason that the rt_thread_defunct list does
+ 135:rt-thread/src/idle.c ****      * not change within rt_thread_idle_excute thus optimize the "while" loop
+ 136:rt-thread/src/idle.c ****      * into a "if".
+ 137:rt-thread/src/idle.c ****      *
+ 138:rt-thread/src/idle.c ****      * So add the volatile qualifier here. */
+ 139:rt-thread/src/idle.c ****     const volatile rt_list_t *l = (const volatile rt_list_t *)&rt_thread_defunct;
+ 140:rt-thread/src/idle.c **** 
+ 141:rt-thread/src/idle.c ****     return l->next != l;
+ 142:rt-thread/src/idle.c **** }
+ 143:rt-thread/src/idle.c **** 
+ 144:rt-thread/src/idle.c **** /**
+ 145:rt-thread/src/idle.c ****  * @ingroup Thread
+ 146:rt-thread/src/idle.c ****  *
+ 147:rt-thread/src/idle.c ****  * This function will perform system background job when system idle.
+ 148:rt-thread/src/idle.c ****  */
+ 149:rt-thread/src/idle.c **** void rt_thread_idle_excute(void)
+ 150:rt-thread/src/idle.c **** {
+ 168              		.loc 1 150 0
+ 169              		.cfi_startproc
+ 170              		@ args = 0, pretend = 0, frame = 0
+ 171              		@ frame_needed = 0, uses_anonymous_args = 0
+ 172              	.LVL22:
+ 173              	.LBB9:
+ 174              	.LBB10:
+ 141:rt-thread/src/idle.c **** }
+ 175              		.loc 1 141 0
+ 176 0000 204B     		ldr	r3, .L35
+ 177 0002 1A68     		ldr	r2, [r3]
+ 178              	.LBE10:
+ 179              	.LBE9:
+ 151:rt-thread/src/idle.c ****     /* Loop until there is no dead thread. So one call to rt_thread_idle_excute
+ 152:rt-thread/src/idle.c ****      * will do all the cleanups. */
+ 153:rt-thread/src/idle.c ****     while (_has_defunct_thread())
+ 180              		.loc 1 153 0
+ 181 0004 9A42     		cmp	r2, r3
+ 182 0006 3CD0     		beq	.L32
+ 150:rt-thread/src/idle.c ****     /* Loop until there is no dead thread. So one call to rt_thread_idle_excute
+ 183              		.loc 1 150 0
+ 184 0008 70B5     		push	{r4, r5, r6, lr}
+ 185              	.LCFI2:
+ 186              		.cfi_def_cfa_offset 16
+ 187              		.cfi_offset 4, -16
+ 188              		.cfi_offset 5, -12
+ARM GAS  /tmp/ccUwub7w.s 			page 7
+
+
+ 189              		.cfi_offset 6, -8
+ 190              		.cfi_offset 14, -4
+ 191 000a 13E0     		b	.L27
+ 192              	.LVL23:
+ 193              	.L24:
+ 194              	.LBB12:
+ 154:rt-thread/src/idle.c ****     {
+ 155:rt-thread/src/idle.c ****         rt_base_t lock;
+ 156:rt-thread/src/idle.c ****         rt_thread_t thread;
+ 157:rt-thread/src/idle.c **** #ifdef RT_USING_MODULE
+ 158:rt-thread/src/idle.c ****         struct rt_dlmodule *module = RT_NULL;
+ 159:rt-thread/src/idle.c **** #endif
+ 160:rt-thread/src/idle.c ****         RT_DEBUG_NOT_IN_INTERRUPT;
+ 161:rt-thread/src/idle.c **** 
+ 162:rt-thread/src/idle.c ****         /* disable interrupt */
+ 163:rt-thread/src/idle.c ****         lock = rt_hw_interrupt_disable();
+ 164:rt-thread/src/idle.c **** 
+ 165:rt-thread/src/idle.c ****         /* re-check whether list is empty */
+ 166:rt-thread/src/idle.c ****         if (_has_defunct_thread())
+ 167:rt-thread/src/idle.c ****         {
+ 168:rt-thread/src/idle.c ****             /* get defunct thread */
+ 169:rt-thread/src/idle.c ****             thread = rt_list_entry(rt_thread_defunct.next,
+ 170:rt-thread/src/idle.c ****                                    struct rt_thread,
+ 171:rt-thread/src/idle.c ****                                    tlist);
+ 172:rt-thread/src/idle.c **** #ifdef RT_USING_MODULE
+ 173:rt-thread/src/idle.c ****             module = (struct rt_dlmodule*)thread->module_id;
+ 174:rt-thread/src/idle.c ****             if (module)
+ 175:rt-thread/src/idle.c ****             {
+ 176:rt-thread/src/idle.c ****                 dlmodule_destroy(module);
+ 177:rt-thread/src/idle.c ****             }
+ 178:rt-thread/src/idle.c **** #endif
+ 179:rt-thread/src/idle.c ****             /* remove defunct thread */
+ 180:rt-thread/src/idle.c ****             rt_list_remove(&(thread->tlist));
+ 181:rt-thread/src/idle.c **** 
+ 182:rt-thread/src/idle.c ****             /* lock scheduler to prevent scheduling in cleanup function. */
+ 183:rt-thread/src/idle.c ****             rt_enter_critical();
+ 184:rt-thread/src/idle.c **** 
+ 185:rt-thread/src/idle.c ****             /* invoke thread cleanup */
+ 186:rt-thread/src/idle.c ****             if (thread->cleanup != RT_NULL)
+ 187:rt-thread/src/idle.c ****                 thread->cleanup(thread);
+ 188:rt-thread/src/idle.c **** 
+ 189:rt-thread/src/idle.c **** #ifdef RT_USING_SIGNALS
+ 190:rt-thread/src/idle.c ****             rt_thread_free_sig(thread);
+ 191:rt-thread/src/idle.c **** #endif
+ 192:rt-thread/src/idle.c **** 
+ 193:rt-thread/src/idle.c ****             /* if it's a system object, not delete it */
+ 194:rt-thread/src/idle.c ****             if (rt_object_is_systemobject((rt_object_t)thread) == RT_TRUE)
+ 195              		.loc 1 194 0
+ 196 000c 2846     		mov	r0, r5
+ 197 000e FFF7FEFF 		bl	rt_object_is_systemobject
+ 198              	.LVL24:
+ 199 0012 0128     		cmp	r0, #1
+ 200 0014 28D0     		beq	.L33
+ 195:rt-thread/src/idle.c ****             {
+ 196:rt-thread/src/idle.c ****                 /* detach this object */
+ 197:rt-thread/src/idle.c ****                 rt_object_detach((rt_object_t)thread);
+ 198:rt-thread/src/idle.c ****                 /* unlock scheduler */
+ARM GAS  /tmp/ccUwub7w.s 			page 8
+
+
+ 199:rt-thread/src/idle.c ****                 rt_exit_critical();
+ 200:rt-thread/src/idle.c **** 
+ 201:rt-thread/src/idle.c ****                 /* enable interrupt */
+ 202:rt-thread/src/idle.c ****                 rt_hw_interrupt_enable(lock);
+ 203:rt-thread/src/idle.c **** 
+ 204:rt-thread/src/idle.c ****                 return;
+ 205:rt-thread/src/idle.c ****             }
+ 206:rt-thread/src/idle.c **** 
+ 207:rt-thread/src/idle.c ****             /* unlock scheduler */
+ 208:rt-thread/src/idle.c ****             rt_exit_critical();
+ 201              		.loc 1 208 0
+ 202 0016 FFF7FEFF 		bl	rt_exit_critical
+ 203              	.LVL25:
+ 209:rt-thread/src/idle.c ****         }
+ 210:rt-thread/src/idle.c ****         else
+ 211:rt-thread/src/idle.c ****         {
+ 212:rt-thread/src/idle.c ****             /* enable interrupt */
+ 213:rt-thread/src/idle.c ****             rt_hw_interrupt_enable(lock);
+ 214:rt-thread/src/idle.c **** 
+ 215:rt-thread/src/idle.c ****             /* may the defunct thread list is removed by others, just return */
+ 216:rt-thread/src/idle.c ****             return;
+ 217:rt-thread/src/idle.c ****         }
+ 218:rt-thread/src/idle.c **** 
+ 219:rt-thread/src/idle.c ****         /* enable interrupt */
+ 220:rt-thread/src/idle.c ****         rt_hw_interrupt_enable(lock);
+ 204              		.loc 1 220 0
+ 205 001a 3046     		mov	r0, r6
+ 206 001c FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 207              	.LVL26:
+ 221:rt-thread/src/idle.c **** 
+ 222:rt-thread/src/idle.c **** #ifdef RT_USING_HEAP
+ 223:rt-thread/src/idle.c ****         /* release thread's stack */
+ 224:rt-thread/src/idle.c ****         RT_KERNEL_FREE(thread->stack_addr);
+ 208              		.loc 1 224 0
+ 209 0020 6069     		ldr	r0, [r4, #20]
+ 210 0022 FFF7FEFF 		bl	rt_free
+ 211              	.LVL27:
+ 225:rt-thread/src/idle.c ****         /* delete thread object */
+ 226:rt-thread/src/idle.c ****         rt_object_delete((rt_object_t)thread);
+ 212              		.loc 1 226 0
+ 213 0026 2846     		mov	r0, r5
+ 214 0028 FFF7FEFF 		bl	rt_object_delete
+ 215              	.LVL28:
+ 216              	.LBE12:
+ 217              	.LBB17:
+ 218              	.LBB11:
+ 141:rt-thread/src/idle.c **** }
+ 219              		.loc 1 141 0
+ 220 002c 154B     		ldr	r3, .L35
+ 221 002e 1A68     		ldr	r2, [r3]
+ 222              	.LBE11:
+ 223              	.LBE17:
+ 153:rt-thread/src/idle.c ****     {
+ 224              		.loc 1 153 0
+ 225 0030 9A42     		cmp	r2, r3
+ 226 0032 25D0     		beq	.L34
+ 227              	.LVL29:
+ARM GAS  /tmp/ccUwub7w.s 			page 9
+
+
+ 228              	.L27:
+ 229              	.LBB18:
+ 163:rt-thread/src/idle.c **** 
+ 230              		.loc 1 163 0
+ 231 0034 FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 232              	.LVL30:
+ 233 0038 0646     		mov	r6, r0
+ 234              	.LVL31:
+ 235              	.LBB13:
+ 236              	.LBB14:
+ 141:rt-thread/src/idle.c **** }
+ 237              		.loc 1 141 0
+ 238 003a 124B     		ldr	r3, .L35
+ 239 003c 1A68     		ldr	r2, [r3]
+ 240              	.LBE14:
+ 241              	.LBE13:
+ 166:rt-thread/src/idle.c ****         {
+ 242              		.loc 1 166 0
+ 243 003e 9A42     		cmp	r2, r3
+ 244 0040 1BD0     		beq	.L23
+ 169:rt-thread/src/idle.c ****                                    struct rt_thread,
+ 245              		.loc 1 169 0
+ 246 0042 1C68     		ldr	r4, [r3]
+ 247 0044 A4F11405 		sub	r5, r4, #20
+ 248              	.LVL32:
+ 249              	.LBB15:
+ 250              	.LBB16:
+ 251              		.file 2 "rt-thread/include/rtservice.h"
+   1:rt-thread/include/rtservice.h **** /*
+   2:rt-thread/include/rtservice.h ****  * Copyright (c) 2006-2018, RT-Thread Development Team
+   3:rt-thread/include/rtservice.h ****  *
+   4:rt-thread/include/rtservice.h ****  * SPDX-License-Identifier: Apache-2.0
+   5:rt-thread/include/rtservice.h ****  *
+   6:rt-thread/include/rtservice.h ****  * Change Logs:
+   7:rt-thread/include/rtservice.h ****  * Date           Author       Notes
+   8:rt-thread/include/rtservice.h ****  * 2006-03-16     Bernard      the first version
+   9:rt-thread/include/rtservice.h ****  * 2006-09-07     Bernard      move the kservice APIs to rtthread.h
+  10:rt-thread/include/rtservice.h ****  * 2007-06-27     Bernard      fix the rt_list_remove bug
+  11:rt-thread/include/rtservice.h ****  * 2012-03-22     Bernard      rename kservice.h to rtservice.h
+  12:rt-thread/include/rtservice.h ****  * 2017-11-15     JasonJia     Modify rt_slist_foreach to rt_slist_for_each_entry.
+  13:rt-thread/include/rtservice.h ****  *                             Make code cleanup.
+  14:rt-thread/include/rtservice.h ****  */
+  15:rt-thread/include/rtservice.h **** 
+  16:rt-thread/include/rtservice.h **** #ifndef __RT_SERVICE_H__
+  17:rt-thread/include/rtservice.h **** #define __RT_SERVICE_H__
+  18:rt-thread/include/rtservice.h **** 
+  19:rt-thread/include/rtservice.h **** #ifdef __cplusplus
+  20:rt-thread/include/rtservice.h **** extern "C" {
+  21:rt-thread/include/rtservice.h **** #endif
+  22:rt-thread/include/rtservice.h **** 
+  23:rt-thread/include/rtservice.h **** /**
+  24:rt-thread/include/rtservice.h ****  * @addtogroup KernelService
+  25:rt-thread/include/rtservice.h ****  */
+  26:rt-thread/include/rtservice.h **** 
+  27:rt-thread/include/rtservice.h **** /**@{*/
+  28:rt-thread/include/rtservice.h **** 
+  29:rt-thread/include/rtservice.h **** /**
+ARM GAS  /tmp/ccUwub7w.s 			page 10
+
+
+  30:rt-thread/include/rtservice.h ****  * rt_container_of - return the member address of ptr, if the type of ptr is the
+  31:rt-thread/include/rtservice.h ****  * struct type.
+  32:rt-thread/include/rtservice.h ****  */
+  33:rt-thread/include/rtservice.h **** #define rt_container_of(ptr, type, member) \
+  34:rt-thread/include/rtservice.h ****     ((type *)((char *)(ptr) - (unsigned long)(&((type *)0)->member)))
+  35:rt-thread/include/rtservice.h **** 
+  36:rt-thread/include/rtservice.h **** 
+  37:rt-thread/include/rtservice.h **** /**
+  38:rt-thread/include/rtservice.h ****  * @brief initialize a list object
+  39:rt-thread/include/rtservice.h ****  */
+  40:rt-thread/include/rtservice.h **** #define RT_LIST_OBJECT_INIT(object) { &(object), &(object) }
+  41:rt-thread/include/rtservice.h **** 
+  42:rt-thread/include/rtservice.h **** /**
+  43:rt-thread/include/rtservice.h ****  * @brief initialize a list
+  44:rt-thread/include/rtservice.h ****  *
+  45:rt-thread/include/rtservice.h ****  * @param l list to be initialized
+  46:rt-thread/include/rtservice.h ****  */
+  47:rt-thread/include/rtservice.h **** rt_inline void rt_list_init(rt_list_t *l)
+  48:rt-thread/include/rtservice.h **** {
+  49:rt-thread/include/rtservice.h ****     l->next = l->prev = l;
+  50:rt-thread/include/rtservice.h **** }
+  51:rt-thread/include/rtservice.h **** 
+  52:rt-thread/include/rtservice.h **** /**
+  53:rt-thread/include/rtservice.h ****  * @brief insert a node after a list
+  54:rt-thread/include/rtservice.h ****  *
+  55:rt-thread/include/rtservice.h ****  * @param l list to insert it
+  56:rt-thread/include/rtservice.h ****  * @param n new node to be inserted
+  57:rt-thread/include/rtservice.h ****  */
+  58:rt-thread/include/rtservice.h **** rt_inline void rt_list_insert_after(rt_list_t *l, rt_list_t *n)
+  59:rt-thread/include/rtservice.h **** {
+  60:rt-thread/include/rtservice.h ****     l->next->prev = n;
+  61:rt-thread/include/rtservice.h ****     n->next = l->next;
+  62:rt-thread/include/rtservice.h **** 
+  63:rt-thread/include/rtservice.h ****     l->next = n;
+  64:rt-thread/include/rtservice.h ****     n->prev = l;
+  65:rt-thread/include/rtservice.h **** }
+  66:rt-thread/include/rtservice.h **** 
+  67:rt-thread/include/rtservice.h **** /**
+  68:rt-thread/include/rtservice.h ****  * @brief insert a node before a list
+  69:rt-thread/include/rtservice.h ****  *
+  70:rt-thread/include/rtservice.h ****  * @param n new node to be inserted
+  71:rt-thread/include/rtservice.h ****  * @param l list to insert it
+  72:rt-thread/include/rtservice.h ****  */
+  73:rt-thread/include/rtservice.h **** rt_inline void rt_list_insert_before(rt_list_t *l, rt_list_t *n)
+  74:rt-thread/include/rtservice.h **** {
+  75:rt-thread/include/rtservice.h ****     l->prev->next = n;
+  76:rt-thread/include/rtservice.h ****     n->prev = l->prev;
+  77:rt-thread/include/rtservice.h **** 
+  78:rt-thread/include/rtservice.h ****     l->prev = n;
+  79:rt-thread/include/rtservice.h ****     n->next = l;
+  80:rt-thread/include/rtservice.h **** }
+  81:rt-thread/include/rtservice.h **** 
+  82:rt-thread/include/rtservice.h **** /**
+  83:rt-thread/include/rtservice.h ****  * @brief remove node from list.
+  84:rt-thread/include/rtservice.h ****  * @param n the node to remove from the list.
+  85:rt-thread/include/rtservice.h ****  */
+  86:rt-thread/include/rtservice.h **** rt_inline void rt_list_remove(rt_list_t *n)
+ARM GAS  /tmp/ccUwub7w.s 			page 11
+
+
+  87:rt-thread/include/rtservice.h **** {
+  88:rt-thread/include/rtservice.h ****     n->next->prev = n->prev;
+ 252              		.loc 2 88 0
+ 253 0048 2368     		ldr	r3, [r4]
+ 254 004a 6268     		ldr	r2, [r4, #4]
+ 255 004c 5A60     		str	r2, [r3, #4]
+  89:rt-thread/include/rtservice.h ****     n->prev->next = n->next;
+ 256              		.loc 2 89 0
+ 257 004e 6368     		ldr	r3, [r4, #4]
+ 258 0050 2268     		ldr	r2, [r4]
+ 259 0052 1A60     		str	r2, [r3]
+  90:rt-thread/include/rtservice.h **** 
+  91:rt-thread/include/rtservice.h ****     n->next = n->prev = n;
+ 260              		.loc 2 91 0
+ 261 0054 6460     		str	r4, [r4, #4]
+ 262 0056 2460     		str	r4, [r4]
+ 263              	.LVL33:
+ 264              	.LBE16:
+ 265              	.LBE15:
+ 183:rt-thread/src/idle.c **** 
+ 266              		.loc 1 183 0
+ 267 0058 FFF7FEFF 		bl	rt_enter_critical
+ 268              	.LVL34:
+ 186:rt-thread/src/idle.c ****                 thread->cleanup(thread);
+ 269              		.loc 1 186 0
+ 270 005c 636E     		ldr	r3, [r4, #100]
+ 271 005e 002B     		cmp	r3, #0
+ 272 0060 D4D0     		beq	.L24
+ 187:rt-thread/src/idle.c **** 
+ 273              		.loc 1 187 0
+ 274 0062 2846     		mov	r0, r5
+ 275 0064 9847     		blx	r3
+ 276              	.LVL35:
+ 277 0066 D1E7     		b	.L24
+ 278              	.L33:
+ 197:rt-thread/src/idle.c ****                 /* unlock scheduler */
+ 279              		.loc 1 197 0
+ 280 0068 2846     		mov	r0, r5
+ 281 006a FFF7FEFF 		bl	rt_object_detach
+ 282              	.LVL36:
+ 199:rt-thread/src/idle.c **** 
+ 283              		.loc 1 199 0
+ 284 006e FFF7FEFF 		bl	rt_exit_critical
+ 285              	.LVL37:
+ 202:rt-thread/src/idle.c **** 
+ 286              		.loc 1 202 0
+ 287 0072 3046     		mov	r0, r6
+ 288 0074 FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 289              	.LVL38:
+ 204:rt-thread/src/idle.c ****             }
+ 290              		.loc 1 204 0
+ 291 0078 70BD     		pop	{r4, r5, r6, pc}
+ 292              	.LVL39:
+ 293              	.L23:
+ 213:rt-thread/src/idle.c **** 
+ 294              		.loc 1 213 0
+ 295 007a FFF7FEFF 		bl	rt_hw_interrupt_enable
+ARM GAS  /tmp/ccUwub7w.s 			page 12
+
+
+ 296              	.LVL40:
+ 216:rt-thread/src/idle.c ****         }
+ 297              		.loc 1 216 0
+ 298 007e 70BD     		pop	{r4, r5, r6, pc}
+ 299              	.LVL41:
+ 300              	.L34:
+ 301 0080 70BD     		pop	{r4, r5, r6, pc}
+ 302              	.LVL42:
+ 303              	.L32:
+ 304              	.LCFI3:
+ 305              		.cfi_def_cfa_offset 0
+ 306              		.cfi_restore 4
+ 307              		.cfi_restore 5
+ 308              		.cfi_restore 6
+ 309              		.cfi_restore 14
+ 310 0082 7047     		bx	lr
+ 311              	.L36:
+ 312              		.align	2
+ 313              	.L35:
+ 314 0084 00000000 		.word	rt_thread_defunct
+ 315              	.LBE18:
+ 316              		.cfi_endproc
+ 317              	.LFE18:
+ 319              		.section	.text.rt_thread_idle_entry,"ax",%progbits
+ 320              		.align	1
+ 321              		.syntax unified
+ 322              		.thumb
+ 323              		.thumb_func
+ 324              		.fpu fpv4-sp-d16
+ 326              	rt_thread_idle_entry:
+ 327              	.LFB19:
+ 227:rt-thread/src/idle.c **** #endif
+ 228:rt-thread/src/idle.c ****     }
+ 229:rt-thread/src/idle.c **** }
+ 230:rt-thread/src/idle.c **** 
+ 231:rt-thread/src/idle.c **** extern void rt_system_power_manager(void);
+ 232:rt-thread/src/idle.c **** static void rt_thread_idle_entry(void *parameter)
+ 233:rt-thread/src/idle.c **** {
+ 328              		.loc 1 233 0
+ 329              		.cfi_startproc
+ 330              		@ args = 0, pretend = 0, frame = 0
+ 331              		@ frame_needed = 0, uses_anonymous_args = 0
+ 332              	.LVL43:
+ 333 0000 10B5     		push	{r4, lr}
+ 334              	.LCFI4:
+ 335              		.cfi_def_cfa_offset 8
+ 336              		.cfi_offset 4, -8
+ 337              		.cfi_offset 14, -4
+ 338 0002 0BE0     		b	.L41
+ 339              	.LVL44:
+ 340              	.L39:
+ 341              	.LBB19:
+ 234:rt-thread/src/idle.c **** #ifdef RT_USING_SMP
+ 235:rt-thread/src/idle.c ****     if (rt_hw_cpu_id() != 0)
+ 236:rt-thread/src/idle.c ****     {
+ 237:rt-thread/src/idle.c ****         while (1)
+ 238:rt-thread/src/idle.c ****         {
+ARM GAS  /tmp/ccUwub7w.s 			page 13
+
+
+ 239:rt-thread/src/idle.c ****             rt_hw_secondary_cpu_idle_exec();
+ 240:rt-thread/src/idle.c ****         }
+ 241:rt-thread/src/idle.c ****     }
+ 242:rt-thread/src/idle.c **** #endif
+ 243:rt-thread/src/idle.c **** 
+ 244:rt-thread/src/idle.c ****     while (1)
+ 245:rt-thread/src/idle.c ****     {
+ 246:rt-thread/src/idle.c **** #ifdef RT_USING_IDLE_HOOK
+ 247:rt-thread/src/idle.c ****         rt_size_t i;
+ 248:rt-thread/src/idle.c **** 
+ 249:rt-thread/src/idle.c ****         for (i = 0; i < RT_IDLE_HOOK_LIST_SIZE; i++)
+ 342              		.loc 1 249 0 discriminator 2
+ 343 0004 0134     		adds	r4, r4, #1
+ 344              	.LVL45:
+ 345              	.L38:
+ 346              		.loc 1 249 0 is_stmt 0 discriminator 1
+ 347 0006 032C     		cmp	r4, #3
+ 348 0008 06D8     		bhi	.L43
+ 250:rt-thread/src/idle.c ****         {
+ 251:rt-thread/src/idle.c ****             if (idle_hook_list[i] != RT_NULL)
+ 349              		.loc 1 251 0 is_stmt 1
+ 350 000a 054B     		ldr	r3, .L44
+ 351 000c 53F82430 		ldr	r3, [r3, r4, lsl #2]
+ 352 0010 002B     		cmp	r3, #0
+ 353 0012 F7D0     		beq	.L39
+ 252:rt-thread/src/idle.c ****             {
+ 253:rt-thread/src/idle.c ****                 idle_hook_list[i]();
+ 354              		.loc 1 253 0
+ 355 0014 9847     		blx	r3
+ 356              	.LVL46:
+ 357 0016 F5E7     		b	.L39
+ 358              	.L43:
+ 254:rt-thread/src/idle.c ****             }
+ 255:rt-thread/src/idle.c ****         }
+ 256:rt-thread/src/idle.c **** #endif
+ 257:rt-thread/src/idle.c **** 
+ 258:rt-thread/src/idle.c ****         rt_thread_idle_excute();
+ 359              		.loc 1 258 0
+ 360 0018 FFF7FEFF 		bl	rt_thread_idle_excute
+ 361              	.LVL47:
+ 362              	.L41:
+ 249:rt-thread/src/idle.c ****         {
+ 363              		.loc 1 249 0
+ 364 001c 0024     		movs	r4, #0
+ 365 001e F2E7     		b	.L38
+ 366              	.L45:
+ 367              		.align	2
+ 368              	.L44:
+ 369 0020 00000000 		.word	.LANCHOR0
+ 370              	.LBE19:
+ 371              		.cfi_endproc
+ 372              	.LFE19:
+ 374              		.section	.text.rt_thread_idle_init,"ax",%progbits
+ 375              		.align	1
+ 376              		.global	rt_thread_idle_init
+ 377              		.syntax unified
+ 378              		.thumb
+ARM GAS  /tmp/ccUwub7w.s 			page 14
+
+
+ 379              		.thumb_func
+ 380              		.fpu fpv4-sp-d16
+ 382              	rt_thread_idle_init:
+ 383              	.LFB20:
+ 259:rt-thread/src/idle.c **** #ifdef RT_USING_PM        
+ 260:rt-thread/src/idle.c ****         rt_system_power_manager();
+ 261:rt-thread/src/idle.c **** #endif
+ 262:rt-thread/src/idle.c ****     }
+ 263:rt-thread/src/idle.c **** }
+ 264:rt-thread/src/idle.c **** 
+ 265:rt-thread/src/idle.c **** /**
+ 266:rt-thread/src/idle.c ****  * @ingroup SystemInit
+ 267:rt-thread/src/idle.c ****  *
+ 268:rt-thread/src/idle.c ****  * This function will initialize idle thread, then start it.
+ 269:rt-thread/src/idle.c ****  *
+ 270:rt-thread/src/idle.c ****  * @note this function must be invoked when system init.
+ 271:rt-thread/src/idle.c ****  */
+ 272:rt-thread/src/idle.c **** void rt_thread_idle_init(void)
+ 273:rt-thread/src/idle.c **** {
+ 384              		.loc 1 273 0
+ 385              		.cfi_startproc
+ 386              		@ args = 0, pretend = 0, frame = 8
+ 387              		@ frame_needed = 0, uses_anonymous_args = 0
+ 388 0000 30B5     		push	{r4, r5, lr}
+ 389              	.LCFI5:
+ 390              		.cfi_def_cfa_offset 12
+ 391              		.cfi_offset 4, -12
+ 392              		.cfi_offset 5, -8
+ 393              		.cfi_offset 14, -4
+ 394 0002 87B0     		sub	sp, sp, #28
+ 395              	.LCFI6:
+ 396              		.cfi_def_cfa_offset 40
+ 397              	.LVL48:
+ 274:rt-thread/src/idle.c ****     rt_ubase_t i;
+ 275:rt-thread/src/idle.c ****     char tidle_name[RT_NAME_MAX];
+ 276:rt-thread/src/idle.c **** 
+ 277:rt-thread/src/idle.c ****     for (i = 0; i < _CPUS_NR; i++)
+ 398              		.loc 1 277 0
+ 399 0004 0024     		movs	r4, #0
+ 400              	.LVL49:
+ 401              	.L47:
+ 402              		.loc 1 277 0 is_stmt 0 discriminator 1
+ 403 0006 0CB1     		cbz	r4, .L48
+ 278:rt-thread/src/idle.c ****     {
+ 279:rt-thread/src/idle.c ****         rt_sprintf(tidle_name, "tidle%d", i);
+ 280:rt-thread/src/idle.c ****         rt_thread_init(&idle[i],
+ 281:rt-thread/src/idle.c ****                 tidle_name,
+ 282:rt-thread/src/idle.c ****                 rt_thread_idle_entry,
+ 283:rt-thread/src/idle.c ****                 RT_NULL,
+ 284:rt-thread/src/idle.c ****                 &rt_thread_stack[i][0],
+ 285:rt-thread/src/idle.c ****                 sizeof(rt_thread_stack[i]),
+ 286:rt-thread/src/idle.c ****                 RT_THREAD_PRIORITY_MAX - 1,
+ 287:rt-thread/src/idle.c ****                 32);
+ 288:rt-thread/src/idle.c **** #ifdef RT_USING_SMP
+ 289:rt-thread/src/idle.c ****         rt_thread_control(&idle[i], RT_THREAD_CTRL_BIND_CPU, (void*)i);
+ 290:rt-thread/src/idle.c **** #endif
+ 291:rt-thread/src/idle.c ****         /* startup */
+ARM GAS  /tmp/ccUwub7w.s 			page 15
+
+
+ 292:rt-thread/src/idle.c ****         rt_thread_startup(&idle[i]);
+ 293:rt-thread/src/idle.c ****     }
+ 294:rt-thread/src/idle.c **** }
+ 404              		.loc 1 294 0 is_stmt 1
+ 405 0008 07B0     		add	sp, sp, #28
+ 406              	.LCFI7:
+ 407              		.cfi_remember_state
+ 408              		.cfi_def_cfa_offset 12
+ 409              		@ sp needed
+ 410 000a 30BD     		pop	{r4, r5, pc}
+ 411              	.LVL50:
+ 412              	.L48:
+ 413              	.LCFI8:
+ 414              		.cfi_restore_state
+ 279:rt-thread/src/idle.c ****         rt_thread_init(&idle[i],
+ 415              		.loc 1 279 0 discriminator 3
+ 416 000c 2246     		mov	r2, r4
+ 417 000e 0D49     		ldr	r1, .L50
+ 418 0010 04A8     		add	r0, sp, #16
+ 419 0012 FFF7FEFF 		bl	rt_sprintf
+ 420              	.LVL51:
+ 280:rt-thread/src/idle.c ****                 tidle_name,
+ 421              		.loc 1 280 0 discriminator 3
+ 422 0016 E201     		lsls	r2, r4, #7
+ 423 0018 0B4D     		ldr	r5, .L50+4
+ 424 001a 1544     		add	r5, r5, r2
+ 284:rt-thread/src/idle.c ****                 sizeof(rt_thread_stack[i]),
+ 425              		.loc 1 284 0 discriminator 3
+ 426 001c 0B4B     		ldr	r3, .L50+8
+ 427 001e 1344     		add	r3, r3, r2
+ 280:rt-thread/src/idle.c ****                 tidle_name,
+ 428              		.loc 1 280 0 discriminator 3
+ 429 0020 2022     		movs	r2, #32
+ 430 0022 0392     		str	r2, [sp, #12]
+ 431 0024 1F22     		movs	r2, #31
+ 432 0026 0292     		str	r2, [sp, #8]
+ 433 0028 8022     		movs	r2, #128
+ 434 002a 0192     		str	r2, [sp, #4]
+ 435 002c 0093     		str	r3, [sp]
+ 436 002e 0023     		movs	r3, #0
+ 437 0030 074A     		ldr	r2, .L50+12
+ 438 0032 04A9     		add	r1, sp, #16
+ 439 0034 2846     		mov	r0, r5
+ 440 0036 FFF7FEFF 		bl	rt_thread_init
+ 441              	.LVL52:
+ 292:rt-thread/src/idle.c ****     }
+ 442              		.loc 1 292 0 discriminator 3
+ 443 003a 2846     		mov	r0, r5
+ 444 003c FFF7FEFF 		bl	rt_thread_startup
+ 445              	.LVL53:
+ 277:rt-thread/src/idle.c ****     {
+ 446              		.loc 1 277 0 discriminator 3
+ 447 0040 0134     		adds	r4, r4, #1
+ 448              	.LVL54:
+ 449 0042 E0E7     		b	.L47
+ 450              	.L51:
+ 451              		.align	2
+ARM GAS  /tmp/ccUwub7w.s 			page 16
+
+
+ 452              	.L50:
+ 453 0044 00000000 		.word	.LC0
+ 454 0048 00000000 		.word	.LANCHOR1
+ 455 004c 00000000 		.word	.LANCHOR2
+ 456 0050 00000000 		.word	rt_thread_idle_entry
+ 457              		.cfi_endproc
+ 458              	.LFE20:
+ 460              		.section	.text.rt_thread_idle_gethandler,"ax",%progbits
+ 461              		.align	1
+ 462              		.global	rt_thread_idle_gethandler
+ 463              		.syntax unified
+ 464              		.thumb
+ 465              		.thumb_func
+ 466              		.fpu fpv4-sp-d16
+ 468              	rt_thread_idle_gethandler:
+ 469              	.LFB21:
+ 295:rt-thread/src/idle.c **** 
+ 296:rt-thread/src/idle.c **** /**
+ 297:rt-thread/src/idle.c ****  * @ingroup Thread
+ 298:rt-thread/src/idle.c ****  *
+ 299:rt-thread/src/idle.c ****  * This function will get the handler of the idle thread.
+ 300:rt-thread/src/idle.c ****  *
+ 301:rt-thread/src/idle.c ****  */
+ 302:rt-thread/src/idle.c **** rt_thread_t rt_thread_idle_gethandler(void)
+ 303:rt-thread/src/idle.c **** {
+ 470              		.loc 1 303 0
+ 471              		.cfi_startproc
+ 472              		@ args = 0, pretend = 0, frame = 0
+ 473              		@ frame_needed = 0, uses_anonymous_args = 0
+ 474              		@ link register save eliminated.
+ 475              	.LVL55:
+ 304:rt-thread/src/idle.c **** #ifdef RT_USING_SMP
+ 305:rt-thread/src/idle.c ****     register int id = rt_hw_cpu_id();
+ 306:rt-thread/src/idle.c **** #else
+ 307:rt-thread/src/idle.c ****     register int id = 0;
+ 308:rt-thread/src/idle.c **** #endif
+ 309:rt-thread/src/idle.c **** 
+ 310:rt-thread/src/idle.c ****     return (rt_thread_t)(&idle[id]);
+ 311:rt-thread/src/idle.c **** }
+ 476              		.loc 1 311 0
+ 477 0000 0048     		ldr	r0, .L53
+ 478 0002 7047     		bx	lr
+ 479              	.L54:
+ 480              		.align	2
+ 481              	.L53:
+ 482 0004 00000000 		.word	.LANCHOR1
+ 483              		.cfi_endproc
+ 484              	.LFE21:
+ 486              		.section	.bss.idle,"aw",%nobits
+ 487              		.align	2
+ 488              		.set	.LANCHOR1,. + 0
+ 491              	idle:
+ 492 0000 00000000 		.space	128
+ 492      00000000 
+ 492      00000000 
+ 492      00000000 
+ 492      00000000 
+ARM GAS  /tmp/ccUwub7w.s 			page 17
+
+
+ 493              		.section	.bss.idle_hook_list,"aw",%nobits
+ 494              		.align	2
+ 495              		.set	.LANCHOR0,. + 0
+ 498              	idle_hook_list:
+ 499 0000 00000000 		.space	16
+ 499      00000000 
+ 499      00000000 
+ 499      00000000 
+ 500              		.section	.bss.rt_thread_stack,"aw",%nobits
+ 501              		.align	2
+ 502              		.set	.LANCHOR2,. + 0
+ 505              	rt_thread_stack:
+ 506 0000 00000000 		.space	128
+ 506      00000000 
+ 506      00000000 
+ 506      00000000 
+ 506      00000000 
+ 507              		.section	.rodata.rt_thread_idle_init.str1.4,"aMS",%progbits,1
+ 508              		.align	2
+ 509              	.LC0:
+ 510 0000 7469646C 		.ascii	"tidle%d\000"
+ 510      65256400 
+ 511              		.text
+ 512              	.Letext0:
+ 513              		.file 3 "rt-thread/include/rtdef.h"
+ 514              		.file 4 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/lock.h"
+ 515              		.file 5 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_types.h"
+ 516              		.file 6 "/opt/gcc-arm-none-eabi-6-2017-q2-update/lib/gcc/arm-none-eabi/6.3.1/include/stddef.h"
+ 517              		.file 7 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/reent.h"
+ 518              		.file 8 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/time.h"
+ 519              		.file 9 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/errno.h"
+ 520              		.file 10 "rt-thread/components/finsh/finsh_api.h"
+ 521              		.file 11 "rt-thread/include/rtthread.h"
+ 522              		.file 12 "rt-thread/include/rthw.h"
+ARM GAS  /tmp/ccUwub7w.s 			page 18
+
+
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 idle.c
+     /tmp/ccUwub7w.s:18     .text.rt_thread_idle_sethook:0000000000000000 $t
+     /tmp/ccUwub7w.s:25     .text.rt_thread_idle_sethook:0000000000000000 rt_thread_idle_sethook
+     /tmp/ccUwub7w.s:84     .text.rt_thread_idle_sethook:0000000000000030 $d
+     /tmp/ccUwub7w.s:89     .text.rt_thread_idle_delhook:0000000000000000 $t
+     /tmp/ccUwub7w.s:96     .text.rt_thread_idle_delhook:0000000000000000 rt_thread_idle_delhook
+     /tmp/ccUwub7w.s:154    .text.rt_thread_idle_delhook:0000000000000034 $d
+     /tmp/ccUwub7w.s:159    .text.rt_thread_idle_excute:0000000000000000 $t
+     /tmp/ccUwub7w.s:166    .text.rt_thread_idle_excute:0000000000000000 rt_thread_idle_excute
+     /tmp/ccUwub7w.s:314    .text.rt_thread_idle_excute:0000000000000084 $d
+     /tmp/ccUwub7w.s:320    .text.rt_thread_idle_entry:0000000000000000 $t
+     /tmp/ccUwub7w.s:326    .text.rt_thread_idle_entry:0000000000000000 rt_thread_idle_entry
+     /tmp/ccUwub7w.s:369    .text.rt_thread_idle_entry:0000000000000020 $d
+     /tmp/ccUwub7w.s:375    .text.rt_thread_idle_init:0000000000000000 $t
+     /tmp/ccUwub7w.s:382    .text.rt_thread_idle_init:0000000000000000 rt_thread_idle_init
+     /tmp/ccUwub7w.s:453    .text.rt_thread_idle_init:0000000000000044 $d
+     /tmp/ccUwub7w.s:461    .text.rt_thread_idle_gethandler:0000000000000000 $t
+     /tmp/ccUwub7w.s:468    .text.rt_thread_idle_gethandler:0000000000000000 rt_thread_idle_gethandler
+     /tmp/ccUwub7w.s:482    .text.rt_thread_idle_gethandler:0000000000000004 $d
+     /tmp/ccUwub7w.s:487    .bss.idle:0000000000000000 $d
+     /tmp/ccUwub7w.s:491    .bss.idle:0000000000000000 idle
+     /tmp/ccUwub7w.s:494    .bss.idle_hook_list:0000000000000000 $d
+     /tmp/ccUwub7w.s:498    .bss.idle_hook_list:0000000000000000 idle_hook_list
+     /tmp/ccUwub7w.s:501    .bss.rt_thread_stack:0000000000000000 $d
+     /tmp/ccUwub7w.s:505    .bss.rt_thread_stack:0000000000000000 rt_thread_stack
+     /tmp/ccUwub7w.s:508    .rodata.rt_thread_idle_init.str1.4:0000000000000000 $d
+                     .debug_frame:0000000000000010 $d
+
+UNDEFINED SYMBOLS
+rt_hw_interrupt_disable
+rt_hw_interrupt_enable
+rt_object_is_systemobject
+rt_exit_critical
+rt_free
+rt_object_delete
+rt_enter_critical
+rt_object_detach
+rt_thread_defunct
+rt_sprintf
+rt_thread_init
+rt_thread_startup

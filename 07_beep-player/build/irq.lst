@@ -1,0 +1,401 @@
+ARM GAS  /tmp/ccvFyvS8.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.eabi_attribute 27, 1
+   3              		.eabi_attribute 28, 1
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.file	"irq.c"
+  14              		.text
+  15              	.Ltext0:
+  16              		.cfi_sections	.debug_frame
+  17              		.section	.text.rt_interrupt_enter_sethook,"ax",%progbits
+  18              		.align	1
+  19              		.global	rt_interrupt_enter_sethook
+  20              		.syntax unified
+  21              		.thumb
+  22              		.thumb_func
+  23              		.fpu fpv4-sp-d16
+  25              	rt_interrupt_enter_sethook:
+  26              	.LFB15:
+  27              		.file 1 "rt-thread/src/irq.c"
+   1:rt-thread/src/irq.c **** /*
+   2:rt-thread/src/irq.c ****  * Copyright (c) 2006-2018, RT-Thread Development Team
+   3:rt-thread/src/irq.c ****  *
+   4:rt-thread/src/irq.c ****  * SPDX-License-Identifier: Apache-2.0
+   5:rt-thread/src/irq.c ****  *
+   6:rt-thread/src/irq.c ****  * Change Logs:
+   7:rt-thread/src/irq.c ****  * Date           Author       Notes
+   8:rt-thread/src/irq.c ****  * 2006-02-24     Bernard      first version
+   9:rt-thread/src/irq.c ****  * 2006-05-03     Bernard      add IRQ_DEBUG
+  10:rt-thread/src/irq.c ****  * 2016-08-09     ArdaFu       add interrupt enter and leave hook.
+  11:rt-thread/src/irq.c ****  * 2018-11-22     Jesven       rt_interrupt_get_nest function add disable irq
+  12:rt-thread/src/irq.c ****  */
+  13:rt-thread/src/irq.c **** 
+  14:rt-thread/src/irq.c **** #include <rthw.h>
+  15:rt-thread/src/irq.c **** #include <rtthread.h>
+  16:rt-thread/src/irq.c **** 
+  17:rt-thread/src/irq.c **** #ifdef RT_USING_HOOK
+  18:rt-thread/src/irq.c **** 
+  19:rt-thread/src/irq.c **** static void (*rt_interrupt_enter_hook)(void);
+  20:rt-thread/src/irq.c **** static void (*rt_interrupt_leave_hook)(void);
+  21:rt-thread/src/irq.c **** 
+  22:rt-thread/src/irq.c **** /**
+  23:rt-thread/src/irq.c ****  * @ingroup Hook
+  24:rt-thread/src/irq.c ****  * This function set a hook function when the system enter a interrupt 
+  25:rt-thread/src/irq.c ****  *
+  26:rt-thread/src/irq.c ****  * @note the hook function must be simple and never be blocked or suspend.
+  27:rt-thread/src/irq.c ****  */
+  28:rt-thread/src/irq.c **** void rt_interrupt_enter_sethook(void (*hook)(void))
+  29:rt-thread/src/irq.c **** {
+  28              		.loc 1 29 0
+  29              		.cfi_startproc
+ARM GAS  /tmp/ccvFyvS8.s 			page 2
+
+
+  30              		@ args = 0, pretend = 0, frame = 0
+  31              		@ frame_needed = 0, uses_anonymous_args = 0
+  32              		@ link register save eliminated.
+  33              	.LVL0:
+  30:rt-thread/src/irq.c ****     rt_interrupt_enter_hook = hook;
+  34              		.loc 1 30 0
+  35 0000 014B     		ldr	r3, .L2
+  36 0002 1860     		str	r0, [r3]
+  37 0004 7047     		bx	lr
+  38              	.L3:
+  39 0006 00BF     		.align	2
+  40              	.L2:
+  41 0008 00000000 		.word	.LANCHOR0
+  42              		.cfi_endproc
+  43              	.LFE15:
+  45              		.section	.text.rt_interrupt_leave_sethook,"ax",%progbits
+  46              		.align	1
+  47              		.global	rt_interrupt_leave_sethook
+  48              		.syntax unified
+  49              		.thumb
+  50              		.thumb_func
+  51              		.fpu fpv4-sp-d16
+  53              	rt_interrupt_leave_sethook:
+  54              	.LFB16:
+  31:rt-thread/src/irq.c **** }
+  32:rt-thread/src/irq.c **** /**
+  33:rt-thread/src/irq.c ****  * @ingroup Hook
+  34:rt-thread/src/irq.c ****  * This function set a hook function when the system exit a interrupt. 
+  35:rt-thread/src/irq.c ****  *
+  36:rt-thread/src/irq.c ****  * @note the hook function must be simple and never be blocked or suspend.
+  37:rt-thread/src/irq.c ****  */
+  38:rt-thread/src/irq.c **** void rt_interrupt_leave_sethook(void (*hook)(void))
+  39:rt-thread/src/irq.c **** {
+  55              		.loc 1 39 0
+  56              		.cfi_startproc
+  57              		@ args = 0, pretend = 0, frame = 0
+  58              		@ frame_needed = 0, uses_anonymous_args = 0
+  59              		@ link register save eliminated.
+  60              	.LVL1:
+  40:rt-thread/src/irq.c ****     rt_interrupt_leave_hook = hook;
+  61              		.loc 1 40 0
+  62 0000 014B     		ldr	r3, .L5
+  63 0002 1860     		str	r0, [r3]
+  64 0004 7047     		bx	lr
+  65              	.L6:
+  66 0006 00BF     		.align	2
+  67              	.L5:
+  68 0008 00000000 		.word	.LANCHOR1
+  69              		.cfi_endproc
+  70              	.LFE16:
+  72              		.section	.text.rt_interrupt_enter,"ax",%progbits
+  73              		.align	1
+  74              		.global	rt_interrupt_enter
+  75              		.syntax unified
+  76              		.thumb
+  77              		.thumb_func
+  78              		.fpu fpv4-sp-d16
+ARM GAS  /tmp/ccvFyvS8.s 			page 3
+
+
+  80              	rt_interrupt_enter:
+  81              	.LFB17:
+  41:rt-thread/src/irq.c **** }
+  42:rt-thread/src/irq.c **** #endif
+  43:rt-thread/src/irq.c **** 
+  44:rt-thread/src/irq.c **** /* #define IRQ_DEBUG */
+  45:rt-thread/src/irq.c **** 
+  46:rt-thread/src/irq.c **** /**
+  47:rt-thread/src/irq.c ****  * @addtogroup Kernel
+  48:rt-thread/src/irq.c ****  */
+  49:rt-thread/src/irq.c **** 
+  50:rt-thread/src/irq.c **** /**@{*/
+  51:rt-thread/src/irq.c **** 
+  52:rt-thread/src/irq.c **** #ifdef RT_USING_SMP
+  53:rt-thread/src/irq.c **** #define rt_interrupt_nest rt_cpu_self()->irq_nest
+  54:rt-thread/src/irq.c **** #else
+  55:rt-thread/src/irq.c **** volatile rt_uint8_t rt_interrupt_nest = 0;
+  56:rt-thread/src/irq.c **** #endif
+  57:rt-thread/src/irq.c **** 
+  58:rt-thread/src/irq.c **** /**
+  59:rt-thread/src/irq.c ****  * This function will be invoked by BSP, when enter interrupt service routine
+  60:rt-thread/src/irq.c ****  *
+  61:rt-thread/src/irq.c ****  * @note please don't invoke this routine in application
+  62:rt-thread/src/irq.c ****  *
+  63:rt-thread/src/irq.c ****  * @see rt_interrupt_leave
+  64:rt-thread/src/irq.c ****  */
+  65:rt-thread/src/irq.c **** void rt_interrupt_enter(void)
+  66:rt-thread/src/irq.c **** {
+  82              		.loc 1 66 0
+  83              		.cfi_startproc
+  84              		@ args = 0, pretend = 0, frame = 0
+  85              		@ frame_needed = 0, uses_anonymous_args = 0
+  86 0000 10B5     		push	{r4, lr}
+  87              	.LCFI0:
+  88              		.cfi_def_cfa_offset 8
+  89              		.cfi_offset 4, -8
+  90              		.cfi_offset 14, -4
+  67:rt-thread/src/irq.c ****     rt_base_t level;
+  68:rt-thread/src/irq.c **** 
+  69:rt-thread/src/irq.c ****     RT_DEBUG_LOG(RT_DEBUG_IRQ, ("irq coming..., irq nest:%d\n",
+  70:rt-thread/src/irq.c ****                                 rt_interrupt_nest));
+  71:rt-thread/src/irq.c **** 
+  72:rt-thread/src/irq.c ****     level = rt_hw_interrupt_disable();
+  91              		.loc 1 72 0
+  92 0002 FFF7FEFF 		bl	rt_hw_interrupt_disable
+  93              	.LVL2:
+  94 0006 0446     		mov	r4, r0
+  95              	.LVL3:
+  73:rt-thread/src/irq.c ****     rt_interrupt_nest ++;
+  96              		.loc 1 73 0
+  97 0008 064A     		ldr	r2, .L10
+  98 000a 1378     		ldrb	r3, [r2]	@ zero_extendqisi2
+  99 000c 0133     		adds	r3, r3, #1
+ 100 000e DBB2     		uxtb	r3, r3
+ 101 0010 1370     		strb	r3, [r2]
+  74:rt-thread/src/irq.c ****     RT_OBJECT_HOOK_CALL(rt_interrupt_enter_hook,());
+ 102              		.loc 1 74 0
+ARM GAS  /tmp/ccvFyvS8.s 			page 4
+
+
+ 103 0012 054B     		ldr	r3, .L10+4
+ 104 0014 1B68     		ldr	r3, [r3]
+ 105 0016 03B1     		cbz	r3, .L8
+ 106              		.loc 1 74 0 is_stmt 0 discriminator 1
+ 107 0018 9847     		blx	r3
+ 108              	.LVL4:
+ 109              	.L8:
+  75:rt-thread/src/irq.c ****     rt_hw_interrupt_enable(level);
+ 110              		.loc 1 75 0 is_stmt 1
+ 111 001a 2046     		mov	r0, r4
+ 112 001c FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 113              	.LVL5:
+ 114 0020 10BD     		pop	{r4, pc}
+ 115              	.LVL6:
+ 116              	.L11:
+ 117 0022 00BF     		.align	2
+ 118              	.L10:
+ 119 0024 00000000 		.word	.LANCHOR2
+ 120 0028 00000000 		.word	.LANCHOR0
+ 121              		.cfi_endproc
+ 122              	.LFE17:
+ 124              		.section	.text.rt_interrupt_leave,"ax",%progbits
+ 125              		.align	1
+ 126              		.global	rt_interrupt_leave
+ 127              		.syntax unified
+ 128              		.thumb
+ 129              		.thumb_func
+ 130              		.fpu fpv4-sp-d16
+ 132              	rt_interrupt_leave:
+ 133              	.LFB18:
+  76:rt-thread/src/irq.c **** }
+  77:rt-thread/src/irq.c **** RTM_EXPORT(rt_interrupt_enter);
+  78:rt-thread/src/irq.c **** 
+  79:rt-thread/src/irq.c **** /**
+  80:rt-thread/src/irq.c ****  * This function will be invoked by BSP, when leave interrupt service routine
+  81:rt-thread/src/irq.c ****  *
+  82:rt-thread/src/irq.c ****  * @note please don't invoke this routine in application
+  83:rt-thread/src/irq.c ****  *
+  84:rt-thread/src/irq.c ****  * @see rt_interrupt_enter
+  85:rt-thread/src/irq.c ****  */
+  86:rt-thread/src/irq.c **** void rt_interrupt_leave(void)
+  87:rt-thread/src/irq.c **** {
+ 134              		.loc 1 87 0
+ 135              		.cfi_startproc
+ 136              		@ args = 0, pretend = 0, frame = 0
+ 137              		@ frame_needed = 0, uses_anonymous_args = 0
+ 138 0000 10B5     		push	{r4, lr}
+ 139              	.LCFI1:
+ 140              		.cfi_def_cfa_offset 8
+ 141              		.cfi_offset 4, -8
+ 142              		.cfi_offset 14, -4
+  88:rt-thread/src/irq.c ****     rt_base_t level;
+  89:rt-thread/src/irq.c **** 
+  90:rt-thread/src/irq.c ****     RT_DEBUG_LOG(RT_DEBUG_IRQ, ("irq leave, irq nest:%d\n",
+  91:rt-thread/src/irq.c ****                                 rt_interrupt_nest));
+  92:rt-thread/src/irq.c **** 
+  93:rt-thread/src/irq.c ****     level = rt_hw_interrupt_disable();
+ARM GAS  /tmp/ccvFyvS8.s 			page 5
+
+
+ 143              		.loc 1 93 0
+ 144 0002 FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 145              	.LVL7:
+ 146 0006 0446     		mov	r4, r0
+ 147              	.LVL8:
+  94:rt-thread/src/irq.c ****     rt_interrupt_nest --;
+ 148              		.loc 1 94 0
+ 149 0008 064A     		ldr	r2, .L15
+ 150 000a 1378     		ldrb	r3, [r2]	@ zero_extendqisi2
+ 151 000c 013B     		subs	r3, r3, #1
+ 152 000e DBB2     		uxtb	r3, r3
+ 153 0010 1370     		strb	r3, [r2]
+  95:rt-thread/src/irq.c ****     RT_OBJECT_HOOK_CALL(rt_interrupt_leave_hook,());
+ 154              		.loc 1 95 0
+ 155 0012 054B     		ldr	r3, .L15+4
+ 156 0014 1B68     		ldr	r3, [r3]
+ 157 0016 03B1     		cbz	r3, .L13
+ 158              		.loc 1 95 0 is_stmt 0 discriminator 1
+ 159 0018 9847     		blx	r3
+ 160              	.LVL9:
+ 161              	.L13:
+  96:rt-thread/src/irq.c ****     rt_hw_interrupt_enable(level);
+ 162              		.loc 1 96 0 is_stmt 1
+ 163 001a 2046     		mov	r0, r4
+ 164 001c FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 165              	.LVL10:
+ 166 0020 10BD     		pop	{r4, pc}
+ 167              	.LVL11:
+ 168              	.L16:
+ 169 0022 00BF     		.align	2
+ 170              	.L15:
+ 171 0024 00000000 		.word	.LANCHOR2
+ 172 0028 00000000 		.word	.LANCHOR1
+ 173              		.cfi_endproc
+ 174              	.LFE18:
+ 176              		.section	.text.rt_interrupt_get_nest,"ax",%progbits
+ 177              		.align	1
+ 178              		.weak	rt_interrupt_get_nest
+ 179              		.syntax unified
+ 180              		.thumb
+ 181              		.thumb_func
+ 182              		.fpu fpv4-sp-d16
+ 184              	rt_interrupt_get_nest:
+ 185              	.LFB19:
+  97:rt-thread/src/irq.c **** }
+  98:rt-thread/src/irq.c **** RTM_EXPORT(rt_interrupt_leave);
+  99:rt-thread/src/irq.c **** 
+ 100:rt-thread/src/irq.c **** /**
+ 101:rt-thread/src/irq.c ****  * This function will return the nest of interrupt.
+ 102:rt-thread/src/irq.c ****  *
+ 103:rt-thread/src/irq.c ****  * User application can invoke this function to get whether current
+ 104:rt-thread/src/irq.c ****  * context is interrupt context.
+ 105:rt-thread/src/irq.c ****  *
+ 106:rt-thread/src/irq.c ****  * @return the number of nested interrupts.
+ 107:rt-thread/src/irq.c ****  */
+ 108:rt-thread/src/irq.c **** RT_WEAK rt_uint8_t rt_interrupt_get_nest(void)
+ 109:rt-thread/src/irq.c **** {
+ARM GAS  /tmp/ccvFyvS8.s 			page 6
+
+
+ 186              		.loc 1 109 0
+ 187              		.cfi_startproc
+ 188              		@ args = 0, pretend = 0, frame = 0
+ 189              		@ frame_needed = 0, uses_anonymous_args = 0
+ 190 0000 10B5     		push	{r4, lr}
+ 191              	.LCFI2:
+ 192              		.cfi_def_cfa_offset 8
+ 193              		.cfi_offset 4, -8
+ 194              		.cfi_offset 14, -4
+ 110:rt-thread/src/irq.c ****     rt_uint8_t ret;
+ 111:rt-thread/src/irq.c ****     rt_base_t level;
+ 112:rt-thread/src/irq.c **** 
+ 113:rt-thread/src/irq.c ****     level = rt_hw_interrupt_disable();
+ 195              		.loc 1 113 0
+ 196 0002 FFF7FEFF 		bl	rt_hw_interrupt_disable
+ 197              	.LVL12:
+ 114:rt-thread/src/irq.c ****     ret = rt_interrupt_nest;
+ 198              		.loc 1 114 0
+ 199 0006 034B     		ldr	r3, .L19
+ 200 0008 1C78     		ldrb	r4, [r3]	@ zero_extendqisi2
+ 201 000a E4B2     		uxtb	r4, r4
+ 202              	.LVL13:
+ 115:rt-thread/src/irq.c ****     rt_hw_interrupt_enable(level);
+ 203              		.loc 1 115 0
+ 204 000c FFF7FEFF 		bl	rt_hw_interrupt_enable
+ 205              	.LVL14:
+ 116:rt-thread/src/irq.c ****     return ret;
+ 117:rt-thread/src/irq.c **** }
+ 206              		.loc 1 117 0
+ 207 0010 2046     		mov	r0, r4
+ 208 0012 10BD     		pop	{r4, pc}
+ 209              	.LVL15:
+ 210              	.L20:
+ 211              		.align	2
+ 212              	.L19:
+ 213 0014 00000000 		.word	.LANCHOR2
+ 214              		.cfi_endproc
+ 215              	.LFE19:
+ 217              		.global	rt_interrupt_nest
+ 218              		.section	.bss.rt_interrupt_enter_hook,"aw",%nobits
+ 219              		.align	2
+ 220              		.set	.LANCHOR0,. + 0
+ 223              	rt_interrupt_enter_hook:
+ 224 0000 00000000 		.space	4
+ 225              		.section	.bss.rt_interrupt_leave_hook,"aw",%nobits
+ 226              		.align	2
+ 227              		.set	.LANCHOR1,. + 0
+ 230              	rt_interrupt_leave_hook:
+ 231 0000 00000000 		.space	4
+ 232              		.section	.bss.rt_interrupt_nest,"aw",%nobits
+ 233              		.set	.LANCHOR2,. + 0
+ 236              	rt_interrupt_nest:
+ 237 0000 00       		.space	1
+ 238              		.text
+ 239              	.Letext0:
+ 240              		.file 2 "rt-thread/include/rtdef.h"
+ 241              		.file 3 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/lock.h"
+ARM GAS  /tmp/ccvFyvS8.s 			page 7
+
+
+ 242              		.file 4 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_types.h"
+ 243              		.file 5 "/opt/gcc-arm-none-eabi-6-2017-q2-update/lib/gcc/arm-none-eabi/6.3.1/include/stddef.h"
+ 244              		.file 6 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/reent.h"
+ 245              		.file 7 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/time.h"
+ 246              		.file 8 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/errno.h"
+ 247              		.file 9 "rt-thread/components/finsh/finsh_api.h"
+ 248              		.file 10 "rt-thread/include/rthw.h"
+ARM GAS  /tmp/ccvFyvS8.s 			page 8
+
+
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 irq.c
+     /tmp/ccvFyvS8.s:18     .text.rt_interrupt_enter_sethook:0000000000000000 $t
+     /tmp/ccvFyvS8.s:25     .text.rt_interrupt_enter_sethook:0000000000000000 rt_interrupt_enter_sethook
+     /tmp/ccvFyvS8.s:41     .text.rt_interrupt_enter_sethook:0000000000000008 $d
+     /tmp/ccvFyvS8.s:46     .text.rt_interrupt_leave_sethook:0000000000000000 $t
+     /tmp/ccvFyvS8.s:53     .text.rt_interrupt_leave_sethook:0000000000000000 rt_interrupt_leave_sethook
+     /tmp/ccvFyvS8.s:68     .text.rt_interrupt_leave_sethook:0000000000000008 $d
+     /tmp/ccvFyvS8.s:73     .text.rt_interrupt_enter:0000000000000000 $t
+     /tmp/ccvFyvS8.s:80     .text.rt_interrupt_enter:0000000000000000 rt_interrupt_enter
+     /tmp/ccvFyvS8.s:119    .text.rt_interrupt_enter:0000000000000024 $d
+     /tmp/ccvFyvS8.s:125    .text.rt_interrupt_leave:0000000000000000 $t
+     /tmp/ccvFyvS8.s:132    .text.rt_interrupt_leave:0000000000000000 rt_interrupt_leave
+     /tmp/ccvFyvS8.s:171    .text.rt_interrupt_leave:0000000000000024 $d
+     /tmp/ccvFyvS8.s:177    .text.rt_interrupt_get_nest:0000000000000000 $t
+     /tmp/ccvFyvS8.s:184    .text.rt_interrupt_get_nest:0000000000000000 rt_interrupt_get_nest
+     /tmp/ccvFyvS8.s:213    .text.rt_interrupt_get_nest:0000000000000014 $d
+     /tmp/ccvFyvS8.s:236    .bss.rt_interrupt_nest:0000000000000000 rt_interrupt_nest
+     /tmp/ccvFyvS8.s:219    .bss.rt_interrupt_enter_hook:0000000000000000 $d
+     /tmp/ccvFyvS8.s:223    .bss.rt_interrupt_enter_hook:0000000000000000 rt_interrupt_enter_hook
+     /tmp/ccvFyvS8.s:226    .bss.rt_interrupt_leave_hook:0000000000000000 $d
+     /tmp/ccvFyvS8.s:230    .bss.rt_interrupt_leave_hook:0000000000000000 rt_interrupt_leave_hook
+     /tmp/ccvFyvS8.s:237    .bss.rt_interrupt_nest:0000000000000000 $d
+                     .debug_frame:0000000000000010 $d
+
+UNDEFINED SYMBOLS
+rt_hw_interrupt_disable
+rt_hw_interrupt_enable

@@ -1,0 +1,465 @@
+ARM GAS  /tmp/cc14aKbG.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.eabi_attribute 27, 1
+   3              		.eabi_attribute 28, 1
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.file	"i2c_dev.c"
+  14              		.text
+  15              	.Ltext0:
+  16              		.cfi_sections	.debug_frame
+  17              		.section	.text.i2c_bus_device_control,"ax",%progbits
+  18              		.align	1
+  19              		.syntax unified
+  20              		.thumb
+  21              		.thumb_func
+  22              		.fpu fpv4-sp-d16
+  24              	i2c_bus_device_control:
+  25              	.LFB21:
+  26              		.file 1 "rt-thread/components/drivers/i2c/i2c_dev.c"
+   1:rt-thread/components/drivers/i2c/i2c_dev.c **** /*
+   2:rt-thread/components/drivers/i2c/i2c_dev.c ****  * Copyright (c) 2006-2018, RT-Thread Development Team
+   3:rt-thread/components/drivers/i2c/i2c_dev.c ****  *
+   4:rt-thread/components/drivers/i2c/i2c_dev.c ****  * SPDX-License-Identifier: Apache-2.0
+   5:rt-thread/components/drivers/i2c/i2c_dev.c ****  *
+   6:rt-thread/components/drivers/i2c/i2c_dev.c ****  * Change Logs:
+   7:rt-thread/components/drivers/i2c/i2c_dev.c ****  * Date           Author        Notes
+   8:rt-thread/components/drivers/i2c/i2c_dev.c ****  * 2012-04-25     weety         first version
+   9:rt-thread/components/drivers/i2c/i2c_dev.c ****  * 2014-08-03     bernard       fix some compiling warning
+  10:rt-thread/components/drivers/i2c/i2c_dev.c ****  */
+  11:rt-thread/components/drivers/i2c/i2c_dev.c **** 
+  12:rt-thread/components/drivers/i2c/i2c_dev.c **** #include <rtdevice.h>
+  13:rt-thread/components/drivers/i2c/i2c_dev.c **** 
+  14:rt-thread/components/drivers/i2c/i2c_dev.c **** #define DBG_TAG               "I2C"
+  15:rt-thread/components/drivers/i2c/i2c_dev.c **** #ifdef RT_I2C_DEBUG
+  16:rt-thread/components/drivers/i2c/i2c_dev.c **** #define DBG_LVL               DBG_LOG
+  17:rt-thread/components/drivers/i2c/i2c_dev.c **** #else
+  18:rt-thread/components/drivers/i2c/i2c_dev.c **** #define DBG_LVL               DBG_INFO
+  19:rt-thread/components/drivers/i2c/i2c_dev.c **** #endif
+  20:rt-thread/components/drivers/i2c/i2c_dev.c **** #include <rtdbg.h>
+  21:rt-thread/components/drivers/i2c/i2c_dev.c **** 
+  22:rt-thread/components/drivers/i2c/i2c_dev.c **** static rt_size_t i2c_bus_device_read(rt_device_t dev,
+  23:rt-thread/components/drivers/i2c/i2c_dev.c ****                                      rt_off_t    pos,
+  24:rt-thread/components/drivers/i2c/i2c_dev.c ****                                      void       *buffer,
+  25:rt-thread/components/drivers/i2c/i2c_dev.c ****                                      rt_size_t   count)
+  26:rt-thread/components/drivers/i2c/i2c_dev.c **** {
+  27:rt-thread/components/drivers/i2c/i2c_dev.c ****     rt_uint16_t addr;
+  28:rt-thread/components/drivers/i2c/i2c_dev.c ****     rt_uint16_t flags;
+  29:rt-thread/components/drivers/i2c/i2c_dev.c ****     struct rt_i2c_bus_device *bus = (struct rt_i2c_bus_device *)dev->user_data;
+  30:rt-thread/components/drivers/i2c/i2c_dev.c **** 
+  31:rt-thread/components/drivers/i2c/i2c_dev.c ****     RT_ASSERT(bus != RT_NULL);
+  32:rt-thread/components/drivers/i2c/i2c_dev.c ****     RT_ASSERT(buffer != RT_NULL);
+ARM GAS  /tmp/cc14aKbG.s 			page 2
+
+
+  33:rt-thread/components/drivers/i2c/i2c_dev.c **** 
+  34:rt-thread/components/drivers/i2c/i2c_dev.c ****     LOG_D("I2C bus dev [%s] reading %u bytes.", dev->parent.name, count);
+  35:rt-thread/components/drivers/i2c/i2c_dev.c **** 
+  36:rt-thread/components/drivers/i2c/i2c_dev.c ****     addr = pos & 0xffff;
+  37:rt-thread/components/drivers/i2c/i2c_dev.c ****     flags = (pos >> 16) & 0xffff;
+  38:rt-thread/components/drivers/i2c/i2c_dev.c **** 
+  39:rt-thread/components/drivers/i2c/i2c_dev.c ****     return rt_i2c_master_recv(bus, addr, flags, (rt_uint8_t *)buffer, count);
+  40:rt-thread/components/drivers/i2c/i2c_dev.c **** }
+  41:rt-thread/components/drivers/i2c/i2c_dev.c **** 
+  42:rt-thread/components/drivers/i2c/i2c_dev.c **** static rt_size_t i2c_bus_device_write(rt_device_t dev,
+  43:rt-thread/components/drivers/i2c/i2c_dev.c ****                                       rt_off_t    pos,
+  44:rt-thread/components/drivers/i2c/i2c_dev.c ****                                       const void *buffer,
+  45:rt-thread/components/drivers/i2c/i2c_dev.c ****                                       rt_size_t   count)
+  46:rt-thread/components/drivers/i2c/i2c_dev.c **** {
+  47:rt-thread/components/drivers/i2c/i2c_dev.c ****     rt_uint16_t addr;
+  48:rt-thread/components/drivers/i2c/i2c_dev.c ****     rt_uint16_t flags;
+  49:rt-thread/components/drivers/i2c/i2c_dev.c ****     struct rt_i2c_bus_device *bus = (struct rt_i2c_bus_device *)dev->user_data;
+  50:rt-thread/components/drivers/i2c/i2c_dev.c **** 
+  51:rt-thread/components/drivers/i2c/i2c_dev.c ****     RT_ASSERT(bus != RT_NULL);
+  52:rt-thread/components/drivers/i2c/i2c_dev.c ****     RT_ASSERT(buffer != RT_NULL);
+  53:rt-thread/components/drivers/i2c/i2c_dev.c **** 
+  54:rt-thread/components/drivers/i2c/i2c_dev.c ****     LOG_D("I2C bus dev [%s] writing %u bytes.", dev->parent.name, count);
+  55:rt-thread/components/drivers/i2c/i2c_dev.c **** 
+  56:rt-thread/components/drivers/i2c/i2c_dev.c ****     addr = pos & 0xffff;
+  57:rt-thread/components/drivers/i2c/i2c_dev.c ****     flags = (pos >> 16) & 0xffff;
+  58:rt-thread/components/drivers/i2c/i2c_dev.c **** 
+  59:rt-thread/components/drivers/i2c/i2c_dev.c ****     return rt_i2c_master_send(bus, addr, flags, (const rt_uint8_t *)buffer, count);
+  60:rt-thread/components/drivers/i2c/i2c_dev.c **** }
+  61:rt-thread/components/drivers/i2c/i2c_dev.c **** 
+  62:rt-thread/components/drivers/i2c/i2c_dev.c **** static rt_err_t i2c_bus_device_control(rt_device_t dev,
+  63:rt-thread/components/drivers/i2c/i2c_dev.c ****                                        int         cmd,
+  64:rt-thread/components/drivers/i2c/i2c_dev.c ****                                        void       *args)
+  65:rt-thread/components/drivers/i2c/i2c_dev.c **** {
+  27              		.loc 1 65 0
+  28              		.cfi_startproc
+  29              		@ args = 0, pretend = 0, frame = 0
+  30              		@ frame_needed = 0, uses_anonymous_args = 0
+  31              	.LVL0:
+  32 0000 08B5     		push	{r3, lr}
+  33              	.LCFI0:
+  34              		.cfi_def_cfa_offset 8
+  35              		.cfi_offset 3, -8
+  36              		.cfi_offset 14, -4
+  66:rt-thread/components/drivers/i2c/i2c_dev.c ****     rt_err_t ret;
+  67:rt-thread/components/drivers/i2c/i2c_dev.c ****     struct rt_i2c_priv_data *priv_data;
+  68:rt-thread/components/drivers/i2c/i2c_dev.c ****     struct rt_i2c_bus_device *bus = (struct rt_i2c_bus_device *)dev->user_data;
+  37              		.loc 1 68 0
+  38 0002 806A     		ldr	r0, [r0, #40]
+  39              	.LVL1:
+  69:rt-thread/components/drivers/i2c/i2c_dev.c **** 
+  70:rt-thread/components/drivers/i2c/i2c_dev.c ****     RT_ASSERT(bus != RT_NULL);
+  71:rt-thread/components/drivers/i2c/i2c_dev.c **** 
+  72:rt-thread/components/drivers/i2c/i2c_dev.c ****     switch (cmd)
+  40              		.loc 1 72 0
+  41 0004 2039     		subs	r1, r1, #32
+  42              	.LVL2:
+  43 0006 0329     		cmp	r1, #3
+ARM GAS  /tmp/cc14aKbG.s 			page 3
+
+
+  44 0008 1DD8     		bhi	.L8
+  45 000a DFE801F0 		tbb	[pc, r1]
+  46              	.L4:
+  47 000e 02       		.byte	(.L3-.L4)/2
+  48 000f 08       		.byte	(.L5-.L4)/2
+  49 0010 0C       		.byte	(.L6-.L4)/2
+  50 0011 10       		.byte	(.L7-.L4)/2
+  51              		.p2align 1
+  52              	.L3:
+  73:rt-thread/components/drivers/i2c/i2c_dev.c ****     {
+  74:rt-thread/components/drivers/i2c/i2c_dev.c ****     /* set 10-bit addr mode */
+  75:rt-thread/components/drivers/i2c/i2c_dev.c ****     case RT_I2C_DEV_CTRL_10BIT:
+  76:rt-thread/components/drivers/i2c/i2c_dev.c ****         bus->flags |= RT_I2C_ADDR_10BIT;
+  53              		.loc 1 76 0
+  54 0012 038E     		ldrh	r3, [r0, #48]
+  55 0014 43F00403 		orr	r3, r3, #4
+  56 0018 0386     		strh	r3, [r0, #48]	@ movhi
+  77:rt-thread/components/drivers/i2c/i2c_dev.c ****         break;
+  78:rt-thread/components/drivers/i2c/i2c_dev.c ****     case RT_I2C_DEV_CTRL_ADDR:
+  79:rt-thread/components/drivers/i2c/i2c_dev.c ****         bus->addr = *(rt_uint16_t *)args;
+  80:rt-thread/components/drivers/i2c/i2c_dev.c ****         break;
+  81:rt-thread/components/drivers/i2c/i2c_dev.c ****     case RT_I2C_DEV_CTRL_TIMEOUT:
+  82:rt-thread/components/drivers/i2c/i2c_dev.c ****         bus->timeout = *(rt_uint32_t *)args;
+  83:rt-thread/components/drivers/i2c/i2c_dev.c ****         break;
+  84:rt-thread/components/drivers/i2c/i2c_dev.c ****     case RT_I2C_DEV_CTRL_RW:
+  85:rt-thread/components/drivers/i2c/i2c_dev.c ****         priv_data = (struct rt_i2c_priv_data *)args;
+  86:rt-thread/components/drivers/i2c/i2c_dev.c ****         ret = rt_i2c_transfer(bus, priv_data->msgs, priv_data->number);
+  87:rt-thread/components/drivers/i2c/i2c_dev.c ****         if (ret < 0)
+  88:rt-thread/components/drivers/i2c/i2c_dev.c ****         {
+  89:rt-thread/components/drivers/i2c/i2c_dev.c ****             return -RT_EIO;
+  90:rt-thread/components/drivers/i2c/i2c_dev.c ****         }
+  91:rt-thread/components/drivers/i2c/i2c_dev.c ****         break;
+  92:rt-thread/components/drivers/i2c/i2c_dev.c ****     default:
+  93:rt-thread/components/drivers/i2c/i2c_dev.c ****         break;
+  94:rt-thread/components/drivers/i2c/i2c_dev.c ****     }
+  95:rt-thread/components/drivers/i2c/i2c_dev.c **** 
+  96:rt-thread/components/drivers/i2c/i2c_dev.c ****     return RT_EOK;
+  57              		.loc 1 96 0
+  58 001a 0020     		movs	r0, #0
+  59              	.LVL3:
+  77:rt-thread/components/drivers/i2c/i2c_dev.c ****         break;
+  60              		.loc 1 77 0
+  61 001c 08BD     		pop	{r3, pc}
+  62              	.LVL4:
+  63              	.L5:
+  79:rt-thread/components/drivers/i2c/i2c_dev.c ****         break;
+  64              		.loc 1 79 0
+  65 001e 1388     		ldrh	r3, [r2]
+  66 0020 4386     		strh	r3, [r0, #50]	@ movhi
+  67              		.loc 1 96 0
+  68 0022 0020     		movs	r0, #0
+  69              	.LVL5:
+  80:rt-thread/components/drivers/i2c/i2c_dev.c ****     case RT_I2C_DEV_CTRL_TIMEOUT:
+  70              		.loc 1 80 0
+  71 0024 08BD     		pop	{r3, pc}
+  72              	.LVL6:
+  73              	.L6:
+ARM GAS  /tmp/cc14aKbG.s 			page 4
+
+
+  82:rt-thread/components/drivers/i2c/i2c_dev.c ****         break;
+  74              		.loc 1 82 0
+  75 0026 1368     		ldr	r3, [r2]
+  76 0028 8365     		str	r3, [r0, #88]
+  77              		.loc 1 96 0
+  78 002a 0020     		movs	r0, #0
+  79              	.LVL7:
+  83:rt-thread/components/drivers/i2c/i2c_dev.c ****     case RT_I2C_DEV_CTRL_RW:
+  80              		.loc 1 83 0
+  81 002c 08BD     		pop	{r3, pc}
+  82              	.LVL8:
+  83              	.L7:
+  84 002e 1346     		mov	r3, r2
+  85              	.LVL9:
+  86:rt-thread/components/drivers/i2c/i2c_dev.c ****         if (ret < 0)
+  86              		.loc 1 86 0
+  87 0030 5268     		ldr	r2, [r2, #4]
+  88              	.LVL10:
+  89 0032 1968     		ldr	r1, [r3]
+  90              	.LVL11:
+  91 0034 FFF7FEFF 		bl	rt_i2c_transfer
+  92              	.LVL12:
+  87:rt-thread/components/drivers/i2c/i2c_dev.c ****         {
+  93              		.loc 1 87 0
+  94 0038 0028     		cmp	r0, #0
+  95 003a 01DB     		blt	.L11
+  96              		.loc 1 96 0
+  97 003c 0020     		movs	r0, #0
+  98              	.LVL13:
+  97:rt-thread/components/drivers/i2c/i2c_dev.c **** }
+  99              		.loc 1 97 0
+ 100 003e 08BD     		pop	{r3, pc}
+ 101              	.LVL14:
+ 102              	.L11:
+  89:rt-thread/components/drivers/i2c/i2c_dev.c ****         }
+ 103              		.loc 1 89 0
+ 104 0040 6FF00700 		mvn	r0, #7
+ 105              	.LVL15:
+ 106 0044 08BD     		pop	{r3, pc}
+ 107              	.LVL16:
+ 108              	.L8:
+  96:rt-thread/components/drivers/i2c/i2c_dev.c **** }
+ 109              		.loc 1 96 0
+ 110 0046 0020     		movs	r0, #0
+ 111              	.LVL17:
+ 112 0048 08BD     		pop	{r3, pc}
+ 113              		.cfi_endproc
+ 114              	.LFE21:
+ 116              		.section	.text.i2c_bus_device_write,"ax",%progbits
+ 117              		.align	1
+ 118              		.syntax unified
+ 119              		.thumb
+ 120              		.thumb_func
+ 121              		.fpu fpv4-sp-d16
+ 123              	i2c_bus_device_write:
+ 124              	.LFB20:
+  46:rt-thread/components/drivers/i2c/i2c_dev.c ****     rt_uint16_t addr;
+ARM GAS  /tmp/cc14aKbG.s 			page 5
+
+
+ 125              		.loc 1 46 0
+ 126              		.cfi_startproc
+ 127              		@ args = 0, pretend = 0, frame = 0
+ 128              		@ frame_needed = 0, uses_anonymous_args = 0
+ 129              	.LVL18:
+ 130 0000 00B5     		push	{lr}
+ 131              	.LCFI1:
+ 132              		.cfi_def_cfa_offset 4
+ 133              		.cfi_offset 14, -4
+ 134 0002 83B0     		sub	sp, sp, #12
+ 135              	.LCFI2:
+ 136              		.cfi_def_cfa_offset 16
+  49:rt-thread/components/drivers/i2c/i2c_dev.c **** 
+ 137              		.loc 1 49 0
+ 138 0004 806A     		ldr	r0, [r0, #40]
+ 139              	.LVL19:
+  59:rt-thread/components/drivers/i2c/i2c_dev.c **** }
+ 140              		.loc 1 59 0
+ 141 0006 0093     		str	r3, [sp]
+ 142 0008 1346     		mov	r3, r2
+ 143              	.LVL20:
+ 144 000a 0A0C     		lsrs	r2, r1, #16
+ 145              	.LVL21:
+ 146 000c 89B2     		uxth	r1, r1
+ 147              	.LVL22:
+ 148 000e FFF7FEFF 		bl	rt_i2c_master_send
+ 149              	.LVL23:
+  60:rt-thread/components/drivers/i2c/i2c_dev.c **** 
+ 150              		.loc 1 60 0
+ 151 0012 03B0     		add	sp, sp, #12
+ 152              	.LCFI3:
+ 153              		.cfi_def_cfa_offset 4
+ 154              		@ sp needed
+ 155 0014 5DF804FB 		ldr	pc, [sp], #4
+ 156              		.cfi_endproc
+ 157              	.LFE20:
+ 159              		.section	.text.i2c_bus_device_read,"ax",%progbits
+ 160              		.align	1
+ 161              		.syntax unified
+ 162              		.thumb
+ 163              		.thumb_func
+ 164              		.fpu fpv4-sp-d16
+ 166              	i2c_bus_device_read:
+ 167              	.LFB19:
+  26:rt-thread/components/drivers/i2c/i2c_dev.c ****     rt_uint16_t addr;
+ 168              		.loc 1 26 0
+ 169              		.cfi_startproc
+ 170              		@ args = 0, pretend = 0, frame = 0
+ 171              		@ frame_needed = 0, uses_anonymous_args = 0
+ 172              	.LVL24:
+ 173 0000 00B5     		push	{lr}
+ 174              	.LCFI4:
+ 175              		.cfi_def_cfa_offset 4
+ 176              		.cfi_offset 14, -4
+ 177 0002 83B0     		sub	sp, sp, #12
+ 178              	.LCFI5:
+ 179              		.cfi_def_cfa_offset 16
+ARM GAS  /tmp/cc14aKbG.s 			page 6
+
+
+  29:rt-thread/components/drivers/i2c/i2c_dev.c **** 
+ 180              		.loc 1 29 0
+ 181 0004 806A     		ldr	r0, [r0, #40]
+ 182              	.LVL25:
+  39:rt-thread/components/drivers/i2c/i2c_dev.c **** }
+ 183              		.loc 1 39 0
+ 184 0006 0093     		str	r3, [sp]
+ 185 0008 1346     		mov	r3, r2
+ 186              	.LVL26:
+ 187 000a 0A0C     		lsrs	r2, r1, #16
+ 188              	.LVL27:
+ 189 000c 89B2     		uxth	r1, r1
+ 190              	.LVL28:
+ 191 000e FFF7FEFF 		bl	rt_i2c_master_recv
+ 192              	.LVL29:
+  40:rt-thread/components/drivers/i2c/i2c_dev.c **** 
+ 193              		.loc 1 40 0
+ 194 0012 03B0     		add	sp, sp, #12
+ 195              	.LCFI6:
+ 196              		.cfi_def_cfa_offset 4
+ 197              		@ sp needed
+ 198 0014 5DF804FB 		ldr	pc, [sp], #4
+ 199              		.cfi_endproc
+ 200              	.LFE19:
+ 202              		.section	.text.rt_i2c_bus_device_device_init,"ax",%progbits
+ 203              		.align	1
+ 204              		.global	rt_i2c_bus_device_device_init
+ 205              		.syntax unified
+ 206              		.thumb
+ 207              		.thumb_func
+ 208              		.fpu fpv4-sp-d16
+ 210              	rt_i2c_bus_device_device_init:
+ 211              	.LFB22:
+  98:rt-thread/components/drivers/i2c/i2c_dev.c **** 
+  99:rt-thread/components/drivers/i2c/i2c_dev.c **** #ifdef RT_USING_DEVICE_OPS
+ 100:rt-thread/components/drivers/i2c/i2c_dev.c **** const static struct rt_device_ops i2c_ops = 
+ 101:rt-thread/components/drivers/i2c/i2c_dev.c **** {
+ 102:rt-thread/components/drivers/i2c/i2c_dev.c ****     RT_NULL, 
+ 103:rt-thread/components/drivers/i2c/i2c_dev.c ****     RT_NULL,
+ 104:rt-thread/components/drivers/i2c/i2c_dev.c ****     RT_NULL,
+ 105:rt-thread/components/drivers/i2c/i2c_dev.c ****     i2c_bus_device_read,
+ 106:rt-thread/components/drivers/i2c/i2c_dev.c ****     i2c_bus_device_write,
+ 107:rt-thread/components/drivers/i2c/i2c_dev.c ****     i2c_bus_device_control
+ 108:rt-thread/components/drivers/i2c/i2c_dev.c **** };
+ 109:rt-thread/components/drivers/i2c/i2c_dev.c **** #endif
+ 110:rt-thread/components/drivers/i2c/i2c_dev.c **** 
+ 111:rt-thread/components/drivers/i2c/i2c_dev.c **** rt_err_t rt_i2c_bus_device_device_init(struct rt_i2c_bus_device *bus,
+ 112:rt-thread/components/drivers/i2c/i2c_dev.c ****                                        const char               *name)
+ 113:rt-thread/components/drivers/i2c/i2c_dev.c **** {
+ 212              		.loc 1 113 0
+ 213              		.cfi_startproc
+ 214              		@ args = 0, pretend = 0, frame = 0
+ 215              		@ frame_needed = 0, uses_anonymous_args = 0
+ 216              	.LVL30:
+ 217 0000 08B5     		push	{r3, lr}
+ 218              	.LCFI7:
+ 219              		.cfi_def_cfa_offset 8
+ARM GAS  /tmp/cc14aKbG.s 			page 7
+
+
+ 220              		.cfi_offset 3, -8
+ 221              		.cfi_offset 14, -4
+ 222 0002 0346     		mov	r3, r0
+ 223              	.LVL31:
+ 114:rt-thread/components/drivers/i2c/i2c_dev.c ****     struct rt_device *device;
+ 115:rt-thread/components/drivers/i2c/i2c_dev.c ****     RT_ASSERT(bus != RT_NULL);
+ 116:rt-thread/components/drivers/i2c/i2c_dev.c **** 
+ 117:rt-thread/components/drivers/i2c/i2c_dev.c ****     device = &bus->parent;
+ 118:rt-thread/components/drivers/i2c/i2c_dev.c **** 
+ 119:rt-thread/components/drivers/i2c/i2c_dev.c ****     device->user_data = bus;
+ 224              		.loc 1 119 0
+ 225 0004 9862     		str	r0, [r3, #40]
+ 120:rt-thread/components/drivers/i2c/i2c_dev.c **** 
+ 121:rt-thread/components/drivers/i2c/i2c_dev.c ****     /* set device type */
+ 122:rt-thread/components/drivers/i2c/i2c_dev.c ****     device->type    = RT_Device_Class_I2CBUS;
+ 226              		.loc 1 122 0
+ 227 0006 0822     		movs	r2, #8
+ 228 0008 0275     		strb	r2, [r0, #20]
+ 123:rt-thread/components/drivers/i2c/i2c_dev.c ****     /* initialize device interface */
+ 124:rt-thread/components/drivers/i2c/i2c_dev.c **** #ifdef RT_USING_DEVICE_OPS
+ 125:rt-thread/components/drivers/i2c/i2c_dev.c ****     device->ops     = &i2c_ops;
+ 229              		.loc 1 125 0
+ 230 000a 034A     		ldr	r2, .L18
+ 231 000c 4262     		str	r2, [r0, #36]
+ 126:rt-thread/components/drivers/i2c/i2c_dev.c **** #else
+ 127:rt-thread/components/drivers/i2c/i2c_dev.c ****     device->init    = RT_NULL;
+ 128:rt-thread/components/drivers/i2c/i2c_dev.c ****     device->open    = RT_NULL;
+ 129:rt-thread/components/drivers/i2c/i2c_dev.c ****     device->close   = RT_NULL;
+ 130:rt-thread/components/drivers/i2c/i2c_dev.c ****     device->read    = i2c_bus_device_read;
+ 131:rt-thread/components/drivers/i2c/i2c_dev.c ****     device->write   = i2c_bus_device_write;
+ 132:rt-thread/components/drivers/i2c/i2c_dev.c ****     device->control = i2c_bus_device_control;
+ 133:rt-thread/components/drivers/i2c/i2c_dev.c **** #endif
+ 134:rt-thread/components/drivers/i2c/i2c_dev.c **** 
+ 135:rt-thread/components/drivers/i2c/i2c_dev.c ****     /* register to device manager */
+ 136:rt-thread/components/drivers/i2c/i2c_dev.c ****     rt_device_register(device, name, RT_DEVICE_FLAG_RDWR);
+ 232              		.loc 1 136 0
+ 233 000e 0322     		movs	r2, #3
+ 234 0010 FFF7FEFF 		bl	rt_device_register
+ 235              	.LVL32:
+ 137:rt-thread/components/drivers/i2c/i2c_dev.c **** 
+ 138:rt-thread/components/drivers/i2c/i2c_dev.c ****     return RT_EOK;
+ 139:rt-thread/components/drivers/i2c/i2c_dev.c **** }
+ 236              		.loc 1 139 0
+ 237 0014 0020     		movs	r0, #0
+ 238 0016 08BD     		pop	{r3, pc}
+ 239              	.L19:
+ 240              		.align	2
+ 241              	.L18:
+ 242 0018 00000000 		.word	.LANCHOR0
+ 243              		.cfi_endproc
+ 244              	.LFE22:
+ 246              		.section	.rodata.i2c_ops,"a",%progbits
+ 247              		.align	2
+ 248              		.set	.LANCHOR0,. + 0
+ 251              	i2c_ops:
+ 252 0000 00000000 		.word	0
+ 253 0004 00000000 		.word	0
+ARM GAS  /tmp/cc14aKbG.s 			page 8
+
+
+ 254 0008 00000000 		.word	0
+ 255 000c 00000000 		.word	i2c_bus_device_read
+ 256 0010 00000000 		.word	i2c_bus_device_write
+ 257 0014 00000000 		.word	i2c_bus_device_control
+ 258              		.text
+ 259              	.Letext0:
+ 260              		.file 2 "rt-thread/include/rtdef.h"
+ 261              		.file 3 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/lock.h"
+ 262              		.file 4 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_types.h"
+ 263              		.file 5 "/opt/gcc-arm-none-eabi-6-2017-q2-update/lib/gcc/arm-none-eabi/6.3.1/include/stddef.h"
+ 264              		.file 6 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/reent.h"
+ 265              		.file 7 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/time.h"
+ 266              		.file 8 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/errno.h"
+ 267              		.file 9 "rt-thread/components/finsh/finsh_api.h"
+ 268              		.file 10 "rt-thread/components/drivers/include/drivers/i2c.h"
+ 269              		.file 11 "rt-thread/components/drivers/include/drivers/i2c_dev.h"
+ 270              		.file 12 "rt-thread/include/rtthread.h"
+ARM GAS  /tmp/cc14aKbG.s 			page 9
+
+
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 i2c_dev.c
+     /tmp/cc14aKbG.s:18     .text.i2c_bus_device_control:0000000000000000 $t
+     /tmp/cc14aKbG.s:24     .text.i2c_bus_device_control:0000000000000000 i2c_bus_device_control
+     /tmp/cc14aKbG.s:47     .text.i2c_bus_device_control:000000000000000e $d
+     /tmp/cc14aKbG.s:51     .text.i2c_bus_device_control:0000000000000012 $t
+     /tmp/cc14aKbG.s:117    .text.i2c_bus_device_write:0000000000000000 $t
+     /tmp/cc14aKbG.s:123    .text.i2c_bus_device_write:0000000000000000 i2c_bus_device_write
+     /tmp/cc14aKbG.s:160    .text.i2c_bus_device_read:0000000000000000 $t
+     /tmp/cc14aKbG.s:166    .text.i2c_bus_device_read:0000000000000000 i2c_bus_device_read
+     /tmp/cc14aKbG.s:203    .text.rt_i2c_bus_device_device_init:0000000000000000 $t
+     /tmp/cc14aKbG.s:210    .text.rt_i2c_bus_device_device_init:0000000000000000 rt_i2c_bus_device_device_init
+     /tmp/cc14aKbG.s:242    .text.rt_i2c_bus_device_device_init:0000000000000018 $d
+     /tmp/cc14aKbG.s:247    .rodata.i2c_ops:0000000000000000 $d
+     /tmp/cc14aKbG.s:251    .rodata.i2c_ops:0000000000000000 i2c_ops
+                     .debug_frame:0000000000000010 $d
+
+UNDEFINED SYMBOLS
+rt_i2c_transfer
+rt_i2c_master_send
+rt_i2c_master_recv
+rt_device_register

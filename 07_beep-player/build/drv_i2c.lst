@@ -1,0 +1,969 @@
+ARM GAS  /tmp/ccMjOaDz.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.eabi_attribute 27, 1
+   3              		.eabi_attribute 28, 1
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.file	"drv_i2c.c"
+  14              		.text
+  15              	.Ltext0:
+  16              		.cfi_sections	.debug_frame
+  17              		.section	.text.stm32_set_sda,"ax",%progbits
+  18              		.align	1
+  19              		.syntax unified
+  20              		.thumb
+  21              		.thumb_func
+  22              		.fpu fpv4-sp-d16
+  24              	stm32_set_sda:
+  25              	.LFB139:
+  26              		.file 1 "hardware/HAL_Drivers/drv_i2c.c"
+   1:hardware/HAL_Drivers/drv_i2c.c **** /*
+   2:hardware/HAL_Drivers/drv_i2c.c ****  * Copyright (c) 2006-2018, RT-Thread Development Team
+   3:hardware/HAL_Drivers/drv_i2c.c ****  *
+   4:hardware/HAL_Drivers/drv_i2c.c ****  * SPDX-License-Identifier: Apache-2.0
+   5:hardware/HAL_Drivers/drv_i2c.c ****  *
+   6:hardware/HAL_Drivers/drv_i2c.c ****  * Change Logs: * Date           Author       Notes * 2017-06-05     tanek        first implementat
+   7:hardware/HAL_Drivers/drv_i2c.c ****  * 2018-10-10     Ernest Chen  update and improve capability
+   8:hardware/HAL_Drivers/drv_i2c.c ****  * 2018-11-11     Ernest Chen  add sharing SDA with different SCL
+   9:hardware/HAL_Drivers/drv_i2c.c ****  */
+  10:hardware/HAL_Drivers/drv_i2c.c **** 
+  11:hardware/HAL_Drivers/drv_i2c.c **** #include <rthw.h>
+  12:hardware/HAL_Drivers/drv_i2c.c **** #include <rtthread.h>
+  13:hardware/HAL_Drivers/drv_i2c.c **** #include <rtdevice.h>
+  14:hardware/HAL_Drivers/drv_i2c.c **** 
+  15:hardware/HAL_Drivers/drv_i2c.c **** #include "drv_i2c.h"
+  16:hardware/HAL_Drivers/drv_i2c.c **** #include "i2c.h"
+  17:hardware/HAL_Drivers/drv_i2c.c **** //#define DEBUG
+  18:hardware/HAL_Drivers/drv_i2c.c **** 
+  19:hardware/HAL_Drivers/drv_i2c.c **** #ifdef DEBUG
+  20:hardware/HAL_Drivers/drv_i2c.c **** #define DEBUG_PRINTF(...) rt_kprintf(__VA_ARGS__)
+  21:hardware/HAL_Drivers/drv_i2c.c **** #else
+  22:hardware/HAL_Drivers/drv_i2c.c **** #define DEBUG_PRINTF(...)
+  23:hardware/HAL_Drivers/drv_i2c.c **** #endif
+  24:hardware/HAL_Drivers/drv_i2c.c **** 
+  25:hardware/HAL_Drivers/drv_i2c.c **** /*user can change this*/
+  26:hardware/HAL_Drivers/drv_i2c.c **** #define I2CBUS_NAME "i2c1"
+  27:hardware/HAL_Drivers/drv_i2c.c **** #define I2CBUS_NAME_S "i2c2" /*aht10 standby name*/
+  28:hardware/HAL_Drivers/drv_i2c.c **** 
+  29:hardware/HAL_Drivers/drv_i2c.c **** /*user should change this to adapt specific board*/
+  30:hardware/HAL_Drivers/drv_i2c.c **** #ifdef BSP_USING_PCF8574
+  31:hardware/HAL_Drivers/drv_i2c.c **** 
+  32:hardware/HAL_Drivers/drv_i2c.c **** #define I2C_SCL_PIN GPIO_PIN_4
+ARM GAS  /tmp/ccMjOaDz.s 			page 2
+
+
+  33:hardware/HAL_Drivers/drv_i2c.c **** #define I2C_SCL_PORT GPIOH
+  34:hardware/HAL_Drivers/drv_i2c.c **** #define I2C_SCL_PORT_CLK_ENABLE() __HAL_RCC_GPIOH_CLK_ENABLE()
+  35:hardware/HAL_Drivers/drv_i2c.c **** #define I2C_SDA_PIN GPIO_PIN_5
+  36:hardware/HAL_Drivers/drv_i2c.c **** #define I2C_SDA_PORT GPIOH
+  37:hardware/HAL_Drivers/drv_i2c.c **** #define I2C_SDL_PORT_CLK_ENABLE() __HAL_RCC_GPIOH_CLK_ENABLE()
+  38:hardware/HAL_Drivers/drv_i2c.c **** 
+  39:hardware/HAL_Drivers/drv_i2c.c **** static struct rt_i2c_bus_device pcf8574_i2c_bus;
+  40:hardware/HAL_Drivers/drv_i2c.c **** #endif  /* endif BSP_USING_PCF8574 */
+  41:hardware/HAL_Drivers/drv_i2c.c **** 
+  42:hardware/HAL_Drivers/drv_i2c.c **** #define I2C_SCL_PIN_S GPIO_PIN_6
+  43:hardware/HAL_Drivers/drv_i2c.c **** #define I2C_SCL_PORT_S GPIOD
+  44:hardware/HAL_Drivers/drv_i2c.c **** #define I2C_SCL_PORT_CLK_ENABLE_S() __HAL_RCC_GPIOD_CLK_ENABLE()
+  45:hardware/HAL_Drivers/drv_i2c.c **** 
+  46:hardware/HAL_Drivers/drv_i2c.c **** #ifdef BSP_USING_I2C
+  47:hardware/HAL_Drivers/drv_i2c.c **** 
+  48:hardware/HAL_Drivers/drv_i2c.c **** #ifdef BSP_USING_PCF8574
+  49:hardware/HAL_Drivers/drv_i2c.c **** static struct rt_i2c_bus_device pcf8574_i2c_bus;
+  50:hardware/HAL_Drivers/drv_i2c.c **** #endif 
+  51:hardware/HAL_Drivers/drv_i2c.c **** 
+  52:hardware/HAL_Drivers/drv_i2c.c **** static struct rt_i2c_bus_device i2c2_bus_s;
+  53:hardware/HAL_Drivers/drv_i2c.c **** 
+  54:hardware/HAL_Drivers/drv_i2c.c **** static void stm32_i2c_gpio_init()
+  55:hardware/HAL_Drivers/drv_i2c.c **** {
+  56:hardware/HAL_Drivers/drv_i2c.c ****     GPIO_InitTypeDef GPIO_Initure;
+  57:hardware/HAL_Drivers/drv_i2c.c **** 
+  58:hardware/HAL_Drivers/drv_i2c.c **** #ifdef BSP_USING_PCF8574
+  59:hardware/HAL_Drivers/drv_i2c.c ****     I2C_SCL_PORT_CLK_ENABLE();
+  60:hardware/HAL_Drivers/drv_i2c.c ****     I2C_SDL_PORT_CLK_ENABLE();
+  61:hardware/HAL_Drivers/drv_i2c.c **** #endif
+  62:hardware/HAL_Drivers/drv_i2c.c **** 
+  63:hardware/HAL_Drivers/drv_i2c.c **** 	/*I2C_SCL_PORT_CLK_ENABLE_S();*/
+  64:hardware/HAL_Drivers/drv_i2c.c **** #ifdef BSP_USING_PCF8574
+  65:hardware/HAL_Drivers/drv_i2c.c ****     GPIO_Initure.Pin =  I2C_SDA_PIN;
+  66:hardware/HAL_Drivers/drv_i2c.c ****     GPIO_Initure.Mode = GPIO_MODE_OUTPUT_OD;
+  67:hardware/HAL_Drivers/drv_i2c.c ****     GPIO_Initure.Pull = GPIO_PULLUP;
+  68:hardware/HAL_Drivers/drv_i2c.c ****     GPIO_Initure.Speed = GPIO_SPEED_HIGH;
+  69:hardware/HAL_Drivers/drv_i2c.c ****     HAL_GPIO_Init(I2C_SCL_PORT, &GPIO_Initure);
+  70:hardware/HAL_Drivers/drv_i2c.c ****    
+  71:hardware/HAL_Drivers/drv_i2c.c ****     GPIO_Initure.Pin =  I2C_SCL_PIN;
+  72:hardware/HAL_Drivers/drv_i2c.c ****     GPIO_Initure.Mode = GPIO_MODE_OUTPUT_PP;
+  73:hardware/HAL_Drivers/drv_i2c.c ****     GPIO_Initure.Pull = GPIO_PULLUP;
+  74:hardware/HAL_Drivers/drv_i2c.c ****     GPIO_Initure.Speed = GPIO_SPEED_HIGH;
+  75:hardware/HAL_Drivers/drv_i2c.c ****     HAL_GPIO_Init(I2C_SCL_PORT, &GPIO_Initure);
+  76:hardware/HAL_Drivers/drv_i2c.c **** 
+  77:hardware/HAL_Drivers/drv_i2c.c ****     HAL_GPIO_WritePin(I2C_SCL_PORT, I2C_SCL_PIN, GPIO_PIN_SET);
+  78:hardware/HAL_Drivers/drv_i2c.c ****     HAL_GPIO_WritePin(I2C_SDA_PORT, I2C_SDA_PIN, GPIO_PIN_SET);
+  79:hardware/HAL_Drivers/drv_i2c.c **** #endif
+  80:hardware/HAL_Drivers/drv_i2c.c **** 	/*GPIO_Initure.Pin = I2C_SCL_PIN_S; //standby clk*/
+  81:hardware/HAL_Drivers/drv_i2c.c **** 	/*GPIO_Initure.Mode = GPIO_MODE_OUTPUT_OD;*/
+  82:hardware/HAL_Drivers/drv_i2c.c **** 	/*GPIO_Initure.Pull = GPIO_PULLUP;*/
+  83:hardware/HAL_Drivers/drv_i2c.c **** 	/*GPIO_Initure.Speed = GPIO_SPEED_HIGH;*/
+  84:hardware/HAL_Drivers/drv_i2c.c **** 	/*HAL_GPIO_Init(I2C_SCL_PORT_S, &GPIO_Initure);  */
+  85:hardware/HAL_Drivers/drv_i2c.c ****     
+  86:hardware/HAL_Drivers/drv_i2c.c **** 	/*HAL_GPIO_WritePin(I2C_SCL_PORT_S, I2C_SCL_PIN_S, GPIO_PIN_SET);*/
+  87:hardware/HAL_Drivers/drv_i2c.c **** }
+  88:hardware/HAL_Drivers/drv_i2c.c **** 
+  89:hardware/HAL_Drivers/drv_i2c.c **** 
+ARM GAS  /tmp/ccMjOaDz.s 			page 3
+
+
+  90:hardware/HAL_Drivers/drv_i2c.c **** static void stm32_set_sda(void *data, rt_int32_t state)
+  91:hardware/HAL_Drivers/drv_i2c.c **** {
+  27              		.loc 1 91 0
+  28              		.cfi_startproc
+  29              		@ args = 0, pretend = 0, frame = 0
+  30              		@ frame_needed = 0, uses_anonymous_args = 0
+  31              		@ link register save eliminated.
+  32              	.LVL0:
+  92:hardware/HAL_Drivers/drv_i2c.c ****     if (state)
+  33              		.loc 1 92 0
+  34 0000 21B9     		cbnz	r1, .L4
+  93:hardware/HAL_Drivers/drv_i2c.c ****     {
+  94:hardware/HAL_Drivers/drv_i2c.c ****         I2C_SDA_PORT->BSRR = I2C_SDA_PIN;
+  95:hardware/HAL_Drivers/drv_i2c.c ****     }
+  96:hardware/HAL_Drivers/drv_i2c.c ****     else
+  97:hardware/HAL_Drivers/drv_i2c.c ****     {
+  98:hardware/HAL_Drivers/drv_i2c.c ****         I2C_SDA_PORT->BSRR = (uint32_t)I2C_SDA_PIN << 16U;
+  35              		.loc 1 98 0
+  36 0002 4FF40012 		mov	r2, #2097152
+  37 0006 034B     		ldr	r3, .L5
+  38 0008 9A61     		str	r2, [r3, #24]
+  39 000a 7047     		bx	lr
+  40              	.L4:
+  94:hardware/HAL_Drivers/drv_i2c.c ****     }
+  41              		.loc 1 94 0
+  42 000c 2022     		movs	r2, #32
+  43 000e 014B     		ldr	r3, .L5
+  44 0010 9A61     		str	r2, [r3, #24]
+  45 0012 7047     		bx	lr
+  46              	.L6:
+  47              		.align	2
+  48              	.L5:
+  49 0014 001C0240 		.word	1073880064
+  50              		.cfi_endproc
+  51              	.LFE139:
+  53              		.section	.text.stm32_set_scl,"ax",%progbits
+  54              		.align	1
+  55              		.syntax unified
+  56              		.thumb
+  57              		.thumb_func
+  58              		.fpu fpv4-sp-d16
+  60              	stm32_set_scl:
+  61              	.LFB141:
+  99:hardware/HAL_Drivers/drv_i2c.c ****     }
+ 100:hardware/HAL_Drivers/drv_i2c.c **** }
+ 101:hardware/HAL_Drivers/drv_i2c.c **** 
+ 102:hardware/HAL_Drivers/drv_i2c.c **** static void stm32_set_scl_s(void *data, rt_int32_t state)
+ 103:hardware/HAL_Drivers/drv_i2c.c **** { 
+ 104:hardware/HAL_Drivers/drv_i2c.c ****     if (state)
+ 105:hardware/HAL_Drivers/drv_i2c.c ****     {
+ 106:hardware/HAL_Drivers/drv_i2c.c ****         I2C_SCL_PORT_S->BSRR = I2C_SCL_PIN_S;
+ 107:hardware/HAL_Drivers/drv_i2c.c ****     }
+ 108:hardware/HAL_Drivers/drv_i2c.c ****     else
+ 109:hardware/HAL_Drivers/drv_i2c.c ****     {
+ 110:hardware/HAL_Drivers/drv_i2c.c ****         I2C_SCL_PORT_S->BSRR = (uint32_t)I2C_SCL_PIN_S << 16U;
+ 111:hardware/HAL_Drivers/drv_i2c.c ****     }
+ 112:hardware/HAL_Drivers/drv_i2c.c **** }
+ARM GAS  /tmp/ccMjOaDz.s 			page 4
+
+
+ 113:hardware/HAL_Drivers/drv_i2c.c **** 
+ 114:hardware/HAL_Drivers/drv_i2c.c **** 
+ 115:hardware/HAL_Drivers/drv_i2c.c **** static void stm32_set_scl(void *data, rt_int32_t state)
+ 116:hardware/HAL_Drivers/drv_i2c.c **** {    
+  62              		.loc 1 116 0
+  63              		.cfi_startproc
+  64              		@ args = 0, pretend = 0, frame = 0
+  65              		@ frame_needed = 0, uses_anonymous_args = 0
+  66              		@ link register save eliminated.
+  67              	.LVL1:
+ 117:hardware/HAL_Drivers/drv_i2c.c ****     if (state)
+  68              		.loc 1 117 0
+  69 0000 21B9     		cbnz	r1, .L10
+ 118:hardware/HAL_Drivers/drv_i2c.c ****     {
+ 119:hardware/HAL_Drivers/drv_i2c.c ****         I2C_SCL_PORT->BSRR = I2C_SCL_PIN;
+ 120:hardware/HAL_Drivers/drv_i2c.c ****     }
+ 121:hardware/HAL_Drivers/drv_i2c.c ****     else
+ 122:hardware/HAL_Drivers/drv_i2c.c ****     {
+ 123:hardware/HAL_Drivers/drv_i2c.c ****         I2C_SCL_PORT->BSRR = (uint32_t)I2C_SCL_PIN << 16U;
+  70              		.loc 1 123 0
+  71 0002 4FF48012 		mov	r2, #1048576
+  72 0006 034B     		ldr	r3, .L11
+  73 0008 9A61     		str	r2, [r3, #24]
+  74 000a 7047     		bx	lr
+  75              	.L10:
+ 119:hardware/HAL_Drivers/drv_i2c.c ****     }
+  76              		.loc 1 119 0
+  77 000c 1022     		movs	r2, #16
+  78 000e 014B     		ldr	r3, .L11
+  79 0010 9A61     		str	r2, [r3, #24]
+  80 0012 7047     		bx	lr
+  81              	.L12:
+  82              		.align	2
+  83              	.L11:
+  84 0014 001C0240 		.word	1073880064
+  85              		.cfi_endproc
+  86              	.LFE141:
+  88              		.section	.text.stm32_get_sda,"ax",%progbits
+  89              		.align	1
+  90              		.syntax unified
+  91              		.thumb
+  92              		.thumb_func
+  93              		.fpu fpv4-sp-d16
+  95              	stm32_get_sda:
+  96              	.LFB142:
+ 124:hardware/HAL_Drivers/drv_i2c.c ****     }
+ 125:hardware/HAL_Drivers/drv_i2c.c **** }
+ 126:hardware/HAL_Drivers/drv_i2c.c **** 
+ 127:hardware/HAL_Drivers/drv_i2c.c **** static rt_int32_t stm32_get_sda(void *data)
+ 128:hardware/HAL_Drivers/drv_i2c.c **** {
+  97              		.loc 1 128 0
+  98              		.cfi_startproc
+  99              		@ args = 0, pretend = 0, frame = 0
+ 100              		@ frame_needed = 0, uses_anonymous_args = 0
+ 101              		@ link register save eliminated.
+ 102              	.LVL2:
+ 129:hardware/HAL_Drivers/drv_i2c.c ****     if ((I2C_SDA_PORT->IDR & I2C_SDA_PIN))
+ARM GAS  /tmp/ccMjOaDz.s 			page 5
+
+
+ 103              		.loc 1 129 0
+ 104 0000 044B     		ldr	r3, .L17
+ 105 0002 1B69     		ldr	r3, [r3, #16]
+ 106 0004 13F0200F 		tst	r3, #32
+ 107 0008 01D1     		bne	.L16
+ 130:hardware/HAL_Drivers/drv_i2c.c ****     {
+ 131:hardware/HAL_Drivers/drv_i2c.c ****         return 1;
+ 132:hardware/HAL_Drivers/drv_i2c.c ****     }
+ 133:hardware/HAL_Drivers/drv_i2c.c ****     else
+ 134:hardware/HAL_Drivers/drv_i2c.c ****     {
+ 135:hardware/HAL_Drivers/drv_i2c.c ****         return 0;
+ 108              		.loc 1 135 0
+ 109 000a 0020     		movs	r0, #0
+ 110              	.LVL3:
+ 136:hardware/HAL_Drivers/drv_i2c.c ****     }
+ 137:hardware/HAL_Drivers/drv_i2c.c **** }
+ 111              		.loc 1 137 0
+ 112 000c 7047     		bx	lr
+ 113              	.LVL4:
+ 114              	.L16:
+ 131:hardware/HAL_Drivers/drv_i2c.c ****     }
+ 115              		.loc 1 131 0
+ 116 000e 0120     		movs	r0, #1
+ 117              	.LVL5:
+ 118 0010 7047     		bx	lr
+ 119              	.L18:
+ 120 0012 00BF     		.align	2
+ 121              	.L17:
+ 122 0014 001C0240 		.word	1073880064
+ 123              		.cfi_endproc
+ 124              	.LFE142:
+ 126              		.section	.text.stm32_get_scl,"ax",%progbits
+ 127              		.align	1
+ 128              		.syntax unified
+ 129              		.thumb
+ 130              		.thumb_func
+ 131              		.fpu fpv4-sp-d16
+ 133              	stm32_get_scl:
+ 134              	.LFB144:
+ 138:hardware/HAL_Drivers/drv_i2c.c **** 
+ 139:hardware/HAL_Drivers/drv_i2c.c **** static rt_int32_t stm32_get_scl_s(void *data)
+ 140:hardware/HAL_Drivers/drv_i2c.c **** {
+ 141:hardware/HAL_Drivers/drv_i2c.c ****     if ((I2C_SCL_PORT_S->IDR & I2C_SCL_PIN_S))
+ 142:hardware/HAL_Drivers/drv_i2c.c ****     {
+ 143:hardware/HAL_Drivers/drv_i2c.c ****         return 1;
+ 144:hardware/HAL_Drivers/drv_i2c.c ****     }
+ 145:hardware/HAL_Drivers/drv_i2c.c ****     else
+ 146:hardware/HAL_Drivers/drv_i2c.c ****     {
+ 147:hardware/HAL_Drivers/drv_i2c.c ****         return 0;
+ 148:hardware/HAL_Drivers/drv_i2c.c ****     }
+ 149:hardware/HAL_Drivers/drv_i2c.c **** }
+ 150:hardware/HAL_Drivers/drv_i2c.c **** 
+ 151:hardware/HAL_Drivers/drv_i2c.c **** static rt_int32_t stm32_get_scl(void *data)
+ 152:hardware/HAL_Drivers/drv_i2c.c **** {
+ 135              		.loc 1 152 0
+ 136              		.cfi_startproc
+ 137              		@ args = 0, pretend = 0, frame = 0
+ARM GAS  /tmp/ccMjOaDz.s 			page 6
+
+
+ 138              		@ frame_needed = 0, uses_anonymous_args = 0
+ 139              		@ link register save eliminated.
+ 140              	.LVL6:
+ 153:hardware/HAL_Drivers/drv_i2c.c ****     if ((I2C_SCL_PORT->IDR & I2C_SCL_PIN))
+ 141              		.loc 1 153 0
+ 142 0000 044B     		ldr	r3, .L23
+ 143 0002 1B69     		ldr	r3, [r3, #16]
+ 144 0004 13F0100F 		tst	r3, #16
+ 145 0008 01D1     		bne	.L22
+ 154:hardware/HAL_Drivers/drv_i2c.c ****     {
+ 155:hardware/HAL_Drivers/drv_i2c.c ****         return 1;
+ 156:hardware/HAL_Drivers/drv_i2c.c ****     }
+ 157:hardware/HAL_Drivers/drv_i2c.c ****     else
+ 158:hardware/HAL_Drivers/drv_i2c.c ****     {
+ 159:hardware/HAL_Drivers/drv_i2c.c ****         return 0;
+ 146              		.loc 1 159 0
+ 147 000a 0020     		movs	r0, #0
+ 148              	.LVL7:
+ 160:hardware/HAL_Drivers/drv_i2c.c ****     }
+ 161:hardware/HAL_Drivers/drv_i2c.c **** }
+ 149              		.loc 1 161 0
+ 150 000c 7047     		bx	lr
+ 151              	.LVL8:
+ 152              	.L22:
+ 155:hardware/HAL_Drivers/drv_i2c.c ****     }
+ 153              		.loc 1 155 0
+ 154 000e 0120     		movs	r0, #1
+ 155              	.LVL9:
+ 156 0010 7047     		bx	lr
+ 157              	.L24:
+ 158 0012 00BF     		.align	2
+ 159              	.L23:
+ 160 0014 001C0240 		.word	1073880064
+ 161              		.cfi_endproc
+ 162              	.LFE144:
+ 164              		.section	.text.stm32_udelay,"ax",%progbits
+ 165              		.align	1
+ 166              		.syntax unified
+ 167              		.thumb
+ 168              		.thumb_func
+ 169              		.fpu fpv4-sp-d16
+ 171              	stm32_udelay:
+ 172              	.LFB145:
+ 162:hardware/HAL_Drivers/drv_i2c.c **** 
+ 163:hardware/HAL_Drivers/drv_i2c.c **** static void stm32_udelay(rt_uint32_t us)
+ 164:hardware/HAL_Drivers/drv_i2c.c **** {
+ 173              		.loc 1 164 0
+ 174              		.cfi_startproc
+ 175              		@ args = 0, pretend = 0, frame = 0
+ 176              		@ frame_needed = 0, uses_anonymous_args = 0
+ 177              		@ link register save eliminated.
+ 178              	.LVL10:
+ 179 0000 30B4     		push	{r4, r5}
+ 180              	.LCFI0:
+ 181              		.cfi_def_cfa_offset 8
+ 182              		.cfi_offset 4, -8
+ 183              		.cfi_offset 5, -4
+ARM GAS  /tmp/ccMjOaDz.s 			page 7
+
+
+ 184              	.LVL11:
+ 165:hardware/HAL_Drivers/drv_i2c.c ****     rt_uint32_t ticks;
+ 166:hardware/HAL_Drivers/drv_i2c.c ****     rt_uint32_t told, tnow, tcnt = 0;
+ 167:hardware/HAL_Drivers/drv_i2c.c ****     rt_uint32_t reload = SysTick->LOAD;
+ 185              		.loc 1 167 0
+ 186 0002 0D4B     		ldr	r3, .L32
+ 187 0004 5D68     		ldr	r5, [r3, #4]
+ 188              	.LVL12:
+ 168:hardware/HAL_Drivers/drv_i2c.c **** 
+ 169:hardware/HAL_Drivers/drv_i2c.c ****     ticks = us * reload / (1000000 / RT_TICK_PER_SECOND);
+ 189              		.loc 1 169 0
+ 190 0006 00FB05F0 		mul	r0, r0, r5
+ 191              	.LVL13:
+ 192 000a 0C4A     		ldr	r2, .L32+4
+ 193 000c A2FB0020 		umull	r2, r0, r2, r0
+ 194 0010 8009     		lsrs	r0, r0, #6
+ 195              	.LVL14:
+ 170:hardware/HAL_Drivers/drv_i2c.c ****     told = SysTick->VAL;
+ 196              		.loc 1 170 0
+ 197 0012 9A68     		ldr	r2, [r3, #8]
+ 198              	.LVL15:
+ 166:hardware/HAL_Drivers/drv_i2c.c ****     rt_uint32_t reload = SysTick->LOAD;
+ 199              		.loc 1 166 0
+ 200 0014 0021     		movs	r1, #0
+ 201 0016 05E0     		b	.L26
+ 202              	.LVL16:
+ 203              	.L27:
+ 171:hardware/HAL_Drivers/drv_i2c.c ****     while (1)
+ 172:hardware/HAL_Drivers/drv_i2c.c ****     {
+ 173:hardware/HAL_Drivers/drv_i2c.c ****         tnow = SysTick->VAL;
+ 174:hardware/HAL_Drivers/drv_i2c.c ****         if (tnow != told)
+ 175:hardware/HAL_Drivers/drv_i2c.c ****         {
+ 176:hardware/HAL_Drivers/drv_i2c.c ****             if (tnow < told)
+ 177:hardware/HAL_Drivers/drv_i2c.c ****             {
+ 178:hardware/HAL_Drivers/drv_i2c.c ****                 tcnt += told - tnow;
+ 179:hardware/HAL_Drivers/drv_i2c.c ****             }
+ 180:hardware/HAL_Drivers/drv_i2c.c ****             else
+ 181:hardware/HAL_Drivers/drv_i2c.c ****             {
+ 182:hardware/HAL_Drivers/drv_i2c.c ****                 tcnt += reload - tnow + told;
+ 204              		.loc 1 182 0
+ 205 0018 EC1A     		subs	r4, r5, r3
+ 206 001a 2244     		add	r2, r2, r4
+ 207              	.LVL17:
+ 208 001c 1144     		add	r1, r1, r2
+ 209              	.LVL18:
+ 210              	.L28:
+ 183:hardware/HAL_Drivers/drv_i2c.c ****             }
+ 184:hardware/HAL_Drivers/drv_i2c.c ****             told = tnow;
+ 211              		.loc 1 184 0
+ 212 001e 1A46     		mov	r2, r3
+ 185:hardware/HAL_Drivers/drv_i2c.c **** 
+ 186:hardware/HAL_Drivers/drv_i2c.c ****             if (tcnt >= ticks)
+ 213              		.loc 1 186 0
+ 214 0020 8142     		cmp	r1, r0
+ 215 0022 07D2     		bcs	.L31
+ 216              	.LVL19:
+ 217              	.L26:
+ARM GAS  /tmp/ccMjOaDz.s 			page 8
+
+
+ 173:hardware/HAL_Drivers/drv_i2c.c ****         if (tnow != told)
+ 218              		.loc 1 173 0
+ 219 0024 044B     		ldr	r3, .L32
+ 220 0026 9B68     		ldr	r3, [r3, #8]
+ 221              	.LVL20:
+ 174:hardware/HAL_Drivers/drv_i2c.c ****         {
+ 222              		.loc 1 174 0
+ 223 0028 9A42     		cmp	r2, r3
+ 224 002a FBD0     		beq	.L26
+ 176:hardware/HAL_Drivers/drv_i2c.c ****             {
+ 225              		.loc 1 176 0
+ 226 002c F4D9     		bls	.L27
+ 178:hardware/HAL_Drivers/drv_i2c.c ****             }
+ 227              		.loc 1 178 0
+ 228 002e D21A     		subs	r2, r2, r3
+ 229              	.LVL21:
+ 230 0030 1144     		add	r1, r1, r2
+ 231              	.LVL22:
+ 232 0032 F4E7     		b	.L28
+ 233              	.LVL23:
+ 234              	.L31:
+ 187:hardware/HAL_Drivers/drv_i2c.c ****             {
+ 188:hardware/HAL_Drivers/drv_i2c.c ****                 break;
+ 189:hardware/HAL_Drivers/drv_i2c.c ****             }
+ 190:hardware/HAL_Drivers/drv_i2c.c ****         }
+ 191:hardware/HAL_Drivers/drv_i2c.c ****     }
+ 192:hardware/HAL_Drivers/drv_i2c.c **** }
+ 235              		.loc 1 192 0
+ 236 0034 30BC     		pop	{r4, r5}
+ 237              	.LCFI1:
+ 238              		.cfi_restore 5
+ 239              		.cfi_restore 4
+ 240              		.cfi_def_cfa_offset 0
+ 241              	.LVL24:
+ 242 0036 7047     		bx	lr
+ 243              	.L33:
+ 244              		.align	2
+ 245              	.L32:
+ 246 0038 10E000E0 		.word	-536813552
+ 247 003c D34D6210 		.word	274877907
+ 248              		.cfi_endproc
+ 249              	.LFE145:
+ 251              		.section	.text.stm32_i2c_gpio_init,"ax",%progbits
+ 252              		.align	1
+ 253              		.syntax unified
+ 254              		.thumb
+ 255              		.thumb_func
+ 256              		.fpu fpv4-sp-d16
+ 258              	stm32_i2c_gpio_init:
+ 259              	.LFB138:
+  55:hardware/HAL_Drivers/drv_i2c.c ****     GPIO_InitTypeDef GPIO_Initure;
+ 260              		.loc 1 55 0
+ 261              		.cfi_startproc
+ 262              		@ args = 0, pretend = 0, frame = 32
+ 263              		@ frame_needed = 0, uses_anonymous_args = 0
+ 264 0000 2DE9F041 		push	{r4, r5, r6, r7, r8, lr}
+ 265              	.LCFI2:
+ARM GAS  /tmp/ccMjOaDz.s 			page 9
+
+
+ 266              		.cfi_def_cfa_offset 24
+ 267              		.cfi_offset 4, -24
+ 268              		.cfi_offset 5, -20
+ 269              		.cfi_offset 6, -16
+ 270              		.cfi_offset 7, -12
+ 271              		.cfi_offset 8, -8
+ 272              		.cfi_offset 14, -4
+ 273 0004 88B0     		sub	sp, sp, #32
+ 274              	.LCFI3:
+ 275              		.cfi_def_cfa_offset 56
+ 276              	.LBB2:
+  59:hardware/HAL_Drivers/drv_i2c.c ****     I2C_SDL_PORT_CLK_ENABLE();
+ 277              		.loc 1 59 0
+ 278 0006 0021     		movs	r1, #0
+ 279 0008 0191     		str	r1, [sp, #4]
+ 280 000a 1D4B     		ldr	r3, .L36
+ 281 000c 1A6B     		ldr	r2, [r3, #48]
+ 282 000e 42F08002 		orr	r2, r2, #128
+ 283 0012 1A63     		str	r2, [r3, #48]
+ 284 0014 1A6B     		ldr	r2, [r3, #48]
+ 285 0016 02F08002 		and	r2, r2, #128
+ 286 001a 0192     		str	r2, [sp, #4]
+ 287 001c 019A     		ldr	r2, [sp, #4]
+ 288              	.LBE2:
+ 289              	.LBB3:
+  60:hardware/HAL_Drivers/drv_i2c.c **** #endif
+ 290              		.loc 1 60 0
+ 291 001e 0291     		str	r1, [sp, #8]
+ 292 0020 1A6B     		ldr	r2, [r3, #48]
+ 293 0022 42F08002 		orr	r2, r2, #128
+ 294 0026 1A63     		str	r2, [r3, #48]
+ 295 0028 1B6B     		ldr	r3, [r3, #48]
+ 296 002a 03F08003 		and	r3, r3, #128
+ 297 002e 0293     		str	r3, [sp, #8]
+ 298 0030 029B     		ldr	r3, [sp, #8]
+ 299              	.LBE3:
+  65:hardware/HAL_Drivers/drv_i2c.c ****     GPIO_Initure.Mode = GPIO_MODE_OUTPUT_OD;
+ 300              		.loc 1 65 0
+ 301 0032 2026     		movs	r6, #32
+ 302 0034 0396     		str	r6, [sp, #12]
+  66:hardware/HAL_Drivers/drv_i2c.c ****     GPIO_Initure.Pull = GPIO_PULLUP;
+ 303              		.loc 1 66 0
+ 304 0036 1123     		movs	r3, #17
+ 305 0038 0493     		str	r3, [sp, #16]
+  67:hardware/HAL_Drivers/drv_i2c.c ****     GPIO_Initure.Speed = GPIO_SPEED_HIGH;
+ 306              		.loc 1 67 0
+ 307 003a 0124     		movs	r4, #1
+ 308 003c 0594     		str	r4, [sp, #20]
+  68:hardware/HAL_Drivers/drv_i2c.c ****     HAL_GPIO_Init(I2C_SCL_PORT, &GPIO_Initure);
+ 309              		.loc 1 68 0
+ 310 003e 4FF00308 		mov	r8, #3
+ 311 0042 CDF81880 		str	r8, [sp, #24]
+  69:hardware/HAL_Drivers/drv_i2c.c ****    
+ 312              		.loc 1 69 0
+ 313 0046 0F4D     		ldr	r5, .L36+4
+ 314 0048 03A9     		add	r1, sp, #12
+ 315 004a 2846     		mov	r0, r5
+ARM GAS  /tmp/ccMjOaDz.s 			page 10
+
+
+ 316 004c FFF7FEFF 		bl	HAL_GPIO_Init
+ 317              	.LVL25:
+  71:hardware/HAL_Drivers/drv_i2c.c ****     GPIO_Initure.Mode = GPIO_MODE_OUTPUT_PP;
+ 318              		.loc 1 71 0
+ 319 0050 1027     		movs	r7, #16
+ 320 0052 0397     		str	r7, [sp, #12]
+  72:hardware/HAL_Drivers/drv_i2c.c ****     GPIO_Initure.Pull = GPIO_PULLUP;
+ 321              		.loc 1 72 0
+ 322 0054 0494     		str	r4, [sp, #16]
+  73:hardware/HAL_Drivers/drv_i2c.c ****     GPIO_Initure.Speed = GPIO_SPEED_HIGH;
+ 323              		.loc 1 73 0
+ 324 0056 0594     		str	r4, [sp, #20]
+  74:hardware/HAL_Drivers/drv_i2c.c ****     HAL_GPIO_Init(I2C_SCL_PORT, &GPIO_Initure);
+ 325              		.loc 1 74 0
+ 326 0058 CDF81880 		str	r8, [sp, #24]
+  75:hardware/HAL_Drivers/drv_i2c.c **** 
+ 327              		.loc 1 75 0
+ 328 005c 03A9     		add	r1, sp, #12
+ 329 005e 2846     		mov	r0, r5
+ 330 0060 FFF7FEFF 		bl	HAL_GPIO_Init
+ 331              	.LVL26:
+  77:hardware/HAL_Drivers/drv_i2c.c ****     HAL_GPIO_WritePin(I2C_SDA_PORT, I2C_SDA_PIN, GPIO_PIN_SET);
+ 332              		.loc 1 77 0
+ 333 0064 2246     		mov	r2, r4
+ 334 0066 3946     		mov	r1, r7
+ 335 0068 2846     		mov	r0, r5
+ 336 006a FFF7FEFF 		bl	HAL_GPIO_WritePin
+ 337              	.LVL27:
+  78:hardware/HAL_Drivers/drv_i2c.c **** #endif
+ 338              		.loc 1 78 0
+ 339 006e 2246     		mov	r2, r4
+ 340 0070 3146     		mov	r1, r6
+ 341 0072 2846     		mov	r0, r5
+ 342 0074 FFF7FEFF 		bl	HAL_GPIO_WritePin
+ 343              	.LVL28:
+  87:hardware/HAL_Drivers/drv_i2c.c **** 
+ 344              		.loc 1 87 0
+ 345 0078 08B0     		add	sp, sp, #32
+ 346              	.LCFI4:
+ 347              		.cfi_def_cfa_offset 24
+ 348              		@ sp needed
+ 349 007a BDE8F081 		pop	{r4, r5, r6, r7, r8, pc}
+ 350              	.L37:
+ 351 007e 00BF     		.align	2
+ 352              	.L36:
+ 353 0080 00380240 		.word	1073887232
+ 354 0084 001C0240 		.word	1073880064
+ 355              		.cfi_endproc
+ 356              	.LFE138:
+ 358              		.section	.text.stm32_i2c_bus_unlock,"ax",%progbits
+ 359              		.align	1
+ 360              		.syntax unified
+ 361              		.thumb
+ 362              		.thumb_func
+ 363              		.fpu fpv4-sp-d16
+ 365              	stm32_i2c_bus_unlock:
+ 366              	.LFB146:
+ARM GAS  /tmp/ccMjOaDz.s 			page 11
+
+
+ 193:hardware/HAL_Drivers/drv_i2c.c **** 
+ 194:hardware/HAL_Drivers/drv_i2c.c **** static const struct rt_i2c_bit_ops stm32_bit_ops =
+ 195:hardware/HAL_Drivers/drv_i2c.c **** {
+ 196:hardware/HAL_Drivers/drv_i2c.c ****     RT_NULL,
+ 197:hardware/HAL_Drivers/drv_i2c.c ****     stm32_set_sda,
+ 198:hardware/HAL_Drivers/drv_i2c.c ****     stm32_set_scl,
+ 199:hardware/HAL_Drivers/drv_i2c.c ****     stm32_get_sda,
+ 200:hardware/HAL_Drivers/drv_i2c.c ****     stm32_get_scl,
+ 201:hardware/HAL_Drivers/drv_i2c.c ****     stm32_udelay,
+ 202:hardware/HAL_Drivers/drv_i2c.c ****     5,
+ 203:hardware/HAL_Drivers/drv_i2c.c ****     5
+ 204:hardware/HAL_Drivers/drv_i2c.c **** };
+ 205:hardware/HAL_Drivers/drv_i2c.c **** 
+ 206:hardware/HAL_Drivers/drv_i2c.c **** static const struct rt_i2c_bit_ops stm32_bit_ops_s =
+ 207:hardware/HAL_Drivers/drv_i2c.c **** {
+ 208:hardware/HAL_Drivers/drv_i2c.c ****     RT_NULL,
+ 209:hardware/HAL_Drivers/drv_i2c.c ****     stm32_set_sda,
+ 210:hardware/HAL_Drivers/drv_i2c.c ****     stm32_set_scl_s,
+ 211:hardware/HAL_Drivers/drv_i2c.c ****     stm32_get_sda,
+ 212:hardware/HAL_Drivers/drv_i2c.c ****     stm32_get_scl_s,
+ 213:hardware/HAL_Drivers/drv_i2c.c ****     stm32_udelay,
+ 214:hardware/HAL_Drivers/drv_i2c.c ****     5,
+ 215:hardware/HAL_Drivers/drv_i2c.c ****     5
+ 216:hardware/HAL_Drivers/drv_i2c.c **** };
+ 217:hardware/HAL_Drivers/drv_i2c.c **** 
+ 218:hardware/HAL_Drivers/drv_i2c.c **** /* if i2c is locked, the function will unlock it  */
+ 219:hardware/HAL_Drivers/drv_i2c.c **** static rt_err_t stm32_i2c_bus_unlock()
+ 220:hardware/HAL_Drivers/drv_i2c.c **** {
+ 367              		.loc 1 220 0
+ 368              		.cfi_startproc
+ 369              		@ args = 0, pretend = 0, frame = 0
+ 370              		@ frame_needed = 0, uses_anonymous_args = 0
+ 371 0000 38B5     		push	{r3, r4, r5, lr}
+ 372              	.LCFI5:
+ 373              		.cfi_def_cfa_offset 16
+ 374              		.cfi_offset 3, -16
+ 375              		.cfi_offset 4, -12
+ 376              		.cfi_offset 5, -8
+ 377              		.cfi_offset 14, -4
+ 378              	.LVL29:
+ 221:hardware/HAL_Drivers/drv_i2c.c ****     rt_int32_t i = 0;
+ 222:hardware/HAL_Drivers/drv_i2c.c **** 
+ 223:hardware/HAL_Drivers/drv_i2c.c **** #ifdef BSP_USING_PCF8574
+ 224:hardware/HAL_Drivers/drv_i2c.c ****     if (GPIO_PIN_RESET == HAL_GPIO_ReadPin(I2C_SCL_PORT, I2C_SCL_PIN))
+ 379              		.loc 1 224 0
+ 380 0002 1021     		movs	r1, #16
+ 381 0004 1B48     		ldr	r0, .L47
+ 382 0006 FFF7FEFF 		bl	HAL_GPIO_ReadPin
+ 383              	.LVL30:
+ 384 000a 58B3     		cbz	r0, .L43
+ 385              	.LVL31:
+ 386              	.L40:
+ 225:hardware/HAL_Drivers/drv_i2c.c ****     {
+ 226:hardware/HAL_Drivers/drv_i2c.c ****         while (i++ < 9)
+ 227:hardware/HAL_Drivers/drv_i2c.c ****         {
+ 228:hardware/HAL_Drivers/drv_i2c.c ****             HAL_GPIO_WritePin(I2C_SCL_PORT, I2C_SCL_PIN, GPIO_PIN_RESET); //reset clk
+ 229:hardware/HAL_Drivers/drv_i2c.c ****             HAL_GPIO_WritePin(I2C_SDA_PORT, I2C_SDA_PIN, GPIO_PIN_RESET); //reset clk
+ARM GAS  /tmp/ccMjOaDz.s 			page 12
+
+
+ 230:hardware/HAL_Drivers/drv_i2c.c ****             stm32_udelay(100);
+ 231:hardware/HAL_Drivers/drv_i2c.c ****             HAL_GPIO_WritePin(I2C_SCL_PORT, I2C_SCL_PIN, GPIO_PIN_SET);
+ 232:hardware/HAL_Drivers/drv_i2c.c ****             HAL_GPIO_WritePin(I2C_SDA_PORT, I2C_SDA_PIN, GPIO_PIN_SET);
+ 233:hardware/HAL_Drivers/drv_i2c.c ****             stm32_udelay(100);
+ 234:hardware/HAL_Drivers/drv_i2c.c ****         }
+ 235:hardware/HAL_Drivers/drv_i2c.c ****     }
+ 236:hardware/HAL_Drivers/drv_i2c.c ****     if (GPIO_PIN_RESET == HAL_GPIO_ReadPin(I2C_SCL_PORT, I2C_SCL_PIN) || GPIO_PIN_RESET == HAL_GPIO
+ 387              		.loc 1 236 0
+ 388 000c 1021     		movs	r1, #16
+ 389 000e 1948     		ldr	r0, .L47
+ 390 0010 FFF7FEFF 		bl	HAL_GPIO_ReadPin
+ 391              	.LVL32:
+ 392 0014 40B3     		cbz	r0, .L44
+ 393              		.loc 1 236 0 is_stmt 0 discriminator 1
+ 394 0016 2021     		movs	r1, #32
+ 395 0018 1648     		ldr	r0, .L47
+ 396 001a FFF7FEFF 		bl	HAL_GPIO_ReadPin
+ 397              	.LVL33:
+ 398 001e 30B3     		cbz	r0, .L45
+ 237:hardware/HAL_Drivers/drv_i2c.c ****     {
+ 238:hardware/HAL_Drivers/drv_i2c.c ****         return -RT_ERROR;
+ 239:hardware/HAL_Drivers/drv_i2c.c ****     }
+ 240:hardware/HAL_Drivers/drv_i2c.c **** #endif /* endif BSP_USING_PCF8574 */
+ 241:hardware/HAL_Drivers/drv_i2c.c **** 
+ 242:hardware/HAL_Drivers/drv_i2c.c ****     return RT_EOK;
+ 399              		.loc 1 242 0 is_stmt 1
+ 400 0020 0020     		movs	r0, #0
+ 401 0022 38BD     		pop	{r3, r4, r5, pc}
+ 402              	.LVL34:
+ 403              	.L41:
+ 228:hardware/HAL_Drivers/drv_i2c.c ****             HAL_GPIO_WritePin(I2C_SDA_PORT, I2C_SDA_PIN, GPIO_PIN_RESET); //reset clk
+ 404              		.loc 1 228 0
+ 405 0024 134C     		ldr	r4, .L47
+ 406 0026 0022     		movs	r2, #0
+ 407 0028 1021     		movs	r1, #16
+ 408 002a 2046     		mov	r0, r4
+ 409 002c FFF7FEFF 		bl	HAL_GPIO_WritePin
+ 410              	.LVL35:
+ 229:hardware/HAL_Drivers/drv_i2c.c ****             stm32_udelay(100);
+ 411              		.loc 1 229 0
+ 412 0030 0022     		movs	r2, #0
+ 413 0032 2021     		movs	r1, #32
+ 414 0034 2046     		mov	r0, r4
+ 415 0036 FFF7FEFF 		bl	HAL_GPIO_WritePin
+ 416              	.LVL36:
+ 230:hardware/HAL_Drivers/drv_i2c.c ****             HAL_GPIO_WritePin(I2C_SCL_PORT, I2C_SCL_PIN, GPIO_PIN_SET);
+ 417              		.loc 1 230 0
+ 418 003a 6420     		movs	r0, #100
+ 419 003c FFF7FEFF 		bl	stm32_udelay
+ 420              	.LVL37:
+ 231:hardware/HAL_Drivers/drv_i2c.c ****             HAL_GPIO_WritePin(I2C_SDA_PORT, I2C_SDA_PIN, GPIO_PIN_SET);
+ 421              		.loc 1 231 0
+ 422 0040 0122     		movs	r2, #1
+ 423 0042 1021     		movs	r1, #16
+ 424 0044 2046     		mov	r0, r4
+ 425 0046 FFF7FEFF 		bl	HAL_GPIO_WritePin
+ 426              	.LVL38:
+ARM GAS  /tmp/ccMjOaDz.s 			page 13
+
+
+ 232:hardware/HAL_Drivers/drv_i2c.c ****             stm32_udelay(100);
+ 427              		.loc 1 232 0
+ 428 004a 0122     		movs	r2, #1
+ 429 004c 2021     		movs	r1, #32
+ 430 004e 2046     		mov	r0, r4
+ 431 0050 FFF7FEFF 		bl	HAL_GPIO_WritePin
+ 432              	.LVL39:
+ 233:hardware/HAL_Drivers/drv_i2c.c ****         }
+ 433              		.loc 1 233 0
+ 434 0054 6420     		movs	r0, #100
+ 435 0056 FFF7FEFF 		bl	stm32_udelay
+ 436              	.LVL40:
+ 226:hardware/HAL_Drivers/drv_i2c.c ****         {
+ 437              		.loc 1 226 0
+ 438 005a 2B46     		mov	r3, r5
+ 439              	.LVL41:
+ 440              	.L39:
+ 441 005c 5D1C     		adds	r5, r3, #1
+ 442              	.LVL42:
+ 443 005e 082B     		cmp	r3, #8
+ 444 0060 E0DD     		ble	.L41
+ 445 0062 D3E7     		b	.L40
+ 446              	.LVL43:
+ 447              	.L43:
+ 448 0064 0023     		movs	r3, #0
+ 449 0066 F9E7     		b	.L39
+ 450              	.LVL44:
+ 451              	.L44:
+ 238:hardware/HAL_Drivers/drv_i2c.c ****     }
+ 452              		.loc 1 238 0
+ 453 0068 4FF0FF30 		mov	r0, #-1
+ 454 006c 38BD     		pop	{r3, r4, r5, pc}
+ 455              	.L45:
+ 456 006e 4FF0FF30 		mov	r0, #-1
+ 243:hardware/HAL_Drivers/drv_i2c.c **** }
+ 457              		.loc 1 243 0
+ 458 0072 38BD     		pop	{r3, r4, r5, pc}
+ 459              	.L48:
+ 460              		.align	2
+ 461              	.L47:
+ 462 0074 001C0240 		.word	1073880064
+ 463              		.cfi_endproc
+ 464              	.LFE146:
+ 466              		.section	.text.hw_i2c_init,"ax",%progbits
+ 467              		.align	1
+ 468              		.global	hw_i2c_init
+ 469              		.syntax unified
+ 470              		.thumb
+ 471              		.thumb_func
+ 472              		.fpu fpv4-sp-d16
+ 474              	hw_i2c_init:
+ 475              	.LFB147:
+ 244:hardware/HAL_Drivers/drv_i2c.c **** 
+ 245:hardware/HAL_Drivers/drv_i2c.c **** int hw_i2c_init(void)
+ 246:hardware/HAL_Drivers/drv_i2c.c **** {
+ 476              		.loc 1 246 0
+ 477              		.cfi_startproc
+ARM GAS  /tmp/ccMjOaDz.s 			page 14
+
+
+ 478              		@ args = 0, pretend = 0, frame = 0
+ 479              		@ frame_needed = 0, uses_anonymous_args = 0
+ 480 0000 10B5     		push	{r4, lr}
+ 481              	.LCFI6:
+ 482              		.cfi_def_cfa_offset 8
+ 483              		.cfi_offset 4, -8
+ 484              		.cfi_offset 14, -4
+ 247:hardware/HAL_Drivers/drv_i2c.c **** 	stm32_i2c_gpio_init();
+ 485              		.loc 1 247 0
+ 486 0002 FFF7FEFF 		bl	stm32_i2c_gpio_init
+ 487              	.LVL45:
+ 248:hardware/HAL_Drivers/drv_i2c.c **** 
+ 249:hardware/HAL_Drivers/drv_i2c.c **** 	if (stm32_i2c_bus_unlock() != RT_EOK)
+ 488              		.loc 1 249 0
+ 489 0006 FFF7FEFF 		bl	stm32_i2c_bus_unlock
+ 490              	.LVL46:
+ 491 000a 68B9     		cbnz	r0, .L53
+ 250:hardware/HAL_Drivers/drv_i2c.c **** 	{
+ 251:hardware/HAL_Drivers/drv_i2c.c **** 		rt_kprintf("Failed to unlock i2c \n");
+ 252:hardware/HAL_Drivers/drv_i2c.c **** 		return -RT_ERROR;
+ 253:hardware/HAL_Drivers/drv_i2c.c **** 	}
+ 254:hardware/HAL_Drivers/drv_i2c.c **** 
+ 255:hardware/HAL_Drivers/drv_i2c.c **** #ifdef BSP_USING_PCF8574
+ 256:hardware/HAL_Drivers/drv_i2c.c **** 	rt_memset((void *)&pcf8574_i2c_bus, 0, sizeof(struct rt_i2c_bus_device));
+ 492              		.loc 1 256 0
+ 493 000c 094C     		ldr	r4, .L54
+ 494 000e 6422     		movs	r2, #100
+ 495 0010 0021     		movs	r1, #0
+ 496 0012 2046     		mov	r0, r4
+ 497 0014 FFF7FEFF 		bl	rt_memset
+ 498              	.LVL47:
+ 257:hardware/HAL_Drivers/drv_i2c.c **** #endif 
+ 258:hardware/HAL_Drivers/drv_i2c.c **** 	/*rt_memset((void *)&i2c2_bus_s, 0, sizeof(struct rt_i2c_bus_device));*/
+ 259:hardware/HAL_Drivers/drv_i2c.c **** 	
+ 260:hardware/HAL_Drivers/drv_i2c.c **** #ifdef BSP_USING_PCF8574
+ 261:hardware/HAL_Drivers/drv_i2c.c **** 	pcf8574_i2c_bus.priv = (void *)&stm32_bit_ops;
+ 499              		.loc 1 261 0
+ 500 0018 074B     		ldr	r3, .L54+4
+ 501 001a 2366     		str	r3, [r4, #96]
+ 262:hardware/HAL_Drivers/drv_i2c.c **** #endif
+ 263:hardware/HAL_Drivers/drv_i2c.c **** 	/*i2c2_bus_s.priv = (void *)&stm32_bit_ops_s;*/
+ 264:hardware/HAL_Drivers/drv_i2c.c **** 
+ 265:hardware/HAL_Drivers/drv_i2c.c **** #ifdef BSP_USING_PCF8574
+ 266:hardware/HAL_Drivers/drv_i2c.c **** 	rt_i2c_bit_add_bus(&pcf8574_i2c_bus, I2CBUS_NAME);
+ 502              		.loc 1 266 0
+ 503 001c 0749     		ldr	r1, .L54+8
+ 504 001e 2046     		mov	r0, r4
+ 505 0020 FFF7FEFF 		bl	rt_i2c_bit_add_bus
+ 506              	.LVL48:
+ 267:hardware/HAL_Drivers/drv_i2c.c **** #endif
+ 268:hardware/HAL_Drivers/drv_i2c.c **** 	/*rt_i2c_bit_add_bus(&i2c2_bus_s, I2CBUS_NAME_S);*/
+ 269:hardware/HAL_Drivers/drv_i2c.c **** 	
+ 270:hardware/HAL_Drivers/drv_i2c.c **** 	return RT_EOK;
+ 507              		.loc 1 270 0
+ 508 0024 0020     		movs	r0, #0
+ 271:hardware/HAL_Drivers/drv_i2c.c **** }
+ 509              		.loc 1 271 0
+ARM GAS  /tmp/ccMjOaDz.s 			page 15
+
+
+ 510 0026 10BD     		pop	{r4, pc}
+ 511              	.L53:
+ 251:hardware/HAL_Drivers/drv_i2c.c **** 		return -RT_ERROR;
+ 512              		.loc 1 251 0
+ 513 0028 0548     		ldr	r0, .L54+12
+ 514 002a FFF7FEFF 		bl	rt_kprintf
+ 515              	.LVL49:
+ 252:hardware/HAL_Drivers/drv_i2c.c **** 	}
+ 516              		.loc 1 252 0
+ 517 002e 4FF0FF30 		mov	r0, #-1
+ 518 0032 10BD     		pop	{r4, pc}
+ 519              	.L55:
+ 520              		.align	2
+ 521              	.L54:
+ 522 0034 00000000 		.word	.LANCHOR0
+ 523 0038 00000000 		.word	.LANCHOR1
+ 524 003c 18000000 		.word	.LC1
+ 525 0040 00000000 		.word	.LC0
+ 526              		.cfi_endproc
+ 527              	.LFE147:
+ 529              		.global	__rt_init_hw_i2c_init
+ 530              		.section	.bss.pcf8574_i2c_bus,"aw",%nobits
+ 531              		.align	2
+ 532              		.set	.LANCHOR0,. + 0
+ 535              	pcf8574_i2c_bus:
+ 536 0000 00000000 		.space	100
+ 536      00000000 
+ 536      00000000 
+ 536      00000000 
+ 536      00000000 
+ 537              		.section	.rodata.hw_i2c_init.str1.4,"aMS",%progbits,1
+ 538              		.align	2
+ 539              	.LC0:
+ 540 0000 4661696C 		.ascii	"Failed to unlock i2c \012\000"
+ 540      65642074 
+ 540      6F20756E 
+ 540      6C6F636B 
+ 540      20693263 
+ 541 0017 00       		.space	1
+ 542              	.LC1:
+ 543 0018 69326331 		.ascii	"i2c1\000"
+ 543      00
+ 544              		.section	.rodata.stm32_bit_ops,"a",%progbits
+ 545              		.align	2
+ 546              		.set	.LANCHOR1,. + 0
+ 549              	stm32_bit_ops:
+ 550 0000 00000000 		.word	0
+ 551 0004 00000000 		.word	stm32_set_sda
+ 552 0008 00000000 		.word	stm32_set_scl
+ 553 000c 00000000 		.word	stm32_get_sda
+ 554 0010 00000000 		.word	stm32_get_scl
+ 555 0014 00000000 		.word	stm32_udelay
+ 556 0018 05000000 		.word	5
+ 557 001c 05000000 		.word	5
+ 558              		.section	.rti_fn.1,"a",%progbits
+ 559              		.align	2
+ 562              	__rt_init_hw_i2c_init:
+ARM GAS  /tmp/ccMjOaDz.s 			page 16
+
+
+ 563 0000 00000000 		.word	hw_i2c_init
+ 564              		.text
+ 565              	.Letext0:
+ 566              		.file 2 "rt-thread/include/rtdef.h"
+ 567              		.file 3 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/machine/_default_types.h"
+ 568              		.file 4 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/lock.h"
+ 569              		.file 5 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_types.h"
+ 570              		.file 6 "/opt/gcc-arm-none-eabi-6-2017-q2-update/lib/gcc/arm-none-eabi/6.3.1/include/stddef.h"
+ 571              		.file 7 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/reent.h"
+ 572              		.file 8 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/_stdint.h"
+ 573              		.file 9 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/time.h"
+ 574              		.file 10 "/opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/sys/errno.h"
+ 575              		.file 11 "rt-thread/components/finsh/finsh_api.h"
+ 576              		.file 12 "rt-thread/components/drivers/include/drivers/i2c.h"
+ 577              		.file 13 "rt-thread/components/drivers/include/drivers/i2c-bit-ops.h"
+ 578              		.file 14 "CORE/core_cm4.h"
+ 579              		.file 15 "USER/system_stm32f4xx.h"
+ 580              		.file 16 "USER/stm32f429xx.h"
+ 581              		.file 17 "HALLIB/Inc/stm32f4xx_hal_gpio.h"
+ 582              		.file 18 "HALLIB/Inc/stm32f4xx_hal.h"
+ 583              		.file 19 "rt-thread/include/rtthread.h"
+ARM GAS  /tmp/ccMjOaDz.s 			page 17
+
+
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 drv_i2c.c
+     /tmp/ccMjOaDz.s:18     .text.stm32_set_sda:0000000000000000 $t
+     /tmp/ccMjOaDz.s:24     .text.stm32_set_sda:0000000000000000 stm32_set_sda
+     /tmp/ccMjOaDz.s:49     .text.stm32_set_sda:0000000000000014 $d
+     /tmp/ccMjOaDz.s:54     .text.stm32_set_scl:0000000000000000 $t
+     /tmp/ccMjOaDz.s:60     .text.stm32_set_scl:0000000000000000 stm32_set_scl
+     /tmp/ccMjOaDz.s:84     .text.stm32_set_scl:0000000000000014 $d
+     /tmp/ccMjOaDz.s:89     .text.stm32_get_sda:0000000000000000 $t
+     /tmp/ccMjOaDz.s:95     .text.stm32_get_sda:0000000000000000 stm32_get_sda
+     /tmp/ccMjOaDz.s:122    .text.stm32_get_sda:0000000000000014 $d
+     /tmp/ccMjOaDz.s:127    .text.stm32_get_scl:0000000000000000 $t
+     /tmp/ccMjOaDz.s:133    .text.stm32_get_scl:0000000000000000 stm32_get_scl
+     /tmp/ccMjOaDz.s:160    .text.stm32_get_scl:0000000000000014 $d
+     /tmp/ccMjOaDz.s:165    .text.stm32_udelay:0000000000000000 $t
+     /tmp/ccMjOaDz.s:171    .text.stm32_udelay:0000000000000000 stm32_udelay
+     /tmp/ccMjOaDz.s:246    .text.stm32_udelay:0000000000000038 $d
+     /tmp/ccMjOaDz.s:252    .text.stm32_i2c_gpio_init:0000000000000000 $t
+     /tmp/ccMjOaDz.s:258    .text.stm32_i2c_gpio_init:0000000000000000 stm32_i2c_gpio_init
+     /tmp/ccMjOaDz.s:353    .text.stm32_i2c_gpio_init:0000000000000080 $d
+     /tmp/ccMjOaDz.s:359    .text.stm32_i2c_bus_unlock:0000000000000000 $t
+     /tmp/ccMjOaDz.s:365    .text.stm32_i2c_bus_unlock:0000000000000000 stm32_i2c_bus_unlock
+     /tmp/ccMjOaDz.s:462    .text.stm32_i2c_bus_unlock:0000000000000074 $d
+     /tmp/ccMjOaDz.s:467    .text.hw_i2c_init:0000000000000000 $t
+     /tmp/ccMjOaDz.s:474    .text.hw_i2c_init:0000000000000000 hw_i2c_init
+     /tmp/ccMjOaDz.s:522    .text.hw_i2c_init:0000000000000034 $d
+     /tmp/ccMjOaDz.s:562    .rti_fn.1:0000000000000000 __rt_init_hw_i2c_init
+     /tmp/ccMjOaDz.s:531    .bss.pcf8574_i2c_bus:0000000000000000 $d
+     /tmp/ccMjOaDz.s:535    .bss.pcf8574_i2c_bus:0000000000000000 pcf8574_i2c_bus
+     /tmp/ccMjOaDz.s:538    .rodata.hw_i2c_init.str1.4:0000000000000000 $d
+     /tmp/ccMjOaDz.s:545    .rodata.stm32_bit_ops:0000000000000000 $d
+     /tmp/ccMjOaDz.s:549    .rodata.stm32_bit_ops:0000000000000000 stm32_bit_ops
+     /tmp/ccMjOaDz.s:559    .rti_fn.1:0000000000000000 $d
+                     .debug_frame:0000000000000010 $d
+
+UNDEFINED SYMBOLS
+HAL_GPIO_Init
+HAL_GPIO_WritePin
+HAL_GPIO_ReadPin
+rt_memset
+rt_i2c_bit_add_bus
+rt_kprintf
